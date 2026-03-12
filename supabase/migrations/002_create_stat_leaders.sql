@@ -10,7 +10,7 @@ create table public.stat_leaders (
   value numeric not null,
   season text not null default '2025-26',
   updated_at timestamptz default now(),
-  unique(category, rank, season)
+  unique(category, player_name, season)
 );
 
 alter table public.stat_leaders enable row level security;
