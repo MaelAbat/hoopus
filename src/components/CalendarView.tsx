@@ -28,32 +28,36 @@ const DAYS_FR = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 
 function toParisTime(gameDate: string, gameTime: string): string {
   if (!gameTime) return "";
-  const match = gameTime.match(/^(\d{1,2}):(\d{2})\s*(am|pm)\s*ET$/i);
-  if (!match) return gameTime;
 
-  let hours = parseInt(match[1]);
-  const minutes = parseInt(match[2]);
-  const ampm = match[3].toLowerCase();
-  if (ampm === "pm" && hours !== 12) hours += 12;
-  if (ampm === "am" && hours === 12) hours = 0;
+  // gameTime is stored as "1900-01-01T19:30:00Z" — extract ET hours/minutes
+  const timePart = gameTime.includes("T") ? gameTime.split("T")[1] : gameTime;
+  const match = timePart.match(/^(\d{2}):(\d{2})/);
+  if (!match) return "";
 
-  // Build a date string that JS interprets as ET, then format as Paris
-  // Use Intl to get the ET offset dynamically (handles EST/EDT automatically)
+  const etHours = parseInt(match[1]);
+  const etMinutes = parseInt(match[2]);
+
+  // Build a Date on the actual game date with the ET time as if it were UTC
   const fakeUtc = new Date(Date.UTC(
     parseInt(gameDate.slice(0, 4)),
     parseInt(gameDate.slice(5, 7)) - 1,
     parseInt(gameDate.slice(8, 10)),
-    hours, minutes
+    etHours, etMinutes
   ));
 
-  // Get what hour it is in ET for this UTC time
-  const etHour = parseInt(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "numeric", hour12: false }).format(fakeUtc));
-  // The difference tells us the ET offset
-  const etOffset = etHour - hours;
-  // Adjust: we want the UTC that corresponds to this ET time
+  // Find the ET→UTC offset for this date (handles EST/EDT automatically)
+  const etFormatted = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    hour: "numeric",
+    hour12: false,
+  }).format(fakeUtc);
+  const etHourCheck = parseInt(etFormatted);
+  const etOffset = etHourCheck - etHours;
+
+  // Compute the real UTC instant corresponding to this ET time
   const realUtc = new Date(fakeUtc.getTime() - etOffset * 3600000);
 
-  // Now format in Paris timezone
+  // Format in Paris timezone
   return new Intl.DateTimeFormat("fr-FR", {
     timeZone: "Europe/Paris",
     hour: "2-digit",
