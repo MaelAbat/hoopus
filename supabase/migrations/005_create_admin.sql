@@ -1,0 +1,3 @@
+-- À exécuter APRÈS avoir créé le compte admin via l'interface Supabase ou signup
+-- Remplacer l'email par celui du compte admin créé
+-- UPDATE profiles SET is_admin = true WHERE email = 'admin@nbahub.fr';
