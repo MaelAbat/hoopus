@@ -18,37 +18,37 @@ const BOARDS: BoardConfig[] = [
 
 function LeaderBoard({ title, data, unit }: { title: string; data: PlayerStatLeader[]; unit: string }) {
   return (
-    <div className="rounded-2xl bg-[#111827] border border-white/5 overflow-hidden">
-      <div className="border-b border-white/5 px-6 py-4">
-        <h2 className="text-lg font-bold text-white">{title}</h2>
+    <div className="rounded-2xl bg-card border border-border-t overflow-hidden">
+      <div className="border-b border-border-t px-6 py-4">
+        <h2 className="text-lg font-bold text-text-primary">{title}</h2>
       </div>
       {data.length === 0 ? (
-        <div className="px-6 py-8 text-center text-sm text-gray-500">
+        <div className="px-6 py-8 text-center text-sm text-text-muted">
           Aucune donnée disponible
         </div>
       ) : (
-        <div className="divide-y divide-white/5">
+        <div className="divide-y divide-border-t">
           {data.map((player) => (
             <div
               key={`${player.rank}-${player.name}`}
-              className="flex items-center gap-4 px-6 py-4 transition-colors hover:bg-white/[0.02]"
+              className="flex items-center gap-4 px-6 py-4 transition-colors hover:bg-card-hover"
             >
               <span
                 className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
                   player.rank === 1
-                    ? "bg-orange-500/20 text-orange-400"
-                    : "bg-white/5 text-gray-500"
+                    ? "bg-accent-light text-accent-text"
+                    : "bg-input text-text-muted"
                 }`}
               >
                 {player.rank}
               </span>
               <div className="flex-1">
-                <p className="font-semibold text-white">{player.name}</p>
-                <p className="text-xs text-gray-500">{player.team}</p>
+                <p className="font-semibold text-text-primary">{player.name}</p>
+                <p className="text-xs text-text-muted">{player.team}</p>
               </div>
-              <span className="text-lg font-bold text-white">
+              <span className="text-lg font-bold text-text-primary">
                 {player.value}
-                <span className="ml-1 text-xs font-normal text-gray-500">{unit}</span>
+                <span className="ml-1 text-xs font-normal text-text-muted">{unit}</span>
               </span>
             </div>
           ))}
@@ -93,11 +93,11 @@ export default async function Statistiques() {
   return (
     <div className="mx-auto max-w-6xl space-y-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-white">Statistiques</h1>
-        <p className="mt-1 text-gray-500">
+        <h1 className="text-3xl font-bold tracking-tight text-text-primary">Statistiques</h1>
+        <p className="mt-1 text-text-muted">
           Leaders de la saison 2025-26
           {hasData ? (
-            <span className="ml-2 text-xs text-gray-600">
+            <span className="ml-2 text-xs text-text-faint">
               Mis à jour le {lastUpdate}
             </span>
           ) : (

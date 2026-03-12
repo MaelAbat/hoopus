@@ -24,7 +24,7 @@ export default function DeleteButton({ onDelete }: DeleteButtonProps) {
         </button>
         <button
           onClick={() => setConfirming(false)}
-          className="rounded-lg bg-white/5 px-3 py-1.5 text-xs font-medium text-gray-400 hover:bg-white/10 transition-colors"
+          className="rounded-lg bg-input px-3 py-1.5 text-xs font-medium text-text-muted hover:bg-card-hover transition-colors"
         >
           Annuler
         </button>
@@ -35,7 +35,7 @@ export default function DeleteButton({ onDelete }: DeleteButtonProps) {
   return (
     <button
       onClick={() => setConfirming(true)}
-      className="rounded-lg p-2 text-gray-600 hover:bg-red-500/10 hover:text-red-400 transition-colors"
+      className="rounded-lg p-2 text-text-faint hover:bg-red-500/10 hover:text-red-400 transition-colors"
     >
       <Trash2 size={16} />
     </button>

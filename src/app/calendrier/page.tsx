@@ -13,8 +13,8 @@ export default async function Calendrier() {
   return (
     <div className="mx-auto max-w-6xl space-y-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-white">Calendrier</h1>
-        <p className="mt-1 text-gray-500">Saison régulière 2025-26</p>
+        <h1 className="text-3xl font-bold tracking-tight text-text-primary">Calendrier</h1>
+        <p className="mt-1 text-text-muted">Saison régulière 2025-26</p>
       </div>
       <CalendarView games={games || []} />
     </div>

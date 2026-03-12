@@ -29,7 +29,6 @@ const DAYS_FR = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 function toParisTime(gameDate: string, gameTime: string): string {
   if (!gameTime) return "";
 
-  // gameTime is stored as "1900-01-01T19:30:00Z" — extract ET hours/minutes
   const timePart = gameTime.includes("T") ? gameTime.split("T")[1] : gameTime;
   const match = timePart.match(/^(\d{2}):(\d{2})/);
   if (!match) return "";
@@ -37,7 +36,6 @@ function toParisTime(gameDate: string, gameTime: string): string {
   const etHours = parseInt(match[1]);
   const etMinutes = parseInt(match[2]);
 
-  // Build a Date on the actual game date with the ET time as if it were UTC
   const fakeUtc = new Date(Date.UTC(
     parseInt(gameDate.slice(0, 4)),
     parseInt(gameDate.slice(5, 7)) - 1,
@@ -45,7 +43,6 @@ function toParisTime(gameDate: string, gameTime: string): string {
     etHours, etMinutes
   ));
 
-  // Find the ET→UTC offset for this date (handles EST/EDT automatically)
   const etFormatted = new Intl.DateTimeFormat("en-US", {
     timeZone: "America/New_York",
     hour: "numeric",
@@ -54,10 +51,8 @@ function toParisTime(gameDate: string, gameTime: string): string {
   const etHourCheck = parseInt(etFormatted);
   const etOffset = etHourCheck - etHours;
 
-  // Compute the real UTC instant corresponding to this ET time
   const realUtc = new Date(fakeUtc.getTime() - etOffset * 3600000);
 
-  // Format in Paris timezone
   return new Intl.DateTimeFormat("fr-FR", {
     timeZone: "Europe/Paris",
     hour: "2-digit",
@@ -72,7 +67,7 @@ function GameCard({ game }: { game: Game }) {
   const awayWon = isFinal && game.away_score > game.home_score;
 
   return (
-    <div className="rounded-xl bg-[#0c1222] border border-white/5 p-4 transition-all duration-200 hover:border-white/10">
+    <div className="rounded-xl bg-sidebar border border-border-t p-4 transition-all duration-200 hover:border-border-hover">
       {/* Status */}
       <div className="flex items-center justify-between mb-3">
         {isLive ? (
@@ -81,14 +76,14 @@ function GameCard({ game }: { game: Game }) {
             LIVE
           </span>
         ) : isFinal ? (
-          <span className="text-xs font-medium text-gray-500">Final</span>
+          <span className="text-xs font-medium text-text-muted">Final</span>
         ) : (
-          <span className="text-xs font-medium text-gray-500">
+          <span className="text-xs font-medium text-text-muted">
             {toParisTime(game.game_date, game.game_time) || game.status_text}
           </span>
         )}
         {game.arena && (
-          <span className="flex items-center gap-1 text-xs text-gray-600">
+          <span className="flex items-center gap-1 text-xs text-text-faint">
             <MapPin size={10} />
             {game.arena_city}
           </span>
@@ -97,24 +92,24 @@ function GameCard({ game }: { game: Game }) {
 
       {/* Teams */}
       <div className="space-y-2">
-        <div className={`flex items-center justify-between ${awayWon ? "text-white" : isFinal ? "text-gray-500" : "text-gray-300"}`}>
+        <div className={`flex items-center justify-between ${awayWon ? "text-text-primary" : isFinal ? "text-text-muted" : "text-text-secondary"}`}>
           <div className="flex items-center gap-2">
             <span className="w-8 text-center text-sm font-bold">{game.away_team}</span>
             <span className="text-sm">{game.away_team_name}</span>
           </div>
           {(isFinal || isLive) && (
-            <span className={`text-lg font-bold ${awayWon ? "text-orange-400" : ""}`}>
+            <span className={`text-lg font-bold ${awayWon ? "text-accent-text" : ""}`}>
               {game.away_score}
             </span>
           )}
         </div>
-        <div className={`flex items-center justify-between ${homeWon ? "text-white" : isFinal ? "text-gray-500" : "text-gray-300"}`}>
+        <div className={`flex items-center justify-between ${homeWon ? "text-text-primary" : isFinal ? "text-text-muted" : "text-text-secondary"}`}>
           <div className="flex items-center gap-2">
             <span className="w-8 text-center text-sm font-bold">{game.home_team}</span>
             <span className="text-sm">{game.home_team_name}</span>
           </div>
           {(isFinal || isLive) && (
-            <span className={`text-lg font-bold ${homeWon ? "text-orange-400" : ""}`}>
+            <span className={`text-lg font-bold ${homeWon ? "text-accent-text" : ""}`}>
               {game.home_score}
             </span>
           )}
@@ -134,7 +129,6 @@ export default function CalendarView({ games }: { games: Game[] }) {
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
-  // Games grouped by date
   const gamesByDate = useMemo(() => {
     const map: Record<string, Game[]> = {};
     games.forEach((g) => {
@@ -144,12 +138,10 @@ export default function CalendarView({ games }: { games: Game[] }) {
     return map;
   }, [games]);
 
-  // Calendar grid
   const calendarDays = useMemo(() => {
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
 
-    // Monday-based week (0=Mon, 6=Sun)
     let startDay = firstDay.getDay() - 1;
     if (startDay < 0) startDay = 6;
 
@@ -178,16 +170,16 @@ export default function CalendarView({ games }: { games: Game[] }) {
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_380px]">
       {/* Calendar */}
-      <div className="rounded-2xl bg-[#111827] border border-white/5 p-6">
+      <div className="rounded-2xl bg-card border border-border-t p-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <button onClick={prevMonth} className="rounded-lg p-2 text-gray-400 hover:bg-white/5 hover:text-white transition-colors">
+          <button onClick={prevMonth} className="rounded-lg p-2 text-text-muted hover:bg-input hover:text-text-primary transition-colors">
             <ChevronLeft size={20} />
           </button>
-          <h2 className="text-lg font-bold text-white">
+          <h2 className="text-lg font-bold text-text-primary">
             {MONTHS_FR[month]} {year}
           </h2>
-          <button onClick={nextMonth} className="rounded-lg p-2 text-gray-400 hover:bg-white/5 hover:text-white transition-colors">
+          <button onClick={nextMonth} className="rounded-lg p-2 text-text-muted hover:bg-input hover:text-text-primary transition-colors">
             <ChevronRight size={20} />
           </button>
         </div>
@@ -195,7 +187,7 @@ export default function CalendarView({ games }: { games: Game[] }) {
         {/* Day headers */}
         <div className="grid grid-cols-7 gap-1 mb-2">
           {DAYS_FR.map((d) => (
-            <div key={d} className="text-center text-xs font-medium text-gray-500 py-2">
+            <div key={d} className="text-center text-xs font-medium text-text-muted py-2">
               {d}
             </div>
           ))}
@@ -221,12 +213,12 @@ export default function CalendarView({ games }: { games: Game[] }) {
                 onClick={() => setSelectedDate(dateKey)}
                 className={`relative aspect-square flex flex-col items-center justify-center rounded-xl text-sm transition-all duration-150 ${
                   isSelected
-                    ? "bg-orange-500 text-white font-bold shadow-lg shadow-orange-500/20"
+                    ? "bg-accent text-white font-bold shadow-lg"
                     : isToday
-                      ? "bg-orange-500/10 text-orange-400 font-semibold"
+                      ? "bg-accent-light text-accent-text font-semibold"
                       : gameCount > 0
-                        ? "text-white hover:bg-white/5"
-                        : "text-gray-600 hover:bg-white/5"
+                        ? "text-text-primary hover:bg-input"
+                        : "text-text-faint hover:bg-input"
                 }`}
               >
                 {day}
@@ -237,7 +229,7 @@ export default function CalendarView({ games }: { games: Game[] }) {
                         ? "text-white/80"
                         : hasLive
                           ? "text-red-400"
-                          : "text-orange-500/60"
+                          : "text-accent/60"
                     }`}
                   >
                     {gameCount}
@@ -251,13 +243,13 @@ export default function CalendarView({ games }: { games: Game[] }) {
 
       {/* Games for selected date */}
       <div className="space-y-3">
-        <h3 className="text-sm font-semibold text-gray-400">
+        <h3 className="text-sm font-semibold text-text-secondary">
           {new Date(selectedDate + "T12:00:00").toLocaleDateString("fr-FR", {
             weekday: "long",
             day: "numeric",
             month: "long",
           })}
-          <span className="ml-2 text-gray-600">
+          <span className="ml-2 text-text-faint">
             {selectedGames.length > 0
               ? `${selectedGames.length} match${selectedGames.length > 1 ? "s" : ""}`
               : "Aucun match"}
@@ -265,8 +257,8 @@ export default function CalendarView({ games }: { games: Game[] }) {
         </h3>
 
         {selectedGames.length === 0 ? (
-          <div className="rounded-2xl bg-[#111827] border border-white/5 p-8 text-center">
-            <p className="text-sm text-gray-500">Pas de match ce jour</p>
+          <div className="rounded-2xl bg-card border border-border-t p-8 text-center">
+            <p className="text-sm text-text-muted">Pas de match ce jour</p>
           </div>
         ) : (
           selectedGames.map((game) => (

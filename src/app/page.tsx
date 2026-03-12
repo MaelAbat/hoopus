@@ -2,11 +2,11 @@ import { Newspaper, FileText, BarChart3, TrendingUp, Flame, Star } from "lucide-
 
 function StatCard({ label, value, icon, trend }: { label: string; value: string; icon: React.ReactNode; trend?: string }) {
   return (
-    <div className="group rounded-2xl bg-[#111827] border border-white/5 p-6 transition-all duration-300 hover:border-orange-500/20 hover:shadow-lg hover:shadow-orange-500/5">
+    <div className="group rounded-2xl bg-card border border-border-t p-6 transition-all duration-300 hover:border-border-hover hover:shadow-lg">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-gray-500">{label}</p>
-          <p className="mt-1 text-3xl font-bold text-white">{value}</p>
+          <p className="text-sm text-text-muted">{label}</p>
+          <p className="mt-1 text-3xl font-bold text-text-primary">{value}</p>
           {trend && (
             <div className="mt-2 flex items-center gap-1 text-xs text-emerald-400">
               <TrendingUp size={12} />
@@ -14,7 +14,7 @@ function StatCard({ label, value, icon, trend }: { label: string; value: string;
             </div>
           )}
         </div>
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-500/10 text-orange-500 transition-colors group-hover:bg-orange-500/20">
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent-light text-accent transition-colors">
           {icon}
         </div>
       </div>
@@ -26,14 +26,14 @@ function QuickLink({ title, description, icon, href }: { title: string; descript
   return (
     <a
       href={href}
-      className="group flex items-center gap-4 rounded-2xl bg-[#111827] border border-white/5 p-5 transition-all duration-300 hover:border-orange-500/20 hover:shadow-lg hover:shadow-orange-500/5"
+      className="group flex items-center gap-4 rounded-2xl bg-card border border-border-t p-5 transition-all duration-300 hover:border-border-hover hover:shadow-lg"
     >
-      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/5 text-gray-400 transition-colors group-hover:bg-orange-500/10 group-hover:text-orange-500">
+      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-input text-text-muted transition-colors group-hover:bg-accent-light group-hover:text-accent">
         {icon}
       </div>
       <div>
-        <h3 className="font-semibold text-white">{title}</h3>
-        <p className="text-sm text-gray-500">{description}</p>
+        <h3 className="font-semibold text-text-primary">{title}</h3>
+        <p className="text-sm text-text-muted">{description}</p>
       </div>
     </a>
   );
@@ -44,10 +44,10 @@ export default function Home() {
     <div className="mx-auto max-w-6xl space-y-10">
       {/* Header */}
       <div>
-        <h1 className="text-4xl font-bold tracking-tight text-white">
-          Bienvenue sur <span className="text-orange-500">NBAHub</span>
+        <h1 className="text-4xl font-bold tracking-tight text-text-primary">
+          Bienvenue sur <span className="text-accent">NBAHub</span>
         </h1>
-        <p className="mt-2 text-lg text-gray-400">
+        <p className="mt-2 text-lg text-text-secondary">
           Suivez toute l&apos;actualité NBA en un seul endroit.
         </p>
       </div>
@@ -61,7 +61,7 @@ export default function Home() {
 
       {/* Quick links */}
       <div>
-        <h2 className="mb-4 text-lg font-semibold text-white">Accès rapide</h2>
+        <h2 className="mb-4 text-lg font-semibold text-text-primary">Accès rapide</h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <QuickLink
             href="/actualites"
@@ -84,9 +84,9 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Recent activity placeholder */}
+      {/* Recent activity */}
       <div>
-        <h2 className="mb-4 text-lg font-semibold text-white">Activité récente</h2>
+        <h2 className="mb-4 text-lg font-semibold text-text-primary">Activité récente</h2>
         <div className="space-y-3">
           {[
             { title: "Lakers vs Celtics — Résumé du match", time: "Il y a 2h" },
@@ -95,10 +95,10 @@ export default function Home() {
           ].map((item) => (
             <div
               key={item.title}
-              className="flex items-center justify-between rounded-xl bg-[#111827] border border-white/5 px-5 py-4 transition-all duration-200 hover:border-white/10"
+              className="flex items-center justify-between rounded-xl bg-card border border-border-t px-5 py-4 transition-all duration-200 hover:border-border-hover"
             >
-              <span className="text-sm font-medium text-gray-300">{item.title}</span>
-              <span className="text-xs text-gray-600">{item.time}</span>
+              <span className="text-sm font-medium text-text-secondary">{item.title}</span>
+              <span className="text-xs text-text-faint">{item.time}</span>
             </div>
           ))}
         </div>

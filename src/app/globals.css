@@ -1,22 +1,152 @@
 @import "tailwindcss";
 
-:root {
-  --background: #090f1d;
-  --foreground: #e2e8f0;
-  --card: #111827;
-  --card-hover: #1a2234;
+@theme {
+  --color-bg: var(--bg);
+  --color-card: var(--bg-card);
+  --color-card-hover: var(--bg-card-hover);
+  --color-sidebar: var(--bg-sidebar);
+  --color-input: var(--bg-input);
+  --color-border-t: var(--border);
+  --color-border-hover: var(--border-hover);
+  --color-text-primary: var(--text);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-text-faint: var(--text-faint);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-light: var(--accent-light);
+  --color-accent-text: var(--accent-text);
+}
+
+/* ── Dark (défaut) ────────────────────────── */
+:root,
+[data-theme="dark"] {
+  --bg: #090f1d;
+  --bg-card: #111827;
+  --bg-card-hover: #1a2234;
+  --bg-sidebar: #0c1222;
+  --bg-input: rgba(255 255 255 / 0.05);
+  --border: rgba(255 255 255 / 0.05);
+  --border-hover: rgba(255 255 255 / 0.1);
+  --text: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-faint: #475569;
   --accent: #f97316;
-  --accent-light: #fb923c;
-  --muted: #64748b;
+  --accent-hover: #ea580c;
+  --accent-light: rgba(249 115 22 / 0.1);
+  --accent-text: #fb923c;
+  --scrollbar: #1e293b;
+}
+
+/* ── Light ────────────────────────────────── */
+[data-theme="light"] {
+  --bg: #f8fafc;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f1f5f9;
+  --bg-sidebar: #ffffff;
+  --bg-input: rgba(0 0 0 / 0.03);
+  --border: rgba(0 0 0 / 0.08);
+  --border-hover: rgba(0 0 0 / 0.15);
+  --text: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --text-faint: #94a3b8;
+  --accent: #ea580c;
+  --accent-hover: #c2410c;
+  --accent-light: rgba(234 88 12 / 0.08);
+  --accent-text: #ea580c;
+  --scrollbar: #cbd5e1;
+}
+
+/* ── Midnight – violet profond ────────────── */
+[data-theme="midnight"] {
+  --bg: #0b0a1a;
+  --bg-card: #13112a;
+  --bg-card-hover: #1c1938;
+  --bg-sidebar: #0e0c20;
+  --bg-input: rgba(255 255 255 / 0.05);
+  --border: rgba(139 92 246 / 0.1);
+  --border-hover: rgba(139 92 246 / 0.2);
+  --text: #e2e0f0;
+  --text-secondary: #a5a0c8;
+  --text-muted: #6e6896;
+  --text-faint: #4a4570;
+  --accent: #8b5cf6;
+  --accent-hover: #7c3aed;
+  --accent-light: rgba(139 92 246 / 0.1);
+  --accent-text: #a78bfa;
+  --scrollbar: #1e1a3a;
+}
+
+/* ── Emerald – vert émeraude ──────────────── */
+[data-theme="emerald"] {
+  --bg: #071a12;
+  --bg-card: #0d2818;
+  --bg-card-hover: #143622;
+  --bg-sidebar: #091e14;
+  --bg-input: rgba(255 255 255 / 0.05);
+  --border: rgba(16 185 129 / 0.1);
+  --border-hover: rgba(16 185 129 / 0.2);
+  --text: #e0f2e9;
+  --text-secondary: #93c5ad;
+  --text-muted: #5a9a7a;
+  --text-faint: #3d7058;
+  --accent: #10b981;
+  --accent-hover: #059669;
+  --accent-light: rgba(16 185 129 / 0.1);
+  --accent-text: #34d399;
+  --scrollbar: #143622;
+}
+
+/* ── Sakura – rose/cerisier ───────────────── */
+[data-theme="sakura"] {
+  --bg: #1a0a12;
+  --bg-card: #281218;
+  --bg-card-hover: #361a22;
+  --bg-sidebar: #1e0c14;
+  --bg-input: rgba(255 255 255 / 0.05);
+  --border: rgba(244 114 182 / 0.1);
+  --border-hover: rgba(244 114 182 / 0.2);
+  --text: #f2e0e8;
+  --text-secondary: #c89aae;
+  --text-muted: #96637a;
+  --text-faint: #6e4558;
+  --accent: #ec4899;
+  --accent-hover: #db2777;
+  --accent-light: rgba(236 72 153 / 0.1);
+  --accent-text: #f472b6;
+  --scrollbar: #2a1420;
+}
+
+/* ── Ocean – bleu profond ─────────────────── */
+[data-theme="ocean"] {
+  --bg: #060e1f;
+  --bg-card: #0c1a30;
+  --bg-card-hover: #12243e;
+  --bg-sidebar: #081420;
+  --bg-input: rgba(255 255 255 / 0.05);
+  --border: rgba(56 189 248 / 0.1);
+  --border-hover: rgba(56 189 248 / 0.2);
+  --text: #e0ecf4;
+  --text-secondary: #8bb8d4;
+  --text-muted: #5a8aa8;
+  --text-faint: #3d6480;
+  --accent: #0ea5e9;
+  --accent-hover: #0284c7;
+  --accent-light: rgba(14 165 233 / 0.1);
+  --accent-text: #38bdf8;
+  --scrollbar: #0c1a30;
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: #1e293b transparent;
+  scrollbar-color: var(--scrollbar) transparent;
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
+  color: var(--text);
+  background: var(--bg);
   font-family: system-ui, -apple-system, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
