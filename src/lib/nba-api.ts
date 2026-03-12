@@ -40,7 +40,7 @@ async function fetchNbaStats(endpoint: string, params: Record<string, string>): 
 }
 
 export async function getLeagueLeaders(
-  statCategory: "PTS" | "REB" | "AST",
+  statCategory: "PTS" | "REB" | "AST" | "BLK" | "STL" | "FG3_PCT",
   season: string = "2025-26",
   limit: number = 5
 ): Promise<PlayerStatLeader[]> {
@@ -65,6 +65,8 @@ export async function getLeagueLeaders(
     rank: Number(row[rankIdx]),
     name: String(row[playerIdx]),
     team: String(row[teamIdx]),
-    value: Number(row[statIdx]).toFixed(1),
+    value: statCategory === "FG3_PCT"
+      ? (Number(row[statIdx]) * 100).toFixed(1)
+      : Number(row[statIdx]).toFixed(1),
   }));
 }
