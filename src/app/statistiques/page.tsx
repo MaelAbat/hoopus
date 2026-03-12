@@ -1,4 +1,6 @@
-const leaders = {
+import { getLeagueLeaders, type PlayerStatLeader } from "@/lib/nba-api";
+
+const fallbackLeaders = {
   points: [
     { rank: 1, name: "Luka Doncic", team: "DAL", value: "33.4" },
     { rank: 2, name: "Shai Gilgeous-Alexander", team: "OKC", value: "31.8" },
@@ -22,7 +24,7 @@ const leaders = {
   ],
 };
 
-function LeaderBoard({ title, data, unit }: { title: string; data: typeof leaders.points; unit: string }) {
+function LeaderBoard({ title, data, unit }: { title: string; data: PlayerStatLeader[]; unit: string }) {
   return (
     <div className="rounded-2xl bg-[#111827] border border-white/5 overflow-hidden">
       <div className="border-b border-white/5 px-6 py-4">
@@ -58,18 +60,48 @@ function LeaderBoard({ title, data, unit }: { title: string; data: typeof leader
   );
 }
 
-export default function Statistiques() {
+export default async function Statistiques() {
+  let points: PlayerStatLeader[];
+  let rebounds: PlayerStatLeader[];
+  let assists: PlayerStatLeader[];
+  let isLive = true;
+
+  try {
+    [points, rebounds, assists] = await Promise.all([
+      getLeagueLeaders("PTS"),
+      getLeagueLeaders("REB"),
+      getLeagueLeaders("AST"),
+    ]);
+  } catch {
+    points = fallbackLeaders.points;
+    rebounds = fallbackLeaders.rebounds;
+    assists = fallbackLeaders.assists;
+    isLive = false;
+  }
+
   return (
     <div className="mx-auto max-w-6xl space-y-8">
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-white">Statistiques</h1>
-        <p className="mt-1 text-gray-500">Leaders de la saison 2025-26</p>
+        <p className="mt-1 text-gray-500">
+          Leaders de la saison 2024-25
+          {isLive ? (
+            <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs text-emerald-400">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Live
+            </span>
+          ) : (
+            <span className="ml-2 inline-flex items-center rounded-full bg-yellow-500/10 px-2 py-0.5 text-xs text-yellow-400">
+              Données hors-ligne
+            </span>
+          )}
+        </p>
       </div>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-        <LeaderBoard title="Points" data={leaders.points} unit="PPG" />
-        <LeaderBoard title="Rebonds" data={leaders.rebounds} unit="RPG" />
-        <LeaderBoard title="Passes" data={leaders.assists} unit="APG" />
+        <LeaderBoard title="Points" data={points} unit="PPG" />
+        <LeaderBoard title="Rebonds" data={rebounds} unit="RPG" />
+        <LeaderBoard title="Passes" data={assists} unit="APG" />
       </div>
     </div>
   );
