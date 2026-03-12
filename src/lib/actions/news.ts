@@ -1,0 +1,67 @@
+"use server";
+
+import { createClient } from "@/lib/supabase/server";
+import { revalidatePath } from "next/cache";
+
+export async function getNews() {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("news")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return data;
+}
+
+export async function getNewsById(id: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("news")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function createNews(formData: FormData) {
+  const supabase = await createClient();
+
+  const { error } = await supabase.from("news").insert({
+    title: formData.get("title") as string,
+    category: formData.get("category") as string,
+    excerpt: formData.get("excerpt") as string,
+    featured: formData.get("featured") === "on",
+  });
+
+  if (error) throw error;
+  revalidatePath("/actualites");
+}
+
+export async function updateNews(id: string, formData: FormData) {
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("news")
+    .update({
+      title: formData.get("title") as string,
+      category: formData.get("category") as string,
+      excerpt: formData.get("excerpt") as string,
+      featured: formData.get("featured") === "on",
+    })
+    .eq("id", id);
+
+  if (error) throw error;
+  revalidatePath("/actualites");
+}
+
+export async function deleteNews(id: string) {
+  const supabase = await createClient();
+
+  const { error } = await supabase.from("news").delete().eq("id", id);
+
+  if (error) throw error;
+  revalidatePath("/actualites");
+}
