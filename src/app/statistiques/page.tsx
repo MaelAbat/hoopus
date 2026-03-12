@@ -30,7 +30,7 @@ function LeaderBoard({ title, data, unit }: { title: string; data: PlayerStatLea
         <div className="divide-y divide-white/5">
           {data.map((player) => (
             <div
-              key={player.rank}
+              key={`${player.rank}-${player.name}`}
               className="flex items-center gap-4 px-6 py-4 transition-colors hover:bg-white/[0.02]"
             >
               <span
