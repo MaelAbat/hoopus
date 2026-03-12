@@ -1,49 +1,23 @@
-import { getLeagueLeaders, type PlayerStatLeader } from "@/lib/nba-api";
+"use client";
 
-const fallbackLeaders = {
-  points: [
-    { rank: 1, name: "Luka Doncic", team: "DAL", value: "33.4" },
-    { rank: 2, name: "Shai Gilgeous-Alexander", team: "OKC", value: "31.8" },
-    { rank: 3, name: "Jayson Tatum", team: "BOS", value: "28.9" },
-    { rank: 4, name: "Giannis Antetokounmpo", team: "MIL", value: "28.1" },
-    { rank: 5, name: "Kevin Durant", team: "PHX", value: "27.3" },
-  ],
-  rebounds: [
-    { rank: 1, name: "Domantas Sabonis", team: "SAC", value: "13.8" },
-    { rank: 2, name: "Victor Wembanyama", team: "SAS", value: "12.1" },
-    { rank: 3, name: "Nikola Jokic", team: "DEN", value: "11.9" },
-    { rank: 4, name: "Anthony Davis", team: "LAL", value: "11.5" },
-    { rank: 5, name: "Rudy Gobert", team: "MIN", value: "11.2" },
-  ],
-  assists: [
-    { rank: 1, name: "Tyrese Haliburton", team: "IND", value: "11.2" },
-    { rank: 2, name: "Nikola Jokic", team: "DEN", value: "10.1" },
-    { rank: 3, name: "Trae Young", team: "ATL", value: "9.8" },
-    { rank: 4, name: "LaMelo Ball", team: "CHA", value: "8.9" },
-    { rank: 5, name: "James Harden", team: "LAC", value: "8.5" },
-  ],
-  blocks: [
-    { rank: 1, name: "Victor Wembanyama", team: "SAS", value: "3.6" },
-    { rank: 2, name: "Chet Holmgren", team: "OKC", value: "2.6" },
-    { rank: 3, name: "Anthony Davis", team: "LAL", value: "2.4" },
-    { rank: 4, name: "Myles Turner", team: "IND", value: "2.0" },
-    { rank: 5, name: "Brook Lopez", team: "MIL", value: "1.9" },
-  ],
-  steals: [
-    { rank: 1, name: "De'Aaron Fox", team: "SAC", value: "2.0" },
-    { rank: 2, name: "Derrick White", team: "BOS", value: "1.8" },
-    { rank: 3, name: "Anthony Edwards", team: "MIN", value: "1.7" },
-    { rank: 4, name: "OG Anunoby", team: "NYK", value: "1.6" },
-    { rank: 5, name: "Jalen Brunson", team: "NYK", value: "1.5" },
-  ],
-  fg3pct: [
-    { rank: 1, name: "Luke Kennard", team: "MEM", value: "45.2" },
-    { rank: 2, name: "Buddy Hield", team: "GSW", value: "43.8" },
-    { rank: 3, name: "Klay Thompson", team: "DAL", value: "42.5" },
-    { rank: 4, name: "Seth Curry", team: "CHA", value: "42.1" },
-    { rank: 5, name: "Desmond Bane", team: "MEM", value: "41.8" },
-  ],
-};
+import { useEffect, useState } from "react";
+import { fetchLeaders, type PlayerStatLeader, type StatCategory } from "@/lib/nba-api";
+
+interface LeaderBoardData {
+  title: string;
+  stat: StatCategory;
+  unit: string;
+  data: PlayerStatLeader[];
+}
+
+const BOARDS: { title: string; stat: StatCategory; unit: string }[] = [
+  { title: "Points", stat: "PTS", unit: "PPG" },
+  { title: "Rebonds", stat: "REB", unit: "RPG" },
+  { title: "Passes", stat: "AST", unit: "APG" },
+  { title: "Contres", stat: "BLK", unit: "BPG" },
+  { title: "Interceptions", stat: "STL", unit: "SPG" },
+  { title: "% à 3 points", stat: "FG3_PCT", unit: "%" },
+];
 
 function LeaderBoard({ title, data, unit }: { title: string; data: PlayerStatLeader[]; unit: string }) {
   return (
@@ -81,33 +55,52 @@ function LeaderBoard({ title, data, unit }: { title: string; data: PlayerStatLea
   );
 }
 
-export default async function Statistiques() {
-  let points: PlayerStatLeader[];
-  let rebounds: PlayerStatLeader[];
-  let assists: PlayerStatLeader[];
-  let blocks: PlayerStatLeader[];
-  let steals: PlayerStatLeader[];
-  let fg3pct: PlayerStatLeader[];
-  let isLive = true;
+function LeaderBoardSkeleton() {
+  return (
+    <div className="rounded-2xl bg-[#111827] border border-white/5 overflow-hidden animate-pulse">
+      <div className="border-b border-white/5 px-6 py-4">
+        <div className="h-5 w-24 rounded bg-white/5" />
+      </div>
+      <div className="divide-y divide-white/5">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <div key={i} className="flex items-center gap-4 px-6 py-4">
+            <div className="h-7 w-7 rounded-lg bg-white/5" />
+            <div className="flex-1 space-y-2">
+              <div className="h-4 w-32 rounded bg-white/5" />
+              <div className="h-3 w-12 rounded bg-white/5" />
+            </div>
+            <div className="h-5 w-14 rounded bg-white/5" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
-  try {
-    [points, rebounds, assists, blocks, steals, fg3pct] = await Promise.all([
-      getLeagueLeaders("PTS"),
-      getLeagueLeaders("REB"),
-      getLeagueLeaders("AST"),
-      getLeagueLeaders("BLK"),
-      getLeagueLeaders("STL"),
-      getLeagueLeaders("FG3_PCT"),
-    ]);
-  } catch {
-    points = fallbackLeaders.points;
-    rebounds = fallbackLeaders.rebounds;
-    assists = fallbackLeaders.assists;
-    blocks = fallbackLeaders.blocks;
-    steals = fallbackLeaders.steals;
-    fg3pct = fallbackLeaders.fg3pct;
-    isLive = false;
-  }
+export default function Statistiques() {
+  const [boards, setBoards] = useState<LeaderBoardData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isLive, setIsLive] = useState(true);
+
+  useEffect(() => {
+    async function loadStats() {
+      try {
+        const results = await Promise.all(
+          BOARDS.map(async (board) => ({
+            ...board,
+            data: await fetchLeaders(board.stat),
+          }))
+        );
+        setBoards(results);
+        setIsLive(true);
+      } catch {
+        setIsLive(false);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadStats();
+  }, []);
 
   return (
     <div className="mx-auto max-w-6xl space-y-8">
@@ -115,29 +108,35 @@ export default async function Statistiques() {
         <h1 className="text-3xl font-bold tracking-tight text-white">Statistiques</h1>
         <p className="mt-1 text-gray-500">
           Leaders de la saison 2025-26
-          {isLive ? (
-            <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs text-emerald-400">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              Live
-            </span>
-          ) : (
-            <span className="ml-2 inline-flex items-center rounded-full bg-yellow-500/10 px-2 py-0.5 text-xs text-yellow-400">
-              Données hors-ligne
-            </span>
+          {!loading && (
+            isLive ? (
+              <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs text-emerald-400">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                Live
+              </span>
+            ) : (
+              <span className="ml-2 inline-flex items-center rounded-full bg-yellow-500/10 px-2 py-0.5 text-xs text-yellow-400">
+                Données indisponibles
+              </span>
+            )
           )}
         </p>
       </div>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-        <LeaderBoard title="Points" data={points} unit="PPG" />
-        <LeaderBoard title="Rebonds" data={rebounds} unit="RPG" />
-        <LeaderBoard title="Passes" data={assists} unit="APG" />
+        {loading
+          ? BOARDS.slice(0, 3).map((b) => <LeaderBoardSkeleton key={b.stat} />)
+          : boards.slice(0, 3).map((b) => (
+              <LeaderBoard key={b.stat} title={b.title} data={b.data} unit={b.unit} />
+            ))}
       </div>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-        <LeaderBoard title="Contres" data={blocks} unit="BPG" />
-        <LeaderBoard title="Interceptions" data={steals} unit="SPG" />
-        <LeaderBoard title="% à 3 points" data={fg3pct} unit="%" />
+        {loading
+          ? BOARDS.slice(3).map((b) => <LeaderBoardSkeleton key={b.stat} />)
+          : boards.slice(3).map((b) => (
+              <LeaderBoard key={b.stat} title={b.title} data={b.data} unit={b.unit} />
+            ))}
       </div>
     </div>
   );

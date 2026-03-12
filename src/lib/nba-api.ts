@@ -1,13 +1,11 @@
-const NBA_STATS_BASE = "https://stats.nba.com/stats";
+export interface PlayerStatLeader {
+  rank: number;
+  name: string;
+  team: string;
+  value: string;
+}
 
-const HEADERS = {
-  Accept: "application/json, text/plain, */*",
-  "Accept-Language": "en-US,en;q=0.9",
-  Origin: "https://www.nba.com",
-  Referer: "https://www.nba.com/",
-  "User-Agent":
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-};
+export type StatCategory = "PTS" | "REB" | "AST" | "BLK" | "STL" | "FG3_PCT";
 
 interface NbaStatsResponse {
   resultSet: {
@@ -16,43 +14,18 @@ interface NbaStatsResponse {
   };
 }
 
-export interface PlayerStatLeader {
-  rank: number;
-  name: string;
-  team: string;
-  value: string;
-}
-
-async function fetchNbaStats(endpoint: string, params: Record<string, string>): Promise<NbaStatsResponse> {
-  const url = new URL(`${NBA_STATS_BASE}/${endpoint}`);
-  Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-
-  const res = await fetch(url.toString(), {
-    headers: HEADERS,
-    next: { revalidate: false },
-  });
-
-  if (!res.ok) {
-    throw new Error(`NBA API error: ${res.status}`);
-  }
-
-  return res.json();
-}
-
-export async function getLeagueLeaders(
-  statCategory: "PTS" | "REB" | "AST" | "BLK" | "STL" | "FG3_PCT",
+export async function fetchLeaders(
+  statCategory: StatCategory,
   season: string = "2025-26",
   limit: number = 5
 ): Promise<PlayerStatLeader[]> {
-  const data = await fetchNbaStats("leagueleaders", {
-    LeagueID: "00",
-    PerMode: "PerGame",
-    Scope: "S",
-    Season: season,
-    SeasonType: "Regular Season",
-    StatCategory: statCategory,
-  });
+  const res = await fetch(`/api/nba-stats?stat=${statCategory}&season=${season}`);
 
+  if (!res.ok) {
+    throw new Error(`API error: ${res.status}`);
+  }
+
+  const data: NbaStatsResponse = await res.json();
   const headers = data.resultSet.headers;
   const rows = data.resultSet.rowSet;
 
