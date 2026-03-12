@@ -1,4 +1,3 @@
-import { revalidatePath } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
@@ -8,11 +7,18 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  revalidatePath("/statistiques");
+  // Appeler la route de sync des stats
+  const baseUrl = request.nextUrl.origin;
+  const syncRes = await fetch(
+    `${baseUrl}/api/sync-stats?secret=${process.env.REVALIDATE_SECRET}`,
+    { headers: { authorization: `Bearer ${process.env.CRON_SECRET}` } }
+  );
+
+  const syncData = await syncRes.json();
 
   return NextResponse.json({
     ok: true,
-    revalidated: ["/statistiques"],
+    sync: syncData,
     timestamp: new Date().toISOString(),
   });
 }

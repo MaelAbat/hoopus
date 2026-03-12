@@ -1,16 +1,13 @@
-"use client";
+import { createClient } from "@/lib/supabase/server";
+import type { PlayerStatLeader, StatCategory } from "@/lib/nba-api";
 
-import { useEffect, useState } from "react";
-import { fetchLeaders, type PlayerStatLeader, type StatCategory } from "@/lib/nba-api";
-
-interface LeaderBoardData {
+interface BoardConfig {
   title: string;
   stat: StatCategory;
   unit: string;
-  data: PlayerStatLeader[];
 }
 
-const BOARDS: { title: string; stat: StatCategory; unit: string }[] = [
+const BOARDS: BoardConfig[] = [
   { title: "Points", stat: "PTS", unit: "PPG" },
   { title: "Rebonds", stat: "REB", unit: "RPG" },
   { title: "Passes", stat: "AST", unit: "APG" },
@@ -25,82 +22,73 @@ function LeaderBoard({ title, data, unit }: { title: string; data: PlayerStatLea
       <div className="border-b border-white/5 px-6 py-4">
         <h2 className="text-lg font-bold text-white">{title}</h2>
       </div>
-      <div className="divide-y divide-white/5">
-        {data.map((player) => (
-          <div
-            key={player.rank}
-            className="flex items-center gap-4 px-6 py-4 transition-colors hover:bg-white/[0.02]"
-          >
-            <span
-              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
-                player.rank === 1
-                  ? "bg-orange-500/20 text-orange-400"
-                  : "bg-white/5 text-gray-500"
-              }`}
+      {data.length === 0 ? (
+        <div className="px-6 py-8 text-center text-sm text-gray-500">
+          Aucune donnée disponible
+        </div>
+      ) : (
+        <div className="divide-y divide-white/5">
+          {data.map((player) => (
+            <div
+              key={player.rank}
+              className="flex items-center gap-4 px-6 py-4 transition-colors hover:bg-white/[0.02]"
             >
-              {player.rank}
-            </span>
-            <div className="flex-1">
-              <p className="font-semibold text-white">{player.name}</p>
-              <p className="text-xs text-gray-500">{player.team}</p>
+              <span
+                className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
+                  player.rank === 1
+                    ? "bg-orange-500/20 text-orange-400"
+                    : "bg-white/5 text-gray-500"
+                }`}
+              >
+                {player.rank}
+              </span>
+              <div className="flex-1">
+                <p className="font-semibold text-white">{player.name}</p>
+                <p className="text-xs text-gray-500">{player.team}</p>
+              </div>
+              <span className="text-lg font-bold text-white">
+                {player.value}
+                <span className="ml-1 text-xs font-normal text-gray-500">{unit}</span>
+              </span>
             </div>
-            <span className="text-lg font-bold text-white">
-              {player.value}
-              <span className="ml-1 text-xs font-normal text-gray-500">{unit}</span>
-            </span>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
-function LeaderBoardSkeleton() {
-  return (
-    <div className="rounded-2xl bg-[#111827] border border-white/5 overflow-hidden animate-pulse">
-      <div className="border-b border-white/5 px-6 py-4">
-        <div className="h-5 w-24 rounded bg-white/5" />
-      </div>
-      <div className="divide-y divide-white/5">
-        {[1, 2, 3, 4, 5].map((i) => (
-          <div key={i} className="flex items-center gap-4 px-6 py-4">
-            <div className="h-7 w-7 rounded-lg bg-white/5" />
-            <div className="flex-1 space-y-2">
-              <div className="h-4 w-32 rounded bg-white/5" />
-              <div className="h-3 w-12 rounded bg-white/5" />
-            </div>
-            <div className="h-5 w-14 rounded bg-white/5" />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+export default async function Statistiques() {
+  const supabase = await createClient();
 
-export default function Statistiques() {
-  const [boards, setBoards] = useState<LeaderBoardData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isLive, setIsLive] = useState(true);
+  const { data: allLeaders, error } = await supabase
+    .from("stat_leaders")
+    .select("*")
+    .eq("season", "2025-26")
+    .order("rank", { ascending: true });
 
-  useEffect(() => {
-    async function loadStats() {
-      try {
-        const results = await Promise.all(
-          BOARDS.map(async (board) => ({
-            ...board,
-            data: await fetchLeaders(board.stat),
-          }))
-        );
-        setBoards(results);
-        setIsLive(true);
-      } catch {
-        setIsLive(false);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadStats();
-  }, []);
+  const hasData = !error && allLeaders && allLeaders.length > 0;
+
+  const lastUpdate = hasData
+    ? new Date(allLeaders[0].updated_at).toLocaleString("fr-FR", {
+        day: "numeric",
+        month: "long",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : null;
+
+  function getLeaders(category: StatCategory): PlayerStatLeader[] {
+    if (!hasData) return [];
+    return allLeaders
+      .filter((row) => row.category === category)
+      .map((row) => ({
+        rank: row.rank,
+        name: row.player_name,
+        team: row.team,
+        value: String(row.value),
+      }));
+  }
 
   return (
     <div className="mx-auto max-w-6xl space-y-8">
@@ -108,35 +96,28 @@ export default function Statistiques() {
         <h1 className="text-3xl font-bold tracking-tight text-white">Statistiques</h1>
         <p className="mt-1 text-gray-500">
           Leaders de la saison 2025-26
-          {!loading && (
-            isLive ? (
-              <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs text-emerald-400">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Live
-              </span>
-            ) : (
-              <span className="ml-2 inline-flex items-center rounded-full bg-yellow-500/10 px-2 py-0.5 text-xs text-yellow-400">
-                Données indisponibles
-              </span>
-            )
+          {hasData ? (
+            <span className="ml-2 text-xs text-gray-600">
+              Mis à jour le {lastUpdate}
+            </span>
+          ) : (
+            <span className="ml-2 inline-flex items-center rounded-full bg-yellow-500/10 px-2 py-0.5 text-xs text-yellow-400">
+              Synchronisation requise
+            </span>
           )}
         </p>
       </div>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-        {loading
-          ? BOARDS.slice(0, 3).map((b) => <LeaderBoardSkeleton key={b.stat} />)
-          : boards.slice(0, 3).map((b) => (
-              <LeaderBoard key={b.stat} title={b.title} data={b.data} unit={b.unit} />
-            ))}
+        {BOARDS.slice(0, 3).map((b) => (
+          <LeaderBoard key={b.stat} title={b.title} data={getLeaders(b.stat)} unit={b.unit} />
+        ))}
       </div>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-        {loading
-          ? BOARDS.slice(3).map((b) => <LeaderBoardSkeleton key={b.stat} />)
-          : boards.slice(3).map((b) => (
-              <LeaderBoard key={b.stat} title={b.title} data={b.data} unit={b.unit} />
-            ))}
+        {BOARDS.slice(3).map((b) => (
+          <LeaderBoard key={b.stat} title={b.title} data={getLeaders(b.stat)} unit={b.unit} />
+        ))}
       </div>
     </div>
   );
