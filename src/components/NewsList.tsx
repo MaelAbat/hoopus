@@ -7,7 +7,7 @@ import { deleteNews } from "@/lib/actions/news";
 import NewsForm from "./NewsForm";
 import DeleteButton from "./DeleteButton";
 
-export default function NewsList({ news }: { news: News[] }) {
+export default function NewsList({ news, isAdmin }: { news: News[]; isAdmin: boolean }) {
   const [showForm, setShowForm] = useState(false);
   const [editingNews, setEditingNews] = useState<News | undefined>();
 
@@ -41,38 +41,42 @@ export default function NewsList({ news }: { news: News[] }) {
 
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-white">Actualités</h1>
-          <p className="mt-1 text-gray-500">Les dernières nouvelles de la NBA</p>
+          <h1 className="text-3xl font-bold tracking-tight text-text-primary">Actualités</h1>
+          <p className="mt-1 text-text-muted">Les dernières nouvelles de la NBA</p>
         </div>
-        <button
-          onClick={openCreate}
-          className="flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-orange-600 transition-colors"
-        >
-          <Plus size={16} />
-          Ajouter
-        </button>
+        {isAdmin && (
+          <button
+            onClick={openCreate}
+            className="flex items-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white hover:bg-accent-hover transition-colors"
+          >
+            <Plus size={16} />
+            Ajouter
+          </button>
+        )}
       </div>
 
       {/* Featured */}
       {featured && (
-        <div className="group relative rounded-2xl bg-gradient-to-br from-orange-500/10 to-transparent border border-orange-500/20 p-8 transition-all duration-300 hover:border-orange-500/40 hover:shadow-lg hover:shadow-orange-500/5">
-          <div className="absolute top-4 right-4 flex gap-2">
-            <button onClick={() => openEdit(featured)} className="rounded-lg p-2 text-gray-600 hover:bg-white/10 hover:text-white transition-colors">
-              <Pencil size={16} />
-            </button>
-            <DeleteButton onDelete={() => deleteNews(featured.id)} />
-          </div>
-          <span className="inline-block rounded-full bg-orange-500/20 px-3 py-1 text-xs font-semibold text-orange-400">
+        <div className="group relative rounded-2xl bg-gradient-to-br from-accent-light to-transparent border border-accent/20 p-8 transition-all duration-300 hover:border-accent/40 hover:shadow-lg">
+          {isAdmin && (
+            <div className="absolute top-4 right-4 flex gap-2">
+              <button onClick={() => openEdit(featured)} className="rounded-lg p-2 text-text-faint hover:bg-input hover:text-text-primary transition-colors">
+                <Pencil size={16} />
+              </button>
+              <DeleteButton onDelete={() => deleteNews(featured.id)} />
+            </div>
+          )}
+          <span className="inline-block rounded-full bg-accent-light px-3 py-1 text-xs font-semibold text-accent-text">
             {featured.category}
           </span>
-          <h2 className="mt-4 text-2xl font-bold text-white">{featured.title}</h2>
-          <p className="mt-2 text-gray-400 leading-relaxed">{featured.excerpt}</p>
+          <h2 className="mt-4 text-2xl font-bold text-text-primary">{featured.title}</h2>
+          <p className="mt-2 text-text-secondary leading-relaxed">{featured.excerpt}</p>
           <div className="mt-4 flex items-center justify-between">
-            <div className="flex items-center gap-2 text-xs text-gray-500">
+            <div className="flex items-center gap-2 text-xs text-text-muted">
               <Clock size={14} />
               {formatTime(featured.created_at)}
             </div>
-            <span className="flex items-center gap-1 text-sm font-medium text-orange-500">
+            <span className="flex items-center gap-1 text-sm font-medium text-accent">
               Lire la suite <ArrowRight size={14} />
             </span>
           </div>
@@ -84,25 +88,27 @@ export default function NewsList({ news }: { news: News[] }) {
         {others.map((item) => (
           <div
             key={item.id}
-            className="group relative rounded-2xl bg-[#111827] border border-white/5 p-6 transition-all duration-200 hover:border-orange-500/20 hover:shadow-lg hover:shadow-orange-500/5"
+            className="group relative rounded-2xl bg-card border border-border-t p-6 transition-all duration-200 hover:border-border-hover hover:shadow-lg"
           >
-            <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-              <button onClick={() => openEdit(item)} className="rounded-lg p-2 text-gray-600 hover:bg-white/10 hover:text-white transition-colors">
-                <Pencil size={16} />
-              </button>
-              <DeleteButton onDelete={() => deleteNews(item.id)} />
-            </div>
+            {isAdmin && (
+              <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button onClick={() => openEdit(item)} className="rounded-lg p-2 text-text-faint hover:bg-input hover:text-text-primary transition-colors">
+                  <Pencil size={16} />
+                </button>
+                <DeleteButton onDelete={() => deleteNews(item.id)} />
+              </div>
+            )}
             <div className="flex items-start justify-between gap-4 pr-20">
               <div className="flex-1">
-                <span className="inline-block rounded-full bg-white/5 px-3 py-1 text-xs font-medium text-gray-400">
+                <span className="inline-block rounded-full bg-input px-3 py-1 text-xs font-medium text-text-muted">
                   {item.category}
                 </span>
-                <h3 className="mt-3 text-lg font-semibold text-white">{item.title}</h3>
-                <p className="mt-1 text-sm text-gray-500 leading-relaxed">{item.excerpt}</p>
+                <h3 className="mt-3 text-lg font-semibold text-text-primary">{item.title}</h3>
+                <p className="mt-1 text-sm text-text-muted leading-relaxed">{item.excerpt}</p>
               </div>
-              <ArrowRight size={16} className="mt-8 shrink-0 text-gray-600 transition-all group-hover:translate-x-1 group-hover:text-orange-500" />
+              <ArrowRight size={16} className="mt-8 shrink-0 text-text-faint transition-all group-hover:translate-x-1 group-hover:text-accent" />
             </div>
-            <div className="mt-4 flex items-center gap-2 text-xs text-gray-600">
+            <div className="mt-4 flex items-center gap-2 text-xs text-text-faint">
               <Clock size={12} />
               {formatTime(item.created_at)}
             </div>

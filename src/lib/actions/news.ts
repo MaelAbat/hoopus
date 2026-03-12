@@ -3,6 +3,21 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
+async function requireAdmin() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Non connecté");
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("is_admin")
+    .eq("id", user.id)
+    .single();
+
+  if (!profile?.is_admin) throw new Error("Accès refusé");
+  return supabase;
+}
+
 export async function getNews() {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -27,7 +42,7 @@ export async function getNewsById(id: string) {
 }
 
 export async function createNews(formData: FormData) {
-  const supabase = await createClient();
+  const supabase = await requireAdmin();
 
   const { error } = await supabase.from("news").insert({
     title: formData.get("title") as string,
@@ -41,7 +56,7 @@ export async function createNews(formData: FormData) {
 }
 
 export async function updateNews(id: string, formData: FormData) {
-  const supabase = await createClient();
+  const supabase = await requireAdmin();
 
   const { error } = await supabase
     .from("news")
@@ -58,7 +73,7 @@ export async function updateNews(id: string, formData: FormData) {
 }
 
 export async function deleteNews(id: string) {
-  const supabase = await createClient();
+  const supabase = await requireAdmin();
 
   const { error } = await supabase.from("news").delete().eq("id", id);
 
