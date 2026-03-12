@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
+import Sidebar from "@/components/Sidebar";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "NBA",
-  description: "NBA App",
+  title: "NBAHub",
+  description: "Votre hub NBA — actualités, articles, statistiques",
 };
 
 export default function RootLayout({
@@ -13,7 +14,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr">
-      <body>{children}</body>
+      <body className="antialiased">
+        <Sidebar />
+        <main className="ml-64 min-h-screen p-8">{children}</main>
+      </body>
     </html>
   );
 }
