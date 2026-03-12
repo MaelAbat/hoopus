@@ -26,6 +26,41 @@ const MONTHS_FR = [
 
 const DAYS_FR = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 
+function toParisTime(gameDate: string, gameTime: string): string {
+  if (!gameTime) return "";
+  const match = gameTime.match(/^(\d{1,2}):(\d{2})\s*(am|pm)\s*ET$/i);
+  if (!match) return gameTime;
+
+  let hours = parseInt(match[1]);
+  const minutes = parseInt(match[2]);
+  const ampm = match[3].toLowerCase();
+  if (ampm === "pm" && hours !== 12) hours += 12;
+  if (ampm === "am" && hours === 12) hours = 0;
+
+  // Build a date string that JS interprets as ET, then format as Paris
+  // Use Intl to get the ET offset dynamically (handles EST/EDT automatically)
+  const fakeUtc = new Date(Date.UTC(
+    parseInt(gameDate.slice(0, 4)),
+    parseInt(gameDate.slice(5, 7)) - 1,
+    parseInt(gameDate.slice(8, 10)),
+    hours, minutes
+  ));
+
+  // Get what hour it is in ET for this UTC time
+  const etHour = parseInt(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "numeric", hour12: false }).format(fakeUtc));
+  // The difference tells us the ET offset
+  const etOffset = etHour - hours;
+  // Adjust: we want the UTC that corresponds to this ET time
+  const realUtc = new Date(fakeUtc.getTime() - etOffset * 3600000);
+
+  // Now format in Paris timezone
+  return new Intl.DateTimeFormat("fr-FR", {
+    timeZone: "Europe/Paris",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(realUtc);
+}
+
 function GameCard({ game }: { game: Game }) {
   const isFinal = game.status === 3;
   const isLive = game.status === 2;
@@ -44,7 +79,9 @@ function GameCard({ game }: { game: Game }) {
         ) : isFinal ? (
           <span className="text-xs font-medium text-gray-500">Final</span>
         ) : (
-          <span className="text-xs font-medium text-gray-500">{game.status_text}</span>
+          <span className="text-xs font-medium text-gray-500">
+            {toParisTime(game.game_date, game.game_time) || game.status_text}
+          </span>
         )}
         {game.arena && (
           <span className="flex items-center gap-1 text-xs text-gray-600">
