@@ -7,18 +7,25 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Appeler la route de sync des stats
   const baseUrl = request.nextUrl.origin;
-  const syncRes = await fetch(
-    `${baseUrl}/api/sync-stats?secret=${process.env.REVALIDATE_SECRET}`,
-    { headers: { authorization: `Bearer ${process.env.CRON_SECRET}` } }
-  );
+  const headers = { authorization: `Bearer ${process.env.CRON_SECRET}` };
+  const secret = `secret=${process.env.REVALIDATE_SECRET}`;
 
-  const syncData = await syncRes.json();
+  // Sync stats et games en parallèle
+  const [statsRes, gamesRes] = await Promise.all([
+    fetch(`${baseUrl}/api/sync-stats?${secret}`, { headers }),
+    fetch(`${baseUrl}/api/sync-games?${secret}`, { headers }),
+  ]);
+
+  const [statsData, gamesData] = await Promise.all([
+    statsRes.json(),
+    gamesRes.json(),
+  ]);
 
   return NextResponse.json({
     ok: true,
-    sync: syncData,
+    stats: statsData,
+    games: gamesData,
     timestamp: new Date().toISOString(),
   });
 }
