@@ -84,7 +84,7 @@ export default async function Statistiques() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-white">Statistiques</h1>
         <p className="mt-1 text-gray-500">
-          Leaders de la saison 2024-25
+          Leaders de la saison 2025-26
           {isLive ? (
             <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs text-emerald-400">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />

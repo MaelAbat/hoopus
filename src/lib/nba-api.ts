@@ -29,7 +29,7 @@ async function fetchNbaStats(endpoint: string, params: Record<string, string>): 
 
   const res = await fetch(url.toString(), {
     headers: HEADERS,
-    next: { revalidate: 3600 },
+    next: { revalidate: false },
   });
 
   if (!res.ok) {
@@ -41,7 +41,7 @@ async function fetchNbaStats(endpoint: string, params: Record<string, string>): 
 
 export async function getLeagueLeaders(
   statCategory: "PTS" | "REB" | "AST",
-  season: string = "2024-25",
+  season: string = "2025-26",
   limit: number = 5
 ): Promise<PlayerStatLeader[]> {
   const data = await fetchNbaStats("leagueleaders", {
