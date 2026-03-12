@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import Sidebar from "@/components/Sidebar";
 import "./globals.css";
+import ThemeProvider from "@/components/ThemeProvider";
+import LayoutShell from "@/components/LayoutShell";
 
 export const metadata: Metadata = {
   title: "NBAHub",
@@ -13,10 +14,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr">
+    <html lang="fr" data-theme="dark">
       <body className="antialiased">
-        <Sidebar />
-        <main className="ml-64 min-h-screen p-8">{children}</main>
+        <ThemeProvider>
+          <LayoutShell>{children}</LayoutShell>
+        </ThemeProvider>
       </body>
     </html>
   );
