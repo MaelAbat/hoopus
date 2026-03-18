@@ -33,6 +33,22 @@ const HEADERS = [
   { key: "streak", label: "Série", className: "text-center hidden lg:table-cell" },
 ];
 
+const TEAM_ID: Record<string, number> = {
+  ATL: 1610612737, BOS: 1610612738, BKN: 1610612751, CHA: 1610612766,
+  CHI: 1610612741, CLE: 1610612739, DAL: 1610612742, DEN: 1610612743,
+  DET: 1610612765, GSW: 1610612744, HOU: 1610612745, IND: 1610612754,
+  LAC: 1610612746, LAL: 1610612747, MEM: 1610612763, MIA: 1610612748,
+  MIL: 1610612749, MIN: 1610612750, NOP: 1610612740, NYK: 1610612752,
+  OKC: 1610612760, ORL: 1610612753, PHI: 1610612755, PHX: 1610612756,
+  POR: 1610612757, SAC: 1610612758, SAS: 1610612759, TOR: 1610612761,
+  UTA: 1610612762, WAS: 1610612764,
+};
+
+function teamLogoUrl(tricode: string): string {
+  const id = TEAM_ID[tricode];
+  return id ? `https://cdn.nba.com/logos/nba/${id}/global/L/logo.svg` : "";
+}
+
 function computeGB(leader: Standing, team: Standing): string {
   if (leader === team) return "—";
   const gb = (leader.wins - team.wins + (team.losses - leader.losses)) / 2;
@@ -89,9 +105,11 @@ function StandingsTable({ teams, showConference, scrollRef }: { teams: Standing[
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
-                      <span className="w-9 text-center text-xs font-bold text-accent-text">
-                        {team.team_tricode}
-                      </span>
+                      <img
+                        src={teamLogoUrl(team.team_tricode)}
+                        alt={team.team_tricode}
+                        className="h-7 w-7 object-contain"
+                      />
                       <div className="flex flex-col">
                         <span className={`font-medium ${isPlayoff ? "text-text-primary" : isPlayIn ? "text-text-secondary" : "text-text-muted"}`}>
                           {team.team_city} {team.team_name}
