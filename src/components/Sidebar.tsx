@@ -82,11 +82,24 @@ export default function Sidebar() {
     <aside className="fixed left-0 top-0 z-40 flex h-screen w-64 flex-col bg-sidebar border-r border-border-t transition-colors duration-300">
       {/* Logo */}
       <div className="flex items-center gap-3 px-6 py-6">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-accent to-accent-hover shadow-lg">
-          <Trophy size={20} className="text-white" />
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-accent to-accent-hover shadow-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 32 32" fill="none" className="text-white">
+            {/* Flamme olympique */}
+            <path d="M16 1 C16 1 20.5 5.5 20.5 9 C20.5 11.5 18.5 13 16 13 C13.5 13 11.5 11.5 11.5 9 C11.5 5.5 16 1 16 1Z" fill="currentColor" opacity="0.5" />
+            <path d="M16 4 C16 4 18.5 6.5 18.5 8.5 C18.5 10 17.5 11 16 11 C14.5 11 13.5 10 13.5 8.5 C13.5 6.5 16 4 16 4Z" fill="currentColor" />
+            {/* Coupe/vasque */}
+            <path d="M10 14 L22 14 L20 21 Q16 23 12 21 Z" stroke="currentColor" strokeWidth="1.4" fill="currentColor" opacity="0.3" />
+            {/* Pied */}
+            <line x1="16" y1="21" x2="16" y2="27" stroke="currentColor" strokeWidth="1.6" />
+            {/* Base */}
+            <path d="M11 27 L21 27" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+            {/* Lignes du ballon sur la vasque */}
+            <path d="M12.5 17 Q16 15.5 19.5 17" stroke="currentColor" strokeWidth="0.8" fill="none" />
+            <path d="M12.5 17 Q16 18.5 19.5 17" stroke="currentColor" strokeWidth="0.8" fill="none" />
+          </svg>
         </div>
         <span className="text-xl font-bold tracking-tight text-text-primary">
-          NBA<span className="text-accent">Olympe</span>
+          Hoop<span className="text-accent">us</span>
         </span>
       </div>
 
@@ -166,7 +179,7 @@ export default function Sidebar() {
             Se connecter
           </Link>
         )}
-        <p className="mt-3 text-xs text-text-faint">© 2026 NBAOlympe</p>
+        <p className="mt-3 text-xs text-text-faint">© 2026 Hoopus</p>
       </div>
     </aside>
   );

@@ -4,8 +4,8 @@ import ThemeProvider from "@/components/ThemeProvider";
 import LayoutShell from "@/components/LayoutShell";
 
 export const metadata: Metadata = {
-  title: "NBAOlympe",
-  description: "Votre olympe NBA — actualités, articles, statistiques",
+  title: "Hoopus",
+  description: "Votre olympe du basketball — actualités, articles, statistiques",
 };
 
 export default function RootLayout({

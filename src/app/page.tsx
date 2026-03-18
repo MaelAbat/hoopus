@@ -45,7 +45,7 @@ export default function Home() {
       {/* Header */}
       <div>
         <h1 className="text-4xl font-bold tracking-tight text-text-primary">
-          Bienvenue sur <span className="text-accent">NBAOlympe</span>
+          Bienvenue sur <span className="text-accent">Hoopus</span>
         </h1>
         <p className="mt-2 text-lg text-text-secondary">
           Suivez toute l&apos;actualité NBA en un seul endroit.
