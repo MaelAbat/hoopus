@@ -61,18 +61,10 @@ function StandingsTable({ teams, showConference }: { teams: Standing[]; showConf
             const isPlayoff = team.conference_rank <= 6;
             const isPlayIn = team.conference_rank >= 7 && team.conference_rank <= 10;
             const showSeparator = !showConference && (i === 6 || i === 10);
-            const showLeagueSeparator = showConference && i > 0 && teams[i - 1].conference !== team.conference;
 
             return (
               <Fragment key={team.id}>
                 {showSeparator && (
-                  <tr>
-                    <td colSpan={10} className="p-0">
-                      <div className="h-px bg-accent/30" />
-                    </td>
-                  </tr>
-                )}
-                {showLeagueSeparator && (
                   <tr>
                     <td colSpan={10} className="p-0">
                       <div className="h-px bg-accent/30" />
