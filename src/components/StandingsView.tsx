@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useMemo, useRef, useState } from "react";
 
 interface Standing {
   id: string;
@@ -40,13 +40,13 @@ function computeGB(leader: Standing, team: Standing): string {
   return gb % 1 === 0 ? gb.toFixed(0) : gb.toFixed(1);
 }
 
-function StandingsTable({ teams, showConference }: { teams: Standing[]; showConference?: boolean }) {
+function StandingsTable({ teams, showConference, scrollRef }: { teams: Standing[]; showConference?: boolean; scrollRef?: React.RefObject<HTMLDivElement | null> }) {
   const leader = teams[0];
 
   return (
-    <div className="overflow-x-auto">
+    <div ref={scrollRef} className="overflow-x-auto max-h-[65vh] overflow-y-auto">
       <table className="w-full text-sm">
-        <thead>
+        <thead className="sticky top-0 z-10 bg-card">
           <tr className="border-b border-border-t text-text-muted">
             {HEADERS.map((h) => (
               <th key={h.key} className={`px-4 py-3 font-medium ${h.className}`}>
@@ -138,6 +138,12 @@ function StandingsTable({ teams, showConference }: { teams: Standing[]; showConf
 
 export default function StandingsView({ east, west }: { east: Standing[]; west: Standing[] }) {
   const [view, setView] = useState<View>("east");
+  const tableRef = useRef<HTMLDivElement>(null);
+
+  function switchView(v: View) {
+    setView(v);
+    tableRef.current?.scrollTo({ top: 0 });
+  }
 
   const leagueTeams = useMemo(
     () => [...east, ...west].sort((a, b) => b.win_pct - a.win_pct || b.wins - a.wins),
@@ -157,7 +163,7 @@ export default function StandingsView({ east, west }: { east: Standing[]; west: 
         {views.map(({ key, label }) => (
           <button
             key={key}
-            onClick={() => setView(key)}
+            onClick={() => switchView(key)}
             className={`rounded-xl px-4 py-2 text-sm font-medium transition-all duration-200 ${
               view === key
                 ? "bg-accent text-white"
@@ -189,6 +195,7 @@ export default function StandingsView({ east, west }: { east: Standing[]; west: 
             <StandingsTable
               teams={view === "east" ? east : view === "west" ? west : leagueTeams}
               showConference={view === "league"}
+              scrollRef={tableRef}
             />
 
             {/* Legend */}
