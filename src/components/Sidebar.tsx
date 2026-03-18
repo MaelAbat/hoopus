@@ -86,7 +86,7 @@ export default function Sidebar() {
           <Trophy size={20} className="text-white" />
         </div>
         <span className="text-xl font-bold tracking-tight text-text-primary">
-          NBA<span className="text-accent">Hub</span>
+          NBA<span className="text-accent">Olympe</span>
         </span>
       </div>
 
@@ -166,7 +166,7 @@ export default function Sidebar() {
             Se connecter
           </Link>
         )}
-        <p className="mt-3 text-xs text-text-faint">© 2026 NBAHub</p>
+        <p className="mt-3 text-xs text-text-faint">© 2026 NBAOlympe</p>
       </div>
     </aside>
   );

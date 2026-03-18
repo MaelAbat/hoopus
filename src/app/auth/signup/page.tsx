@@ -28,7 +28,7 @@ export default function SignupPage() {
             <Trophy size={28} className="text-white" />
           </div>
           <h1 className="text-2xl font-bold text-white">
-            NBA<span className="text-orange-500">Hub</span>
+            NBA<span className="text-orange-500">Olympe</span>
           </h1>
           <p className="text-sm text-gray-500">Créez votre compte</p>
         </div>
