@@ -29,6 +29,7 @@ const navItems: NavItem[] = [
   { href: "/articles", label: "Articles", icon: <FileText size={20} /> },
   { href: "/statistiques", label: "Statistiques", icon: <BarChart3 size={20} /> },
   { href: "/calendrier", label: "Calendrier", icon: <Calendar size={20} /> },
+  { href: "/classement", label: "Classement", icon: <Trophy size={20} /> },
   { href: "/profil", label: "Profil", icon: <User size={20} /> },
 ];
 

@@ -11,21 +11,24 @@ export async function GET(request: NextRequest) {
   const headers = { authorization: `Bearer ${process.env.CRON_SECRET}` };
   const secret = `secret=${process.env.REVALIDATE_SECRET}`;
 
-  // Sync stats et games en parallèle
-  const [statsRes, gamesRes] = await Promise.all([
+  // Sync stats, games et standings en parallèle
+  const [statsRes, gamesRes, standingsRes] = await Promise.all([
     fetch(`${baseUrl}/api/sync-stats?${secret}`, { headers }),
     fetch(`${baseUrl}/api/sync-games?${secret}`, { headers }),
+    fetch(`${baseUrl}/api/sync-standings?${secret}`, { headers }),
   ]);
 
-  const [statsData, gamesData] = await Promise.all([
+  const [statsData, gamesData, standingsData] = await Promise.all([
     statsRes.json(),
     gamesRes.json(),
+    standingsRes.json(),
   ]);
 
   return NextResponse.json({
     ok: true,
     stats: statsData,
     games: gamesData,
+    standings: standingsData,
     timestamp: new Date().toISOString(),
   });
 }
