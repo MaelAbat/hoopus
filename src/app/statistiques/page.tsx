@@ -1,5 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import type { PlayerStatLeader, StatCategory } from "@/lib/nba-api";
+import StatsCarousel from "@/components/StatsCarousel";
+
+export const revalidate = 3600;
 
 interface BoardConfig {
   title: string;
@@ -13,61 +16,32 @@ const BOARDS: BoardConfig[] = [
   { title: "Passes", stat: "AST", unit: "APG" },
   { title: "Contres", stat: "BLK", unit: "BPG" },
   { title: "Interceptions", stat: "STL", unit: "SPG" },
-  { title: "% à 3 points", stat: "FG3_PCT", unit: "%" },
+  { title: "Efficacité", stat: "EFF", unit: "EFF" },
+  { title: "Pertes", stat: "TOV", unit: "TPG" },
+  { title: "% au tir", stat: "FG_PCT", unit: "%" },
+  { title: "% à 2pts", stat: "FG2_PCT", unit: "%" },
+  { title: "% à 3pts", stat: "FG3_PCT", unit: "%" },
+  { title: "% LF", stat: "FT_PCT", unit: "%" },
+  { title: "TS%", stat: "TS_PCT", unit: "%" },
 ];
-
-function LeaderBoard({ title, data, unit }: { title: string; data: PlayerStatLeader[]; unit: string }) {
-  return (
-    <div className="rounded-2xl bg-card border border-border-t overflow-hidden">
-      <div className="border-b border-border-t px-6 py-4">
-        <h2 className="text-lg font-bold text-text-primary">{title}</h2>
-      </div>
-      {data.length === 0 ? (
-        <div className="px-6 py-8 text-center text-sm text-text-muted">
-          Aucune donnée disponible
-        </div>
-      ) : (
-        <div className="divide-y divide-border-t">
-          {data.map((player) => (
-            <div
-              key={`${player.rank}-${player.name}`}
-              className="flex items-center gap-4 px-6 py-4 transition-colors hover:bg-card-hover"
-            >
-              <span
-                className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
-                  player.rank === 1
-                    ? "bg-accent-light text-accent-text"
-                    : "bg-input text-text-muted"
-                }`}
-              >
-                {player.rank}
-              </span>
-              <div className="flex-1">
-                <p className="font-semibold text-text-primary">{player.name}</p>
-                <p className="text-xs text-text-muted">{player.team}</p>
-              </div>
-              <span className="text-lg font-bold text-text-primary">
-                {player.value}
-                <span className="ml-1 text-xs font-normal text-text-muted">{unit}</span>
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
 
 export default async function Statistiques() {
   const supabase = await createClient();
 
-  const { data: allLeaders, error } = await supabase
-    .from("stat_leaders")
-    .select("*")
-    .eq("season", "2025-26")
-    .order("rank", { ascending: true });
+  // Fetch all stat leaders with pagination (Supabase 1000 row limit)
+  const pages = await Promise.all(
+    Array.from({ length: 6 }, (_, i) =>
+      supabase
+        .from("stat_leaders")
+        .select("*")
+        .eq("season", "2025-26")
+        .order("rank", { ascending: true })
+        .range(i * 1000, (i + 1) * 1000 - 1)
+    )
+  );
 
-  const hasData = !error && allLeaders && allLeaders.length > 0;
+  const allLeaders = pages.flatMap((p) => p.data || []);
+  const hasData = allLeaders.length > 0;
 
   const lastUpdate = hasData
     ? new Date(allLeaders[0].updated_at).toLocaleString("fr-FR", {
@@ -79,7 +53,6 @@ export default async function Statistiques() {
     : null;
 
   function getLeaders(category: StatCategory): PlayerStatLeader[] {
-    if (!hasData) return [];
     return allLeaders
       .filter((row) => row.category === category)
       .map((row) => ({
@@ -90,8 +63,19 @@ export default async function Statistiques() {
       }));
   }
 
+  const boardsData = BOARDS.map((b) => {
+    const all = getLeaders(b.stat);
+    return {
+      title: b.title,
+      stat: b.stat,
+      unit: b.unit,
+      top10: all.slice(0, 10),
+      full: all,
+    };
+  });
+
   return (
-    <div className="mx-auto max-w-6xl space-y-8">
+    <div className="mx-auto max-w-2xl space-y-8">
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-text-primary">Statistiques</h1>
         <p className="mt-1 text-text-muted">
@@ -108,17 +92,7 @@ export default async function Statistiques() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-        {BOARDS.slice(0, 3).map((b) => (
-          <LeaderBoard key={b.stat} title={b.title} data={getLeaders(b.stat)} unit={b.unit} />
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-        {BOARDS.slice(3).map((b) => (
-          <LeaderBoard key={b.stat} title={b.title} data={getLeaders(b.stat)} unit={b.unit} />
-        ))}
-      </div>
+      <StatsCarousel boards={boardsData} />
     </div>
   );
 }
