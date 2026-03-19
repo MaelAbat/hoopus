@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" fill="none">
+  <rect width="32" height="32" rx="8" fill="#f97316"/>
+  <!-- Flamme -->
+  <path d="M16 3 C16 3 20.5 7.5 20.5 11 C20.5 13.5 18.5 15 16 15 C13.5 15 11.5 13.5 11.5 11 C11.5 7.5 16 3 16 3Z" fill="white" opacity="0.5"/>
+  <path d="M16 6 C16 6 18.5 8.5 18.5 10.5 C18.5 12 17.5 13 16 13 C14.5 13 13.5 12 13.5 10.5 C13.5 8.5 16 6 16 6Z" fill="white"/>
+  <!-- Coupe -->
+  <path d="M10 16 L22 16 L20 23 Q16 25 12 23 Z" stroke="white" stroke-width="1.4" fill="white" opacity="0.3"/>
+  <!-- Pied -->
+  <line x1="16" y1="23" x2="16" y2="27" stroke="white" stroke-width="1.6"/>
+  <!-- Base -->
+  <path d="M11 27 L21 27" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+  <!-- Lignes ballon -->
+  <path d="M12.5 19 Q16 17.5 19.5 19" stroke="white" stroke-width="0.8" fill="none"/>
+  <path d="M12.5 19 Q16 20.5 19.5 19" stroke="white" stroke-width="0.8" fill="none"/>
+</svg>
