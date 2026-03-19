@@ -67,7 +67,7 @@ export default async function Statistiques() {
         rank: row.rank,
         name: row.player_name,
         team: row.team,
-        value: String(row.value),
+        value: Number(row.value).toFixed(2),
       }));
   }
 
