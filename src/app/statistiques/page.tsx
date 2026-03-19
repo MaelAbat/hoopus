@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import type { PlayerStatLeader, StatCategory } from "@/lib/nba-api";
-import StatsCarousel from "@/components/StatsCarousel";
+import StatsView from "@/components/StatsView";
+import type { PlayerRow } from "@/components/StatsTable";
 
 export const revalidate = 3600;
 
@@ -24,6 +25,9 @@ const BOARDS: BoardConfig[] = [
   { title: "% LF", stat: "FT_PCT", unit: "%" },
   { title: "TS%", stat: "TS_PCT", unit: "%" },
 ];
+
+// Direct categories use GP-based eligibility
+const GP_CATEGORIES = new Set(["PTS", "REB", "AST", "BLK", "STL", "EFF", "TOV"]);
 
 export default async function Statistiques() {
   const supabase = await createClient();
@@ -71,9 +75,9 @@ export default async function Statistiques() {
       }));
   }
 
+  // Carousel data
   const boardsData = BOARDS.map((b) => {
     const all = getLeaders(b.stat);
-    // -1 = no eligibility concept, >= 0 = number of eligible players
     const eligibleCount = eligibleCounts[b.stat] ?? -1;
     return {
       title: b.title,
@@ -85,8 +89,34 @@ export default async function Statistiques() {
     };
   });
 
+  // Table data: pivot by player — one row per player with all stats
+  const playerMap = new Map<string, PlayerRow>();
+  const gpEligibleCount = eligibleCounts["PTS"] ?? 0; // GP eligibility is same for all direct categories
+
+  for (const row of allLeaders) {
+    if (row.rank === 0) continue;
+    const key = `${row.player_name}|${row.team}`;
+    if (!playerMap.has(key)) {
+      playerMap.set(key, {
+        name: row.player_name,
+        team: row.team,
+        isEligible: false,
+        stats: {},
+      });
+    }
+    const player = playerMap.get(key)!;
+    player.stats[row.category] = row.value;
+
+    // A player is eligible if they're eligible in the GP-based categories
+    if (GP_CATEGORIES.has(row.category) && row.rank <= gpEligibleCount) {
+      player.isEligible = true;
+    }
+  }
+
+  const tableData = Array.from(playerMap.values());
+
   return (
-    <div className="mx-auto max-w-2xl space-y-8">
+    <div className="mx-auto max-w-7xl space-y-8">
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-text-primary">Statistiques</h1>
         <p className="mt-1 text-text-muted">
@@ -103,7 +133,7 @@ export default async function Statistiques() {
         </p>
       </div>
 
-      <StatsCarousel boards={boardsData} />
+      <StatsView boards={boardsData} tableData={tableData} />
     </div>
   );
 }
