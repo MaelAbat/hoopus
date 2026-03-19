@@ -10,7 +10,7 @@ interface Board {
   unit: string;
   top10: PlayerStatLeader[];
   full: PlayerStatLeader[];
-  eligibleCount?: number;
+  eligibleCount: number; // -1 = no eligibility, >= 0 = eligible player count
 }
 
 type ViewMode = "top10" | "full";
@@ -76,22 +76,22 @@ export default function StatsCarousel({ boards }: { boards: Board[] }) {
   const [offset, setOffset] = useState(0);
 
   const board = boards[active];
-  const hasEligibility = board.eligibleCount != null;
+  const hasEligibility = board.eligibleCount >= 0;
 
   // Build the player list for full mode based on eligibility filter
   const fullPlayers = useMemo(() => {
-    if (!hasEligibility || eligibility === "eligible") {
-      // For eligible-only or categories without eligibility: use rank as-is
-      // eligible players have rank 1..eligibleCount
-      if (hasEligibility) {
-        return board.full.filter((p) => p.rank <= board.eligibleCount!);
-      }
-      return board.full;
+    if (hasEligibility && eligibility === "eligible") {
+      // Show only eligible players (rank 1..eligibleCount)
+      return board.full.filter((p) => p.rank <= board.eligibleCount);
     }
-    // "All" mode: re-sort all players by value descending and re-rank
-    return [...board.full]
-      .sort((a, b) => Number(b.value) - Number(a.value))
-      .map((p, i) => ({ ...p, rank: i + 1 }));
+    if (hasEligibility && eligibility === "all") {
+      // Re-sort all players by value descending and re-rank
+      return [...board.full]
+        .sort((a, b) => Number(b.value) - Number(a.value))
+        .map((p, i) => ({ ...p, rank: i + 1 }));
+    }
+    // No eligibility concept: show all
+    return board.full;
   }, [board.full, board.eligibleCount, hasEligibility, eligibility]);
 
   const filteredFull = useMemo(() => {
@@ -105,13 +105,8 @@ export default function StatsCarousel({ boards }: { boards: Board[] }) {
   const totalPages = Math.ceil(filteredFull.length / PAGE_SIZE);
   const pagedPlayers = filteredFull.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
-  // For top10, use eligible-only data (first 10 by rank)
-  const top10Players = useMemo(() => {
-    if (hasEligibility) {
-      return board.full.filter((p) => p.rank <= 10);
-    }
-    return board.top10;
-  }, [board.full, board.top10, hasEligibility]);
+  // For top10, always use first 10 by rank (eligible players for % categories)
+  const top10Players = board.full.filter((p) => p.rank >= 1 && p.rank <= 10);
 
   const displayPlayers = mode === "top10" ? top10Players : pagedPlayers;
 
@@ -185,8 +180,9 @@ export default function StatsCarousel({ boards }: { boards: Board[] }) {
           </div>
         </div>
 
-        {/* View mode toggle + eligibility filter */}
-        <div className="flex items-center gap-2 px-6 py-2.5 border-b border-border-t/50">
+        {/* Controls bar */}
+        <div className="flex flex-wrap items-center gap-2 px-6 py-2.5 border-b border-border-t/50">
+          {/* View mode toggle */}
           <div className="flex rounded-lg bg-input p-0.5">
             <button
               onClick={() => setMode("top10")}
@@ -209,28 +205,28 @@ export default function StatsCarousel({ boards }: { boards: Board[] }) {
             >
               <List size={13} />
               Classement complet
-              <span className="text-text-faint">({fullPlayers.length})</span>
             </button>
           </div>
 
-          {/* Eligibility filter (only for percentage categories in full mode) */}
-          {mode === "full" && hasEligibility && (
+          {/* Eligibility filter — always visible for % categories */}
+          {hasEligibility && (
             <div className="flex rounded-lg bg-input p-0.5">
               <button
-                onClick={() => setEligibility("eligible")}
+                onClick={() => { setMode("full"); setEligibility("eligible"); }}
                 className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-all ${
-                  eligibility === "eligible"
+                  mode === "full" && eligibility === "eligible"
                     ? "bg-card text-text-primary shadow-sm"
                     : "text-text-muted hover:text-text-primary"
                 }`}
               >
                 <Filter size={12} />
                 Éligibles
+                <span className="text-text-faint">({board.eligibleCount})</span>
               </button>
               <button
-                onClick={() => setEligibility("all")}
+                onClick={() => { setMode("full"); setEligibility("all"); }}
                 className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-all ${
-                  eligibility === "all"
+                  mode === "full" && eligibility === "all"
                     ? "bg-card text-text-primary shadow-sm"
                     : "text-text-muted hover:text-text-primary"
                 }`}

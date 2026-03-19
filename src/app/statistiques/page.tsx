@@ -73,7 +73,8 @@ export default async function Statistiques() {
 
   const boardsData = BOARDS.map((b) => {
     const all = getLeaders(b.stat);
-    const eligibleCount = eligibleCounts[b.stat];
+    // -1 = no eligibility concept, >= 0 = number of eligible players
+    const eligibleCount = eligibleCounts[b.stat] ?? -1;
     return {
       title: b.title,
       stat: b.stat,
