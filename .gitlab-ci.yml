@@ -1,0 +1,4 @@
+# Deployment handled by Vercel — no CI pipeline needed
+workflow:
+  rules:
+    - when: never
