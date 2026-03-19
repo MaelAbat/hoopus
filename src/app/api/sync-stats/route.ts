@@ -4,10 +4,11 @@ import { NextRequest, NextResponse } from "next/server";
 
 const SEASON = "2025-26";
 const BATCH_SIZE = 200;
-const MIN_FG3A = 3;
-const MIN_FGA = 8;
-const MIN_FTA = 2;
-const MIN_FG2A = 4;
+const MIN_GP = 40;    // Min matchs joués pour catégories directes
+const MIN_FG3A = 3;   // Min 3 tentatives 3pts/match
+const MIN_FGA = 8;     // Min 8 tentatives tir/match
+const MIN_FTA = 2;     // Min 2 lancers francs/match
+const MIN_FG2A = 4;    // Min 4 tentatives 2pts/match
 
 const NBA_HEADERS: Record<string, string> = {
   Accept: "application/json, text/plain, */*",
@@ -40,15 +41,14 @@ interface LeaderRow {
   updated_at: string;
 }
 
-// Categories mapped from stat field → rank field in the API response
-const DIRECT_CATEGORIES: { category: string; statField: string; rankField: string }[] = [
-  { category: "PTS", statField: "PTS", rankField: "PTS_RANK" },
-  { category: "REB", statField: "REB", rankField: "REB_RANK" },
-  { category: "AST", statField: "AST", rankField: "AST_RANK" },
-  { category: "BLK", statField: "BLK", rankField: "BLK_RANK" },
-  { category: "STL", statField: "STL", rankField: "STL_RANK" },
-  { category: "EFF", statField: "NBA_FANTASY_PTS", rankField: "NBA_FANTASY_PTS_RANK" },
-  { category: "TOV", statField: "TOV", rankField: "TOV_RANK" },
+const DIRECT_CATEGORIES: { category: string; statField: string }[] = [
+  { category: "PTS", statField: "PTS" },
+  { category: "REB", statField: "REB" },
+  { category: "AST", statField: "AST" },
+  { category: "BLK", statField: "BLK" },
+  { category: "STL", statField: "STL" },
+  { category: "EFF", statField: "NBA_FANTASY_PTS" },
+  { category: "TOV", statField: "TOV" },
 ];
 
 function fetchAllPlayers(): Promise<NbaDashResponse> {
@@ -129,6 +129,7 @@ export async function GET(request: NextRequest) {
     const idx = (name: string) => headers.indexOf(name);
     const playerIdx = idx("PLAYER_NAME");
     const teamIdx = idx("TEAM_ABBREVIATION");
+    const gpIdx = idx("GP");
     const ptsIdx = idx("PTS");
     const fgaIdx = idx("FGA");
     const fgmIdx = idx("FGM");
@@ -139,28 +140,6 @@ export async function GET(request: NextRequest) {
     const fgPctIdx = idx("FG_PCT");
     const ftPctIdx = idx("FT_PCT");
 
-    // --- Direct categories (sorted by rank from API) ---
-    for (const { category, statField, rankField } of DIRECT_CATEGORIES) {
-      const si = idx(statField);
-      const ri = idx(rankField);
-
-      const leaders: LeaderRow[] = rows
-        .map((row) => ({
-          category,
-          rank: Number(row[ri]),
-          player_name: String(row[playerIdx]),
-          team: String(row[teamIdx]),
-          value: Number(Number(row[si]).toFixed(1)),
-          season: SEASON,
-          updated_at: now,
-        }))
-        .sort((a, b) => a.rank - b.rank);
-
-      await supabase.from("stat_leaders").delete().eq("category", category).eq("season", SEASON);
-      results[category] = await batchInsert(supabase, leaders);
-    }
-
-    // --- Calculated categories (all players, eligible first) ---
     // Eligible players get rank 1..N, ineligible get N+1..M
     // A metadata row (rank=0) stores the eligible count in `value`
     function buildLeadersWithEligibility(
@@ -213,6 +192,22 @@ export async function GET(request: NextRequest) {
       return leaders;
     }
 
+    // --- Direct categories (eligible = GP >= MIN_GP) ---
+    for (const { category, statField } of DIRECT_CATEGORIES) {
+      const si = idx(statField);
+
+      const allPlayers = rows.map((row) => ({
+        row,
+        val: Number(Number(row[si]).toFixed(1)),
+        eligible: Number(row[gpIdx]) >= MIN_GP,
+      }));
+
+      const leaders = buildLeadersWithEligibility(category, allPlayers);
+      await supabase.from("stat_leaders").delete().eq("category", category).eq("season", SEASON);
+      results[category] = await batchInsert(supabase, leaders);
+    }
+
+    // --- Calculated categories ---
     // FG3_PCT — all players with FG3 attempts, eligible if FG3A >= MIN_FG3A
     const fg3All = rows
       .filter((r) => Number(r[fg3aIdx]) > 0)
