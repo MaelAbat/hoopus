@@ -1,0 +1,40 @@
+CREATE TABLE team_stats (
+  id BIGSERIAL PRIMARY KEY,
+  team_id INTEGER NOT NULL,
+  team_name TEXT NOT NULL,
+  team_tricode TEXT NOT NULL,
+  season TEXT NOT NULL,
+  gp INTEGER DEFAULT 0,
+  w INTEGER DEFAULT 0,
+  l INTEGER DEFAULT 0,
+  w_pct REAL DEFAULT 0,
+  pts REAL DEFAULT 0,
+  reb REAL DEFAULT 0,
+  ast REAL DEFAULT 0,
+  stl REAL DEFAULT 0,
+  blk REAL DEFAULT 0,
+  tov REAL DEFAULT 0,
+  fg_pct REAL DEFAULT 0,
+  fg3_pct REAL DEFAULT 0,
+  ft_pct REAL DEFAULT 0,
+  oreb REAL DEFAULT 0,
+  dreb REAL DEFAULT 0,
+  plus_minus REAL DEFAULT 0,
+  off_rating REAL DEFAULT 0,
+  def_rating REAL DEFAULT 0,
+  net_rating REAL DEFAULT 0,
+  pace REAL DEFAULT 0,
+  ts_pct REAL DEFAULT 0,
+  efg_pct REAL DEFAULT 0,
+  ast_pct REAL DEFAULT 0,
+  ast_ratio REAL DEFAULT 0,
+  oreb_pct REAL DEFAULT 0,
+  dreb_pct REAL DEFAULT 0,
+  tm_tov_pct REAL DEFAULT 0,
+  pie REAL DEFAULT 0,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE team_stats ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Public read" ON team_stats FOR SELECT USING (true);
+CREATE POLICY "Public write" ON team_stats FOR ALL USING (true);

@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { PlayerStatLeader, StatCategory } from "@/lib/nba-api";
 import StatsView from "@/components/StatsView";
 import type { PlayerRow } from "@/components/StatsTable";
+import type { TeamRow } from "@/components/TeamStatsTable";
 
 export const revalidate = 3600;
 
@@ -115,6 +116,15 @@ export default async function Statistiques() {
 
   const tableData = Array.from(playerMap.values());
 
+  // Team stats
+  const { data: teamStatsRaw } = await supabase
+    .from("team_stats")
+    .select("*")
+    .eq("season", "2025-26")
+    .order("net_rating", { ascending: false });
+
+  const teamData: TeamRow[] = (teamStatsRaw || []).map((t) => ({ ...t } as TeamRow));
+
   return (
     <div className="mx-auto max-w-7xl space-y-8">
       <div>
@@ -133,7 +143,7 @@ export default async function Statistiques() {
         </p>
       </div>
 
-      <StatsView boards={boardsData} tableData={tableData} />
+      <StatsView boards={boardsData} tableData={tableData} teamData={teamData} />
     </div>
   );
 }

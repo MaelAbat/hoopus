@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { LayoutGrid, Table2 } from "lucide-react";
+import { LayoutGrid, Table2, Users } from "lucide-react";
 import StatsCarousel from "./StatsCarousel";
 import StatsTable from "./StatsTable";
+import TeamStatsTable from "./TeamStatsTable";
 import type { PlayerStatLeader } from "@/lib/nba-api";
 import type { PlayerRow } from "./StatsTable";
+import type { TeamRow } from "./TeamStatsTable";
 
 interface Board {
   title: string;
@@ -16,14 +18,16 @@ interface Board {
   eligibleCount: number;
 }
 
-type ViewMode = "carousel" | "table";
+type ViewMode = "carousel" | "table" | "teams";
 
 export default function StatsView({
   boards,
   tableData,
+  teamData,
 }: {
   boards: Board[];
   tableData: PlayerRow[];
+  teamData: TeamRow[];
 }) {
   const [view, setView] = useState<ViewMode>("carousel");
 
@@ -53,13 +57,22 @@ export default function StatsView({
           <Table2 size={15} />
           Feuille de stats
         </button>
+        <button
+          onClick={() => setView("teams")}
+          className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-all ${
+            view === "teams"
+              ? "bg-accent text-white shadow-sm"
+              : "text-text-muted hover:text-text-primary"
+          }`}
+        >
+          <Users size={15} />
+          Équipes
+        </button>
       </div>
 
-      {view === "carousel" ? (
-        <StatsCarousel boards={boards} />
-      ) : (
-        <StatsTable players={tableData} />
-      )}
+      {view === "carousel" && <StatsCarousel boards={boards} />}
+      {view === "table" && <StatsTable players={tableData} />}
+      {view === "teams" && <TeamStatsTable teams={teamData} />}
     </div>
   );
 }
