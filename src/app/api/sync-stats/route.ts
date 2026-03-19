@@ -225,7 +225,7 @@ export async function GET(request: NextRequest) {
       .map((r) => ({
         row: r,
         val: (Number(r[fg3mIdx]) / Number(r[fg3aIdx])) * 100,
-        eligible: fg3aPerGame(r) >= MIN_FG3A,
+        eligible: Number(r[gpIdx]) >= MIN_GP && fg3aPerGame(r) >= MIN_FG3A,
       }));
     const fg3Leaders = buildLeadersWithEligibility("FG3_PCT", fg3All);
     await supabase.from("stat_leaders").delete().eq("category", "FG3_PCT").eq("season", SEASON);
@@ -238,7 +238,7 @@ export async function GET(request: NextRequest) {
         const fg2m = Number(r[fgmIdx]) - Number(r[fg3mIdx]);
         const fg2a = Number(r[fgaIdx]) - Number(r[fg3aIdx]);
         const fg2aPerG = Number(r[gpIdx]) > 0 ? fg2a / Number(r[gpIdx]) : 0;
-        return { row: r, val: fg2a > 0 ? (fg2m / fg2a) * 100 : 0, eligible: fg2aPerG >= MIN_FG2A };
+        return { row: r, val: fg2a > 0 ? (fg2m / fg2a) * 100 : 0, eligible: Number(r[gpIdx]) >= MIN_GP && fg2aPerG >= MIN_FG2A };
       });
     const fg2Leaders = buildLeadersWithEligibility("FG2_PCT", fg2All);
     await supabase.from("stat_leaders").delete().eq("category", "FG2_PCT").eq("season", SEASON);
@@ -251,7 +251,7 @@ export async function GET(request: NextRequest) {
         const pts = Number(r[ptsIdx]);
         const fga = Number(r[fgaIdx]);
         const fta = Number(r[ftaIdx]);
-        return { row: r, val: (pts / (2 * (fga + 0.44 * fta))) * 100, eligible: fgaPerGame(r) >= MIN_FGA };
+        return { row: r, val: (pts / (2 * (fga + 0.44 * fta))) * 100, eligible: Number(r[gpIdx]) >= MIN_GP && fgaPerGame(r) >= MIN_FGA };
       });
     const tsLeaders = buildLeadersWithEligibility("TS_PCT", tsAll);
     await supabase.from("stat_leaders").delete().eq("category", "TS_PCT").eq("season", SEASON);
@@ -263,7 +263,7 @@ export async function GET(request: NextRequest) {
       .map((r) => ({
         row: r,
         val: (Number(r[fgmIdx]) / Number(r[fgaIdx])) * 100,
-        eligible: fgaPerGame(r) >= MIN_FGA,
+        eligible: Number(r[gpIdx]) >= MIN_GP && fgaPerGame(r) >= MIN_FGA,
       }));
     const fgLeaders = buildLeadersWithEligibility("FG_PCT", fgAll);
     await supabase.from("stat_leaders").delete().eq("category", "FG_PCT").eq("season", SEASON);
@@ -275,7 +275,7 @@ export async function GET(request: NextRequest) {
       .map((r) => ({
         row: r,
         val: (Number(r[ftmIdx]) / Number(r[ftaIdx])) * 100,
-        eligible: ftaPerGame(r) >= MIN_FTA,
+        eligible: Number(r[gpIdx]) >= MIN_GP && ftaPerGame(r) >= MIN_FTA,
       }));
     const ftLeaders = buildLeadersWithEligibility("FT_PCT", ftAll);
     await supabase.from("stat_leaders").delete().eq("category", "FT_PCT").eq("season", SEASON);
