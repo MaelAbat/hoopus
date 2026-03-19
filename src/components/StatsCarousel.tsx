@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useMemo } from "react";
-import { ChevronLeft, ChevronRight, Trophy, List } from "lucide-react";
+import { ChevronLeft, ChevronRight, Trophy, List, Filter } from "lucide-react";
 import type { PlayerStatLeader } from "@/lib/nba-api";
 
 interface Board {
@@ -10,9 +10,11 @@ interface Board {
   unit: string;
   top10: PlayerStatLeader[];
   full: PlayerStatLeader[];
+  eligibleCount?: number;
 }
 
 type ViewMode = "top10" | "full";
+type EligibilityFilter = "eligible" | "all";
 
 const TEAM_ID: Record<string, number> = {
   ATL: 1610612737, BOS: 1610612738, BKN: 1610612751, CHA: 1610612766,
@@ -32,19 +34,20 @@ function teamLogoUrl(tricode: string): string {
   return id ? `https://cdn.nba.com/logos/nba/${id}/global/L/logo.svg` : "";
 }
 
-function PlayerRow({ player }: { player: PlayerStatLeader }) {
+function PlayerRow({ player, displayRank }: { player: PlayerStatLeader; displayRank?: number }) {
+  const rank = displayRank ?? player.rank;
   return (
     <div className="flex items-center gap-4 px-6 py-3.5 transition-colors hover:bg-card-hover">
       <span
         className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
-          player.rank === 1
+          rank === 1
             ? "bg-accent/20 text-accent-text"
-            : player.rank <= 3
+            : rank <= 3
               ? "bg-input text-text-primary"
               : "bg-input text-text-muted"
         }`}
       >
-        {player.rank}
+        {rank}
       </span>
       <img
         src={teamLogoUrl(player.team)}
@@ -65,6 +68,7 @@ function PlayerRow({ player }: { player: PlayerStatLeader }) {
 export default function StatsCarousel({ boards }: { boards: Board[] }) {
   const [active, setActive] = useState(0);
   const [mode, setMode] = useState<ViewMode>("top10");
+  const [eligibility, setEligibility] = useState<EligibilityFilter>("eligible");
   const [page, setPage] = useState(0);
   const [search, setSearch] = useState("");
   const listRef = useRef<HTMLDivElement>(null);
@@ -72,29 +76,59 @@ export default function StatsCarousel({ boards }: { boards: Board[] }) {
   const [offset, setOffset] = useState(0);
 
   const board = boards[active];
+  const hasEligibility = board.eligibleCount != null;
+
+  // Build the player list for full mode based on eligibility filter
+  const fullPlayers = useMemo(() => {
+    if (!hasEligibility || eligibility === "eligible") {
+      // For eligible-only or categories without eligibility: use rank as-is
+      // eligible players have rank 1..eligibleCount
+      if (hasEligibility) {
+        return board.full.filter((p) => p.rank <= board.eligibleCount!);
+      }
+      return board.full;
+    }
+    // "All" mode: re-sort all players by value descending and re-rank
+    return [...board.full]
+      .sort((a, b) => Number(b.value) - Number(a.value))
+      .map((p, i) => ({ ...p, rank: i + 1 }));
+  }, [board.full, board.eligibleCount, hasEligibility, eligibility]);
 
   const filteredFull = useMemo(() => {
-    if (!search.trim()) return board.full;
+    if (!search.trim()) return fullPlayers;
     const q = search.toLowerCase();
-    return board.full.filter(
+    return fullPlayers.filter(
       (p) => p.name.toLowerCase().includes(q) || p.team.toLowerCase().includes(q)
     );
-  }, [board.full, search]);
+  }, [fullPlayers, search]);
 
   const totalPages = Math.ceil(filteredFull.length / PAGE_SIZE);
   const pagedPlayers = filteredFull.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
-  const displayPlayers = mode === "top10" ? board.top10 : pagedPlayers;
+  // For top10, use eligible-only data (first 10 by rank)
+  const top10Players = useMemo(() => {
+    if (hasEligibility) {
+      return board.full.filter((p) => p.rank <= 10);
+    }
+    return board.top10;
+  }, [board.full, board.top10, hasEligibility]);
+
+  const displayPlayers = mode === "top10" ? top10Players : pagedPlayers;
 
   function go(dir: -1 | 1) {
     setActive((prev) => (prev + dir + boards.length) % boards.length);
   }
 
-  // Reset page and search when changing category or mode
+  // Reset page and search when changing category, mode, or eligibility
   useEffect(() => {
     setPage(0);
     setSearch("");
-  }, [active, mode]);
+  }, [active, mode, eligibility]);
+
+  // Reset eligibility when changing category
+  useEffect(() => {
+    setEligibility("eligible");
+  }, [active]);
 
   // Center active tab
   useEffect(() => {
@@ -151,7 +185,7 @@ export default function StatsCarousel({ boards }: { boards: Board[] }) {
           </div>
         </div>
 
-        {/* View mode toggle */}
+        {/* View mode toggle + eligibility filter */}
         <div className="flex items-center gap-2 px-6 py-2.5 border-b border-border-t/50">
           <div className="flex rounded-lg bg-input p-0.5">
             <button
@@ -175,9 +209,37 @@ export default function StatsCarousel({ boards }: { boards: Board[] }) {
             >
               <List size={13} />
               Classement complet
-              <span className="text-text-faint">({board.full.length})</span>
+              <span className="text-text-faint">({fullPlayers.length})</span>
             </button>
           </div>
+
+          {/* Eligibility filter (only for percentage categories in full mode) */}
+          {mode === "full" && hasEligibility && (
+            <div className="flex rounded-lg bg-input p-0.5">
+              <button
+                onClick={() => setEligibility("eligible")}
+                className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-all ${
+                  eligibility === "eligible"
+                    ? "bg-card text-text-primary shadow-sm"
+                    : "text-text-muted hover:text-text-primary"
+                }`}
+              >
+                <Filter size={12} />
+                Éligibles
+              </button>
+              <button
+                onClick={() => setEligibility("all")}
+                className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-all ${
+                  eligibility === "all"
+                    ? "bg-card text-text-primary shadow-sm"
+                    : "text-text-muted hover:text-text-primary"
+                }`}
+              >
+                Tous
+                <span className="text-text-faint">({board.full.length})</span>
+              </button>
+            </div>
+          )}
 
           {/* Search (full mode only) */}
           {mode === "full" && (
@@ -205,8 +267,12 @@ export default function StatsCarousel({ boards }: { boards: Board[] }) {
             </div>
           ) : (
             <div className="divide-y divide-border-t/50">
-              {displayPlayers.map((player) => (
-                <PlayerRow key={`${player.rank}-${player.name}`} player={player} />
+              {displayPlayers.map((player, i) => (
+                <PlayerRow
+                  key={`${player.rank}-${player.name}`}
+                  player={player}
+                  displayRank={mode === "full" && search ? i + 1 + page * PAGE_SIZE : undefined}
+                />
               ))}
             </div>
           )}

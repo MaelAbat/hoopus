@@ -160,14 +160,33 @@ export async function GET(request: NextRequest) {
       results[category] = await batchInsert(supabase, leaders);
     }
 
-    // --- Calculated categories (manual sort + rank) ---
-    function buildLeaders(
+    // --- Calculated categories (all players, eligible first) ---
+    // Eligible players get rank 1..N, ineligible get N+1..M
+    // A metadata row (rank=0) stores the eligible count in `value`
+    function buildLeadersWithEligibility(
       category: string,
-      eligible: { row: (string | number)[]; val: number }[]
+      allPlayers: { row: (string | number)[]; val: number; eligible: boolean }[]
     ): LeaderRow[] {
-      return eligible
-        .sort((a, b) => b.val - a.val)
-        .map(({ row, val }, i) => ({
+      const eligible = allPlayers.filter((p) => p.eligible).sort((a, b) => b.val - a.val);
+      const ineligible = allPlayers.filter((p) => !p.eligible).sort((a, b) => b.val - a.val);
+      const eligibleCount = eligible.length;
+
+      const leaders: LeaderRow[] = [];
+
+      // Metadata row: rank=0, value=eligible count
+      leaders.push({
+        category,
+        rank: 0,
+        player_name: "__eligible_count__",
+        team: "",
+        value: eligibleCount,
+        season: SEASON,
+        updated_at: now,
+      });
+
+      // Eligible players: rank 1..N
+      eligible.forEach(({ row, val }, i) => {
+        leaders.push({
           category,
           rank: i + 1,
           player_name: String(row[playerIdx]),
@@ -175,65 +194,83 @@ export async function GET(request: NextRequest) {
           value: Number(val.toFixed(1)),
           season: SEASON,
           updated_at: now,
-        }));
+        });
+      });
+
+      // Ineligible players: rank N+1..M
+      ineligible.forEach(({ row, val }, i) => {
+        leaders.push({
+          category,
+          rank: eligibleCount + i + 1,
+          player_name: String(row[playerIdx]),
+          team: String(row[teamIdx]),
+          value: Number(val.toFixed(1)),
+          season: SEASON,
+          updated_at: now,
+        });
+      });
+
+      return leaders;
     }
 
-    // FG3_PCT
-    const fg3Leaders = buildLeaders(
-      "FG3_PCT",
-      rows
-        .filter((r) => Number(r[fg3aIdx]) >= MIN_FG3A)
-        .map((r) => ({ row: r, val: Number(r[fg3PctIdx]) * 100 }))
-    );
+    // FG3_PCT — all players with FG3 attempts, eligible if FG3A >= MIN_FG3A
+    const fg3All = rows
+      .filter((r) => Number(r[fg3aIdx]) > 0)
+      .map((r) => ({
+        row: r,
+        val: Number(r[fg3PctIdx]) * 100,
+        eligible: Number(r[fg3aIdx]) >= MIN_FG3A,
+      }));
+    const fg3Leaders = buildLeadersWithEligibility("FG3_PCT", fg3All);
     await supabase.from("stat_leaders").delete().eq("category", "FG3_PCT").eq("season", SEASON);
     results["FG3_PCT"] = await batchInsert(supabase, fg3Leaders);
 
-    // FG2_PCT
-    const fg2Leaders = buildLeaders(
-      "FG2_PCT",
-      rows
-        .filter((r) => Number(r[fgaIdx]) - Number(r[fg3aIdx]) >= MIN_FG2A)
-        .map((r) => {
-          const fg2m = Number(r[fgmIdx]) - Number(r[fg3mIdx]);
-          const fg2a = Number(r[fgaIdx]) - Number(r[fg3aIdx]);
-          return { row: r, val: fg2a > 0 ? (fg2m / fg2a) * 100 : 0 };
-        })
-    );
+    // FG2_PCT — all players with FG2 attempts
+    const fg2All = rows
+      .filter((r) => Number(r[fgaIdx]) - Number(r[fg3aIdx]) > 0)
+      .map((r) => {
+        const fg2m = Number(r[fgmIdx]) - Number(r[fg3mIdx]);
+        const fg2a = Number(r[fgaIdx]) - Number(r[fg3aIdx]);
+        return { row: r, val: fg2a > 0 ? (fg2m / fg2a) * 100 : 0, eligible: fg2a >= MIN_FG2A };
+      });
+    const fg2Leaders = buildLeadersWithEligibility("FG2_PCT", fg2All);
     await supabase.from("stat_leaders").delete().eq("category", "FG2_PCT").eq("season", SEASON);
     results["FG2_PCT"] = await batchInsert(supabase, fg2Leaders);
 
-    // TS_PCT
-    const tsLeaders = buildLeaders(
-      "TS_PCT",
-      rows
-        .filter((r) => Number(r[fgaIdx]) >= MIN_FGA)
-        .map((r) => {
-          const pts = Number(r[ptsIdx]);
-          const fga = Number(r[fgaIdx]);
-          const fta = Number(r[ftaIdx]);
-          return { row: r, val: (pts / (2 * (fga + 0.44 * fta))) * 100 };
-        })
-    );
+    // TS_PCT — all players with FGA > 0
+    const tsAll = rows
+      .filter((r) => Number(r[fgaIdx]) > 0)
+      .map((r) => {
+        const pts = Number(r[ptsIdx]);
+        const fga = Number(r[fgaIdx]);
+        const fta = Number(r[ftaIdx]);
+        return { row: r, val: (pts / (2 * (fga + 0.44 * fta))) * 100, eligible: fga >= MIN_FGA };
+      });
+    const tsLeaders = buildLeadersWithEligibility("TS_PCT", tsAll);
     await supabase.from("stat_leaders").delete().eq("category", "TS_PCT").eq("season", SEASON);
     results["TS_PCT"] = await batchInsert(supabase, tsLeaders);
 
-    // FG_PCT
-    const fgLeaders = buildLeaders(
-      "FG_PCT",
-      rows
-        .filter((r) => Number(r[fgaIdx]) >= MIN_FGA)
-        .map((r) => ({ row: r, val: Number(r[fgPctIdx]) * 100 }))
-    );
+    // FG_PCT — all players with FGA > 0
+    const fgAll = rows
+      .filter((r) => Number(r[fgaIdx]) > 0)
+      .map((r) => ({
+        row: r,
+        val: Number(r[fgPctIdx]) * 100,
+        eligible: Number(r[fgaIdx]) >= MIN_FGA,
+      }));
+    const fgLeaders = buildLeadersWithEligibility("FG_PCT", fgAll);
     await supabase.from("stat_leaders").delete().eq("category", "FG_PCT").eq("season", SEASON);
     results["FG_PCT"] = await batchInsert(supabase, fgLeaders);
 
-    // FT_PCT
-    const ftLeaders = buildLeaders(
-      "FT_PCT",
-      rows
-        .filter((r) => Number(r[ftaIdx]) >= MIN_FTA)
-        .map((r) => ({ row: r, val: Number(r[ftPctIdx]) * 100 }))
-    );
+    // FT_PCT — all players with FTA > 0
+    const ftAll = rows
+      .filter((r) => Number(r[ftaIdx]) > 0)
+      .map((r) => ({
+        row: r,
+        val: Number(r[ftPctIdx]) * 100,
+        eligible: Number(r[ftaIdx]) >= MIN_FTA,
+      }));
+    const ftLeaders = buildLeadersWithEligibility("FT_PCT", ftAll);
     await supabase.from("stat_leaders").delete().eq("category", "FT_PCT").eq("season", SEASON);
     results["FT_PCT"] = await batchInsert(supabase, ftLeaders);
   } catch (err) {

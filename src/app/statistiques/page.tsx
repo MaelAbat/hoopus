@@ -30,7 +30,7 @@ export default async function Statistiques() {
 
   // Fetch all stat leaders with pagination (Supabase 1000 row limit)
   const pages = await Promise.all(
-    Array.from({ length: 6 }, (_, i) =>
+    Array.from({ length: 8 }, (_, i) =>
       supabase
         .from("stat_leaders")
         .select("*")
@@ -52,9 +52,17 @@ export default async function Statistiques() {
       })
     : null;
 
+  // Extract metadata rows (rank=0) for eligibility info
+  const eligibleCounts: Partial<Record<StatCategory, number>> = {};
+  for (const row of allLeaders) {
+    if (row.rank === 0 && row.player_name === "__eligible_count__") {
+      eligibleCounts[row.category as StatCategory] = row.value;
+    }
+  }
+
   function getLeaders(category: StatCategory): PlayerStatLeader[] {
     return allLeaders
-      .filter((row) => row.category === category)
+      .filter((row) => row.category === category && row.rank > 0)
       .map((row) => ({
         rank: row.rank,
         name: row.player_name,
@@ -65,12 +73,14 @@ export default async function Statistiques() {
 
   const boardsData = BOARDS.map((b) => {
     const all = getLeaders(b.stat);
+    const eligibleCount = eligibleCounts[b.stat];
     return {
       title: b.title,
       stat: b.stat,
       unit: b.unit,
       top10: all.slice(0, 10),
       full: all,
+      eligibleCount,
     };
   });
 
