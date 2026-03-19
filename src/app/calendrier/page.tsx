@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import CalendarView from "@/components/CalendarView";
 
+export const revalidate = 3600;
+
 export default async function Calendrier() {
   const supabase = await createClient();
 

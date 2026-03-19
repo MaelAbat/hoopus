@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import StandingsView from "@/components/StandingsView";
 
+export const revalidate = 3600;
+
 export default async function Classement() {
   const supabase = await createClient();
 

@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
@@ -23,6 +24,11 @@ export async function GET(request: NextRequest) {
     gamesRes.json(),
     standingsRes.json(),
   ]);
+
+  // Revalidate all data-driven pages after sync
+  revalidatePath("/calendrier");
+  revalidatePath("/classement");
+  revalidatePath("/statistiques");
 
   return NextResponse.json({
     ok: true,
