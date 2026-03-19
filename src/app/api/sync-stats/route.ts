@@ -170,7 +170,7 @@ export async function GET(request: NextRequest) {
           rank: i + 1,
           player_name: String(row[playerIdx]),
           team: String(row[teamIdx]),
-          value: Number(val.toFixed(1)),
+          value: Math.round(val * 100) / 100,
           season: SEASON,
           updated_at: now,
         });
@@ -183,7 +183,7 @@ export async function GET(request: NextRequest) {
           rank: eligibleCount + i + 1,
           player_name: String(row[playerIdx]),
           team: String(row[teamIdx]),
-          value: Number(val.toFixed(1)),
+          value: Math.round(val * 100) / 100,
           season: SEASON,
           updated_at: now,
         });
@@ -198,7 +198,7 @@ export async function GET(request: NextRequest) {
 
       const allPlayers = rows.map((row) => ({
         row,
-        val: Number(Number(row[si]).toFixed(1)),
+        val: Math.round(Number(row[si]) * 100) / 100,
         eligible: Number(row[gpIdx]) >= MIN_GP,
       }));
 
