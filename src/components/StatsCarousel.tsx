@@ -269,7 +269,7 @@ export default function StatsCarousel({ boards }: { boards: Board[] }) {
             <div className="divide-y divide-border-t/50">
               {displayPlayers.map((player, i) => (
                 <PlayerRow
-                  key={`${player.rank}-${player.name}`}
+                  key={`${board.stat}-${player.name}-${player.team}`}
                   player={player}
                   displayRank={mode === "full" && search ? i + 1 + page * PAGE_SIZE : undefined}
                 />
