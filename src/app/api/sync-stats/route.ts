@@ -2,30 +2,32 @@ import https from "node:https";
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 
-// Catégories triables directement via l'API NBA
-const API_CATEGORIES = ["PTS", "REB", "AST", "BLK", "STL", "EFF", "TOV"] as const;
-
 const SEASON = "2025-26";
-const MIN_FG3A = 3;   // Min 3 tentatives 3pts/match
-const MIN_FGA = 8;     // Min 8 tentatives tir/match
-const MIN_FTA = 2;     // Min 2 lancers francs/match
-const MIN_FG2A = 4;    // Min 4 tentatives 2pts/match
 const BATCH_SIZE = 200;
+const MIN_FG3A = 3;
+const MIN_FGA = 8;
+const MIN_FTA = 2;
+const MIN_FG2A = 4;
 
 const NBA_HEADERS: Record<string, string> = {
   Accept: "application/json, text/plain, */*",
+  "Accept-Encoding": "identity",
   "Accept-Language": "en-US,en;q=0.9",
+  Connection: "keep-alive",
+  Host: "stats.nba.com",
   Origin: "https://www.nba.com",
   Referer: "https://www.nba.com/",
   "User-Agent":
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+  "x-nba-stats-origin": "stats",
+  "x-nba-stats-token": "true",
 };
 
-interface NbaStatsResponse {
-  resultSet: {
+interface NbaDashResponse {
+  resultSets: {
     headers: string[];
     rowSet: (string | number)[][];
-  };
+  }[];
 }
 
 interface LeaderRow {
@@ -38,8 +40,26 @@ interface LeaderRow {
   updated_at: string;
 }
 
-function fetchFromNba(statCategory: string): Promise<NbaStatsResponse> {
-  const url = `https://stats.nba.com/stats/leagueleaders?LeagueID=00&PerMode=PerGame&Scope=S&Season=${SEASON}&SeasonType=Regular+Season&StatCategory=${statCategory}`;
+// Categories mapped from stat field → rank field in the API response
+const DIRECT_CATEGORIES: { category: string; statField: string; rankField: string }[] = [
+  { category: "PTS", statField: "PTS", rankField: "PTS_RANK" },
+  { category: "REB", statField: "REB", rankField: "REB_RANK" },
+  { category: "AST", statField: "AST", rankField: "AST_RANK" },
+  { category: "BLK", statField: "BLK", rankField: "BLK_RANK" },
+  { category: "STL", statField: "STL", rankField: "STL_RANK" },
+  { category: "EFF", statField: "NBA_FANTASY_PTS", rankField: "NBA_FANTASY_PTS_RANK" },
+  { category: "TOV", statField: "TOV", rankField: "TOV_RANK" },
+];
+
+function fetchAllPlayers(): Promise<NbaDashResponse> {
+  const url =
+    "https://stats.nba.com/stats/leaguedashplayerstats?" +
+    "Conference=&DateFrom=&DateTo=&Division=&GameScope=&GameSegment=&Height=&ISTRound=" +
+    "&LastNGames=0&LeagueID=00&Location=&MeasureType=Base&Month=0&OpponentTeamID=0" +
+    "&Outcome=&PORound=0&PaceAdjust=N&PerMode=PerGame&Period=0&PlayerExperience=" +
+    "&PlayerPosition=&PlusMinus=N&Rank=N&Season=" + SEASON +
+    "&SeasonSegment=&SeasonType=Regular+Season&ShotClockRange=&StarterBench=" +
+    "&TeamID=0&TwoWay=0&VsConference=&VsDivision=&Weight=";
 
   return new Promise((resolve, reject) => {
     const req = https.get(url, { headers: NBA_HEADERS }, (res) => {
@@ -58,7 +78,7 @@ function fetchFromNba(statCategory: string): Promise<NbaStatsResponse> {
       });
     });
     req.on("error", reject);
-    req.setTimeout(15000, () => {
+    req.setTimeout(60000, () => {
       req.destroy();
       reject(new Error("NBA API timeout"));
     });
@@ -66,10 +86,7 @@ function fetchFromNba(statCategory: string): Promise<NbaStatsResponse> {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function batchInsert(
-  supabase: any,
-  rows: LeaderRow[]
-): Promise<number> {
+async function batchInsert(supabase: any, rows: LeaderRow[]): Promise<number> {
   let inserted = 0;
   for (let i = 0; i < rows.length; i += BATCH_SIZE) {
     const batch = rows.slice(i, i + BATCH_SIZE);
@@ -104,140 +121,127 @@ export async function GET(request: NextRequest) {
   const results: Record<string, number> = {};
   const now = new Date().toISOString();
 
-  // --- Catégories triables directement (tous les joueurs) ---
-  for (const category of API_CATEGORIES) {
-    try {
-      const data = await fetchFromNba(category);
-      const headers = data.resultSet.headers;
-      const rows = data.resultSet.rowSet;
+  try {
+    const data = await fetchAllPlayers();
+    const headers = data.resultSets[0].headers;
+    const rows = data.resultSets[0].rowSet;
 
-      const rankIdx = headers.indexOf("RANK");
-      const playerIdx = headers.indexOf("PLAYER");
-      const teamIdx = headers.indexOf("TEAM");
-      const statIdx = headers.indexOf(category);
+    const idx = (name: string) => headers.indexOf(name);
+    const playerIdx = idx("PLAYER_NAME");
+    const teamIdx = idx("TEAM_ABBREVIATION");
+    const ptsIdx = idx("PTS");
+    const fgaIdx = idx("FGA");
+    const fgmIdx = idx("FGM");
+    const fg3mIdx = idx("FG3M");
+    const fg3aIdx = idx("FG3A");
+    const fg3PctIdx = idx("FG3_PCT");
+    const ftaIdx = idx("FTA");
+    const fgPctIdx = idx("FG_PCT");
+    const ftPctIdx = idx("FT_PCT");
 
-      const leaders: LeaderRow[] = rows.map((row) => ({
-        category,
-        rank: Number(row[rankIdx]),
-        player_name: String(row[playerIdx]),
-        team: String(row[teamIdx]),
-        value: Number(Number(row[statIdx]).toFixed(1)),
-        season: SEASON,
-        updated_at: now,
-      }));
+    // --- Direct categories (sorted by rank from API) ---
+    for (const { category, statField, rankField } of DIRECT_CATEGORIES) {
+      const si = idx(statField);
+      const ri = idx(rankField);
+
+      const leaders: LeaderRow[] = rows
+        .map((row) => ({
+          category,
+          rank: Number(row[ri]),
+          player_name: String(row[playerIdx]),
+          team: String(row[teamIdx]),
+          value: Number(Number(row[si]).toFixed(1)),
+          season: SEASON,
+          updated_at: now,
+        }))
+        .sort((a, b) => a.rank - b.rank);
 
       await supabase.from("stat_leaders").delete().eq("category", category).eq("season", SEASON);
       results[category] = await batchInsert(supabase, leaders);
-    } catch (err) {
-      console.error(`Error fetching ${category}:`, err);
-      results[category] = 0;
     }
-  }
 
-  // --- Catégories calculées manuellement à partir des données brutes ---
-  try {
-    const data = await fetchFromNba("PTS");
-    const headers = data.resultSet.headers;
-    const rows = data.resultSet.rowSet;
-
-    const playerIdx = headers.indexOf("PLAYER");
-    const teamIdx = headers.indexOf("TEAM");
-    const ptsIdx = headers.indexOf("PTS");
-    const fgaIdx = headers.indexOf("FGA");
-    const fgmIdx = headers.indexOf("FGM");
-    const fg3mIdx = headers.indexOf("FG3M");
-    const fg3aIdx = headers.indexOf("FG3A");
-    const fg3PctIdx = headers.indexOf("FG3_PCT");
-    const ftaIdx = headers.indexOf("FTA");
-    const fgPctIdx = headers.indexOf("FG_PCT");
-    const ftPctIdx = headers.indexOf("FT_PCT");
-
-    // Helper to build leaders from sorted eligible rows
+    // --- Calculated categories (manual sort + rank) ---
     function buildLeaders(
       category: string,
       eligible: { row: (string | number)[]; val: number }[]
     ): LeaderRow[] {
-      return eligible.map(({ row, val }, i) => ({
-        category,
-        rank: i + 1,
-        player_name: String(row[playerIdx]),
-        team: String(row[teamIdx]),
-        value: Number(val.toFixed(1)),
-        season: SEASON,
-        updated_at: now,
-      }));
+      return eligible
+        .sort((a, b) => b.val - a.val)
+        .map(({ row, val }, i) => ({
+          category,
+          rank: i + 1,
+          player_name: String(row[playerIdx]),
+          team: String(row[teamIdx]),
+          value: Number(val.toFixed(1)),
+          season: SEASON,
+          updated_at: now,
+        }));
     }
 
-    // FG3_PCT — % à 3 points (min tentatives)
+    // FG3_PCT
     const fg3Leaders = buildLeaders(
       "FG3_PCT",
       rows
-        .filter((row) => Number(row[fg3aIdx]) >= MIN_FG3A)
-        .map((row) => ({ row, val: Number(row[fg3PctIdx]) * 100 }))
-        .sort((a, b) => b.val - a.val)
+        .filter((r) => Number(r[fg3aIdx]) >= MIN_FG3A)
+        .map((r) => ({ row: r, val: Number(r[fg3PctIdx]) * 100 }))
     );
     await supabase.from("stat_leaders").delete().eq("category", "FG3_PCT").eq("season", SEASON);
     results["FG3_PCT"] = await batchInsert(supabase, fg3Leaders);
 
-    // FG2_PCT — % à 2 points (calculé : (FGM - FG3M) / (FGA - FG3A))
+    // FG2_PCT
     const fg2Leaders = buildLeaders(
       "FG2_PCT",
       rows
-        .filter((row) => (Number(row[fgaIdx]) - Number(row[fg3aIdx])) >= MIN_FG2A)
-        .map((row) => {
-          const fg2m = Number(row[fgmIdx]) - Number(row[fg3mIdx]);
-          const fg2a = Number(row[fgaIdx]) - Number(row[fg3aIdx]);
-          return { row, val: fg2a > 0 ? (fg2m / fg2a) * 100 : 0 };
+        .filter((r) => Number(r[fgaIdx]) - Number(r[fg3aIdx]) >= MIN_FG2A)
+        .map((r) => {
+          const fg2m = Number(r[fgmIdx]) - Number(r[fg3mIdx]);
+          const fg2a = Number(r[fgaIdx]) - Number(r[fg3aIdx]);
+          return { row: r, val: fg2a > 0 ? (fg2m / fg2a) * 100 : 0 };
         })
-        .sort((a, b) => b.val - a.val)
     );
     await supabase.from("stat_leaders").delete().eq("category", "FG2_PCT").eq("season", SEASON);
     results["FG2_PCT"] = await batchInsert(supabase, fg2Leaders);
 
-    // TS_PCT — True Shooting %
+    // TS_PCT
     const tsLeaders = buildLeaders(
       "TS_PCT",
       rows
-        .filter((row) => Number(row[fgaIdx]) >= MIN_FGA)
-        .map((row) => {
-          const pts = Number(row[ptsIdx]);
-          const fga = Number(row[fgaIdx]);
-          const fta = Number(row[ftaIdx]);
-          return { row, val: (pts / (2 * (fga + 0.44 * fta))) * 100 };
+        .filter((r) => Number(r[fgaIdx]) >= MIN_FGA)
+        .map((r) => {
+          const pts = Number(r[ptsIdx]);
+          const fga = Number(r[fgaIdx]);
+          const fta = Number(r[ftaIdx]);
+          return { row: r, val: (pts / (2 * (fga + 0.44 * fta))) * 100 };
         })
-        .sort((a, b) => b.val - a.val)
     );
     await supabase.from("stat_leaders").delete().eq("category", "TS_PCT").eq("season", SEASON);
     results["TS_PCT"] = await batchInsert(supabase, tsLeaders);
 
-    // FG_PCT — % au tir global
+    // FG_PCT
     const fgLeaders = buildLeaders(
       "FG_PCT",
       rows
-        .filter((row) => Number(row[fgaIdx]) >= MIN_FGA)
-        .map((row) => ({ row, val: Number(row[fgPctIdx]) * 100 }))
-        .sort((a, b) => b.val - a.val)
+        .filter((r) => Number(r[fgaIdx]) >= MIN_FGA)
+        .map((r) => ({ row: r, val: Number(r[fgPctIdx]) * 100 }))
     );
     await supabase.from("stat_leaders").delete().eq("category", "FG_PCT").eq("season", SEASON);
     results["FG_PCT"] = await batchInsert(supabase, fgLeaders);
 
-    // FT_PCT — % aux lancers francs
+    // FT_PCT
     const ftLeaders = buildLeaders(
       "FT_PCT",
       rows
-        .filter((row) => Number(row[ftaIdx]) >= MIN_FTA)
-        .map((row) => ({ row, val: Number(row[ftPctIdx]) * 100 }))
-        .sort((a, b) => b.val - a.val)
+        .filter((r) => Number(r[ftaIdx]) >= MIN_FTA)
+        .map((r) => ({ row: r, val: Number(r[ftPctIdx]) * 100 }))
     );
     await supabase.from("stat_leaders").delete().eq("category", "FT_PCT").eq("season", SEASON);
     results["FT_PCT"] = await batchInsert(supabase, ftLeaders);
   } catch (err) {
-    console.error("Error computing manual stats:", err);
-    results["FG3_PCT"] = results["FG3_PCT"] || 0;
-    results["FG2_PCT"] = 0;
-    results["TS_PCT"] = 0;
-    results["FG_PCT"] = 0;
-    results["FT_PCT"] = 0;
+    console.error("Error syncing stats:", err);
+    return NextResponse.json(
+      { error: (err as Error).message },
+      { status: 502 }
+    );
   }
 
   return NextResponse.json({
