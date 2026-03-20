@@ -323,13 +323,15 @@ function FullBracket({ east, west, series }: { east: Standing[]; west: Standing[
 
   const makeR1 = (teams: Standing[], conf: string) => {
     // Matchup order: 1v8, 4v5, 3v6, 2v7
+    // Seeds 7 and 8 come from Play-In — only show them if actual series data exists
     const matchups: [number, number][] = [[1, 8], [4, 5], [3, 6], [2, 7]];
     return matchups.map(([seedA, seedB]) => {
       const s = findSeries(series, 1, conf, [seedA, seedB]);
+      const isPlayInSeed = (seed: number) => seed === 7 || seed === 8;
       return {
         series: s,
-        topTeam: byRank(teams, seedA),
-        bottomTeam: byRank(teams, seedB),
+        topTeam: isPlayInSeed(seedA) && !s ? null : byRank(teams, seedA),
+        bottomTeam: isPlayInSeed(seedB) && !s ? null : byRank(teams, seedB),
         seedTop: seedA,
         seedBottom: seedB,
       };
