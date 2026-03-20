@@ -34,7 +34,7 @@ function teamLogoUrl(tricode: string): string {
 const BOX_W = 170;
 const BOX_H = 52;
 const CONN_W = 36;
-const HALF_H = 360;   // height per conference
+const HALF_H = 310;   // height per conference
 const TOTAL_H = HALF_H * 2;
 
 /* ─── Team row ─── */
@@ -249,7 +249,7 @@ function FullBracket({ east, west }: { east: Standing[]; west: Standing[] }) {
 /* ─── Play-In: single conference ─── */
 function PlayInConference({ teams, label }: { teams: Standing[]; label: string }) {
   const byRank = (rank: number) => teams.find(t => t.conference_rank === rank) || null;
-  const H = 220;
+  const H = 180;
 
   return (
     <div className="space-y-3">

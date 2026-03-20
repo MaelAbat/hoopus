@@ -15,7 +15,6 @@ import {
   LogIn,
   LogOut,
   Shield,
-  Swords,
 } from "lucide-react";
 import SyncButton from "./SyncButton";
 
@@ -31,8 +30,17 @@ const navItems: NavItem[] = [
   { href: "/articles", label: "Articles", icon: <FileText size={20} /> },
   { href: "/statistiques", label: "Statistiques", icon: <BarChart3 size={20} /> },
   { href: "/calendrier", label: "Calendrier", icon: <Calendar size={20} /> },
-  { href: "/classement", label: "Classement", icon: <Trophy size={20} /> },
-  { href: "/playoffs", label: "Playoffs", icon: <Swords size={20} /> },
+  { href: "/classement", label: "Classement", icon: (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      {/* 2e place (gauche) */}
+      <rect x="2" y="10" width="6" height="11" rx="1" />
+      {/* 1re place (centre) */}
+      <rect x="9" y="4" width="6" height="17" rx="1" />
+      {/* 3e place (droite) */}
+      <rect x="16" y="14" width="6" height="7" rx="1" />
+    </svg>
+  ) },
+  { href: "/playoffs", label: "Playoffs", icon: <Trophy size={20} /> },
   { href: "/profil", label: "Profil", icon: <User size={20} /> },
 ];
 
