@@ -16,6 +16,7 @@ import {
   LogOut,
   Shield,
 } from "lucide-react";
+import SyncButton from "./SyncButton";
 
 interface NavItem {
   href: string;
@@ -162,6 +163,7 @@ export default function Sidebar() {
                 </div>
               </div>
             </div>
+            {profile.is_admin && <SyncButton />}
             <button
               onClick={handleLogout}
               className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-text-muted transition-colors hover:bg-input hover:text-text-primary"
