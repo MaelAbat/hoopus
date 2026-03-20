@@ -26,6 +26,134 @@ interface NbaResponse {
   }[];
 }
 
+/* ─── Salary scraping from Basketball Reference ─── */
+function fetchHtml(url: string, redirects = 0): Promise<string> {
+  if (redirects > 5) return Promise.reject(new Error("Too many redirects"));
+  return new Promise((resolve, reject) => {
+    try {
+      const req = https.get(url, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+          "Accept": "text/html,application/xhtml+xml",
+          "Accept-Language": "en-US,en;q=0.9",
+        },
+      }, (res) => {
+        if ((res.statusCode === 301 || res.statusCode === 302) && res.headers.location) {
+          let location = res.headers.location;
+          // Handle relative redirects
+          if (location.startsWith("/")) {
+            const parsed = new URL(url);
+            location = `${parsed.protocol}//${parsed.host}${location}`;
+          }
+          res.resume(); // drain the response
+          fetchHtml(location, redirects + 1).then(resolve).catch(reject);
+          return;
+        }
+        let data = "";
+        res.on("data", (chunk: string) => (data += chunk));
+        res.on("end", () => {
+          if (res.statusCode !== 200) {
+            reject(new Error(`HTML fetch error: ${res.statusCode}`));
+            return;
+          }
+          resolve(data);
+        });
+      });
+      req.on("error", reject);
+      req.setTimeout(30000, () => {
+        req.destroy();
+        reject(new Error("HTML fetch timeout"));
+      });
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+
+function normalizeName(name: string): string {
+  return name
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // remove accents
+    .toLowerCase()
+    .replace(/[^a-z ]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// Basketball Reference tricode mapping (some differ from NBA)
+const BR_TRICODE_MAP: Record<string, string> = {
+  PHO: "PHX",
+  BRK: "BKN",
+  CHO: "CHA",
+};
+
+// All 30 BR team slugs
+const BR_TEAMS = [
+  "ATL", "BOS", "BRK", "CHI", "CHO", "CLE", "DAL", "DEN", "DET", "GSW",
+  "HOU", "IND", "LAC", "LAL", "MEM", "MIA", "MIL", "MIN", "NOP", "NYK",
+  "OKC", "ORL", "PHI", "PHO", "POR", "SAC", "SAS", "TOR", "UTA", "WAS",
+];
+
+function delay(ms: number) { return new Promise(r => setTimeout(r, ms)); }
+
+async function fetchTeamSalaries(brTeam: string, salaryMap: Map<string, string>) {
+  const html = await fetchHtml(`https://www.basketball-reference.com/contracts/${brTeam}.html`);
+  const nbaTeam = BR_TRICODE_MAP[brTeam] || brTeam;
+  const rows = html.match(/<tr\s*>[\s\S]*?<\/tr>/g) || [];
+
+  for (const row of rows) {
+    const playerMatch = row.match(/data-stat="player"[^>]*>.*?<a[^>]*>([^<]+)<\/a>/);
+    if (!playerMatch) continue;
+    const salaryMatch = row.match(/data-stat="y1"[^>]*>(\$[\d,]+)/);
+    if (!salaryMatch) continue;
+
+    const key = normalizeName(playerMatch[1].trim()) + "|" + nbaTeam;
+    salaryMap.set(key, salaryMatch[1]);
+  }
+}
+
+async function fetchTeamPayrolls(): Promise<Map<string, number>> {
+  const payrollMap = new Map<string, number>();
+  try {
+    const html = await fetchHtml("https://www.basketball-reference.com/contracts/");
+    const rows = html.match(/<tr[^>]*>[\s\S]*?<\/tr>/g) || [];
+    for (const row of rows) {
+      const tricodeMatch = row.match(/\/contracts\/([A-Z]{3})\.html/);
+      if (!tricodeMatch) continue;
+      const payrollMatch = row.match(/data-stat="y1"[^>]*>(\$[\d,]+)/);
+      if (!payrollMatch) continue;
+      let tri = tricodeMatch[1];
+      tri = BR_TRICODE_MAP[tri] || tri;
+      const amount = Number(payrollMatch[1].replace(/[$,]/g, "")) || 0;
+      payrollMap.set(tri, amount);
+    }
+    console.log(`Payroll scraping: found ${payrollMap.size} team totals`);
+  } catch (err) {
+    console.error("Error scraping payrolls:", err);
+  }
+  return payrollMap;
+}
+
+async function fetchSalaries(): Promise<Map<string, string>> {
+  const salaryMap = new Map<string, string>();
+
+  try {
+    // Fetch team pages in batches of 5 to avoid rate limiting
+    for (let i = 0; i < BR_TEAMS.length; i += 5) {
+      const batch = BR_TEAMS.slice(i, i + 5);
+      await Promise.all(batch.map(team => fetchTeamSalaries(team, salaryMap).catch(err => {
+        console.error(`Salary scrape failed for ${team}:`, err.message);
+      })));
+      // Small delay between batches to be polite
+      if (i + 5 < BR_TEAMS.length) await delay(1000);
+    }
+    console.log(`Salary scraping: found ${salaryMap.size} salaries from ${BR_TEAMS.length} team pages`);
+  } catch (err) {
+    console.error("Error scraping salaries:", err);
+  }
+
+  return salaryMap;
+}
+
 function fetchNba(url: string): Promise<NbaResponse> {
   return new Promise((resolve, reject) => {
     const req = https.get(url, { headers: NBA_HEADERS }, (res) => {
@@ -69,7 +197,7 @@ export async function GET(request: NextRequest) {
   );
 
   try {
-    // Fetch player index (roster info) and bio stats (age) in parallel
+    // Fetch player index and bio stats (critical), salary is best-effort
     const [indexData, bioData] = await Promise.all([
       fetchNba(
         "https://stats.nba.com/stats/playerindex?" +
@@ -89,6 +217,18 @@ export async function GET(request: NextRequest) {
           "&VsConference=&VsDivision=&Weight="
       ),
     ]);
+
+    // Salary + payroll scraping is best-effort — never blocks the sync
+    let salaryMap = new Map<string, string>();
+    let payrollMap = new Map<string, number>();
+    try {
+      [salaryMap, payrollMap] = await Promise.all([
+        fetchSalaries(),
+        fetchTeamPayrolls(),
+      ]);
+    } catch (err) {
+      console.error("Salary/payroll scraping failed (non-fatal):", err);
+    }
 
     // Parse player index
     const idxHeaders = indexData.resultSets[0].headers;
@@ -120,11 +260,18 @@ export async function GET(request: NextRequest) {
       const teamTricode = String(row[ii("TEAM_ABBREVIATION")] || "");
       if (!teamTricode) continue;
 
+      const firstName = String(row[ii("PLAYER_FIRST_NAME")] || "");
+      const lastName = String(row[ii("PLAYER_LAST_NAME")] || "");
+
+      // Match salary by normalized name + team
+      const salaryKey = normalizeName(`${firstName} ${lastName}`) + "|" + teamTricode;
+      const salary = salaryMap.get(salaryKey) || null;
+
       players.push({
         season: SEASON,
         player_id: playerId,
-        first_name: String(row[ii("PLAYER_FIRST_NAME")] || ""),
-        last_name: String(row[ii("PLAYER_LAST_NAME")] || ""),
+        first_name: firstName,
+        last_name: lastName,
         team_tricode: teamTricode,
         team_name: String(row[ii("TEAM_NAME")] || ""),
         team_city: String(row[ii("TEAM_CITY")] || ""),
@@ -141,6 +288,7 @@ export async function GET(request: NextRequest) {
         pts: row[ii("PTS")] != null ? Number(row[ii("PTS")]) : null,
         reb: row[ii("REB")] != null ? Number(row[ii("REB")]) : null,
         ast: row[ii("AST")] != null ? Number(row[ii("AST")]) : null,
+        salary,
         updated_at: now,
       });
     }
@@ -160,9 +308,24 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Store team payroll totals
+    if (payrollMap.size > 0) {
+      await supabase.from("team_payrolls").delete().eq("season", SEASON);
+      const payrollRows = Array.from(payrollMap.entries()).map(([tricode, payroll]) => ({
+        season: SEASON,
+        team_tricode: tricode,
+        payroll,
+        updated_at: now,
+      }));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: payrollError } = await supabase.from("team_payrolls").insert(payrollRows as any);
+      if (payrollError) console.error("Payroll insert error:", payrollError);
+    }
+
     return NextResponse.json({
       ok: true,
       players: inserted,
+      payrolls: payrollMap.size,
       timestamp: now,
     });
   } catch (err) {

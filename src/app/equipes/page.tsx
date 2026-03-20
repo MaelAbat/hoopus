@@ -6,12 +6,18 @@ export const revalidate = 3600;
 export default async function Equipes() {
   const supabase = await createClient();
 
-  const { data: players, error } = await supabase
-    .from("rosters")
-    .select("*")
-    .eq("season", "2025-26")
-    .order("team_tricode", { ascending: true })
-    .order("last_name", { ascending: true });
+  const [{ data: players, error }, { data: payrolls }] = await Promise.all([
+    supabase
+      .from("rosters")
+      .select("*")
+      .eq("season", "2025-26")
+      .order("team_tricode", { ascending: true })
+      .order("last_name", { ascending: true }),
+    supabase
+      .from("team_payrolls")
+      .select("*")
+      .eq("season", "2025-26"),
+  ]);
 
   const hasData = !error && players && players.length > 0;
 
@@ -42,7 +48,7 @@ export default async function Equipes() {
         </p>
       </div>
 
-      <TeamsView players={players || []} />
+      <TeamsView players={players || []} payrolls={payrolls || []} />
     </div>
   );
 }
