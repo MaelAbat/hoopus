@@ -12,6 +12,7 @@ import {
   Calendar,
   User,
   Trophy,
+  Users,
   LogIn,
   LogOut,
   Shield,
@@ -40,6 +41,7 @@ const navItems: NavItem[] = [
       <rect x="16" y="14" width="6" height="7" rx="1" />
     </svg>
   ) },
+  { href: "/equipes", label: "Équipes", icon: <Users size={20} /> },
   { href: "/playoffs", label: "Playoffs", icon: <Trophy size={20} /> },
   { href: "/profil", label: "Profil", icon: <User size={20} /> },
 ];

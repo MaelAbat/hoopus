@@ -36,27 +36,30 @@ export async function triggerSync(): Promise<{
   const secret = `secret=${process.env.REVALIDATE_SECRET}`;
 
   try {
-    const [statsRes, gamesRes, standingsRes, teamStatsRes, playoffsRes] = await Promise.all([
+    const [statsRes, gamesRes, standingsRes, teamStatsRes, playoffsRes, rostersRes] = await Promise.all([
       fetch(`${baseUrl}/api/sync-stats?${secret}`, { headers }),
       fetch(`${baseUrl}/api/sync-games?${secret}`, { headers }),
       fetch(`${baseUrl}/api/sync-standings?${secret}`, { headers }),
       fetch(`${baseUrl}/api/sync-team-stats?${secret}`, { headers }),
       fetch(`${baseUrl}/api/sync-playoffs?${secret}`, { headers }),
+      fetch(`${baseUrl}/api/sync-rosters?${secret}`, { headers }),
     ]);
 
-    const [statsData, gamesData, standingsData, teamStatsData, playoffsData] =
+    const [statsData, gamesData, standingsData, teamStatsData, playoffsData, rostersData] =
       await Promise.all([
         statsRes.json(),
         gamesRes.json(),
         standingsRes.json(),
         teamStatsRes.json(),
         playoffsRes.json(),
+        rostersRes.json(),
       ]);
 
     revalidatePath("/calendrier");
     revalidatePath("/classement");
     revalidatePath("/statistiques");
     revalidatePath("/playoffs");
+    revalidatePath("/equipes");
 
     return {
       ok: true,
@@ -66,6 +69,7 @@ export async function triggerSync(): Promise<{
         standings: standingsData,
         teamStats: teamStatsData,
         playoffs: playoffsData,
+        rosters: rostersData,
       },
     };
   } catch (e) {
