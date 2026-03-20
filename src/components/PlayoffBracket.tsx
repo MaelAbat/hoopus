@@ -14,6 +14,47 @@ interface Standing {
   conference_rank: number;
 }
 
+interface SeriesGame {
+  game_number: number;
+  home_team: string;
+  away_team: string;
+  home_score: number;
+  away_score: number;
+  status: number;
+  game_date: string;
+}
+
+interface PlayoffSeries {
+  id: string;
+  season: string;
+  round: number;
+  conference: string | null;
+  seed_top: number;
+  seed_bottom: number;
+  team_top: string;
+  team_bottom: string;
+  wins_top: number;
+  wins_bottom: number;
+  status: "upcoming" | "active" | "completed";
+  games: SeriesGame[];
+}
+
+interface PlayInGame {
+  id: string;
+  season: string;
+  conference: string;
+  matchup_type: "seven_eight" | "nine_ten" | "final";
+  home_team: string;
+  away_team: string;
+  home_seed: number;
+  away_seed: number;
+  home_score: number;
+  away_score: number;
+  status: number;
+  game_date: string;
+  winner: string | null;
+}
+
 const TEAM_ID: Record<string, number> = {
   ATL: 1610612737, BOS: 1610612738, BKN: 1610612751, CHA: 1610612766,
   CHI: 1610612741, CLE: 1610612739, DAL: 1610612742, DEN: 1610612743,
@@ -32,21 +73,32 @@ function teamLogoUrl(tricode: string): string {
 
 /* ─── Dimensions ─── */
 const BOX_W = 170;
-const BOX_H = 52;
 const CONN_W = 36;
-const HALF_H = 310;   // height per conference
+const HALF_H = 310;
 const TOTAL_H = HALF_H * 2;
 
-/* ─── Team row ─── */
-function TeamRow({ team, seed }: { team: Standing | null; seed?: number }) {
+/* ─── Team row inside a matchup box ─── */
+function TeamRow({ tricode, seed, wins, isWinner, record }: {
+  tricode: string | null;
+  seed?: number;
+  wins?: number;
+  isWinner?: boolean;
+  record?: string;
+}) {
   return (
-    <div className="flex items-center gap-2 px-2.5 py-1.5">
+    <div className={`flex items-center gap-2 px-2.5 py-1.5 ${isWinner ? "bg-accent/5" : ""}`}>
       <span className="w-4 text-center text-[10px] font-bold text-text-faint">{seed ?? ""}</span>
-      {team ? (
+      {tricode ? (
         <>
-          <img src={teamLogoUrl(team.team_tricode)} alt={team.team_tricode} className="h-5 w-5 shrink-0 object-contain" />
-          <span className="text-xs font-semibold text-text-primary flex-1">{team.team_tricode}</span>
-          <span className="text-[10px] tabular-nums text-text-muted">{team.wins}-{team.losses}</span>
+          <img src={teamLogoUrl(tricode)} alt={tricode} className="h-5 w-5 shrink-0 object-contain" />
+          <span className={`text-xs font-semibold flex-1 ${isWinner ? "text-accent" : "text-text-primary"}`}>{tricode}</span>
+          {wins !== undefined ? (
+            <span className={`text-[10px] font-bold tabular-nums ${isWinner ? "text-accent" : "text-text-muted"}`}>
+              {wins}
+            </span>
+          ) : record ? (
+            <span className="text-[10px] tabular-nums text-text-muted">{record}</span>
+          ) : null}
         </>
       ) : (
         <span className="text-[10px] text-text-faint italic">TBD</span>
@@ -55,14 +107,101 @@ function TeamRow({ team, seed }: { team: Standing | null; seed?: number }) {
   );
 }
 
-/* ─── Matchup box ─── */
-function MatchupBox({ top, bottom, seedTop, seedBottom, accent }: {
-  top: Standing | null;
-  bottom: Standing | null;
+/* ─── Games detail popover ─── */
+function GamesPopover({ series }: { series: PlayoffSeries }) {
+  const finishedGames = series.games.filter(g => g.status === 3).sort((a, b) => a.game_number - b.game_number);
+  if (finishedGames.length === 0) return null;
+
+  return (
+    <div className="absolute z-50 top-full left-1/2 -translate-x-1/2 mt-1.5 w-48 rounded-lg border border-border-t bg-card shadow-xl p-2 space-y-1">
+      <p className="text-[9px] font-semibold text-text-muted uppercase tracking-wider text-center mb-1">
+        Détail de la série
+      </p>
+      {finishedGames.map((g) => {
+        const awayWon = g.away_score > g.home_score;
+        const homeWon = g.home_score > g.away_score;
+        return (
+          <div key={g.game_number} className="flex items-center gap-1.5 text-[10px]">
+            <span className="text-text-faint w-5 shrink-0">G{g.game_number}</span>
+            <span className={`flex-1 text-right ${awayWon ? "font-semibold text-text-primary" : "text-text-faint"}`}>
+              {g.away_team}
+            </span>
+            <span className={`w-5 text-center tabular-nums ${awayWon ? "font-bold text-text-primary" : "text-text-faint"}`}>
+              {g.away_score}
+            </span>
+            <span className="text-text-faint">-</span>
+            <span className={`w-5 text-center tabular-nums ${homeWon ? "font-bold text-text-primary" : "text-text-faint"}`}>
+              {g.home_score}
+            </span>
+            <span className={`flex-1 ${homeWon ? "font-semibold text-text-primary" : "text-text-faint"}`}>
+              {g.home_team}
+            </span>
+          </div>
+        );
+      })}
+      {series.games.some(g => g.status === 1) && (
+        <p className="text-[9px] text-text-faint text-center pt-1 border-t border-border-t">
+          {series.games.filter(g => g.status === 1).length} match(s) à venir
+        </p>
+      )}
+    </div>
+  );
+}
+
+/* ─── Matchup box with optional series data ─── */
+function MatchupBox({ series, topTeam, bottomTeam, seedTop, seedBottom, accent }: {
+  series?: PlayoffSeries | null;
+  topTeam?: Standing | null;
+  bottomTeam?: Standing | null;
   seedTop?: number;
   seedBottom?: number;
   accent?: boolean;
 }) {
+  const [showGames, setShowGames] = useState(false);
+
+  // If we have series data, use it
+  if (series) {
+    const isCompleted = series.status === "completed";
+    const topWinner = isCompleted && series.wins_top === 4;
+    const bottomWinner = isCompleted && series.wins_bottom === 4;
+    const hasGames = series.games && series.games.some(g => g.status === 3);
+
+    return (
+      <div
+        className={`relative rounded-lg overflow-visible shadow-sm shrink-0 ${
+          hasGames ? "cursor-pointer" : ""
+        } ${
+          accent
+            ? "border-2 border-accent/40 bg-card"
+            : isCompleted
+              ? "border border-border-t/60 bg-card/80"
+              : "border border-border-t bg-card"
+        }`}
+        style={{ width: BOX_W }}
+        onMouseEnter={() => hasGames && setShowGames(true)}
+        onMouseLeave={() => setShowGames(false)}
+      >
+        <div className="rounded-lg overflow-hidden">
+          <TeamRow
+            tricode={series.team_top}
+            seed={series.seed_top}
+            wins={series.wins_top}
+            isWinner={topWinner}
+          />
+          <div className={`h-px ${accent ? "bg-accent/30" : "bg-border-t"}`} />
+          <TeamRow
+            tricode={series.team_bottom}
+            seed={series.seed_bottom}
+            wins={series.wins_bottom}
+            isWinner={bottomWinner}
+          />
+        </div>
+        {showGames && <GamesPopover series={series} />}
+      </div>
+    );
+  }
+
+  // Fallback: use standings data (pre-playoff seeding)
   return (
     <div
       className={`rounded-lg overflow-hidden shadow-sm shrink-0 ${
@@ -72,9 +211,17 @@ function MatchupBox({ top, bottom, seedTop, seedBottom, accent }: {
       }`}
       style={{ width: BOX_W }}
     >
-      <TeamRow team={top} seed={seedTop} />
+      <TeamRow
+        tricode={topTeam?.team_tricode || null}
+        seed={seedTop}
+        record={topTeam ? `${topTeam.wins}-${topTeam.losses}` : undefined}
+      />
       <div className={`h-px ${accent ? "bg-accent/30" : "bg-border-t"}`} />
-      <TeamRow team={bottom} seed={seedBottom} />
+      <TeamRow
+        tricode={bottomTeam?.team_tricode || null}
+        seed={seedBottom}
+        record={bottomTeam ? `${bottomTeam.wins}-${bottomTeam.losses}` : undefined}
+      />
     </div>
   );
 }
@@ -92,7 +239,6 @@ function HalfCol({ count, children }: { count: number; children: React.ReactNode
 }
 
 /* ─── SVG connector for intra-conference transitions ─── */
-/* Draws merge lines for both conferences (top half + bottom half) */
 function DualConnector({ inputPerConf, outputPerConf }: { inputPerConf: number; outputPerConf: number }) {
   const inSpace = HALF_H / inputPerConf;
   const outSpace = HALF_H / outputPerConf;
@@ -133,19 +279,78 @@ function FinalsConnector() {
   );
 }
 
+/* ─── Helper: find series for a given round, conference, and matchup position ─── */
+function findSeries(
+  allSeries: PlayoffSeries[],
+  round: number,
+  conference: string | null,
+  expectedSeeds?: [number, number]
+): PlayoffSeries | null {
+  return allSeries.find(s => {
+    if (s.round !== round) return false;
+    if (conference && s.conference !== conference) return false;
+    if (!conference && s.conference !== null) return false;
+    if (expectedSeeds) {
+      const seeds = [s.seed_top, s.seed_bottom].sort((a, b) => a - b);
+      const expected = [...expectedSeeds].sort((a, b) => a - b);
+      return seeds[0] === expected[0] && seeds[1] === expected[1];
+    }
+    return true;
+  }) || null;
+}
+
+/* ─── Find series by teams involved (for later rounds) ─── */
+function findSeriesByConference(
+  allSeries: PlayoffSeries[],
+  round: number,
+  conference: string | null,
+  index: number
+): PlayoffSeries | null {
+  const matches = allSeries.filter(s => {
+    if (s.round !== round) return false;
+    if (conference !== null && s.conference !== conference) return false;
+    if (conference === null && s.conference !== null) return false;
+    return true;
+  });
+  // Sort by seed_top to have consistent ordering
+  matches.sort((a, b) => a.seed_top - b.seed_top);
+  return matches[index] || null;
+}
+
 /* ─── Full unified playoff bracket ─── */
-function FullBracket({ east, west }: { east: Standing[]; west: Standing[] }) {
+function FullBracket({ east, west, series }: { east: Standing[]; west: Standing[]; series: PlayoffSeries[] }) {
   const byRank = (teams: Standing[], rank: number) => teams.find(t => t.conference_rank === rank) || null;
 
-  const makeR1 = (teams: Standing[]) => [
-    { top: byRank(teams, 1), bottom: null as Standing | null, seedTop: 1, seedBottom: 8 },
-    { top: byRank(teams, 4), bottom: byRank(teams, 5), seedTop: 4, seedBottom: 5 },
-    { top: byRank(teams, 3), bottom: byRank(teams, 6), seedTop: 3, seedBottom: 6 },
-    { top: byRank(teams, 2), bottom: null as Standing | null, seedTop: 2, seedBottom: 7 },
-  ];
+  const makeR1 = (teams: Standing[], conf: string) => {
+    // Matchup order: 1v8, 4v5, 3v6, 2v7
+    const matchups: [number, number][] = [[1, 8], [4, 5], [3, 6], [2, 7]];
+    return matchups.map(([seedA, seedB]) => {
+      const s = findSeries(series, 1, conf, [seedA, seedB]);
+      return {
+        series: s,
+        topTeam: byRank(teams, seedA),
+        bottomTeam: byRank(teams, seedB),
+        seedTop: seedA,
+        seedBottom: seedB,
+      };
+    });
+  };
 
-  const eastR1 = makeR1(east);
-  const westR1 = makeR1(west);
+  const eastR1 = makeR1(east, "East");
+  const westR1 = makeR1(west, "West");
+
+  // Semis (round 2): 2 per conference
+  const eastSemi0 = findSeriesByConference(series, 2, "East", 0);
+  const eastSemi1 = findSeriesByConference(series, 2, "East", 1);
+  const westSemi0 = findSeriesByConference(series, 2, "West", 0);
+  const westSemi1 = findSeriesByConference(series, 2, "West", 1);
+
+  // Conf Finals (round 3): 1 per conference
+  const eastCF = findSeriesByConference(series, 3, "East", 0);
+  const westCF = findSeriesByConference(series, 3, "West", 0);
+
+  // NBA Finals (round 4)
+  const finals = findSeriesByConference(series, 4, null, 0);
 
   const roundLabels = ["1er tour", "Demi-finales", "Finale conf.", "Finales NBA"];
 
@@ -154,7 +359,6 @@ function FullBracket({ east, west }: { east: Standing[]; west: Standing[] }) {
       <div className="flex flex-col items-center min-w-max">
         {/* ── Round labels ── */}
         <div className="flex items-end mb-3">
-          {/* spacer for conference label column */}
           <div className="shrink-0" style={{ width: 28 }} />
           {roundLabels.map((label, i) => (
             <div key={i} className="flex items-center shrink-0">
@@ -195,50 +399,50 @@ function FullBracket({ east, west }: { east: Standing[]; west: Standing[] }) {
           <div className="shrink-0" style={{ width: BOX_W }}>
             <HalfCol count={4}>
               {eastR1.map((m, i) => (
-                <MatchupBox key={i} top={m.top} bottom={m.bottom} seedTop={m.seedTop} seedBottom={m.seedBottom} />
+                <MatchupBox key={i} series={m.series} topTeam={m.topTeam} bottomTeam={m.bottomTeam} seedTop={m.seedTop} seedBottom={m.seedBottom} />
               ))}
             </HalfCol>
             <HalfCol count={4}>
               {westR1.map((m, i) => (
-                <MatchupBox key={i} top={m.top} bottom={m.bottom} seedTop={m.seedTop} seedBottom={m.seedBottom} />
+                <MatchupBox key={i} series={m.series} topTeam={m.topTeam} bottomTeam={m.bottomTeam} seedTop={m.seedTop} seedBottom={m.seedBottom} />
               ))}
             </HalfCol>
           </div>
 
-          {/* Connector R1 → Semis (4→2 per conf) */}
+          {/* Connector R1 → Semis */}
           <DualConnector inputPerConf={4} outputPerConf={2} />
 
           {/* Semis: 2 matchups per conference */}
           <div className="shrink-0" style={{ width: BOX_W }}>
             <HalfCol count={2}>
-              <MatchupBox top={null} bottom={null} />
-              <MatchupBox top={null} bottom={null} />
+              <MatchupBox series={eastSemi0} />
+              <MatchupBox series={eastSemi1} />
             </HalfCol>
             <HalfCol count={2}>
-              <MatchupBox top={null} bottom={null} />
-              <MatchupBox top={null} bottom={null} />
+              <MatchupBox series={westSemi0} />
+              <MatchupBox series={westSemi1} />
             </HalfCol>
           </div>
 
-          {/* Connector Semis → CF (2→1 per conf) */}
+          {/* Connector Semis → CF */}
           <DualConnector inputPerConf={2} outputPerConf={1} />
 
           {/* Conference Finals: 1 per conference */}
           <div className="shrink-0" style={{ width: BOX_W }}>
             <HalfCol count={1}>
-              <MatchupBox top={null} bottom={null} />
+              <MatchupBox series={eastCF} />
             </HalfCol>
             <HalfCol count={1}>
-              <MatchupBox top={null} bottom={null} />
+              <MatchupBox series={westCF} />
             </HalfCol>
           </div>
 
-          {/* Connector CF → Finals (2 confs → 1) */}
+          {/* Connector CF → Finals */}
           <FinalsConnector />
 
           {/* NBA Finals */}
           <div className="shrink-0 flex flex-col justify-center" style={{ width: BOX_W, height: TOTAL_H }}>
-            <MatchupBox top={null} bottom={null} accent />
+            <MatchupBox series={finals} accent />
           </div>
         </div>
       </div>
@@ -246,31 +450,88 @@ function FullBracket({ east, west }: { east: Standing[]; west: Standing[] }) {
   );
 }
 
+/* ─── Play-In matchup box (single game, not a series) ─── */
+function PlayInMatchupBox({ game, topTeam, bottomTeam, seedTop, seedBottom }: {
+  game?: PlayInGame | null;
+  topTeam?: Standing | null;
+  bottomTeam?: Standing | null;
+  seedTop?: number;
+  seedBottom?: number;
+}) {
+  if (game) {
+    const finished = game.status === 3;
+    const homeSeed = game.home_seed;
+    const awaySeed = game.away_seed;
+    // Show higher seed on top
+    const topIsHome = homeSeed <= awaySeed;
+    const topTricode = topIsHome ? game.home_team : game.away_team;
+    const bottomTricode = topIsHome ? game.away_team : game.home_team;
+    const topScore = topIsHome ? game.home_score : game.away_score;
+    const bottomScore = topIsHome ? game.away_score : game.home_score;
+    const topSeed = topIsHome ? game.home_seed : game.away_seed;
+    const bottomSeed = topIsHome ? game.away_seed : game.home_seed;
+    const topWon = finished && game.winner === topTricode;
+    const bottomWon = finished && game.winner === bottomTricode;
+
+    return (
+      <div
+        className={`rounded-lg overflow-hidden shadow-sm shrink-0 ${
+          finished ? "border border-border-t/60 bg-card/80" : "border border-border-t bg-card"
+        }`}
+        style={{ width: BOX_W }}
+      >
+        <div className={`flex items-center gap-2 px-2.5 py-1.5 ${topWon ? "bg-accent/5" : ""}`}>
+          <span className="w-4 text-center text-[10px] font-bold text-text-faint">{topSeed}</span>
+          <img src={teamLogoUrl(topTricode)} alt={topTricode} className="h-5 w-5 shrink-0 object-contain" />
+          <span className={`text-xs font-semibold flex-1 ${topWon ? "text-accent" : "text-text-primary"}`}>{topTricode}</span>
+          {finished && (
+            <span className={`text-[10px] font-bold tabular-nums ${topWon ? "text-accent" : "text-text-faint"}`}>{topScore}</span>
+          )}
+        </div>
+        <div className="h-px bg-border-t" />
+        <div className={`flex items-center gap-2 px-2.5 py-1.5 ${bottomWon ? "bg-accent/5" : ""}`}>
+          <span className="w-4 text-center text-[10px] font-bold text-text-faint">{bottomSeed}</span>
+          <img src={teamLogoUrl(bottomTricode)} alt={bottomTricode} className="h-5 w-5 shrink-0 object-contain" />
+          <span className={`text-xs font-semibold flex-1 ${bottomWon ? "text-accent" : "text-text-primary"}`}>{bottomTricode}</span>
+          {finished && (
+            <span className={`text-[10px] font-bold tabular-nums ${bottomWon ? "text-accent" : "text-text-faint"}`}>{bottomScore}</span>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Fallback: use standings data
+  return <MatchupBox topTeam={topTeam} bottomTeam={bottomTeam} seedTop={seedTop} seedBottom={seedBottom} />;
+}
+
 /* ─── Play-In: single conference ─── */
-function PlayInConference({ teams, label }: { teams: Standing[]; label: string }) {
+function PlayInConference({ teams, label, games }: { teams: Standing[]; label: string; games: PlayInGame[] }) {
   const byRank = (rank: number) => teams.find(t => t.conference_rank === rank) || null;
   const H = 180;
+
+  const game78 = games.find(g => g.matchup_type === "seven_eight") || null;
+  const game910 = games.find(g => g.matchup_type === "nine_ten") || null;
+  const gameFinal = games.find(g => g.matchup_type === "final") || null;
 
   return (
     <div className="space-y-3">
       <h3 className="text-sm font-bold text-text-primary text-center">{label}</h3>
       <div className="flex items-center justify-center overflow-x-auto">
-        {/* R1 */}
         <div className="shrink-0 flex flex-col items-center">
           <span className="text-[10px] font-semibold uppercase tracking-wider text-accent mb-2">Tour 1</span>
           <div className="flex flex-col justify-around" style={{ height: H }}>
             <div className="text-center">
               <p className="text-[9px] text-text-faint mb-1">Vainqueur → 7e seed</p>
-              <MatchupBox top={byRank(7)} bottom={byRank(8)} seedTop={7} seedBottom={8} />
+              <PlayInMatchupBox game={game78} topTeam={byRank(7)} bottomTeam={byRank(8)} seedTop={7} seedBottom={8} />
             </div>
             <div className="text-center">
               <p className="text-[9px] text-text-faint mb-1">Perdant éliminé</p>
-              <MatchupBox top={byRank(9)} bottom={byRank(10)} seedTop={9} seedBottom={10} />
+              <PlayInMatchupBox game={game910} topTeam={byRank(9)} bottomTeam={byRank(10)} seedTop={9} seedBottom={10} />
             </div>
           </div>
         </div>
 
-        {/* Connector */}
         <svg width={CONN_W} height={H} className="shrink-0">
           {(() => {
             const inY1 = H / 4;
@@ -286,13 +547,12 @@ function PlayInConference({ teams, label }: { teams: Standing[]; label: string }
           })()}
         </svg>
 
-        {/* R2 */}
         <div className="shrink-0 flex flex-col items-center">
           <span className="text-[10px] font-semibold uppercase tracking-wider text-accent mb-2">8e place</span>
           <div className="flex flex-col justify-center" style={{ height: H }}>
             <div className="text-center">
               <p className="text-[9px] text-text-faint mb-1">Perdant 7-8 vs Vainqueur 9-10</p>
-              <MatchupBox top={null} bottom={null} />
+              <PlayInMatchupBox game={gameFinal} />
             </div>
           </div>
         </div>
@@ -302,7 +562,7 @@ function PlayInConference({ teams, label }: { teams: Standing[]; label: string }
 }
 
 /* ─── Main component ─── */
-export default function PlayoffBracket({ east, west }: { east: Standing[]; west: Standing[] }) {
+export default function PlayoffBracket({ east, west, series, playinGames }: { east: Standing[]; west: Standing[]; series: PlayoffSeries[]; playinGames: PlayInGame[] }) {
   const [view, setView] = useState<"playin" | "playoffs">("playoffs");
 
   const views: { key: "playin" | "playoffs"; label: string }[] = [
@@ -338,10 +598,10 @@ export default function PlayoffBracket({ east, west }: { east: Standing[]; west:
       ) : view === "playin" ? (
         <div className="space-y-6">
           <div className="rounded-2xl bg-card border border-border-t p-6">
-            <PlayInConference teams={east} label="Play-In — Conférence Est" />
+            <PlayInConference teams={east} label="Play-In — Conférence Est" games={playinGames.filter(g => g.conference === "East")} />
           </div>
           <div className="rounded-2xl bg-card border border-border-t p-6">
-            <PlayInConference teams={west} label="Play-In — Conférence Ouest" />
+            <PlayInConference teams={west} label="Play-In — Conférence Ouest" games={playinGames.filter(g => g.conference === "West")} />
           </div>
           <div className="rounded-xl border border-border-t bg-card/50 p-4 space-y-2">
             <p className="text-xs font-semibold text-text-secondary">Comment fonctionne le Play-In ?</p>
@@ -354,7 +614,7 @@ export default function PlayoffBracket({ east, west }: { east: Standing[]; west:
         </div>
       ) : (
         <div className="rounded-2xl bg-card border border-border-t p-6">
-          <FullBracket east={east} west={west} />
+          <FullBracket east={east} west={west} series={series} />
         </div>
       )}
     </div>

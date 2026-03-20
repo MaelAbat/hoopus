@@ -6,11 +6,22 @@ export const revalidate = 3600;
 export default async function Playoffs() {
   const supabase = await createClient();
 
-  const { data: standings, error } = await supabase
-    .from("standings")
-    .select("*")
-    .eq("season", "2025-26")
-    .order("conference_rank", { ascending: true });
+  const [{ data: standings, error }, { data: series }, { data: playinGames }] = await Promise.all([
+    supabase
+      .from("standings")
+      .select("*")
+      .eq("season", "2025-26")
+      .order("conference_rank", { ascending: true }),
+    supabase
+      .from("playoff_series")
+      .select("*")
+      .eq("season", "2025-26")
+      .order("round", { ascending: true }),
+    supabase
+      .from("playin_games")
+      .select("*")
+      .eq("season", "2025-26"),
+  ]);
 
   const hasData = !error && standings && standings.length > 0;
 
@@ -44,7 +55,7 @@ export default async function Playoffs() {
         </p>
       </div>
 
-      <PlayoffBracket east={east} west={west} />
+      <PlayoffBracket east={east} west={west} series={series || []} playinGames={playinGames || []} />
     </div>
   );
 }
