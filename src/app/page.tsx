@@ -13,8 +13,9 @@ import {
   BookOpen,
 } from "lucide-react";
 import { getArticles } from "@/lib/actions/articles";
+import ScrollReveal from "@/components/ScrollReveal";
 
-/* ── Fun facts stats & histoires ─────────── */
+/* ── Fun facts ───────────────────────────── */
 const funFacts = [
   "Wilt Chamberlain a inscrit 100 points en un seul match le 2 mars 1962. Le deuxième record est de 81, par Kobe, 44 ans plus tard.",
   "Scott Skiles détient le record de passes en un match : 30. Ce soir-là, ses coéquipiers n'avaient plus qu'à finir.",
@@ -33,63 +34,63 @@ const categories = [
     href: "/actualites",
     title: "Actualités",
     description: "Trades, drama, buzzer beaters — tout ce qui fait vibrer la ligue",
-    icon: <Newspaper size={24} />,
-    gradient: "from-orange-500/20 to-amber-500/10",
-    iconBg: "bg-orange-500/15 text-orange-400",
+    icon: <Newspaper size={20} />,
+    color: "#f97316",
+    image: "https://images.unsplash.com/photo-1515523110800-9415d13b84a8?w=600&q=80",
   },
   {
     href: "/articles",
     title: "Articles",
     description: "On décortique les matchs, les tactiques et les tendances",
-    icon: <FileText size={24} />,
-    gradient: "from-blue-500/20 to-cyan-500/10",
-    iconBg: "bg-blue-500/15 text-blue-400",
+    icon: <FileText size={20} />,
+    color: "#3b82f6",
+    image: "https://images.unsplash.com/photo-1608245449230-4ac19066d2d0?w=600&q=80",
   },
   {
     href: "/statistiques",
     title: "Statistiques",
     description: "PTS, AST, REB, FG% — le paradis des amoureux des chiffres",
-    icon: <BarChart3 size={24} />,
-    gradient: "from-emerald-500/20 to-green-500/10",
-    iconBg: "bg-emerald-500/15 text-emerald-400",
+    icon: <BarChart3 size={20} />,
+    color: "#10b981",
+    image: "https://images.unsplash.com/photo-1518063319789-7217e6706b04?w=600&q=80",
   },
   {
     href: "/calendrier",
     title: "Calendrier",
     description: "Qui joue ce soir, qui a gagné hier, qui joue demain",
-    icon: <Calendar size={24} />,
-    gradient: "from-violet-500/20 to-purple-500/10",
-    iconBg: "bg-violet-500/15 text-violet-400",
+    icon: <Calendar size={20} />,
+    color: "#8b5cf6",
+    image: "https://images.unsplash.com/photo-1577471488278-16eec37ffcc2?w=600&q=80",
   },
   {
     href: "/classement",
     title: "Classement",
     description: "La course aux playoffs, conférence par conférence",
     icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="2" y="10" width="6" height="11" rx="1" />
         <rect x="9" y="4" width="6" height="17" rx="1" />
         <rect x="16" y="14" width="6" height="7" rx="1" />
       </svg>
     ),
-    gradient: "from-yellow-500/20 to-orange-500/10",
-    iconBg: "bg-yellow-500/15 text-yellow-400",
+    color: "#eab308",
+    image: "https://images.unsplash.com/photo-1559692048-79a3f837883d?w=600&q=80",
   },
   {
     href: "/equipes",
     title: "Équipes",
     description: "30 franchises, leurs rosters et leurs salary caps",
-    icon: <Users size={24} />,
-    gradient: "from-pink-500/20 to-rose-500/10",
-    iconBg: "bg-pink-500/15 text-pink-400",
+    icon: <Users size={20} />,
+    color: "#ec4899",
+    image: "https://images.unsplash.com/photo-1628779238951-be2c9f2a59f4?w=600&q=80",
   },
   {
     href: "/playoffs",
     title: "Playoffs",
     description: "Là où les légendes se forgent. Win or go home.",
-    icon: <Trophy size={24} />,
-    gradient: "from-cyan-500/20 to-teal-500/10",
-    iconBg: "bg-cyan-500/15 text-cyan-400",
+    icon: <Trophy size={20} />,
+    color: "#06b6d4",
+    image: "https://images.unsplash.com/photo-1574623452334-1e0ac2b3ccb4?w=600&q=80",
   },
 ];
 
@@ -113,72 +114,57 @@ export default async function Home() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-14">
-      {/* ── Hero ──────────────────────────────── */}
-      <section className="relative overflow-hidden rounded-3xl border border-border-t bg-card">
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-accent/8 blur-3xl animate-float" />
-          <div className="absolute -bottom-16 -left-16 h-56 w-56 rounded-full bg-accent/6 blur-3xl animate-float-delayed" />
-          <div className="absolute left-1/3 top-1/4 h-32 w-32 rounded-full bg-accent/4 blur-2xl animate-float" />
+      {/* ── Hero with background image ───────── */}
+      <section className="relative overflow-hidden rounded-3xl border border-border-t">
+        {/* Background photo */}
+        <div className="absolute inset-0">
+          <img
+            src="https://images.unsplash.com/photo-1546519638-68e109498ffc?w=1400&q=80"
+            alt=""
+            className="h-full w-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-black/40" />
         </div>
 
-        <div className="relative px-8 py-12 sm:px-12 sm:py-16">
-          <div className="flex flex-col items-start gap-8 lg:flex-row lg:items-center lg:justify-between">
-            <div className="max-w-2xl space-y-5">
-              <div className="inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent-light px-4 py-1.5 text-xs font-semibold text-accent-text">
-                <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-75" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
-                </span>
-                Saison 2025-26 en cours
-              </div>
-
-              <h1 className="text-4xl font-extrabold tracking-tight text-text-primary sm:text-5xl">
-                Bienvenue sur{" "}
-                <span className="bg-gradient-to-r from-accent to-accent-hover bg-clip-text text-transparent">
-                  Hoopus
-                </span>
-              </h1>
-
-              <p className="text-lg leading-relaxed text-text-secondary">
-                Toute la NBA, distillée pour les vrais passionnés.
-                <br className="hidden sm:block" />
-                Actu, stats, classements, rosters et playoffs — tout est là.
-              </p>
-
-              <div className="flex flex-wrap gap-3 pt-2">
-                <Link
-                  href="/actualites"
-                  className="group inline-flex items-center gap-2 rounded-xl bg-accent px-6 py-3 text-sm font-bold text-white transition-all duration-300 hover:bg-accent-hover hover:shadow-lg hover:shadow-accent/25 hover:scale-[1.03] active:scale-[0.98]"
-                >
-                  <Flame size={16} />
-                  Voir les actus
-                  <ArrowRight size={16} className="transition-transform duration-300 group-hover:translate-x-0.5" />
-                </Link>
-                <Link
-                  href="/statistiques"
-                  className="group inline-flex items-center gap-2 rounded-xl border border-border-t bg-input px-6 py-3 text-sm font-bold text-text-primary transition-all duration-300 hover:border-border-hover hover:bg-card-hover hover:scale-[1.03] active:scale-[0.98]"
-                >
-                  <BarChart3 size={16} />
-                  Plonger dans les stats
-                </Link>
-              </div>
+        <div className="relative px-8 py-14 sm:px-12 sm:py-20">
+          <div className="max-w-2xl space-y-5">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-1.5 text-xs font-semibold text-white backdrop-blur-sm">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
+              </span>
+              Saison 2025-26 en cours
             </div>
 
-            {/* Decorative basketball */}
-            <div className="hidden shrink-0 lg:block">
-              <div className="relative flex h-48 w-48 items-center justify-center">
-                <div className="absolute inset-0 animate-spin-slow rounded-full border-2 border-dashed border-accent/15" />
-                <div className="absolute inset-4 animate-reverse-spin rounded-full border border-accent/10" />
-                <div className="flex h-32 w-32 items-center justify-center rounded-full bg-gradient-to-br from-accent/20 to-accent/5">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none" className="text-accent animate-bounce-subtle">
-                    <circle cx="32" cy="32" r="28" stroke="currentColor" strokeWidth="2" opacity="0.6" />
-                    <path d="M4 32 h56" stroke="currentColor" strokeWidth="1.5" opacity="0.3" />
-                    <path d="M32 4 v56" stroke="currentColor" strokeWidth="1.5" opacity="0.3" />
-                    <path d="M10 10 C22 20 42 44 54 54" stroke="currentColor" strokeWidth="1.5" opacity="0.25" />
-                    <path d="M54 10 C42 20 22 44 10 54" stroke="currentColor" strokeWidth="1.5" opacity="0.25" />
-                  </svg>
-                </div>
-              </div>
+            <h1 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl">
+              Bienvenue sur{" "}
+              <span className="bg-gradient-to-r from-accent to-accent-hover bg-clip-text text-transparent">
+                Hoopus
+              </span>
+            </h1>
+
+            <p className="text-lg leading-relaxed text-white/70">
+              Toute la NBA, distillée pour les vrais passionnés.
+              <br className="hidden sm:block" />
+              Actu, stats, classements, rosters et playoffs — tout est là.
+            </p>
+
+            <div className="flex flex-wrap gap-3 pt-2">
+              <Link
+                href="/actualites"
+                className="group inline-flex items-center gap-2 rounded-xl bg-accent px-6 py-3 text-sm font-bold text-white transition-all duration-300 hover:bg-accent-hover hover:shadow-lg hover:shadow-accent/25 hover:scale-[1.03] active:scale-[0.98]"
+              >
+                <Flame size={16} />
+                Voir les actus
+                <ArrowRight size={16} className="transition-transform duration-300 group-hover:translate-x-0.5" />
+              </Link>
+              <Link
+                href="/statistiques"
+                className="group inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-6 py-3 text-sm font-bold text-white backdrop-blur-sm transition-all duration-300 hover:bg-white/20 hover:scale-[1.03] active:scale-[0.98]"
+              >
+                <BarChart3 size={16} />
+                Plonger dans les stats
+              </Link>
             </div>
           </div>
         </div>
@@ -186,7 +172,7 @@ export default async function Home() {
 
       {/* ── Article à la une ─────────────────── */}
       {featured && (
-        <section>
+        <ScrollReveal variant="scale">
           <div className="mb-6 flex items-center justify-between">
             <h2 className="text-2xl font-bold text-text-primary">À la une</h2>
             <Link
@@ -203,7 +189,6 @@ export default async function Home() {
             className="group relative block overflow-hidden rounded-2xl border border-border-t bg-card transition-all duration-300 hover:border-border-hover hover:shadow-xl"
           >
             <div className="flex flex-col lg:flex-row">
-              {/* Image */}
               {featured.image_url ? (
                 <div className="relative aspect-[16/9] w-full overflow-hidden bg-input lg:aspect-auto lg:w-1/2">
                   <img
@@ -214,15 +199,16 @@ export default async function Home() {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent lg:bg-gradient-to-r" />
                 </div>
               ) : (
-                <div className="relative flex aspect-[16/9] w-full items-center justify-center overflow-hidden bg-gradient-to-br from-accent/10 to-accent/5 lg:aspect-auto lg:w-1/2">
-                  <div className="flex flex-col items-center gap-3 text-accent/30">
-                    <FileText size={48} />
-                    <span className="text-xs font-medium uppercase tracking-widest">Article</span>
-                  </div>
+                <div className="relative flex aspect-[16/9] w-full items-center justify-center overflow-hidden lg:aspect-auto lg:w-1/2">
+                  <img
+                    src="https://images.unsplash.com/photo-1546519638-68e109498ffc?w=800&q=80"
+                    alt=""
+                    className="h-full w-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-black/10" />
                 </div>
               )}
 
-              {/* Content */}
               <div className="flex flex-1 flex-col justify-center p-8 lg:p-10">
                 <span className="inline-block w-fit rounded-full bg-accent-light px-3 py-1 text-xs font-semibold text-accent-text">
                   {featured.tag}
@@ -251,89 +237,120 @@ export default async function Home() {
               </div>
             </div>
           </Link>
-        </section>
+        </ScrollReveal>
       )}
 
       {/* ── Categories Grid ──────────────────── */}
       <section>
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-text-primary">Explorez la ligue</h2>
-          <p className="mt-1 text-sm text-text-muted">
-            Sept rubriques, zéro excuse pour rater quoi que ce soit.
-          </p>
-        </div>
+        <ScrollReveal variant="left">
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-text-primary">Explorez la ligue</h2>
+            <p className="mt-1 text-sm text-text-muted">
+              Sept rubriques, zéro excuse pour rater quoi que ce soit.
+            </p>
+          </div>
+        </ScrollReveal>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {categories.map((cat, i) => (
-            <Link
-              key={cat.href}
-              href={cat.href}
-              className="home-card group relative overflow-hidden rounded-2xl border border-border-t bg-card p-6 transition-all duration-300 hover:border-border-hover hover:shadow-xl hover:shadow-black/5 hover:-translate-y-1 active:translate-y-0"
-              style={{ animationDelay: `${i * 70}ms` }}
-            >
-              <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${cat.gradient} opacity-0 transition-opacity duration-300 group-hover:opacity-100`} />
-
-              <div className="relative">
-                <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-xl ${cat.iconBg} transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3`}>
-                  {cat.icon}
+            <ScrollReveal key={cat.href} delay={i * 80} variant={i % 2 === 0 ? "up" : "blur"}>
+              <Link
+                href={cat.href}
+                className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border-t bg-card transition-all duration-300 hover:shadow-xl hover:-translate-y-1 active:translate-y-0"
+              >
+                {/* Photo header */}
+                <div className="relative h-36 overflow-hidden">
+                  <img
+                    src={cat.image}
+                    alt=""
+                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                  {/* Icon badge */}
+                  <div
+                    className="absolute bottom-3 left-4 flex h-10 w-10 items-center justify-center rounded-lg text-white shadow-lg transition-transform duration-300 group-hover:scale-110"
+                    style={{ backgroundColor: cat.color }}
+                  >
+                    {cat.icon}
+                  </div>
                 </div>
 
-                <h3 className="text-lg font-bold text-text-primary">{cat.title}</h3>
-                <p className="mt-1.5 text-sm leading-relaxed text-text-muted">{cat.description}</p>
+                {/* Content */}
+                <div className="relative flex flex-1 flex-col px-5 pb-5 pt-4">
+                  <h3 className="text-lg font-bold text-text-primary">{cat.title}</h3>
+                  <p className="mt-1.5 text-sm leading-relaxed text-text-muted">{cat.description}</p>
 
-                <div className="mt-4 flex items-center gap-1.5 text-sm font-semibold text-accent opacity-0 transition-all duration-300 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0">
-                  Consulter
-                  <ArrowRight size={14} className="transition-transform duration-300 group-hover:translate-x-1" />
+                  <div
+                    className="mt-auto flex items-center gap-1.5 pt-4 text-sm font-semibold opacity-0 transition-all duration-300 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0"
+                    style={{ color: cat.color }}
+                  >
+                    Consulter
+                    <ArrowRight size={14} className="transition-transform duration-300 group-hover:translate-x-1" />
+                  </div>
                 </div>
-              </div>
-            </Link>
+              </Link>
+            </ScrollReveal>
           ))}
         </div>
       </section>
 
       {/* ── Le saviez-vous ───────────────────── */}
-      <section className="relative overflow-hidden rounded-2xl border border-accent/15 bg-gradient-to-r from-accent/8 via-card to-card p-7 sm:p-8">
-        <div className="flex items-start gap-4">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-light">
-            <Sparkles size={20} className="text-accent" />
+      <ScrollReveal variant="right">
+        <section className="relative overflow-hidden rounded-2xl border border-accent/15 bg-gradient-to-r from-accent/8 via-card to-card p-7 sm:p-8">
+          <div className="flex items-start gap-4">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-light">
+              <Sparkles size={20} className="text-accent" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold uppercase tracking-wide text-accent-text">
+                Le saviez-vous ?
+              </h3>
+              <p className="mt-1.5 text-base leading-relaxed text-text-secondary">
+                {funFact}
+              </p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-sm font-bold uppercase tracking-wide text-accent-text">
-              Le saviez-vous ?
-            </h3>
-            <p className="mt-1.5 text-base leading-relaxed text-text-secondary">
-              {funFact}
-            </p>
-          </div>
-        </div>
-      </section>
+        </section>
+      </ScrollReveal>
 
-      {/* ── Bottom CTA ───────────────────────── */}
-      <section className="relative overflow-hidden rounded-2xl border border-accent/20 bg-gradient-to-r from-accent/10 via-accent/5 to-transparent p-8 sm:p-10">
-        <div className="flex flex-col items-start gap-6 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h3 className="text-xl font-bold text-text-primary">
-              On joue ce soir ?
-            </h3>
-            <p className="mt-1.5 text-sm text-text-secondary">
-              Consultez le calendrier et ne ratez aucun tip-off.
-            </p>
+      {/* ── Bottom CTA with photo ────────────── */}
+      <ScrollReveal variant="blur">
+        <section className="relative overflow-hidden rounded-2xl border border-border-t">
+          <div className="absolute inset-0">
+            <img
+              src="https://images.unsplash.com/photo-1519861531473-9200262188bf?w=1200&q=80"
+              alt=""
+              className="h-full w-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/50 to-black/30" />
           </div>
-          <Link
-            href="/calendrier"
-            className="group inline-flex shrink-0 items-center gap-2 rounded-xl bg-accent px-6 py-3 text-sm font-bold text-white transition-all duration-300 hover:bg-accent-hover hover:shadow-lg hover:shadow-accent/25 hover:scale-[1.03] active:scale-[0.98]"
-          >
-            <Calendar size={16} />
-            Matchs du jour
-            <ArrowRight size={14} className="transition-transform duration-300 group-hover:translate-x-0.5" />
-          </Link>
-        </div>
-      </section>
+          <div className="relative flex flex-col items-start gap-6 p-8 sm:flex-row sm:items-center sm:justify-between sm:p-10">
+            <div>
+              <h3 className="text-xl font-bold text-white">
+                On joue ce soir ?
+              </h3>
+              <p className="mt-1.5 text-sm text-white/60">
+                Consultez le calendrier et ne ratez aucun tip-off.
+              </p>
+            </div>
+            <Link
+              href="/calendrier"
+              className="group inline-flex shrink-0 items-center gap-2 rounded-xl bg-accent px-6 py-3 text-sm font-bold text-white transition-all duration-300 hover:bg-accent-hover hover:shadow-lg hover:shadow-accent/25 hover:scale-[1.03] active:scale-[0.98]"
+            >
+              <Calendar size={16} />
+              Matchs du jour
+              <ArrowRight size={14} className="transition-transform duration-300 group-hover:translate-x-0.5" />
+            </Link>
+          </div>
+        </section>
+      </ScrollReveal>
 
       {/* ── Footer ───────────────────────────── */}
-      <p className="pb-4 text-center text-xs text-text-faint">
-        Fait par des passionnés, pour des passionnés.
-      </p>
+      <ScrollReveal variant="up">
+        <p className="pb-4 text-center text-xs text-text-faint">
+          Fait par des passionnés, pour des passionnés.
+        </p>
+      </ScrollReveal>
     </div>
   );
 }

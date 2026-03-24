@@ -14,7 +14,7 @@ const themes = [
     id: "light" as const,
     name: "Clair",
     desc: "Lumineux et épuré",
-    colors: ["#f8fafc", "#ffffff", "#ea580c"],
+    colors: ["#f8fafc", "#ffffff", "#4f46e5"],
   },
   {
     id: "midnight" as const,
