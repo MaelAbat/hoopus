@@ -36,7 +36,7 @@ const categories = [
     description: "Trades, drama, buzzer beaters — tout ce qui fait vibrer la ligue",
     icon: <Newspaper size={20} />,
     color: "#f97316",
-    image: "https://images.unsplash.com/photo-1515523110800-9415d13b84a8?w=600&q=80",
+    image: "https://images.unsplash.com/photo-1527261834078-9b37d35a4a32?w=600&q=80",
   },
   {
     href: "/articles",
@@ -44,7 +44,7 @@ const categories = [
     description: "On décortique les matchs, les tactiques et les tendances",
     icon: <FileText size={20} />,
     color: "#3b82f6",
-    image: "https://images.unsplash.com/photo-1608245449230-4ac19066d2d0?w=600&q=80",
+    image: "https://images.unsplash.com/photo-1549210194-fb0aac030c32?w=600&q=80",
   },
   {
     href: "/statistiques",
@@ -52,7 +52,7 @@ const categories = [
     description: "PTS, AST, REB, FG% — le paradis des amoureux des chiffres",
     icon: <BarChart3 size={20} />,
     color: "#10b981",
-    image: "https://images.unsplash.com/photo-1518063319789-7217e6706b04?w=600&q=80",
+    image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&q=80",
   },
   {
     href: "/calendrier",
@@ -60,7 +60,7 @@ const categories = [
     description: "Qui joue ce soir, qui a gagné hier, qui joue demain",
     icon: <Calendar size={20} />,
     color: "#8b5cf6",
-    image: "https://images.unsplash.com/photo-1577471488278-16eec37ffcc2?w=600&q=80",
+    image: "https://images.unsplash.com/photo-1693164586646-f3f877aec626?w=600&q=80",
   },
   {
     href: "/classement",
@@ -74,7 +74,7 @@ const categories = [
       </svg>
     ),
     color: "#eab308",
-    image: "https://images.unsplash.com/photo-1559692048-79a3f837883d?w=600&q=80",
+    image: "https://images.unsplash.com/photo-1578269174936-2709b6aeb913?w=600&q=80",
   },
   {
     href: "/equipes",
@@ -82,7 +82,7 @@ const categories = [
     description: "30 franchises, leurs rosters et leurs salary caps",
     icon: <Users size={20} />,
     color: "#ec4899",
-    image: "https://images.unsplash.com/photo-1628779238951-be2c9f2a59f4?w=600&q=80",
+    image: "https://images.unsplash.com/photo-1759694705159-fad2c93938f1?w=600&q=80",
   },
   {
     href: "/playoffs",
@@ -90,7 +90,7 @@ const categories = [
     description: "Là où les légendes se forgent. Win or go home.",
     icon: <Trophy size={20} />,
     color: "#06b6d4",
-    image: "https://images.unsplash.com/photo-1574623452334-1e0ac2b3ccb4?w=600&q=80",
+    image: "https://images.unsplash.com/photo-1579487685737-e435a87b2518?w=600&q=80",
   },
 ];
 
@@ -119,7 +119,7 @@ export default async function Home() {
         {/* Background photo */}
         <div className="absolute inset-0">
           <img
-            src="https://images.unsplash.com/photo-1546519638-68e109498ffc?w=1400&q=80"
+            src="https://images.unsplash.com/photo-1640862101983-9f7ef7fd7cc9?w=1400&q=80"
             alt=""
             className="h-full w-full object-cover"
           />
@@ -201,7 +201,7 @@ export default async function Home() {
               ) : (
                 <div className="relative flex aspect-[16/9] w-full items-center justify-center overflow-hidden lg:aspect-auto lg:w-1/2">
                   <img
-                    src="https://images.unsplash.com/photo-1546519638-68e109498ffc?w=800&q=80"
+                    src="https://images.unsplash.com/photo-1529243856184-fd5465488984?w=800&q=80"
                     alt=""
                     className="h-full w-full object-cover"
                   />
@@ -318,7 +318,7 @@ export default async function Home() {
         <section className="relative overflow-hidden rounded-2xl border border-border-t">
           <div className="absolute inset-0">
             <img
-              src="https://images.unsplash.com/photo-1519861531473-9200262188bf?w=1200&q=80"
+              src="https://images.unsplash.com/photo-1659468711279-2857db123912?w=1200&q=80"
               alt=""
               className="h-full w-full object-cover"
             />
