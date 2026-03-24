@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { teamLogoUrl } from "@/lib/nba-teams";
 
 interface SeasonStats {
   season: string;
@@ -15,22 +16,6 @@ interface SeasonStats {
   fg3Pct: number;
   ftPct: number;
   min: number;
-}
-
-const TEAM_ID: Record<string, number> = {
-  ATL: 1610612737, BOS: 1610612738, BKN: 1610612751, CHA: 1610612766,
-  CHI: 1610612741, CLE: 1610612739, DAL: 1610612742, DEN: 1610612743,
-  DET: 1610612765, GSW: 1610612744, HOU: 1610612745, IND: 1610612754,
-  LAC: 1610612746, LAL: 1610612747, MEM: 1610612763, MIA: 1610612748,
-  MIL: 1610612749, MIN: 1610612750, NOP: 1610612740, NYK: 1610612752,
-  OKC: 1610612760, ORL: 1610612753, PHI: 1610612755, PHX: 1610612756,
-  POR: 1610612757, SAC: 1610612758, SAS: 1610612759, TOR: 1610612761,
-  UTA: 1610612762, WAS: 1610612764,
-};
-
-function teamLogoUrl(tricode: string): string {
-  const id = TEAM_ID[tricode];
-  return id ? `https://cdn.nba.com/logos/nba/${id}/global/L/logo.svg` : "";
 }
 
 export default function PlayerCareer({ playerId }: { playerId: number }) {
@@ -72,13 +57,14 @@ export default function PlayerCareer({ playerId }: { playerId: number }) {
     return null;
   }
 
-  // Unique teams timeline
+  // Unique teams timeline (skip TOT = season totals for traded players)
   const careerTeams: { team: string; first: string; last: string; count: number }[] = [];
   for (const s of seasons) {
-    const existing = careerTeams.find((t) => t.team === s.team && careerTeams.indexOf(t) === careerTeams.length - 1);
-    if (existing && existing.team === s.team) {
-      existing.last = s.season;
-      existing.count++;
+    if (s.team === "TOT") continue;
+    const last = careerTeams[careerTeams.length - 1];
+    if (last && last.team === s.team) {
+      last.last = s.season;
+      last.count++;
     } else {
       careerTeams.push({ team: s.team, first: s.season, last: s.season, count: 1 });
     }
@@ -134,14 +120,17 @@ export default function PlayerCareer({ playerId }: { playerId: number }) {
             </thead>
             <tbody>
               {seasons.map((s, i) => {
-                const logoUrl = teamLogoUrl(s.team);
+                const isTot = s.team === "TOT";
+                const logoUrl = isTot ? "" : teamLogoUrl(s.team);
                 return (
-                  <tr key={`${s.season}-${s.team}-${i}`} className="border-b border-border-t/50 transition-colors hover:bg-card-hover">
+                  <tr key={`${s.season}-${s.team}-${i}`} className={`border-b border-border-t/50 transition-colors hover:bg-card-hover ${isTot ? "bg-input/50" : ""}`}>
                     <td className="px-4 py-2.5 text-text-secondary font-medium">{s.season}</td>
                     <td className="px-4 py-2.5">
                       <div className="flex items-center gap-2">
                         {logoUrl && <img src={logoUrl} alt={s.team} className="h-4 w-4 object-contain" />}
-                        <span className="text-text-primary font-medium">{s.team}</span>
+                        <span className={`font-medium ${isTot ? "text-text-muted italic" : "text-text-primary"}`}>
+                          {isTot ? "Total" : s.team}
+                        </span>
                       </div>
                     </td>
                     <td className="px-4 py-2.5 text-center text-text-muted">{s.gp}</td>

@@ -44,11 +44,13 @@ export async function getNewsById(id: string) {
 export async function createNews(formData: FormData) {
   const supabase = await requireAdmin();
 
+  const image_url = (formData.get("image_url") as string) || null;
   const { error } = await supabase.from("news").insert({
     title: formData.get("title") as string,
     category: formData.get("category") as string,
     excerpt: formData.get("excerpt") as string,
     featured: formData.get("featured") === "on",
+    image_url,
   });
 
   if (error) throw error;
@@ -58,6 +60,7 @@ export async function createNews(formData: FormData) {
 export async function updateNews(id: string, formData: FormData) {
   const supabase = await requireAdmin();
 
+  const image_url = (formData.get("image_url") as string) || null;
   const { error } = await supabase
     .from("news")
     .update({
@@ -65,6 +68,7 @@ export async function updateNews(id: string, formData: FormData) {
       category: formData.get("category") as string,
       excerpt: formData.get("excerpt") as string,
       featured: formData.get("featured") === "on",
+      image_url,
     })
     .eq("id", id);
 

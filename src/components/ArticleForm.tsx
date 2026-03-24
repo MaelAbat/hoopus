@@ -4,6 +4,7 @@ import { useRef } from "react";
 import { createArticle, updateArticle } from "@/lib/actions/articles";
 import type { Article } from "@/lib/types/database";
 import { X } from "lucide-react";
+import ImageUpload from "./ImageUpload";
 
 interface ArticleFormProps {
   article?: Article;
@@ -82,15 +83,7 @@ export default function ArticleForm({ article, onClose }: ArticleFormProps) {
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-text-secondary mb-1">Image (URL)</label>
-            <input
-              name="image_url"
-              defaultValue={article?.image_url ?? ""}
-              className="w-full rounded-xl bg-input border border-border-t px-4 py-2.5 text-text-primary placeholder-text-faint focus:border-accent/50 focus:outline-none transition-colors"
-              placeholder="https://exemple.com/image.jpg"
-            />
-          </div>
+          <ImageUpload name="image_url" defaultValue={article?.image_url} />
 
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-1">Résumé</label>

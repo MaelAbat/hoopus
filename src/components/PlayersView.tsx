@@ -4,26 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Search } from "lucide-react";
 import type { Player } from "@/lib/types/database";
-
-const TEAM_ID: Record<string, number> = {
-  ATL: 1610612737, BOS: 1610612738, BKN: 1610612751, CHA: 1610612766,
-  CHI: 1610612741, CLE: 1610612739, DAL: 1610612742, DEN: 1610612743,
-  DET: 1610612765, GSW: 1610612744, HOU: 1610612745, IND: 1610612754,
-  LAC: 1610612746, LAL: 1610612747, MEM: 1610612763, MIA: 1610612748,
-  MIL: 1610612749, MIN: 1610612750, NOP: 1610612740, NYK: 1610612752,
-  OKC: 1610612760, ORL: 1610612753, PHI: 1610612755, PHX: 1610612756,
-  POR: 1610612757, SAC: 1610612758, SAS: 1610612759, TOR: 1610612761,
-  UTA: 1610612762, WAS: 1610612764,
-};
-
-function teamLogoUrl(tricode: string): string {
-  const id = TEAM_ID[tricode];
-  return id ? `https://cdn.nba.com/logos/nba/${id}/global/L/logo.svg` : "";
-}
-
-function playerPhotoUrl(playerId: number): string {
-  return `https://cdn.nba.com/headshots/nba/latest/260x190/${playerId}.png`;
-}
+import { teamLogoUrl, playerPhotoUrl, ACTIVE_TEAM_IDS } from "@/lib/nba-teams";
 
 const TEAM_NAMES: Record<string, string> = {
   ATL: "Hawks", BOS: "Celtics", BKN: "Nets", CHA: "Hornets",
@@ -49,7 +30,7 @@ export default function PlayersView({ players }: { players: Player[] }) {
   const teamOptions = useMemo(() => {
     const tricodes = new Set<string>();
     for (const p of players) {
-      if (p.team_tricode && TEAM_ID[p.team_tricode]) tricodes.add(p.team_tricode);
+      if (p.team_tricode && ACTIVE_TEAM_IDS[p.team_tricode]) tricodes.add(p.team_tricode);
     }
     return Array.from(tricodes).sort((a, b) => (TEAM_NAMES[a] || a).localeCompare(TEAM_NAMES[b] || b));
   }, [players]);

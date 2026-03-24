@@ -4,6 +4,7 @@ export interface News {
   title: string;
   excerpt: string;
   featured: boolean;
+  image_url: string | null;
   created_at: string;
 }
 

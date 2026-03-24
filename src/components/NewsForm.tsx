@@ -4,6 +4,7 @@ import { useRef } from "react";
 import { createNews, updateNews } from "@/lib/actions/news";
 import type { News } from "@/lib/types/database";
 import { X } from "lucide-react";
+import ImageUpload from "./ImageUpload";
 
 interface NewsFormProps {
   news?: News;
@@ -58,6 +59,8 @@ export default function NewsForm({ news, onClose }: NewsFormProps) {
               ))}
             </select>
           </div>
+
+          <ImageUpload name="image_url" defaultValue={news?.image_url} />
 
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-1">Résumé</label>
