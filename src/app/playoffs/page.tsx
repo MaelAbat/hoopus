@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import PlayoffBracket from "@/components/PlayoffBracket";
+import PageBanner from "@/components/PageBanner";
 
 export const revalidate = 3600;
 
@@ -39,21 +40,18 @@ export default async function Playoffs() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-text-primary">Playoffs</h1>
-        <p className="mt-1 text-text-muted">
-          Bracket 2025-26
-          {hasData ? (
-            <span className="ml-2 text-xs text-text-faint">
-              Basé sur le classement du {lastUpdate}
-            </span>
-          ) : (
-            <span className="ml-2 inline-flex items-center rounded-full bg-yellow-500/10 px-2 py-0.5 text-xs text-yellow-400">
-              Synchronisation requise
-            </span>
-          )}
-        </p>
-      </div>
+      <PageBanner
+        title="Playoffs"
+        subtitle="Bracket 2025-26"
+        image="https://images.unsplash.com/photo-1579487685737-e435a87b2518?w=1200&q=80"
+        extra={hasData ? (
+          <span className="text-xs text-white/40">Basé sur le classement du {lastUpdate}</span>
+        ) : (
+          <span className="inline-flex items-center rounded-full bg-yellow-500/20 px-2 py-0.5 text-xs text-yellow-300">
+            Synchronisation requise
+          </span>
+        )}
+      />
 
       <PlayoffBracket east={east} west={west} series={series || []} playinGames={playinGames || []} />
     </div>

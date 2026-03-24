@@ -39,12 +39,8 @@ export default function NewsList({ news, isAdmin }: { news: News[]; isAdmin: boo
         <NewsForm news={editingNews} onClose={() => setShowForm(false)} />
       )}
 
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-text-primary">Actualités</h1>
-          <p className="mt-1 text-text-muted">Les dernières nouvelles de la NBA</p>
-        </div>
-        {isAdmin && (
+      {isAdmin && (
+        <div className="flex justify-end">
           <button
             onClick={openCreate}
             className="flex items-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white hover:bg-accent-hover transition-colors"
@@ -52,8 +48,8 @@ export default function NewsList({ news, isAdmin }: { news: News[]; isAdmin: boo
             <Plus size={16} />
             Ajouter
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Featured */}
       {featured && (

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 
 interface Player {
@@ -134,7 +135,9 @@ function RosterTable({ players, tricode, onBack }: { players: Player[]; tricode:
                     />
                   </td>
                   <td className="px-3 py-2">
-                    <span className="font-medium text-text-primary">{p.first_name} <strong>{p.last_name}</strong></span>
+                    <Link href={`/joueurs/${p.player_id}`} className="font-medium text-text-primary hover:text-accent-text transition-colors">
+                      {p.first_name} <strong>{p.last_name}</strong>
+                    </Link>
                   </td>
                   <td className="px-3 py-2 text-center text-text-muted">{p.jersey_number}</td>
                   <td className="px-3 py-2 text-center">

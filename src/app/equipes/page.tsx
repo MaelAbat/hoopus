@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import TeamsView from "@/components/TeamsView";
+import PageBanner from "@/components/PageBanner";
 
 export const revalidate = 3600;
 
@@ -32,21 +33,18 @@ export default async function Equipes() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-text-primary">Équipes</h1>
-        <p className="mt-1 text-text-muted">
-          Effectifs 2025-26
-          {hasData ? (
-            <span className="ml-2 text-xs text-text-faint">
-              Mis à jour le {lastUpdate}
-            </span>
-          ) : (
-            <span className="ml-2 inline-flex items-center rounded-full bg-yellow-500/10 px-2 py-0.5 text-xs text-yellow-400">
-              Synchronisation requise
-            </span>
-          )}
-        </p>
-      </div>
+      <PageBanner
+        title="Équipes"
+        subtitle="Effectifs 2025-26"
+        image="https://images.unsplash.com/photo-1759694705159-fad2c93938f1?w=1200&q=80"
+        extra={hasData ? (
+          <span className="text-xs text-white/40">Mis à jour le {lastUpdate}</span>
+        ) : (
+          <span className="inline-flex items-center rounded-full bg-yellow-500/20 px-2 py-0.5 text-xs text-yellow-300">
+            Synchronisation requise
+          </span>
+        )}
+      />
 
       <TeamsView players={players || []} payrolls={payrolls || []} />
     </div>

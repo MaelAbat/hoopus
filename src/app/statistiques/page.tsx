@@ -3,6 +3,7 @@ import type { PlayerStatLeader, StatCategory } from "@/lib/nba-api";
 import StatsView from "@/components/StatsView";
 import type { PlayerRow } from "@/components/StatsTable";
 import type { TeamRow } from "@/components/TeamStatsTable";
+import PageBanner from "@/components/PageBanner";
 
 export const revalidate = 3600;
 
@@ -127,21 +128,18 @@ export default async function Statistiques() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-text-primary">Statistiques</h1>
-        <p className="mt-1 text-text-muted">
-          Leaders de la saison 2025-26
-          {hasData ? (
-            <span className="ml-2 text-xs text-text-faint">
-              Mis à jour le {lastUpdate}
-            </span>
-          ) : (
-            <span className="ml-2 inline-flex items-center rounded-full bg-yellow-500/10 px-2 py-0.5 text-xs text-yellow-400">
-              Synchronisation requise
-            </span>
-          )}
-        </p>
-      </div>
+      <PageBanner
+        title="Statistiques"
+        subtitle="Leaders de la saison 2025-26"
+        image="https://images.unsplash.com/photo-1705594975210-02cbcc7af5ad?w=1200&fit=crop"
+        extra={hasData ? (
+          <span className="text-xs text-white/40">Mis à jour le {lastUpdate}</span>
+        ) : (
+          <span className="inline-flex items-center rounded-full bg-yellow-500/20 px-2 py-0.5 text-xs text-yellow-300">
+            Synchronisation requise
+          </span>
+        )}
+      />
 
       <StatsView boards={boardsData} tableData={tableData} teamData={teamData} />
     </div>

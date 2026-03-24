@@ -1,12 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 import CalendarView from "@/components/CalendarView";
+import PageBanner from "@/components/PageBanner";
 
 export const revalidate = 3600;
 
 export default async function Calendrier() {
   const supabase = await createClient();
 
-  // Supabase limits to 1000 rows per request, so we paginate
   const [{ data: page1 }, { data: page2 }] = await Promise.all([
     supabase
       .from("games")
@@ -26,10 +26,11 @@ export default async function Calendrier() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-text-primary">Calendrier</h1>
-        <p className="mt-1 text-text-muted">Saison régulière 2025-26</p>
-      </div>
+      <PageBanner
+        title="Calendrier"
+        subtitle="Saison régulière 2025-26"
+        image="https://images.unsplash.com/photo-1693164586646-f3f877aec626?w=1200&q=80"
+      />
       <CalendarView games={games || []} />
     </div>
   );

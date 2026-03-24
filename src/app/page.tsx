@@ -5,6 +5,7 @@ import {
   BarChart3,
   Calendar,
   Users,
+  UserRound,
   Trophy,
   ArrowRight,
   Flame,
@@ -52,7 +53,7 @@ const categories = [
     description: "PTS, AST, REB, FG% — le paradis des amoureux des chiffres",
     icon: <BarChart3 size={20} />,
     color: "#10b981",
-    image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&q=80",
+    image: "https://images.unsplash.com/photo-1705594975210-02cbcc7af5ad?w=600&fit=crop",
   },
   {
     href: "/calendrier",
@@ -83,6 +84,14 @@ const categories = [
     icon: <Users size={20} />,
     color: "#ec4899",
     image: "https://images.unsplash.com/photo-1759694705159-fad2c93938f1?w=600&q=80",
+  },
+  {
+    href: "/joueurs",
+    title: "Joueurs",
+    description: "Tous les joueurs NBA, actifs et retraités, avec leurs stats",
+    icon: <UserRound size={20} />,
+    color: "#a855f7",
+    image: "https://images.unsplash.com/photo-1515523110800-9415d13b84a8?w=600&q=80",
   },
   {
     href: "/playoffs",

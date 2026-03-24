@@ -35,12 +35,8 @@ export default function ArticlesList({ articles, isAdmin }: { articles: Article[
         <ArticleForm article={editingArticle} onClose={() => setShowForm(false)} />
       )}
 
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-text-primary">Articles</h1>
-          <p className="mt-1 text-text-muted">Analyses, décryptages et portraits</p>
-        </div>
-        {isAdmin && (
+      {isAdmin && (
+        <div className="flex justify-end">
           <button
             onClick={openCreate}
             className="flex items-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white hover:bg-accent-hover transition-colors"
@@ -48,8 +44,8 @@ export default function ArticlesList({ articles, isAdmin }: { articles: Article[
             <Plus size={16} />
             Ajouter
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         {articles.map((article) => (
