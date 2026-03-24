@@ -15,5 +15,6 @@ export interface Article {
   content: string;
   author: string;
   read_time: string;
+  image_url: string | null;
   created_at: string;
 }

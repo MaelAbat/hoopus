@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "To make it easy for you to get started with GitLab, here's a list of recommended next steps.",
   "scripts": {
-    "dev": "npx rimraf .next && next dev -p 3002",
+    "dev": "rimraf .next && next dev -p 3002",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"

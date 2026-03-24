@@ -151,6 +151,9 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
 button,
 a,
 [role="button"],
@@ -158,3 +161,35 @@ a,
 summary {
   cursor: pointer;
 }
+
+/* ── Home page animations ────────────────── */
+@keyframes spin-slow {
+  to { transform: rotate(360deg); }
+}
+@keyframes reverse-spin {
+  to { transform: rotate(-360deg); }
+}
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-12px); }
+}
+@keyframes float-delayed {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(10px); }
+}
+@keyframes bounce-subtle {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25%      { transform: translateY(-4px) rotate(-3deg); }
+  75%      { transform: translateY(2px) rotate(2deg); }
+}
+
+.animate-spin-slow    { animation: spin-slow 25s linear infinite; }
+.animate-reverse-spin { animation: reverse-spin 18s linear infinite; }
+.animate-float        { animation: float 6s ease-in-out infinite; }
+.animate-float-delayed{ animation: float-delayed 7s ease-in-out infinite; }
+.animate-bounce-subtle{ animation: bounce-subtle 3s ease-in-out infinite; }
+.home-card            { animation: fade-in-up 0.5s ease both; }

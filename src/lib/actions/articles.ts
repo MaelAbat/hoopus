@@ -44,6 +44,7 @@ export async function getArticleById(id: string) {
 export async function createArticle(formData: FormData) {
   const supabase = await requireAdmin();
 
+  const image_url = (formData.get("image_url") as string) || null;
   const { error } = await supabase.from("articles").insert({
     title: formData.get("title") as string,
     tag: formData.get("tag") as string,
@@ -51,6 +52,7 @@ export async function createArticle(formData: FormData) {
     content: formData.get("content") as string,
     author: formData.get("author") as string,
     read_time: formData.get("read_time") as string,
+    image_url,
   });
 
   if (error) throw error;
@@ -60,6 +62,7 @@ export async function createArticle(formData: FormData) {
 export async function updateArticle(id: string, formData: FormData) {
   const supabase = await requireAdmin();
 
+  const image_url = (formData.get("image_url") as string) || null;
   const { error } = await supabase
     .from("articles")
     .update({
@@ -69,6 +72,7 @@ export async function updateArticle(id: string, formData: FormData) {
       content: formData.get("content") as string,
       author: formData.get("author") as string,
       read_time: formData.get("read_time") as string,
+      image_url,
     })
     .eq("id", id);
 
