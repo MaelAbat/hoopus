@@ -387,13 +387,14 @@ export default function AdvancedStatsTable({ players }: { players: PlayerRow[] }
       )}
 
       {/* ── Table ── */}
-      <div className="flex-1 overflow-auto min-h-0">
+      <div className="flex-1 overflow-auto min-h-0 scrollbar-visible">
         <table className="w-full text-sm border-collapse">
-          <thead className="sticky top-0 z-10">
+          <thead className="sticky top-0 z-20">
             {/* All-view group headers */}
             {isAllView && (
               <tr className="bg-card border-b border-border-t/30">
-                <th colSpan={2} className="bg-card" />
+                <th className="sticky left-0 z-30 bg-card w-10" />
+                <th className="sticky left-10 z-30 bg-card" style={{ minWidth: 200 }} />
                 {COLUMN_GROUPS.map((group) => (
                   <th
                     key={group.id}
@@ -407,10 +408,10 @@ export default function AdvancedStatsTable({ players }: { players: PlayerRow[] }
             )}
             {/* Column headers */}
             <tr className="bg-card border-b border-border-t/50">
-              <th className="text-left pl-4 pr-2 py-3 text-[11px] font-medium text-text-muted uppercase tracking-wider w-10 bg-card">
+              <th className="sticky left-0 z-30 text-left pl-4 pr-2 py-3 text-[11px] font-medium text-text-muted uppercase tracking-wider w-10 bg-card">
                 #
               </th>
-              <th className="text-left px-3 py-3 text-[11px] font-medium text-text-muted uppercase tracking-wider bg-card" style={{ minWidth: 220 }}>
+              <th className="sticky left-10 z-30 text-left px-3 py-3 text-[11px] font-medium text-text-muted uppercase tracking-wider bg-card after:absolute after:right-0 after:top-0 after:bottom-0 after:w-px after:bg-border-t/40" style={{ minWidth: 200 }}>
                 Joueur
               </th>
               {visibleColumns.map((col, ci) => {
@@ -452,7 +453,7 @@ export default function AdvancedStatsTable({ players }: { players: PlayerRow[] }
                     key={`${player.name}-${player.team}`}
                     className="border-b border-border-t/20 transition-colors hover:bg-card-hover/60 group"
                   >
-                    <td className="pl-4 pr-2 py-3">
+                    <td className="sticky left-0 z-10 bg-card pl-4 pr-2 py-3 group-hover:bg-card-hover/60">
                       <span className={`inline-flex h-6 w-6 items-center justify-center rounded-md text-[11px] font-bold ${
                         rank === 1
                           ? "bg-accent/15 text-accent"
@@ -463,7 +464,7 @@ export default function AdvancedStatsTable({ players }: { players: PlayerRow[] }
                         {rank}
                       </span>
                     </td>
-                    <td className="px-3 py-3">
+                    <td className="sticky left-10 z-10 bg-card px-3 py-3 group-hover:bg-card-hover/60 after:absolute after:right-0 after:top-0 after:bottom-0 after:w-px after:bg-border-t/40">
                       <div className="flex items-center gap-3">
                         <div className="relative h-9 w-9 shrink-0">
                           <img

@@ -204,6 +204,16 @@ body::after {
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
+/* Visible scrollbar for data tables */
+.scrollbar-visible {
+  scrollbar-width: auto;
+  scrollbar-color: var(--accent) var(--bg-input);
+}
+.scrollbar-visible::-webkit-scrollbar { height: 8px; width: 8px; }
+.scrollbar-visible::-webkit-scrollbar-track { background: var(--bg-input); border-radius: 4px; }
+.scrollbar-visible::-webkit-scrollbar-thumb { background: var(--scrollbar); border-radius: 4px; }
+.scrollbar-visible::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
 button,
 a,
 [role="button"],
