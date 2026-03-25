@@ -20,17 +20,17 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#080d1a]">
-      <div className="w-full max-w-md space-y-8 rounded-2xl bg-[#111827] border border-white/5 p-8">
+    <div className="flex min-h-screen items-center justify-center bg-bg">
+      <div className="w-full max-w-md space-y-8 rounded-2xl bg-card border border-border-t p-8">
         {/* Logo */}
         <div className="flex flex-col items-center gap-3">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 shadow-lg shadow-orange-500/20">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-accent to-accent-hover shadow-lg shadow-accent/20">
             <Trophy size={28} className="text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-white">
-            Hoop<span className="text-orange-500">us</span>
+          <h1 className="text-2xl font-bold text-text-primary">
+            Hoop<span className="text-accent">us</span>
           </h1>
-          <p className="text-sm text-gray-500">Connectez-vous à votre compte</p>
+          <p className="text-sm text-text-muted">Connectez-vous a votre compte</p>
         </div>
 
         {error && (
@@ -41,7 +41,7 @@ export default function LoginPage() {
 
         <form action={handleSubmit} className="space-y-5">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-400 mb-2">
+            <label htmlFor="email" className="block text-sm font-medium text-text-muted mb-2">
               Email
             </label>
             <input
@@ -49,13 +49,13 @@ export default function LoginPage() {
               name="email"
               type="email"
               required
-              className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-sm text-white placeholder-gray-500 outline-none transition-colors focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50"
+              className="w-full rounded-xl bg-input border border-border-t px-4 py-3 text-sm text-text-primary placeholder-text-faint outline-none transition-colors focus:border-accent/50 focus:ring-1 focus:ring-accent/50"
               placeholder="votre@email.com"
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-400 mb-2">
+            <label htmlFor="password" className="block text-sm font-medium text-text-muted mb-2">
               Mot de passe
             </label>
             <input
@@ -64,7 +64,7 @@ export default function LoginPage() {
               type="password"
               required
               minLength={6}
-              className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-sm text-white placeholder-gray-500 outline-none transition-colors focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50"
+              className="w-full rounded-xl bg-input border border-border-t px-4 py-3 text-sm text-text-primary placeholder-text-faint outline-none transition-colors focus:border-accent/50 focus:ring-1 focus:ring-accent/50"
               placeholder="••••••••"
             />
           </div>
@@ -72,16 +72,16 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-orange-600 disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
           >
             <LogIn size={16} />
             {loading ? "Connexion..." : "Se connecter"}
           </button>
         </form>
 
-        <p className="text-center text-sm text-gray-500">
+        <p className="text-center text-sm text-text-muted">
           Pas encore de compte ?{" "}
-          <Link href="/auth/signup" className="font-medium text-orange-500 hover:text-orange-400 transition-colors">
+          <Link href="/auth/signup" className="font-medium text-accent hover:text-accent-hover transition-colors">
             S&apos;inscrire
           </Link>
         </p>
