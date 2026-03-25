@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { syncBoxscore } from "@/lib/sync-boxscore";
 import BoxScore from "@/components/BoxScore";
 import ScrollReveal from "@/components/ScrollReveal";
+import ScrollToTop from "@/components/ScrollToTop";
 import { teamLogoUrl } from "@/lib/nba-teams";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
@@ -75,6 +76,7 @@ export default async function MatchPage({ params }: PageProps) {
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
+      <ScrollToTop />
       <Link href="/calendrier" className="inline-flex items-center gap-2 text-sm text-text-muted hover:text-text-primary transition-colors">
         <ArrowLeft size={16} />
         Retour au calendrier
