@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import TeamsView from "@/components/TeamsView";
 import PageBanner from "@/components/PageBanner";
+import ScrollReveal from "@/components/ScrollReveal";
 
 export const revalidate = 3600;
 
@@ -46,7 +47,9 @@ export default async function Equipes() {
         )}
       />
 
-      <TeamsView players={players || []} payrolls={payrolls || []} />
+      <ScrollReveal variant="up" delay={100}>
+        <TeamsView players={players || []} payrolls={payrolls || []} />
+      </ScrollReveal>
     </div>
   );
 }

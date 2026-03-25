@@ -4,6 +4,7 @@ import StatsView from "@/components/StatsView";
 import type { PlayerRow } from "@/components/StatsTable";
 import type { TeamRow } from "@/components/TeamStatsTable";
 import PageBanner from "@/components/PageBanner";
+import ScrollReveal from "@/components/ScrollReveal";
 
 export const revalidate = 3600;
 
@@ -171,7 +172,9 @@ export default async function Statistiques() {
         )}
       />
 
-      <StatsView boards={boardsData} tableData={tableData} teamData={teamData} />
+      <ScrollReveal variant="up" delay={100}>
+        <StatsView boards={boardsData} tableData={tableData} teamData={teamData} />
+      </ScrollReveal>
     </div>
   );
 }

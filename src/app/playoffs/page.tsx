@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import PlayoffBracket from "@/components/PlayoffBracket";
 import PageBanner from "@/components/PageBanner";
+import ScrollReveal from "@/components/ScrollReveal";
 
 export const revalidate = 3600;
 
@@ -53,7 +54,9 @@ export default async function Playoffs() {
         )}
       />
 
-      <PlayoffBracket east={east} west={west} series={series || []} playinGames={playinGames || []} />
+      <ScrollReveal variant="up" delay={100}>
+        <PlayoffBracket east={east} west={west} series={series || []} playinGames={playinGames || []} />
+      </ScrollReveal>
     </div>
   );
 }

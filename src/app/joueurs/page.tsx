@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import PageBanner from "@/components/PageBanner";
 import PlayersView from "@/components/PlayersView";
+import ScrollReveal from "@/components/ScrollReveal";
 
 export const revalidate = 3600;
 
@@ -33,7 +34,9 @@ export default async function Joueurs() {
           </span>
         ) : undefined}
       />
-      <PlayersView players={players} />
+      <ScrollReveal variant="up" delay={100}>
+        <PlayersView players={players} />
+      </ScrollReveal>
     </div>
   );
 }

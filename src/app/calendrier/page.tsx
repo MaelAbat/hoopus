@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import CalendarView from "@/components/CalendarView";
 import PageBanner from "@/components/PageBanner";
+import ScrollReveal from "@/components/ScrollReveal";
 
 export const revalidate = 3600;
 
@@ -31,7 +32,9 @@ export default async function Calendrier() {
         subtitle="Saison régulière 2025-26"
         image="https://images.unsplash.com/photo-1693164586646-f3f877aec626?w=1200&q=80"
       />
-      <CalendarView games={games || []} />
+      <ScrollReveal variant="up" delay={100}>
+        <CalendarView games={games || []} />
+      </ScrollReveal>
     </div>
   );
 }

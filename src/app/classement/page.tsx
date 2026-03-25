@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import StandingsView from "@/components/StandingsView";
 import PageBanner from "@/components/PageBanner";
+import ScrollReveal from "@/components/ScrollReveal";
 
 export const revalidate = 3600;
 
@@ -46,7 +47,9 @@ export default async function Classement() {
         )}
       />
 
-      <StandingsView east={east} west={west} />
+      <ScrollReveal variant="up" delay={100}>
+        <StandingsView east={east} west={west} />
+      </ScrollReveal>
     </div>
   );
 }
