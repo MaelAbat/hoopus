@@ -3,7 +3,13 @@
 import { usePathname } from "next/navigation";
 import Sidebar from "./Sidebar";
 
-export default function LayoutShell({ children }: { children: React.ReactNode }) {
+export default function LayoutShell({
+  children,
+  ticker,
+}: {
+  children: React.ReactNode;
+  ticker?: React.ReactNode;
+}) {
   const pathname = usePathname();
   const isAuthPage = pathname.startsWith("/auth");
 
@@ -14,7 +20,10 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
   return (
     <>
       <Sidebar />
-      <main className="ml-64 min-h-screen p-8">{children}</main>
+      <main className="ml-64 min-h-screen p-8">
+        {ticker}
+        {children}
+      </main>
     </>
   );
 }
