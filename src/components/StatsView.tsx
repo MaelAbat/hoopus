@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { LayoutGrid, Table2, User, Users } from "lucide-react";
+import { LayoutGrid, Table2, User, Users, TrendingUp } from "lucide-react";
 import StatsCarousel from "./StatsCarousel";
 import StatsTable from "./StatsTable";
+import AdvancedStatsTable from "./AdvancedStatsTable";
 import TeamStatsTable from "./TeamStatsTable";
 import type { PlayerStatLeader } from "@/lib/nba-api";
 import type { PlayerRow } from "./StatsTable";
@@ -19,7 +20,7 @@ interface Board {
 }
 
 type Section = "players" | "teams";
-type PlayerView = "carousel" | "table";
+type PlayerView = "carousel" | "table" | "advanced";
 
 export default function StatsView({
   boards,
@@ -58,11 +59,11 @@ export default function StatsView({
             }`}
           >
             <Users size={16} />
-            Équipes
+            Equipes
           </button>
         </div>
 
-        {/* Player sub-tabs (only when players section is active) */}
+        {/* Player sub-tabs */}
         {section === "players" && (
           <div className="flex rounded-lg bg-input p-0.5">
             <button
@@ -74,7 +75,7 @@ export default function StatsView({
               }`}
             >
               <LayoutGrid size={13} />
-              Par catégorie
+              Par categorie
             </button>
             <button
               onClick={() => setPlayerView("table")}
@@ -87,6 +88,17 @@ export default function StatsView({
               <Table2 size={13} />
               Feuille de stats
             </button>
+            <button
+              onClick={() => setPlayerView("advanced")}
+              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+                playerView === "advanced"
+                  ? "bg-card text-text-primary shadow-sm"
+                  : "text-text-muted hover:text-text-primary"
+              }`}
+            >
+              <TrendingUp size={13} />
+              Stats avancees
+            </button>
           </div>
         )}
       </div>
@@ -94,6 +106,7 @@ export default function StatsView({
       {/* Content */}
       {section === "players" && playerView === "carousel" && <StatsCarousel boards={boards} />}
       {section === "players" && playerView === "table" && <StatsTable players={tableData} />}
+      {section === "players" && playerView === "advanced" && <AdvancedStatsTable players={tableData} />}
       {section === "teams" && <TeamStatsTable teams={teamData} />}
     </div>
   );

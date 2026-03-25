@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { ChevronLeft, ChevronRight, Trophy, List, Filter } from "lucide-react";
 import type { PlayerStatLeader } from "@/lib/nba-api";
-import { teamLogoUrl } from "@/lib/nba-teams";
+import { teamLogoUrl, playerPhotoUrl } from "@/lib/nba-teams";
 
 interface Board {
   title: string;
@@ -11,7 +11,7 @@ interface Board {
   unit: string;
   top10: PlayerStatLeader[];
   full: PlayerStatLeader[];
-  eligibleCount: number; // -1 = no eligibility, >= 0 = eligible player count
+  eligibleCount: number;
 }
 
 type ViewMode = "top10" | "full";
@@ -34,11 +34,19 @@ function PlayerRow({ player, displayRank }: { player: PlayerStatLeader; displayR
       >
         {rank}
       </span>
-      <img
-        src={teamLogoUrl(player.team)}
-        alt={player.team}
-        className="h-7 w-7 shrink-0 object-contain"
-      />
+      <div className="relative h-10 w-10 shrink-0">
+        <img
+          src={playerPhotoUrl(player.player_id)}
+          alt=""
+          className="h-10 w-10 rounded-full object-cover bg-input"
+          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+        />
+        <img
+          src={teamLogoUrl(player.team)}
+          alt={player.team}
+          className="absolute -bottom-0.5 -right-0.5 h-4 w-4 object-contain"
+        />
+      </div>
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-text-primary truncate">{player.name}</p>
         <p className="text-xs text-text-muted">{player.team}</p>
@@ -63,19 +71,15 @@ export default function StatsCarousel({ boards }: { boards: Board[] }) {
   const board = boards[active];
   const hasEligibility = board.eligibleCount >= 0;
 
-  // Build the player list for full mode based on eligibility filter
   const fullPlayers = useMemo(() => {
     if (hasEligibility && eligibility === "eligible") {
-      // Show only eligible players (rank 1..eligibleCount)
       return board.full.filter((p) => p.rank <= board.eligibleCount);
     }
     if (hasEligibility && eligibility === "all") {
-      // Re-sort all players by value descending and re-rank
       return [...board.full]
         .sort((a, b) => Number(b.value) - Number(a.value))
         .map((p, i) => ({ ...p, rank: i + 1 }));
     }
-    // No eligibility concept: show all
     return board.full;
   }, [board.full, board.eligibleCount, hasEligibility, eligibility]);
 
@@ -90,7 +94,6 @@ export default function StatsCarousel({ boards }: { boards: Board[] }) {
   const totalPages = Math.ceil(filteredFull.length / PAGE_SIZE);
   const pagedPlayers = filteredFull.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
-  // For top10, always use first 10 by rank (eligible players for % categories)
   const top10Players = board.full.filter((p) => p.rank >= 1 && p.rank <= 10);
 
   const displayPlayers = mode === "top10" ? top10Players : pagedPlayers;
@@ -99,18 +102,15 @@ export default function StatsCarousel({ boards }: { boards: Board[] }) {
     setActive((prev) => (prev + dir + boards.length) % boards.length);
   }
 
-  // Reset page and search when changing category, mode, or eligibility
   useEffect(() => {
     setPage(0);
     setSearch("");
   }, [active, mode, eligibility]);
 
-  // Reset eligibility when changing category
   useEffect(() => {
     setEligibility("eligible");
   }, [active]);
 
-  // Center active tab
   useEffect(() => {
     listRef.current?.scrollTo({ top: 0 });
 
@@ -126,14 +126,12 @@ export default function StatsCarousel({ boards }: { boards: Board[] }) {
     setOffset(trackWidth / 2 - btnCenter);
   }, [active]);
 
-  // Reset page when search changes
   useEffect(() => {
     setPage(0);
   }, [search]);
 
   return (
     <div className="flex items-center gap-4 h-[calc(100vh-14rem)]">
-      {/* Left arrow */}
       <button
         onClick={() => go(-1)}
         className="shrink-0 flex h-10 w-10 items-center justify-center rounded-full bg-card border border-border-t text-text-muted hover:bg-input hover:text-text-primary transition-colors"
@@ -167,7 +165,6 @@ export default function StatsCarousel({ boards }: { boards: Board[] }) {
 
         {/* Controls bar */}
         <div className="flex flex-wrap items-center gap-2 px-6 py-2.5 border-b border-border-t/50">
-          {/* View mode toggle */}
           <div className="flex rounded-lg bg-input p-0.5">
             <button
               onClick={() => setMode("top10")}
@@ -193,7 +190,6 @@ export default function StatsCarousel({ boards }: { boards: Board[] }) {
             </button>
           </div>
 
-          {/* Eligibility filter — always visible for % categories */}
           {hasEligibility && (
             <div className="flex rounded-lg bg-input p-0.5">
               <button
@@ -205,7 +201,7 @@ export default function StatsCarousel({ boards }: { boards: Board[] }) {
                 }`}
               >
                 <Filter size={12} />
-                Éligibles
+                Eligibles
                 <span className="text-text-faint">({board.eligibleCount})</span>
               </button>
               <button
@@ -222,7 +218,6 @@ export default function StatsCarousel({ boards }: { boards: Board[] }) {
             </div>
           )}
 
-          {/* Search (full mode only) */}
           {mode === "full" && (
             <input
               type="text"
@@ -244,7 +239,7 @@ export default function StatsCarousel({ boards }: { boards: Board[] }) {
         <div ref={listRef} className="flex-1 overflow-y-auto min-h-0">
           {displayPlayers.length === 0 ? (
             <div className="px-6 py-12 text-center text-sm text-text-muted">
-              {search ? "Aucun résultat" : "Aucune donnée disponible"}
+              {search ? "Aucun resultat" : "Aucune donnee disponible"}
             </div>
           ) : (
             <div className="divide-y divide-border-t/50">
@@ -259,7 +254,7 @@ export default function StatsCarousel({ boards }: { boards: Board[] }) {
           )}
         </div>
 
-        {/* Pagination (full mode) or dots (top10 mode) */}
+        {/* Pagination */}
         <div className="flex items-center justify-center gap-1.5 py-3 border-t border-border-t/50">
           {mode === "full" && totalPages > 1 ? (
             <div className="flex items-center gap-3">
@@ -271,7 +266,7 @@ export default function StatsCarousel({ boards }: { boards: Board[] }) {
                 <ChevronLeft size={16} />
               </button>
               <span className="text-xs text-text-muted tabular-nums">
-                {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, filteredFull.length)} sur {filteredFull.length}
+                {page * PAGE_SIZE + 1}--{Math.min((page + 1) * PAGE_SIZE, filteredFull.length)} sur {filteredFull.length}
               </span>
               <button
                 onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
@@ -295,7 +290,6 @@ export default function StatsCarousel({ boards }: { boards: Board[] }) {
         </div>
       </div>
 
-      {/* Right arrow */}
       <button
         onClick={() => go(1)}
         className="shrink-0 flex h-10 w-10 items-center justify-center rounded-full bg-card border border-border-t text-text-muted hover:bg-input hover:text-text-primary transition-colors"

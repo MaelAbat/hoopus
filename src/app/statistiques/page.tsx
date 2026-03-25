@@ -19,24 +19,32 @@ const BOARDS: BoardConfig[] = [
   { title: "Passes", stat: "AST", unit: "APG" },
   { title: "Contres", stat: "BLK", unit: "BPG" },
   { title: "Interceptions", stat: "STL", unit: "SPG" },
-  { title: "Efficacité", stat: "EFF", unit: "EFF" },
+  { title: "Minutes", stat: "MIN", unit: "MPG" },
+  { title: "Efficacite", stat: "EFF", unit: "EFF" },
   { title: "Pertes", stat: "TOV", unit: "TPG" },
   { title: "% au tir", stat: "FG_PCT", unit: "%" },
-  { title: "% à 2pts", stat: "FG2_PCT", unit: "%" },
-  { title: "% à 3pts", stat: "FG3_PCT", unit: "%" },
+  { title: "% a 2pts", stat: "FG2_PCT", unit: "%" },
+  { title: "% a 3pts", stat: "FG3_PCT", unit: "%" },
   { title: "% LF", stat: "FT_PCT", unit: "%" },
   { title: "TS%", stat: "TS_PCT", unit: "%" },
+  { title: "eFG%", stat: "EFG_PCT", unit: "%" },
+  { title: "USG%", stat: "USG_PCT", unit: "%" },
+  { title: "OFF RTG", stat: "OFF_RATING", unit: "RTG" },
+  { title: "DEF RTG", stat: "DEF_RATING", unit: "RTG" },
+  { title: "NET RTG", stat: "NET_RATING", unit: "RTG" },
+  { title: "PACE", stat: "PACE", unit: "PACE" },
+  { title: "PIE", stat: "PIE", unit: "PIE" },
 ];
 
 // Direct categories use GP-based eligibility
-const GP_CATEGORIES = new Set(["PTS", "REB", "AST", "BLK", "STL", "EFF", "TOV"]);
+const GP_CATEGORIES = new Set(["PTS", "REB", "AST", "BLK", "STL", "EFF", "TOV", "MIN", "OREB", "DREB"]);
 
 export default async function Statistiques() {
   const supabase = await createClient();
 
-  // Fetch all stat leaders with pagination (Supabase 1000 row limit)
+  // Fetch all stat leaders with pagination (more pages for advanced stats)
   const pages = await Promise.all(
-    Array.from({ length: 8 }, (_, i) =>
+    Array.from({ length: 20 }, (_, i) =>
       supabase
         .from("stat_leaders")
         .select("*")
@@ -74,6 +82,7 @@ export default async function Statistiques() {
         name: row.player_name,
         team: row.team,
         value: Number(row.value).toFixed(2),
+        player_id: row.player_id ?? 0,
       }));
   }
 
@@ -91,23 +100,41 @@ export default async function Statistiques() {
     };
   });
 
-  // Table data: pivot by player — one row per player with all stats
+  // Table data: pivot by player - one row per player with all stats
   const playerMap = new Map<string, PlayerRow>();
-  const gpEligibleCount = eligibleCounts["PTS"] ?? 0; // GP eligibility is same for all direct categories
+  const gpEligibleCount = eligibleCounts["PTS"] ?? 0;
+
+  // All categories to include in the pivot (for both base and advanced table views)
+  const ALL_CATEGORIES: StatCategory[] = [
+    "PTS", "REB", "AST", "BLK", "STL", "EFF", "TOV", "MIN", "OREB", "DREB", "GP", "TOT_MIN",
+    "FGA_TOT", "FG3A_TOT", "FTA_TOT", "FG2A_TOT",
+    "FG_PCT", "FG2_PCT", "FG3_PCT", "FT_PCT", "TS_PCT", "EFG_PCT",
+    "USG_PCT", "OFF_RATING", "DEF_RATING", "NET_RATING",
+    "AST_PCT", "OREB_PCT", "DREB_PCT", "REB_PCT", "PACE", "PIE",
+    "TS_PLUS", "EFG_PLUS", "FG_PLUS", "FG3_PLUS", "FT_PLUS", "FG2_PLUS",
+  ];
 
   for (const row of allLeaders) {
     if (row.rank === 0) continue;
+    if (!ALL_CATEGORIES.includes(row.category as StatCategory)) continue;
+
     const key = `${row.player_name}|${row.team}`;
     if (!playerMap.has(key)) {
       playerMap.set(key, {
         name: row.player_name,
         team: row.team,
+        playerId: row.player_id ?? 0,
         isEligible: false,
         stats: {},
       });
     }
     const player = playerMap.get(key)!;
     player.stats[row.category] = row.value;
+
+    // Use player_id from any row that has it
+    if (row.player_id && !player.playerId) {
+      player.playerId = row.player_id;
+    }
 
     // A player is eligible if they're eligible in the GP-based categories
     if (GP_CATEGORIES.has(row.category) && row.rank <= gpEligibleCount) {
@@ -133,7 +160,7 @@ export default async function Statistiques() {
         subtitle="Leaders de la saison 2025-26"
         image="https://images.unsplash.com/photo-1705594975210-02cbcc7af5ad?w=1200&fit=crop"
         extra={hasData ? (
-          <span className="text-xs text-white/40">Mis à jour le {lastUpdate}</span>
+          <span className="text-xs text-white/40">Mis a jour le {lastUpdate}</span>
         ) : (
           <span className="inline-flex items-center rounded-full bg-yellow-500/20 px-2 py-0.5 text-xs text-yellow-300">
             Synchronisation requise

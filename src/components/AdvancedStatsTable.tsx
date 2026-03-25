@@ -1,45 +1,135 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, SlidersHorizontal, X } from "lucide-react";
+import {
+  ChevronUp, ChevronDown, ChevronLeft, ChevronRight,
+  SlidersHorizontal, X,
+} from "lucide-react";
 import { teamLogoUrl, playerPhotoUrl } from "@/lib/nba-teams";
+import type { PlayerRow } from "./StatsTable";
 
-export interface PlayerRow {
-  name: string;
-  team: string;
-  playerId: number;
-  isEligible: boolean;
-  stats: Record<string, number>;
-}
+/* ─── Column definitions ─── */
 
 interface Column {
   key: string;
   label: string;
   short: string;
+  format?: "plus" | "rating" | "pct" | "int" | "default";
 }
 
-const COLUMNS: Column[] = [
-  { key: "GP", label: "Matchs joues", short: "GP" },
-  { key: "MIN", label: "Minutes/match", short: "MIN" },
-  { key: "TOT_MIN", label: "Minutes totales", short: "TMIN" },
-  { key: "PTS", label: "Points", short: "PTS" },
-  { key: "REB", label: "Rebonds", short: "REB" },
-  { key: "AST", label: "Passes", short: "AST" },
-  { key: "BLK", label: "Contres", short: "BLK" },
-  { key: "STL", label: "Interceptions", short: "STL" },
-  { key: "EFF", label: "Efficacite", short: "EFF" },
-  { key: "TOV", label: "Pertes", short: "TOV" },
-  { key: "FG_PCT", label: "% tir", short: "FG%" },
-  { key: "FG2_PCT", label: "% 2pts", short: "2P%" },
-  { key: "FG3_PCT", label: "% 3pts", short: "3P%" },
-  { key: "FT_PCT", label: "% LF", short: "FT%" },
-  { key: "TS_PCT", label: "TS%", short: "TS%" },
-  { key: "EFG_PCT", label: "eFG%", short: "eFG%" },
+interface ColumnGroup {
+  id: string;
+  label: string;
+  icon: string;
+  columns: Column[];
+  description?: string;
+}
+
+const COLUMN_GROUPS: ColumnGroup[] = [
+  {
+    id: "volume",
+    label: "Volume",
+    icon: "~",
+    description: "Temps de jeu et rythme",
+    columns: [
+      { key: "GP", label: "Matchs joues", short: "GP", format: "int" },
+      { key: "MIN", label: "Minutes / match", short: "MIN" },
+      { key: "TOT_MIN", label: "Minutes totales", short: "TMIN", format: "int" },
+      { key: "USG_PCT", label: "Usage Rate", short: "USG%", format: "pct" },
+      { key: "PACE", label: "Pace", short: "PACE", format: "rating" },
+    ],
+  },
+  {
+    id: "ratings",
+    label: "Ratings",
+    icon: "~",
+    description: "Offensive / defensive / net ratings",
+    columns: [
+      { key: "OFF_RATING", label: "Offensive Rating", short: "ORTG", format: "rating" },
+      { key: "DEF_RATING", label: "Defensive Rating", short: "DRTG", format: "rating" },
+      { key: "NET_RATING", label: "Net Rating", short: "NET", format: "rating" },
+    ],
+  },
+  {
+    id: "efficiency",
+    label: "Efficacite",
+    icon: "~",
+    description: "True Shooting, eFG et impact",
+    columns: [
+      { key: "TS_PCT", label: "True Shooting %", short: "TS%", format: "pct" },
+      { key: "EFG_PCT", label: "Effective FG%", short: "eFG%", format: "pct" },
+      { key: "PIE", label: "Player Impact Estimate", short: "PIE", format: "pct" },
+    ],
+  },
+  {
+    id: "playmaking",
+    label: "Playmaking & Rebounding",
+    icon: "~",
+    description: "Contribution aux passes et rebonds",
+    columns: [
+      { key: "AST_PCT", label: "Assist %", short: "AST%", format: "pct" },
+      { key: "REB_PCT", label: "Rebound %", short: "REB%", format: "pct" },
+      { key: "OREB_PCT", label: "Off. Rebound %", short: "OREB%", format: "pct" },
+      { key: "DREB_PCT", label: "Def. Rebound %", short: "DREB%", format: "pct" },
+    ],
+  },
+  {
+    id: "adjusted",
+    label: "Adjusted Shooting",
+    icon: "~",
+    description: "100 = moyenne de la ligue. >100 = au-dessus, <100 = en-dessous.",
+    columns: [
+      { key: "TS_PLUS", label: "TS+ (vs ligue)", short: "TS+", format: "plus" },
+      { key: "EFG_PLUS", label: "eFG+ (vs ligue)", short: "eFG+", format: "plus" },
+      { key: "FG_PLUS", label: "FG+ (vs ligue)", short: "FG+", format: "plus" },
+      { key: "FG3_PLUS", label: "3P+ (vs ligue)", short: "3P+", format: "plus" },
+      { key: "FT_PLUS", label: "FT+ (vs ligue)", short: "FT+", format: "plus" },
+      { key: "FG2_PLUS", label: "2P+ (vs ligue)", short: "2P+", format: "plus" },
+    ],
+  },
 ];
 
-const PAGE_SIZE = 50;
+const ALL_COLUMNS = COLUMN_GROUPS.flatMap((g) => g.columns);
 
+/* ─── Helpers ─── */
+
+const PAGE_SIZE = 50;
 type SortDir = "asc" | "desc";
+
+function formatValue(val: number | undefined, format?: string): string {
+  if (val == null) return "\u2014";
+  switch (format) {
+    case "int":
+      return Math.round(val).toLocaleString();
+    case "plus":
+    case "rating":
+    case "pct":
+      return val.toFixed(1);
+    default:
+      return val.toFixed(2);
+  }
+}
+
+function getPlusColor(val: number | undefined): string {
+  if (val == null) return "text-text-faint";
+  if (val >= 115) return "text-emerald-400 font-bold";
+  if (val >= 108) return "text-emerald-400/80";
+  if (val >= 102) return "text-text-primary";
+  if (val >= 98) return "text-text-muted";
+  if (val >= 92) return "text-orange-400/80";
+  return "text-red-400 font-bold";
+}
+
+function getPlusBg(val: number | undefined): string {
+  if (val == null) return "";
+  if (val >= 115) return "bg-emerald-500/8";
+  if (val >= 108) return "bg-emerald-500/5";
+  if (val < 92) return "bg-red-500/8";
+  if (val < 98) return "bg-orange-500/5";
+  return "";
+}
+
+/* ─── Presets ─── */
 
 const GP_PRESETS = [0, 20, 40, 60];
 const MIN_PRESETS = [0, 15, 20, 25, 30];
@@ -58,8 +148,11 @@ const ATTEMPT_FILTERS: AttemptFilter[] = [
   { label: "2PA", statKey: "FG2A_TOT", presets: [50, 100, 200, 400] },
 ];
 
-export default function StatsTable({ players }: { players: PlayerRow[] }) {
-  const [sortKey, setSortKey] = useState("PTS");
+/* ─── Component ─── */
+
+export default function AdvancedStatsTable({ players }: { players: PlayerRow[] }) {
+  const [activeGroup, setActiveGroup] = useState<string>("volume");
+  const [sortKey, setSortKey] = useState("USG_PCT");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
@@ -69,12 +162,16 @@ export default function StatsTable({ players }: { players: PlayerRow[] }) {
   const [minAttempts, setMinAttempts] = useState<Record<string, number>>({});
   const [showFilters, setShowFilters] = useState(false);
 
+  const isAllView = activeGroup === "all";
+  const currentGroup = COLUMN_GROUPS.find((g) => g.id === activeGroup);
+  const visibleColumns = isAllView ? ALL_COLUMNS : (currentGroup?.columns ?? []);
+
   function handleSort(key: string) {
     if (sortKey === key) {
       setSortDir((d) => (d === "desc" ? "asc" : "desc"));
     } else {
       setSortKey(key);
-      setSortDir(key === "TOV" ? "asc" : "desc");
+      setSortDir(key === "DEF_RATING" ? "asc" : "desc");
     }
     setPage(0);
   }
@@ -86,19 +183,11 @@ export default function StatsTable({ players }: { players: PlayerRow[] }) {
 
   const filtered = useMemo(() => {
     let list = players;
-    if (minGP > 0) {
-      list = list.filter((p) => (p.stats.GP ?? 0) >= minGP);
-    }
-    if (minMPG > 0) {
-      list = list.filter((p) => (p.stats.MIN ?? 0) >= minMPG);
-    }
-    if (minUSG > 0) {
-      list = list.filter((p) => (p.stats.USG_PCT ?? 0) >= minUSG);
-    }
+    if (minGP > 0) list = list.filter((p) => (p.stats.GP ?? 0) >= minGP);
+    if (minMPG > 0) list = list.filter((p) => (p.stats.MIN ?? 0) >= minMPG);
+    if (minUSG > 0) list = list.filter((p) => (p.stats.USG_PCT ?? 0) >= minUSG);
     for (const [key, val] of Object.entries(minAttempts)) {
-      if (val > 0) {
-        list = list.filter((p) => (p.stats[key] ?? 0) >= val);
-      }
+      if (val > 0) list = list.filter((p) => (p.stats[key] ?? 0) >= val);
     }
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -126,7 +215,36 @@ export default function StatsTable({ players }: { players: PlayerRow[] }) {
 
   return (
     <div className="rounded-2xl bg-card border border-border-t overflow-hidden flex flex-col h-[calc(100vh-14rem)]">
-      {/* ── Toolbar ── */}
+
+      {/* ── Group tabs ── */}
+      <div className="flex items-center gap-1 px-4 py-2.5 border-b border-border-t/50 overflow-x-auto">
+        {COLUMN_GROUPS.map((g) => (
+          <button
+            key={g.id}
+            onClick={() => { setActiveGroup(g.id); setPage(0); }}
+            className={`whitespace-nowrap rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all ${
+              activeGroup === g.id
+                ? "bg-accent text-white shadow-sm"
+                : "text-text-muted hover:bg-input hover:text-text-primary"
+            }`}
+          >
+            {g.label}
+          </button>
+        ))}
+        <div className="w-px h-5 bg-border-t/40 mx-1" />
+        <button
+          onClick={() => { setActiveGroup("all"); setPage(0); }}
+          className={`whitespace-nowrap rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all ${
+            isAllView
+              ? "bg-accent text-white shadow-sm"
+              : "text-text-muted hover:bg-input hover:text-text-primary"
+          }`}
+        >
+          Tout voir
+        </button>
+      </div>
+
+      {/* ── Toolbar: filters + search ── */}
       <div className="flex flex-wrap items-center gap-2 px-4 py-2 border-b border-border-t/50">
         <button
           onClick={() => setShowFilters((v) => !v)}
@@ -191,6 +309,13 @@ export default function StatsTable({ players }: { players: PlayerRow[] }) {
         />
       </div>
 
+      {/* ── Group description ── */}
+      {currentGroup?.description && !isAllView && (
+        <div className="px-4 py-1.5 border-b border-border-t/30 bg-card-hover/30">
+          <p className="text-[11px] text-text-faint">{currentGroup.description}</p>
+        </div>
+      )}
+
       {/* ── Filters panel ── */}
       {showFilters && (
         <div className="border-b border-border-t/50 bg-card-hover/30 px-5 py-3 space-y-3">
@@ -235,42 +360,61 @@ export default function StatsTable({ players }: { players: PlayerRow[] }) {
         </div>
       )}
 
-      {/* Table */}
+      {/* ── Table ── */}
       <div className="flex-1 overflow-auto min-h-0">
-        <table className="w-full text-sm">
-          <thead className="sticky top-0 z-10 bg-card">
-            <tr className="border-b border-border-t/50">
-              <th className="text-left px-3 py-2.5 text-xs font-medium text-text-muted uppercase tracking-wider w-8">
+        <table className="w-full text-sm border-collapse">
+          <thead className="sticky top-0 z-10">
+            {/* All-view group headers */}
+            {isAllView && (
+              <tr className="bg-card border-b border-border-t/30">
+                <th colSpan={2} className="bg-card" />
+                {COLUMN_GROUPS.map((group) => (
+                  <th
+                    key={group.id}
+                    colSpan={group.columns.length}
+                    className="px-2 py-1.5 text-center text-[10px] font-bold text-accent/80 uppercase tracking-wider bg-card border-l border-border-t/60 first:border-l-0"
+                  >
+                    {group.label}
+                  </th>
+                ))}
+              </tr>
+            )}
+            {/* Column headers */}
+            <tr className="bg-card border-b border-border-t/50">
+              <th className="text-left pl-4 pr-2 py-3 text-[11px] font-medium text-text-muted uppercase tracking-wider w-10 bg-card">
                 #
               </th>
-              <th className="text-left px-3 py-2.5 text-xs font-medium text-text-muted uppercase tracking-wider min-w-[200px]">
+              <th className="text-left px-3 py-3 text-[11px] font-medium text-text-muted uppercase tracking-wider bg-card" style={{ minWidth: 220 }}>
                 Joueur
               </th>
-              {COLUMNS.map((col) => (
-                <th
-                  key={col.key}
-                  onClick={() => handleSort(col.key)}
-                  className="px-2 py-2.5 text-right text-xs font-medium uppercase tracking-wider cursor-pointer select-none whitespace-nowrap transition-colors hover:text-text-primary"
-                  title={col.label}
-                >
-                  <span className={`inline-flex items-center gap-0.5 ${
-                    sortKey === col.key ? "text-accent" : "text-text-muted"
-                  }`}>
-                    {col.short}
-                    {sortKey === col.key && (
-                      sortDir === "desc"
-                        ? <ChevronDown size={12} />
-                        : <ChevronUp size={12} />
-                    )}
-                  </span>
-                </th>
-              ))}
+              {visibleColumns.map((col, ci) => {
+                const isGroupStart = isAllView && COLUMN_GROUPS.some((g) => g.columns[0]?.key === col.key);
+                return (
+                  <th
+                    key={col.key}
+                    onClick={() => handleSort(col.key)}
+                    className={`px-3 py-3 text-right text-[11px] font-medium uppercase tracking-wider cursor-pointer select-none whitespace-nowrap transition-colors hover:text-text-primary bg-card ${
+                      isGroupStart && ci > 0 ? "border-l border-border-t/60" : ""
+                    }`}
+                    title={col.label}
+                  >
+                    <span className={`inline-flex items-center gap-0.5 ${
+                      sortKey === col.key ? "text-accent" : "text-text-muted"
+                    }`}>
+                      {col.short}
+                      {sortKey === col.key && (
+                        sortDir === "desc" ? <ChevronDown size={11} /> : <ChevronUp size={11} />
+                      )}
+                    </span>
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody>
             {paged.length === 0 ? (
               <tr>
-                <td colSpan={COLUMNS.length + 2} className="px-4 py-12 text-center text-text-muted">
+                <td colSpan={visibleColumns.length + 2} className="px-4 py-16 text-center text-text-muted text-sm">
                   {search ? "Aucun resultat" : "Aucune donnee"}
                 </td>
               </tr>
@@ -280,26 +424,26 @@ export default function StatsTable({ players }: { players: PlayerRow[] }) {
                 return (
                   <tr
                     key={`${player.name}-${player.team}`}
-                    className="border-b border-border-t/30 transition-colors hover:bg-card-hover"
+                    className="border-b border-border-t/20 transition-colors hover:bg-card-hover/60 group"
                   >
-                    <td className="px-3 py-2.5">
-                      <span className={`inline-flex h-6 w-6 items-center justify-center rounded text-xs font-bold ${
+                    <td className="pl-4 pr-2 py-3">
+                      <span className={`inline-flex h-6 w-6 items-center justify-center rounded-md text-[11px] font-bold ${
                         rank === 1
-                          ? "bg-accent/20 text-accent-text"
+                          ? "bg-accent/15 text-accent"
                           : rank <= 3
                             ? "bg-input text-text-primary"
-                            : "text-text-muted"
+                            : "text-text-faint"
                       }`}>
                         {rank}
                       </span>
                     </td>
-                    <td className="px-3 py-2.5">
-                      <div className="flex items-center gap-2.5">
+                    <td className="px-3 py-3">
+                      <div className="flex items-center gap-3">
                         <div className="relative h-9 w-9 shrink-0">
                           <img
                             src={playerPhotoUrl(player.playerId)}
                             alt=""
-                            className="h-9 w-9 rounded-full object-cover bg-input"
+                            className="h-9 w-9 rounded-full object-cover bg-input ring-1 ring-border-t/30"
                             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                           />
                           <img
@@ -309,24 +453,30 @@ export default function StatsTable({ players }: { players: PlayerRow[] }) {
                           />
                         </div>
                         <div className="min-w-0">
-                          <p className="font-semibold text-text-primary truncate text-sm">{player.name}</p>
-                          <p className="text-[10px] text-text-muted">{player.team}</p>
+                          <p className="font-semibold text-text-primary truncate text-[13px] leading-tight">{player.name}</p>
+                          <p className="text-[10px] text-text-faint mt-0.5">{player.team}</p>
                         </div>
                       </div>
                     </td>
-                    {COLUMNS.map((col) => {
+                    {visibleColumns.map((col, ci) => {
                       const val = player.stats[col.key];
-                      const isInt = col.key === "GP";
+                      const isGroupStart = isAllView && COLUMN_GROUPS.some((g) => g.columns[0]?.key === col.key);
+                      const isPlus = col.format === "plus";
+
                       return (
                         <td
                           key={col.key}
-                          className={`px-2 py-2.5 text-right tabular-nums text-sm ${
-                            sortKey === col.key
-                              ? "text-accent font-bold"
-                              : "text-text-primary"
+                          className={`px-3 py-3 text-right tabular-nums text-[13px] ${
+                            isGroupStart && ci > 0 ? "border-l border-border-t/60" : ""
+                          } ${
+                            isPlus
+                              ? `${getPlusColor(val)} ${getPlusBg(val)}`
+                              : sortKey === col.key
+                                ? "text-accent font-semibold"
+                                : "text-text-primary"
                           }`}
                         >
-                          {val != null ? (isInt ? Math.round(val) : val.toFixed(2)) : "\u2014"}
+                          {formatValue(val, col.format)}
                         </td>
                       );
                     })}
@@ -338,9 +488,9 @@ export default function StatsTable({ players }: { players: PlayerRow[] }) {
         </table>
       </div>
 
-      {/* Pagination */}
+      {/* ── Pagination ── */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-3 py-3 border-t border-border-t/50">
+        <div className="flex items-center justify-center gap-3 py-2.5 border-t border-border-t/50">
           <button
             onClick={() => setPage((p) => Math.max(0, p - 1))}
             disabled={page === 0}
@@ -349,7 +499,7 @@ export default function StatsTable({ players }: { players: PlayerRow[] }) {
             <ChevronLeft size={16} />
           </button>
           <span className="text-xs text-text-muted tabular-nums">
-            {page * PAGE_SIZE + 1}--{Math.min((page + 1) * PAGE_SIZE, sorted.length)} sur {sorted.length}
+            {page * PAGE_SIZE + 1} -- {Math.min((page + 1) * PAGE_SIZE, sorted.length)} sur {sorted.length}
           </span>
           <button
             onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
