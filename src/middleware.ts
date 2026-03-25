@@ -1,6 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+// Routes that require authentication
+const PROTECTED_ROUTES = ["/profil"];
+
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
@@ -26,7 +29,23 @@ export async function middleware(request: NextRequest) {
   );
 
   // Refresh session token
-  await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // Redirect unauthenticated users away from protected routes
+  const isProtected = PROTECTED_ROUTES.some((route) =>
+    request.nextUrl.pathname.startsWith(route)
+  );
+
+  if (isProtected && !user) {
+    const loginUrl = new URL("/auth/login", request.url);
+    loginUrl.searchParams.set("redirect", request.nextUrl.pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  // Security headers
+  supabaseResponse.headers.set("X-Content-Type-Options", "nosniff");
+  supabaseResponse.headers.set("X-Frame-Options", "DENY");
+  supabaseResponse.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
 
   return supabaseResponse;
 }

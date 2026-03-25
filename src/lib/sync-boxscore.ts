@@ -122,6 +122,9 @@ function buildRows(gameId: string, team: NbaTeam, isHome: boolean, now: string) 
  * Returns true if data was synced (or already existed), false on error.
  */
 export async function syncBoxscore(gameId: string): Promise<boolean> {
+  // Validate gameId format (10-digit NBA game ID)
+  if (!/^\d{10}$/.test(gameId)) return false;
+
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!

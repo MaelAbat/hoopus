@@ -159,11 +159,9 @@ function getConference(teamA: string, teamB: string, round: number): string | nu
 
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
-  const secret = request.nextUrl.searchParams.get("secret");
 
-  const isAuthorized =
-    authHeader === `Bearer ${process.env.CRON_SECRET}` ||
-    secret === process.env.REVALIDATE_SECRET;
+  const isAuthorized = authHeader === `Bearer ${process.env.CRON_SECRET}`;
+
 
   if (!isAuthorized) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

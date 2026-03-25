@@ -3,8 +3,8 @@ import { syncBoxscore } from "@/lib/sync-boxscore";
 
 export async function GET(request: NextRequest) {
   const gameId = request.nextUrl.searchParams.get("gameId");
-  if (!gameId) {
-    return NextResponse.json({ error: "gameId required" }, { status: 400 });
+  if (!gameId || !/^\d{10}$/.test(gameId)) {
+    return NextResponse.json({ error: "Invalid gameId" }, { status: 400 });
   }
 
   const ok = await syncBoxscore(gameId);

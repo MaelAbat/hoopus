@@ -9,17 +9,18 @@ export async function GET(request: NextRequest) {
   }
 
   const baseUrl = request.nextUrl.origin;
-  const headers = { authorization: `Bearer ${process.env.CRON_SECRET}` };
-  const secret = `secret=${process.env.REVALIDATE_SECRET}`;
+  const headers = {
+    authorization: `Bearer ${process.env.CRON_SECRET}`,
+  };
 
-  // Sync stats, games, standings, team stats et playoffs en parallèle
+  // Sync all data sources in parallel — auth via header only, no secrets in URL
   const [statsRes, gamesRes, standingsRes, teamStatsRes, playoffsRes, rostersRes] = await Promise.all([
-    fetch(`${baseUrl}/api/sync-stats?${secret}`, { headers }),
-    fetch(`${baseUrl}/api/sync-games?${secret}`, { headers }),
-    fetch(`${baseUrl}/api/sync-standings?${secret}`, { headers }),
-    fetch(`${baseUrl}/api/sync-team-stats?${secret}`, { headers }),
-    fetch(`${baseUrl}/api/sync-playoffs?${secret}`, { headers }),
-    fetch(`${baseUrl}/api/sync-rosters?${secret}`, { headers }),
+    fetch(`${baseUrl}/api/sync-stats`, { headers }),
+    fetch(`${baseUrl}/api/sync-games`, { headers }),
+    fetch(`${baseUrl}/api/sync-standings`, { headers }),
+    fetch(`${baseUrl}/api/sync-team-stats`, { headers }),
+    fetch(`${baseUrl}/api/sync-playoffs`, { headers }),
+    fetch(`${baseUrl}/api/sync-rosters`, { headers }),
   ]);
 
   const [statsData, gamesData, standingsData, teamStatsData, playoffsData, rostersData] = await Promise.all([

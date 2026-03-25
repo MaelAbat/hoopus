@@ -39,8 +39,8 @@ function fetchNba(url: string): Promise<NbaResponse> {
 
 export async function GET(request: NextRequest) {
   const playerId = request.nextUrl.searchParams.get("id");
-  if (!playerId) {
-    return NextResponse.json({ error: "Missing id" }, { status: 400 });
+  if (!playerId || !/^\d+$/.test(playerId)) {
+    return NextResponse.json({ error: "Invalid id" }, { status: 400 });
   }
 
   try {
