@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { syncBoxscore } from "@/lib/sync-boxscore";
 import BoxScore from "@/components/BoxScore";
 import ScrollReveal from "@/components/ScrollReveal";
 import { teamLogoUrl } from "@/lib/nba-teams";
@@ -13,23 +14,11 @@ interface PageProps {
 
 export default async function MatchPage({ params }: PageProps) {
   const { gameId } = await params;
+
+  // Sync boxscore on-demand (fetches from NBA CDN if not in DB)
+  await syncBoxscore(gameId);
+
   const supabase = await createClient();
-
-  // Try to sync boxscore if not in DB yet (on-demand)
-  const { count } = await supabase
-    .from("boxscores")
-    .select("*", { count: "exact", head: true })
-    .eq("game_id", gameId);
-
-  if (!count || count === 0) {
-    // Trigger sync
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-    try {
-      await fetch(`${baseUrl}/api/sync-boxscore?gameId=${gameId}`, { cache: "no-store" });
-    } catch {
-      // Sync failed, will show empty state
-    }
-  }
 
   // Fetch boxscore data
   const { data: players } = await supabase
