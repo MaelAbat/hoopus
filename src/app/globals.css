@@ -222,6 +222,13 @@ summary {
   cursor: pointer;
 }
 
+/* ── Page loading fade-in ───────────────── */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-in { animation: fade-in 0.3s ease-out both; }
+
 /* ── Animations ──────────────────────────── */
 @keyframes spin-slow {
   to { transform: rotate(360deg); }
