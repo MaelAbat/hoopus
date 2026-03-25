@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight, X, Trophy } from "lucide-react";
 import { teamLogoUrl } from "@/lib/nba-teams";
+import Link from "next/link";
 
 interface Game {
   game_id: string;
@@ -24,7 +25,7 @@ function MiniScore({ game }: { game: Game }) {
   const awayWon = isFinal && game.away_score > game.home_score;
 
   return (
-    <div className="flex items-center gap-3 rounded-lg bg-card border border-border-t px-3 py-2 shrink-0 min-w-[180px] transition-colors hover:border-border-hover">
+    <Link href={`/match/${game.game_id}`} className="flex items-center gap-3 rounded-lg bg-card border border-border-t px-3 py-2 shrink-0 min-w-[180px] transition-colors hover:border-border-hover">
       {/* Away */}
       <div className="flex flex-col items-center gap-0.5 w-10">
         <img src={teamLogoUrl(game.away_team)} alt={game.away_team} className="h-5 w-5 object-contain" />
@@ -62,7 +63,7 @@ function MiniScore({ game }: { game: Game }) {
           {game.home_team}
         </span>
       </div>
-    </div>
+    </Link>
   );
 }
 

@@ -3,6 +3,7 @@
 import { useRef, useState, useMemo } from "react";
 import { ChevronLeft, ChevronRight, MapPin } from "lucide-react";
 import { teamLogoUrl } from "@/lib/nba-teams";
+import Link from "next/link";
 
 interface Game {
   game_id: string;
@@ -67,8 +68,10 @@ function GameCard({ game }: { game: Game }) {
   const homeWon = isFinal && game.home_score > game.away_score;
   const awayWon = isFinal && game.away_score > game.home_score;
 
-  return (
-    <div className="rounded-xl bg-sidebar border border-border-t p-3 transition-all duration-200 hover:border-border-hover">
+  const canLink = isFinal || isLive;
+
+  const card = (
+    <div className={`rounded-xl bg-sidebar border border-border-t p-3 transition-all duration-200 hover:border-border-hover ${canLink ? "cursor-pointer" : ""}`}>
       {/* Status */}
       <div className="flex items-center justify-between mb-2">
         {isLive ? (
@@ -120,6 +123,11 @@ function GameCard({ game }: { game: Game }) {
       </div>
     </div>
   );
+
+  if (canLink) {
+    return <Link href={`/match/${game.game_id}`}>{card}</Link>;
+  }
+  return card;
 }
 
 export default function CalendarView({ games }: { games: Game[] }) {
