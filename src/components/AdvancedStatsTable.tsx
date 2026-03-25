@@ -111,7 +111,6 @@ const COLUMN_GROUPS: ColumnGroup[] = [
       { key: "FTA_TOT", label: "LF tentes", short: "FTA", format: "int" },
       { key: "PF_TOT", label: "Fautes", short: "PF", format: "int" },
       { key: "PLUS_MINUS_TOT", label: "+/-", short: "+/-", format: "int" },
-      { key: "TOT_MIN", label: "Minutes", short: "MIN", format: "int" },
     ],
   },
 ];
