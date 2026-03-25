@@ -112,6 +112,9 @@ export default async function Statistiques() {
     "USG_PCT", "OFF_RATING", "DEF_RATING", "NET_RATING",
     "AST_PCT", "OREB_PCT", "DREB_PCT", "REB_PCT", "PACE", "PIE",
     "TS_PLUS", "EFG_PLUS", "FG_PLUS", "FG3_PLUS", "FT_PLUS", "FG2_PLUS",
+    "PTS_TOT", "REB_TOT", "AST_TOT", "BLK_TOT", "STL_TOT", "TOV_TOT",
+    "FGM_TOT", "FG3M_TOT", "FTM_TOT", "FG2M_TOT",
+    "OREB_TOT", "DREB_TOT", "PF_TOT", "PLUS_MINUS_TOT",
   ];
 
   for (const row of allLeaders) {

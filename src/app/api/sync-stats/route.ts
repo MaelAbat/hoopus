@@ -357,6 +357,42 @@ export async function GET(request: NextRequest) {
     }));
     results["FG2A_TOT"] = await batchInsert(supabase, buildLeadersWithEligibility("FG2A_TOT", fg2aTotAll));
 
+    // ── Season totals (raw cumulative stats) ──
+    const totalCategories: { category: string; totalIdx: number }[] = [
+      { category: "PTS_TOT", totalIdx: ptsIdx },
+      { category: "REB_TOT", totalIdx: idx("REB") },
+      { category: "AST_TOT", totalIdx: idx("AST") },
+      { category: "BLK_TOT", totalIdx: idx("BLK") },
+      { category: "STL_TOT", totalIdx: idx("STL") },
+      { category: "TOV_TOT", totalIdx: idx("TOV") },
+      { category: "FGM_TOT", totalIdx: fgmIdx },
+      { category: "FG3M_TOT", totalIdx: fg3mIdx },
+      { category: "FTM_TOT", totalIdx: ftmIdx },
+      { category: "OREB_TOT", totalIdx: idx("OREB") },
+      { category: "DREB_TOT", totalIdx: idx("DREB") },
+      { category: "PF_TOT", totalIdx: idx("PF") },
+      { category: "PLUS_MINUS_TOT", totalIdx: idx("PLUS_MINUS") },
+    ];
+
+    for (const { category, totalIdx } of totalCategories) {
+      const all = rows.map((row) => ({
+        row,
+        playerId: Number(row[playerIdIdx]),
+        val: Number(row[totalIdx]),
+        eligible: Number(row[gpIdx]) >= MIN_GP,
+      }));
+      results[category] = await batchInsert(supabase, buildLeadersWithEligibility(category, all));
+    }
+
+    // FG2M_TOT = FGM - FG3M
+    const fg2mTotAll = rows.map((row) => ({
+      row,
+      playerId: Number(row[playerIdIdx]),
+      val: Number(row[fgmIdx]) - Number(row[fg3mIdx]),
+      eligible: Number(row[gpIdx]) >= MIN_GP,
+    }));
+    results["FG2M_TOT"] = await batchInsert(supabase, buildLeadersWithEligibility("FG2M_TOT", fg2mTotAll));
+
     // ── Calculated percentage categories (from totals for precision) ──
 
     // FG3_PCT

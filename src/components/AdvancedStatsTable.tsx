@@ -87,6 +87,33 @@ const COLUMN_GROUPS: ColumnGroup[] = [
       { key: "FG2_PLUS", label: "2P+ (vs ligue)", short: "2P+", format: "plus" },
     ],
   },
+  {
+    id: "totals",
+    label: "Totaux",
+    icon: "~",
+    description: "Cumuls saison (stats brutes, non par match)",
+    columns: [
+      { key: "PTS_TOT", label: "Points totaux", short: "PTS", format: "int" },
+      { key: "REB_TOT", label: "Rebonds totaux", short: "REB", format: "int" },
+      { key: "AST_TOT", label: "Passes totales", short: "AST", format: "int" },
+      { key: "STL_TOT", label: "Interceptions totales", short: "STL", format: "int" },
+      { key: "BLK_TOT", label: "Contres totaux", short: "BLK", format: "int" },
+      { key: "TOV_TOT", label: "Pertes totales", short: "TOV", format: "int" },
+      { key: "OREB_TOT", label: "Rebonds off. totaux", short: "OREB", format: "int" },
+      { key: "DREB_TOT", label: "Rebonds def. totaux", short: "DREB", format: "int" },
+      { key: "FGM_TOT", label: "Tirs reussis", short: "FGM", format: "int" },
+      { key: "FGA_TOT", label: "Tirs tentes", short: "FGA", format: "int" },
+      { key: "FG3M_TOT", label: "3pts reussis", short: "3PM", format: "int" },
+      { key: "FG3A_TOT", label: "3pts tentes", short: "3PA", format: "int" },
+      { key: "FG2M_TOT", label: "2pts reussis", short: "2PM", format: "int" },
+      { key: "FG2A_TOT", label: "2pts tentes", short: "2PA", format: "int" },
+      { key: "FTM_TOT", label: "LF reussis", short: "FTM", format: "int" },
+      { key: "FTA_TOT", label: "LF tentes", short: "FTA", format: "int" },
+      { key: "PF_TOT", label: "Fautes", short: "PF", format: "int" },
+      { key: "PLUS_MINUS_TOT", label: "+/-", short: "+/-", format: "int" },
+      { key: "TOT_MIN", label: "Minutes", short: "MIN", format: "int" },
+    ],
+  },
 ];
 
 const ALL_COLUMNS = COLUMN_GROUPS.flatMap((g) => g.columns);
