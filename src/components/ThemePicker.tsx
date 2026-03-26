@@ -7,13 +7,13 @@ const themes = [
   {
     id: "dark" as const,
     name: "Sombre",
-    desc: "Thème par défaut",
+    desc: "Sombre et contrasté",
     colors: ["#090f1d", "#111827", "#f97316"],
   },
   {
     id: "light" as const,
     name: "Clair",
-    desc: "Lumineux et épuré",
+    desc: "Par defaut",
     colors: ["#f8fafc", "#ffffff", "#4f46e5"],
   },
   {

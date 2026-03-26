@@ -19,8 +19,10 @@ import {
   Shield,
   Menu,
   X,
+  Palette,
 } from "lucide-react";
 import SyncButton from "./SyncButton";
+import { useTheme } from "./ThemeProvider";
 
 interface NavItem {
   href: string;
@@ -216,6 +218,7 @@ export default function Sidebar() {
             Se connecter
           </Link>
         )}
+        <ThemeSelector />
         <p className="mt-3 text-xs text-text-faint">&copy; 2026 Hoopus</p>
       </div>
     </>
@@ -264,5 +267,56 @@ export default function Sidebar() {
         {sidebarContent}
       </aside>
     </>
+  );
+}
+
+const THEMES = [
+  { id: "light", label: "Clair", color: "#4f46e5" },
+  { id: "dark", label: "Sombre", color: "#f97316" },
+  { id: "midnight", label: "Midnight", color: "#8b5cf6" },
+  { id: "emerald", label: "Emerald", color: "#10b981" },
+  { id: "sakura", label: "Sakura", color: "#ec4899" },
+  { id: "ocean", label: "Ocean", color: "#0ea5e9" },
+] as const;
+
+function ThemeSelector() {
+  const { theme, setTheme } = useTheme();
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="relative mt-2">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-text-muted transition-colors hover:bg-input hover:text-text-primary"
+      >
+        <Palette size={14} />
+        Theme
+        <span
+          className="ml-auto h-3 w-3 rounded-full"
+          style={{ backgroundColor: THEMES.find(t => t.id === theme)?.color }}
+        />
+      </button>
+      {open && (
+        <div className="absolute bottom-full left-0 right-0 mb-1 rounded-xl bg-card border border-border-t p-2 shadow-xl z-50">
+          {THEMES.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => { setTheme(t.id); setOpen(false); }}
+              className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-medium transition-colors ${
+                theme === t.id
+                  ? "bg-accent-light text-accent"
+                  : "text-text-muted hover:bg-input hover:text-text-primary"
+              }`}
+            >
+              <span
+                className="h-3 w-3 rounded-full shrink-0"
+                style={{ backgroundColor: t.color }}
+              />
+              {t.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
