@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Clock, ArrowRight, Plus, Pencil } from "lucide-react";
+import Link from "next/link";
 import type { News } from "@/lib/types/database";
 import { deleteNews } from "@/lib/actions/news";
 import NewsForm from "./NewsForm";
@@ -53,7 +54,7 @@ export default function NewsList({ news, isAdmin }: { news: News[]; isAdmin: boo
 
       {/* Featured */}
       {featured && (
-        <div className="group relative overflow-hidden rounded-2xl border border-accent/20 transition-all duration-300 hover:border-accent/40 hover:shadow-lg">
+        <Link href={`/actualites/${featured.id}`} className="group relative block overflow-hidden rounded-2xl border border-accent/20 transition-all duration-300 hover:border-accent/40 hover:shadow-lg">
           {featured.image_url && (
             <div className="aspect-[21/9] w-full overflow-hidden">
               <img
@@ -63,19 +64,21 @@ export default function NewsList({ news, isAdmin }: { news: News[]; isAdmin: boo
               />
             </div>
           )}
-          <div className={`p-8 ${featured.image_url ? "" : "bg-gradient-to-br from-accent-light to-transparent"}`}>
+          <div className={`p-5 sm:p-8 ${featured.image_url ? "" : "bg-gradient-to-br from-accent-light to-transparent"}`}>
             {isAdmin && (
-              <div className="absolute top-4 right-4 flex gap-2">
-                <button onClick={() => openEdit(featured)} className="rounded-lg p-2 bg-black/40 backdrop-blur-sm text-white hover:bg-black/60 transition-colors">
+              <div className="absolute top-4 right-4 flex gap-2 z-10">
+                <button onClick={(e) => { e.preventDefault(); openEdit(featured); }} className="rounded-lg p-2 bg-black/40 backdrop-blur-sm text-white hover:bg-black/60 transition-colors">
                   <Pencil size={16} />
                 </button>
-                <DeleteButton onDelete={() => deleteNews(featured.id)} />
+                <span onClick={(e) => e.preventDefault()}>
+                  <DeleteButton onDelete={() => deleteNews(featured.id)} />
+                </span>
               </div>
             )}
             <span className="inline-block rounded-full bg-accent-light px-3 py-1 text-xs font-semibold text-accent-text">
               {featured.category}
             </span>
-            <h2 className="mt-4 text-2xl font-bold text-text-primary">{featured.title}</h2>
+            <h2 className="mt-4 text-xl sm:text-2xl font-bold text-text-primary">{featured.title}</h2>
             <p className="mt-2 text-text-secondary leading-relaxed">{featured.excerpt}</p>
             <div className="mt-4 flex items-center justify-between">
               <div className="flex items-center gap-2 text-xs text-text-muted">
@@ -87,15 +90,16 @@ export default function NewsList({ news, isAdmin }: { news: News[]; isAdmin: boo
               </span>
             </div>
           </div>
-        </div>
+        </Link>
       )}
 
       {/* News list */}
       <div className="space-y-3">
         {others.map((item) => (
-          <div
+          <Link
             key={item.id}
-            className="group relative overflow-hidden rounded-2xl bg-card border border-border-t transition-all duration-200 hover:border-border-hover hover:shadow-lg"
+            href={`/actualites/${item.id}`}
+            className="group relative block overflow-hidden rounded-2xl bg-card border border-border-t transition-all duration-200 hover:border-border-hover hover:shadow-lg"
           >
             <div className="flex">
               {item.image_url && (
@@ -107,32 +111,34 @@ export default function NewsList({ news, isAdmin }: { news: News[]; isAdmin: boo
                   />
                 </div>
               )}
-              <div className="flex-1 p-6">
+              <div className="flex-1 p-4 sm:p-6">
                 {isAdmin && (
-                  <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => openEdit(item)} className="rounded-lg p-2 text-text-faint hover:bg-input hover:text-text-primary transition-colors">
+                  <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                    <button onClick={(e) => { e.preventDefault(); openEdit(item); }} className="rounded-lg p-2 text-text-faint hover:bg-input hover:text-text-primary transition-colors">
                       <Pencil size={16} />
                     </button>
-                    <DeleteButton onDelete={() => deleteNews(item.id)} />
+                    <span onClick={(e) => e.preventDefault()}>
+                      <DeleteButton onDelete={() => deleteNews(item.id)} />
+                    </span>
                   </div>
                 )}
-                <div className="flex items-start justify-between gap-4 pr-16">
-                  <div className="flex-1">
+                <div className="flex items-start justify-between gap-4 sm:pr-16">
+                  <div className="flex-1 min-w-0">
                     <span className="inline-block rounded-full bg-input px-3 py-1 text-xs font-medium text-text-muted">
                       {item.category}
                     </span>
-                    <h3 className="mt-3 text-lg font-semibold text-text-primary">{item.title}</h3>
-                    <p className="mt-1 text-sm text-text-muted leading-relaxed">{item.excerpt}</p>
+                    <h3 className="mt-2 sm:mt-3 text-base sm:text-lg font-semibold text-text-primary leading-snug group-hover:text-accent-text transition-colors">{item.title}</h3>
+                    <p className="mt-1 text-sm text-text-muted leading-relaxed line-clamp-2">{item.excerpt}</p>
                   </div>
-                  <ArrowRight size={16} className="mt-8 shrink-0 text-text-faint transition-all group-hover:translate-x-1 group-hover:text-accent" />
+                  <ArrowRight size={16} className="mt-8 shrink-0 text-text-faint transition-all group-hover:translate-x-1 group-hover:text-accent hidden sm:block" />
                 </div>
-                <div className="mt-4 flex items-center gap-2 text-xs text-text-faint">
+                <div className="mt-3 flex items-center gap-2 text-xs text-text-faint">
                   <Clock size={12} />
                   {formatTime(item.created_at)}
                 </div>
               </div>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
     </>

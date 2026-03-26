@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Clock, BookOpen, Plus, Pencil } from "lucide-react";
+import { Clock, BookOpen, Plus, Pencil, ArrowRight } from "lucide-react";
+import Link from "next/link";
 import type { Article } from "@/lib/types/database";
 import { deleteArticle } from "@/lib/actions/articles";
 import ArticleForm from "./ArticleForm";
@@ -49,8 +50,9 @@ export default function ArticlesList({ articles, isAdmin }: { articles: Article[
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         {articles.map((article) => (
-          <article
+          <Link
             key={article.id}
+            href={`/articles/${article.id}`}
             className="group relative overflow-hidden rounded-2xl bg-card border border-border-t transition-all duration-300 hover:border-border-hover hover:shadow-lg"
           >
             {article.image_url && (
@@ -62,25 +64,27 @@ export default function ArticlesList({ articles, isAdmin }: { articles: Article[
                 />
               </div>
             )}
-            <div className="p-6">
+            <div className="p-5 sm:p-6">
               {isAdmin && (
-                <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={() => openEdit(article)} className="rounded-lg p-2 bg-black/40 backdrop-blur-sm text-white hover:bg-black/60 transition-colors">
+                <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                  <button onClick={(e) => { e.preventDefault(); openEdit(article); }} className="rounded-lg p-2 bg-black/40 backdrop-blur-sm text-white hover:bg-black/60 transition-colors">
                     <Pencil size={16} />
                   </button>
-                  <DeleteButton onDelete={() => deleteArticle(article.id)} />
+                  <span onClick={(e) => e.preventDefault()}>
+                    <DeleteButton onDelete={() => deleteArticle(article.id)} />
+                  </span>
                 </div>
               )}
               <span className="inline-block rounded-full bg-accent-light px-3 py-1 text-xs font-semibold text-accent-text">
                 {article.tag}
               </span>
-              <h2 className="mt-4 text-xl font-bold text-text-primary leading-snug transition-colors group-hover:text-accent-text">
+              <h2 className="mt-3 text-lg sm:text-xl font-bold text-text-primary leading-snug transition-colors group-hover:text-accent-text">
                 {article.title}
               </h2>
-              <p className="mt-2 text-sm text-text-secondary leading-relaxed">
+              <p className="mt-2 text-sm text-text-secondary leading-relaxed line-clamp-3">
                 {article.excerpt}
               </p>
-              <div className="mt-5 flex items-center justify-between border-t border-border-t pt-4">
+              <div className="mt-4 flex items-center justify-between border-t border-border-t pt-4">
                 <span className="text-sm font-medium text-text-secondary">{article.author}</span>
                 <div className="flex items-center gap-3 text-xs text-text-muted">
                   <span className="flex items-center gap-1">
@@ -93,8 +97,12 @@ export default function ArticlesList({ articles, isAdmin }: { articles: Article[
                   </span>
                 </div>
               </div>
+              <div className="mt-3 flex items-center gap-1.5 text-sm font-semibold text-accent opacity-0 -translate-x-1 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0">
+                Lire l&apos;article
+                <ArrowRight size={14} />
+              </div>
             </div>
-          </article>
+          </Link>
         ))}
       </div>
     </>

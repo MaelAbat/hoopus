@@ -194,7 +194,7 @@ export default async function Home() {
           </div>
 
           <Link
-            href="/articles"
+            href={`/articles/${featured.id}`}
             className="group relative block overflow-hidden rounded-2xl border border-border-t bg-card transition-all duration-300 hover:border-border-hover hover:shadow-xl"
           >
             <div className="flex flex-col lg:flex-row">
