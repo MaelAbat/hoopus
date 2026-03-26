@@ -32,7 +32,7 @@ export default function ScrollReveal({
           el.classList.remove("scroll-visible");
         }
       },
-      { threshold: 0.12, rootMargin: "0px 0px -30px 0px" },
+      { threshold: 0.01, rootMargin: "0px 0px -20px 0px" },
     );
 
     observer.observe(el);
