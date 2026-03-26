@@ -36,7 +36,15 @@ export default async function MatchPage({ params }: PageProps) {
     .eq("game_id", gameId)
     .single();
 
-  if (!players || players.length === 0) {
+  // Deduplicate players (keep first occurrence per player_id)
+  const seen = new Set<number>();
+  const uniquePlayers = (players || []).filter((p) => {
+    if (seen.has(p.player_id)) return false;
+    seen.add(p.player_id);
+    return true;
+  });
+
+  if (uniquePlayers.length === 0) {
     return (
       <div className="mx-auto max-w-6xl space-y-8">
         <Link href="/calendrier" className="inline-flex items-center gap-2 text-sm text-text-muted hover:text-text-primary transition-colors">
@@ -52,12 +60,12 @@ export default async function MatchPage({ params }: PageProps) {
   }
 
   // Split by team
-  const teams = [...new Set(players.map((p) => p.team))];
-  const homeTeam = players.find((p) => p.is_home)?.team || teams[0];
+  const teams = [...new Set(uniquePlayers.map((p) => p.team))];
+  const homeTeam = uniquePlayers.find((p) => p.is_home)?.team || teams[0];
   const awayTeam = teams.find((t) => t !== homeTeam) || teams[1];
 
-  const homePlayers = players.filter((p) => p.team === homeTeam);
-  const awayPlayers = players.filter((p) => p.team === awayTeam);
+  const homePlayers = uniquePlayers.filter((p) => p.team === homeTeam);
+  const awayPlayers = uniquePlayers.filter((p) => p.team === awayTeam);
 
   const homeScore = gameData?.home_score ?? homePlayers.reduce((s, p) => s + (p.pts || 0), 0);
   const awayScore = gameData?.away_score ?? awayPlayers.reduce((s, p) => s + (p.pts || 0), 0);
