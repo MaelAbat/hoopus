@@ -118,18 +118,18 @@ export default function PlayerCareer({ playerId }: { playerId: number }) {
           <table className="w-full text-sm">
             <thead className="sticky top-0 z-10 bg-card">
               <tr className="border-b border-border-t text-text-muted">
-                <th className="px-4 py-3 text-left font-medium">Saison</th>
-                <th className="px-4 py-3 text-left font-medium">Équipe</th>
-                <th className="px-4 py-3 text-center font-medium">MJ</th>
-                <th className="px-4 py-3 text-center font-medium">MIN</th>
-                <th className="px-4 py-3 text-center font-medium">PTS</th>
-                <th className="px-4 py-3 text-center font-medium">REB</th>
-                <th className="px-4 py-3 text-center font-medium">AST</th>
-                <th className="px-4 py-3 text-center font-medium hidden sm:table-cell">STL</th>
-                <th className="px-4 py-3 text-center font-medium hidden sm:table-cell">BLK</th>
-                <th className="px-4 py-3 text-center font-medium hidden md:table-cell">FG%</th>
-                <th className="px-4 py-3 text-center font-medium hidden md:table-cell">3P%</th>
-                <th className="px-4 py-3 text-center font-medium hidden md:table-cell">FT%</th>
+                <th className="sticky left-0 z-20 bg-card px-3 sm:px-4 py-3 text-left font-medium whitespace-nowrap">Saison</th>
+                <th className="px-3 sm:px-4 py-3 text-left font-medium">Equipe</th>
+                <th className="px-2 sm:px-4 py-3 text-center font-medium">MJ</th>
+                <th className="px-2 sm:px-4 py-3 text-center font-medium">MIN</th>
+                <th className="px-2 sm:px-4 py-3 text-center font-medium">PTS</th>
+                <th className="px-2 sm:px-4 py-3 text-center font-medium">REB</th>
+                <th className="px-2 sm:px-4 py-3 text-center font-medium">AST</th>
+                <th className="px-2 sm:px-4 py-3 text-center font-medium">STL</th>
+                <th className="px-2 sm:px-4 py-3 text-center font-medium">BLK</th>
+                <th className="px-2 sm:px-4 py-3 text-center font-medium">FG%</th>
+                <th className="px-2 sm:px-4 py-3 text-center font-medium">3P%</th>
+                <th className="px-2 sm:px-4 py-3 text-center font-medium">FT%</th>
               </tr>
             </thead>
             <tbody>
@@ -138,8 +138,8 @@ export default function PlayerCareer({ playerId }: { playerId: number }) {
                 const logoUrl = isTot ? "" : teamLogoUrl(s.team);
                 return (
                   <tr key={`${s.season}-${s.team}-${i}`} className={`border-b border-border-t/50 transition-colors hover:bg-card-hover ${isTot ? "bg-input/50" : ""}`}>
-                    <td className="px-4 py-2.5 text-text-secondary font-medium">{s.season}</td>
-                    <td className="px-4 py-2.5">
+                    <td className="sticky left-0 z-10 bg-card px-3 sm:px-4 py-2.5 text-text-secondary font-medium whitespace-nowrap">{s.season}</td>
+                    <td className="px-3 sm:px-4 py-2.5">
                       <div className="flex items-center gap-2">
                         {logoUrl && <img src={logoUrl} alt={s.team} className="h-4 w-4 object-contain" />}
                         <span className={`font-medium ${isTot ? "text-text-muted italic" : "text-text-primary"}`}>
@@ -147,16 +147,16 @@ export default function PlayerCareer({ playerId }: { playerId: number }) {
                         </span>
                       </div>
                     </td>
-                    <td className="px-4 py-2.5 text-center text-text-muted">{s.gp}</td>
-                    <td className="px-4 py-2.5 text-center text-text-muted">{s.min.toFixed(1)}</td>
-                    <td className="px-4 py-2.5 text-center font-semibold text-text-primary">{s.pts.toFixed(1)}</td>
-                    <td className="px-4 py-2.5 text-center text-text-muted">{s.reb.toFixed(1)}</td>
-                    <td className="px-4 py-2.5 text-center text-text-muted">{s.ast.toFixed(1)}</td>
-                    <td className="px-4 py-2.5 text-center text-text-muted hidden sm:table-cell">{s.stl.toFixed(1)}</td>
-                    <td className="px-4 py-2.5 text-center text-text-muted hidden sm:table-cell">{s.blk.toFixed(1)}</td>
-                    <td className="px-4 py-2.5 text-center text-text-muted hidden md:table-cell">{(s.fgPct * 100).toFixed(1)}</td>
-                    <td className="px-4 py-2.5 text-center text-text-muted hidden md:table-cell">{(s.fg3Pct * 100).toFixed(1)}</td>
-                    <td className="px-4 py-2.5 text-center text-text-muted hidden md:table-cell">{(s.ftPct * 100).toFixed(1)}</td>
+                    <td className="px-2 sm:px-4 py-2.5 text-center text-text-muted">{s.gp}</td>
+                    <td className="px-2 sm:px-4 py-2.5 text-center text-text-muted">{s.min.toFixed(1)}</td>
+                    <td className="px-2 sm:px-4 py-2.5 text-center font-semibold text-text-primary">{s.pts.toFixed(1)}</td>
+                    <td className="px-2 sm:px-4 py-2.5 text-center text-text-muted">{s.reb.toFixed(1)}</td>
+                    <td className="px-2 sm:px-4 py-2.5 text-center text-text-muted">{s.ast.toFixed(1)}</td>
+                    <td className="px-2 sm:px-4 py-2.5 text-center text-text-muted">{s.stl.toFixed(1)}</td>
+                    <td className="px-2 sm:px-4 py-2.5 text-center text-text-muted">{s.blk.toFixed(1)}</td>
+                    <td className="px-2 sm:px-4 py-2.5 text-center text-text-muted">{(s.fgPct * 100).toFixed(1)}</td>
+                    <td className="px-2 sm:px-4 py-2.5 text-center text-text-muted">{(s.fg3Pct * 100).toFixed(1)}</td>
+                    <td className="px-2 sm:px-4 py-2.5 text-center text-text-muted">{(s.ftPct * 100).toFixed(1)}</td>
                   </tr>
                 );
               })}
