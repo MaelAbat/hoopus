@@ -357,7 +357,7 @@ export default async function Home() {
       {/* ── Footer ───────────────────────────── */}
       <ScrollReveal variant="up">
         <p className="pb-4 text-center text-xs text-text-faint">
-          Fait par des passionnés, pour des passionnés.
+          Fait avec passion, pour les passionnes.
         </p>
       </ScrollReveal>
     </div>
