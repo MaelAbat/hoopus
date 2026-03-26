@@ -89,25 +89,25 @@ function RosterTable({ players, tricode, onBack }: { players: Player[]; tricode:
           <table className="w-full text-sm">
             <thead className="sticky top-0 z-10 bg-card">
               <tr className="border-b border-border-t text-text-muted">
-                <th className="px-3 py-3 text-left font-medium w-12"></th>
-                <th className="px-3 py-3 text-left font-medium">Joueur</th>
-                <th className="px-3 py-3 text-center font-medium w-10">#</th>
-                <th className="px-3 py-3 text-center font-medium w-12">Pos</th>
-                <th className="px-3 py-3 text-center font-medium hidden sm:table-cell">Taille</th>
-                <th className="px-3 py-3 text-center font-medium hidden sm:table-cell">Poids</th>
-                <th className="px-3 py-3 text-center font-medium">Âge</th>
-                <th className="px-3 py-3 text-left font-medium hidden md:table-cell">Origine</th>
-                <th className="px-3 py-3 text-center font-medium hidden lg:table-cell">Draft</th>
-                <th className="px-3 py-3 text-right font-medium hidden md:table-cell">Salaire</th>
-                <th className="px-3 py-3 text-center font-medium">PTS</th>
-                <th className="px-3 py-3 text-center font-medium hidden sm:table-cell">REB</th>
-                <th className="px-3 py-3 text-center font-medium hidden sm:table-cell">AST</th>
+                <th className="sticky left-0 z-20 bg-card px-2 py-3 text-left font-medium w-10"></th>
+                <th className="sticky left-10 z-20 bg-card px-2 py-3 text-left font-medium min-w-[120px]">Joueur</th>
+                <th className="px-2 py-3 text-center font-medium">#</th>
+                <th className="px-2 py-3 text-center font-medium">Pos</th>
+                <th className="px-2 py-3 text-center font-medium whitespace-nowrap">Taille</th>
+                <th className="px-2 py-3 text-center font-medium whitespace-nowrap">Poids</th>
+                <th className="px-2 py-3 text-center font-medium">Age</th>
+                <th className="px-2 py-3 text-left font-medium whitespace-nowrap">Origine</th>
+                <th className="px-2 py-3 text-center font-medium whitespace-nowrap">Draft</th>
+                <th className="px-2 py-3 text-right font-medium whitespace-nowrap">Salaire</th>
+                <th className="px-2 py-3 text-center font-medium">PTS</th>
+                <th className="px-2 py-3 text-center font-medium">REB</th>
+                <th className="px-2 py-3 text-center font-medium">AST</th>
               </tr>
             </thead>
             <tbody>
               {players.map((p) => (
                 <tr key={p.player_id} className="border-b border-border-t/50 transition-colors hover:bg-card-hover">
-                  <td className="px-3 py-2">
+                  <td className="sticky left-0 z-10 bg-card px-2 py-2">
                     <img
                       src={playerPhotoUrl(p.player_id)}
                       alt={`${p.first_name} ${p.last_name}`}
@@ -115,37 +115,37 @@ function RosterTable({ players, tricode, onBack }: { players: Player[]; tricode:
                       onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                     />
                   </td>
-                  <td className="px-3 py-2">
-                    <Link href={`/joueurs/${p.player_id}`} className="font-medium text-text-primary hover:text-accent-text transition-colors">
+                  <td className="sticky left-10 z-10 bg-card px-2 py-2">
+                    <Link href={`/joueurs/${p.player_id}`} className="font-medium text-text-primary hover:text-accent-text transition-colors whitespace-nowrap">
                       {p.first_name} <strong>{p.last_name}</strong>
                     </Link>
                   </td>
-                  <td className="px-3 py-2 text-center text-text-muted">{p.jersey_number}</td>
-                  <td className="px-3 py-2 text-center">
+                  <td className="px-2 py-2 text-center text-text-muted">{p.jersey_number}</td>
+                  <td className="px-2 py-2 text-center">
                     <span className="inline-block rounded bg-input px-1.5 py-0.5 text-[10px] font-semibold text-text-secondary">
-                      {p.position || "—"}
+                      {p.position || "\u2014"}
                     </span>
                   </td>
-                  <td className="px-3 py-2 text-center text-text-muted hidden sm:table-cell">{p.height || "—"}</td>
-                  <td className="px-3 py-2 text-center text-text-muted hidden sm:table-cell">
-                    {p.weight ? `${p.weight} lbs` : "—"}
+                  <td className="px-2 py-2 text-center text-text-muted whitespace-nowrap">{p.height || "\u2014"}</td>
+                  <td className="px-2 py-2 text-center text-text-muted whitespace-nowrap">
+                    {p.weight ? `${p.weight} lbs` : "\u2014"}
                   </td>
-                  <td className="px-3 py-2 text-center text-text-muted">{p.age ?? "—"}</td>
-                  <td className="px-3 py-2 text-text-muted hidden md:table-cell">
-                    <div className="flex flex-col">
-                      <span className="text-xs">{p.college || "—"}</span>
+                  <td className="px-2 py-2 text-center text-text-muted">{p.age ?? "\u2014"}</td>
+                  <td className="px-2 py-2 text-text-muted">
+                    <div className="flex flex-col whitespace-nowrap">
+                      <span className="text-xs">{p.college || "\u2014"}</span>
                       {p.country && p.country !== "USA" && (
                         <span className="text-[10px] text-text-faint">{p.country}</span>
                       )}
                     </div>
                   </td>
-                  <td className="px-3 py-2 text-center text-text-muted text-xs hidden lg:table-cell">{draftLabel(p)}</td>
-                  <td className="px-3 py-2 text-right text-xs text-text-muted hidden md:table-cell whitespace-nowrap">
-                    {p.salary || "—"}
+                  <td className="px-2 py-2 text-center text-text-muted text-xs whitespace-nowrap">{draftLabel(p)}</td>
+                  <td className="px-2 py-2 text-right text-xs text-text-muted whitespace-nowrap">
+                    {p.salary || "\u2014"}
                   </td>
-                  <td className="px-3 py-2 text-center font-semibold text-text-primary">{p.pts?.toFixed(1) ?? "—"}</td>
-                  <td className="px-3 py-2 text-center text-text-muted hidden sm:table-cell">{p.reb?.toFixed(1) ?? "—"}</td>
-                  <td className="px-3 py-2 text-center text-text-muted hidden sm:table-cell">{p.ast?.toFixed(1) ?? "—"}</td>
+                  <td className="px-2 py-2 text-center font-semibold text-text-primary">{p.pts?.toFixed(1) ?? "\u2014"}</td>
+                  <td className="px-2 py-2 text-center text-text-muted">{p.reb?.toFixed(1) ?? "\u2014"}</td>
+                  <td className="px-2 py-2 text-center text-text-muted">{p.ast?.toFixed(1) ?? "\u2014"}</td>
                 </tr>
               ))}
             </tbody>

@@ -22,22 +22,20 @@ interface Standing {
 type View = "east" | "west" | "league";
 
 const HEADERS = [
-  { key: "rank", label: "#", className: "w-10 text-left" },
-  { key: "team", label: "Équipe", className: "text-left" },
   { key: "wins", label: "V", className: "text-center" },
   { key: "losses", label: "D", className: "text-center" },
   { key: "pct", label: "%", className: "text-center" },
   { key: "gb", label: "GB", className: "text-center" },
-  { key: "home", label: "Dom.", className: "text-center hidden md:table-cell" },
-  { key: "road", label: "Ext.", className: "text-center hidden md:table-cell" },
-  { key: "l10", label: "L10", className: "text-center hidden lg:table-cell" },
-  { key: "streak", label: "Série", className: "text-center hidden lg:table-cell" },
+  { key: "home", label: "Dom.", className: "text-center" },
+  { key: "road", label: "Ext.", className: "text-center" },
+  { key: "l10", label: "L10", className: "text-center" },
+  { key: "streak", label: "Série", className: "text-center" },
 ];
 
 function computeGB(leader: Standing, team: Standing): string {
-  if (leader === team) return "—";
+  if (leader === team) return "\u2014";
   const gb = (leader.wins - team.wins + (team.losses - leader.losses)) / 2;
-  if (gb === 0) return "—";
+  if (gb === 0) return "\u2014";
   return gb % 1 === 0 ? gb.toFixed(0) : gb.toFixed(1);
 }
 
@@ -49,8 +47,10 @@ function StandingsTable({ teams, showConference, scrollRef }: { teams: Standing[
       <table className="w-full text-sm">
         <thead className="sticky top-0 z-10 bg-card">
           <tr className="border-b border-border-t text-text-muted">
+            <th className="sticky left-0 z-20 bg-card px-2 py-3 font-medium text-left w-10">#</th>
+            <th className="sticky left-8 z-20 bg-card px-2 py-3 font-medium text-left min-w-[100px] sm:min-w-[180px]">Equipe</th>
             {HEADERS.map((h) => (
-              <th key={h.key} className={`px-2 sm:px-4 py-3 font-medium ${h.className}`}>
+              <th key={h.key} className={`px-2 sm:px-3 py-3 font-medium whitespace-nowrap ${h.className}`}>
                 {h.label}
               </th>
             ))}
@@ -67,13 +67,13 @@ function StandingsTable({ teams, showConference, scrollRef }: { teams: Standing[
               <Fragment key={team.id}>
                 {showSeparator && (
                   <tr>
-                    <td colSpan={10} className="p-0">
+                    <td colSpan={HEADERS.length + 2} className="p-0">
                       <div className="h-px bg-accent/30" />
                     </td>
                   </tr>
                 )}
                 <tr className="border-b border-border-t/50 transition-colors hover:bg-card-hover">
-                  <td className="px-2 sm:px-4 py-3">
+                  <td className="sticky left-0 z-10 bg-card px-2 py-3">
                     <span
                       className={`flex h-6 w-6 items-center justify-center rounded-md text-xs font-bold ${
                         rank === 1
@@ -88,15 +88,15 @@ function StandingsTable({ teams, showConference, scrollRef }: { teams: Standing[
                       {rank}
                     </span>
                   </td>
-                  <td className="px-2 sm:px-4 py-3">
-                    <div className="flex items-center gap-2 sm:gap-3">
+                  <td className="sticky left-8 z-10 bg-card px-2 py-3">
+                    <div className="flex items-center gap-2">
                       <img
                         src={teamLogoUrl(team.team_tricode)}
                         alt={team.team_tricode}
-                        className="h-6 w-6 sm:h-7 sm:w-7 object-contain shrink-0"
+                        className="h-6 w-6 object-contain shrink-0"
                       />
                       <div className="flex flex-col min-w-0">
-                        <span className={`font-medium truncate ${isPlayoff ? "text-text-primary" : isPlayIn ? "text-text-secondary" : "text-text-muted"}`}>
+                        <span className={`font-medium truncate text-xs sm:text-sm ${isPlayoff ? "text-text-primary" : isPlayIn ? "text-text-secondary" : "text-text-muted"}`}>
                           <span className="hidden sm:inline">{team.team_city} {team.team_name}</span>
                           <span className="sm:hidden">{team.team_tricode}</span>
                         </span>
@@ -108,20 +108,20 @@ function StandingsTable({ teams, showConference, scrollRef }: { teams: Standing[
                       </div>
                     </div>
                   </td>
-                  <td className="px-1.5 sm:px-4 py-3 text-center font-semibold text-text-primary">{team.wins}</td>
-                  <td className="px-1.5 sm:px-4 py-3 text-center text-text-muted">{team.losses}</td>
-                  <td className="px-1.5 sm:px-4 py-3 text-center font-medium text-text-secondary">
+                  <td className="px-2 sm:px-3 py-3 text-center font-semibold text-text-primary">{team.wins}</td>
+                  <td className="px-2 sm:px-3 py-3 text-center text-text-muted">{team.losses}</td>
+                  <td className="px-2 sm:px-3 py-3 text-center font-medium text-text-secondary">
                     {(team.win_pct * 100).toFixed(1)}
                   </td>
-                  <td className="px-1.5 sm:px-4 py-3 text-center text-text-muted">
+                  <td className="px-2 sm:px-3 py-3 text-center text-text-muted">
                     {computeGB(leader, team)}
                   </td>
-                  <td className="hidden px-2 sm:px-4 py-3 text-center text-text-muted md:table-cell">{team.home_record}</td>
-                  <td className="hidden px-2 sm:px-4 py-3 text-center text-text-muted md:table-cell">{team.road_record}</td>
-                  <td className="hidden px-2 sm:px-4 py-3 text-center text-text-muted lg:table-cell">{team.last_10}</td>
-                  <td className="hidden px-2 sm:px-4 py-3 text-center lg:table-cell">
+                  <td className="px-2 sm:px-3 py-3 text-center text-text-muted whitespace-nowrap">{team.home_record}</td>
+                  <td className="px-2 sm:px-3 py-3 text-center text-text-muted whitespace-nowrap">{team.road_record}</td>
+                  <td className="px-2 sm:px-3 py-3 text-center text-text-muted whitespace-nowrap">{team.last_10}</td>
+                  <td className="px-2 sm:px-3 py-3 text-center">
                     <span
-                      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
+                      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap ${
                         team.streak.startsWith("W")
                           ? "bg-emerald-500/10 text-emerald-400"
                           : "bg-red-500/10 text-red-400"
@@ -162,7 +162,6 @@ export default function StandingsView({ east, west }: { east: Standing[]; west: 
 
   return (
     <div className="space-y-6">
-      {/* Toggle */}
       <div className="flex gap-2">
         {views.map(({ key, label }) => (
           <button
@@ -179,7 +178,6 @@ export default function StandingsView({ east, west }: { east: Standing[]; west: 
         ))}
       </div>
 
-      {/* Table */}
       <div className="rounded-2xl bg-card border border-border-t overflow-hidden">
         <div className="border-b border-border-t px-4 sm:px-6 py-4 flex items-center justify-between">
           <h2 className="text-lg font-bold text-text-primary">
@@ -201,8 +199,6 @@ export default function StandingsView({ east, west }: { east: Standing[]; west: 
               showConference={view === "league"}
               scrollRef={tableRef}
             />
-
-            {/* Legend */}
             <div className="flex flex-wrap gap-4 sm:gap-6 px-4 sm:px-6 py-3 border-t border-border-t">
               <span className="flex items-center gap-2 text-xs text-text-muted">
                 <span className="h-2 w-2 rounded-full bg-accent" />
