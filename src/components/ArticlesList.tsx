@@ -53,18 +53,22 @@ export default function ArticlesList({ articles, isAdmin }: { articles: Article[
           <Link
             key={article.id}
             href={`/articles/${article.id}`}
-            className="group relative overflow-hidden rounded-2xl bg-card border border-border-t transition-all duration-300 hover:border-border-hover hover:shadow-lg"
+            className="group relative flex flex-col overflow-hidden rounded-2xl bg-card border border-border-t transition-all duration-300 hover:border-border-hover hover:shadow-lg"
           >
-            {article.image_url && (
-              <div className="aspect-[16/9] w-full overflow-hidden bg-input">
+            <div className="aspect-[16/9] w-full overflow-hidden bg-input">
+              {article.image_url ? (
                 <img
                   src={article.image_url}
                   alt={article.title}
                   className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
-              </div>
-            )}
-            <div className="p-5 sm:p-6">
+              ) : (
+                <div className="h-full w-full bg-gradient-to-br from-accent/10 via-card to-card flex items-center justify-center">
+                  <BookOpen size={32} className="text-text-faint/30" />
+                </div>
+              )}
+            </div>
+            <div className="flex flex-1 flex-col p-5 sm:p-6">
               {isAdmin && (
                 <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                   <button onClick={(e) => { e.preventDefault(); openEdit(article); }} className="rounded-lg p-2 bg-black/40 backdrop-blur-sm text-white hover:bg-black/60 transition-colors">
@@ -84,7 +88,7 @@ export default function ArticlesList({ articles, isAdmin }: { articles: Article[
               <p className="mt-2 text-sm text-text-secondary leading-relaxed line-clamp-3">
                 {article.excerpt}
               </p>
-              <div className="mt-4 flex items-center justify-between border-t border-border-t pt-4">
+              <div className="mt-auto pt-4 flex items-center justify-between border-t border-border-t">
                 <span className="text-sm font-medium text-text-secondary">{article.author}</span>
                 <div className="flex items-center gap-3 text-xs text-text-muted">
                   <span className="flex items-center gap-1">
