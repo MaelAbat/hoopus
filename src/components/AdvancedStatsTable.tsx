@@ -5,6 +5,7 @@ import {
   ChevronUp, ChevronDown, ChevronLeft, ChevronRight,
   SlidersHorizontal, X,
 } from "lucide-react";
+import Link from "next/link";
 import { teamLogoUrl, playerPhotoUrl } from "@/lib/nba-teams";
 import type { PlayerRow } from "./StatsTable";
 
@@ -393,8 +394,8 @@ export default function AdvancedStatsTable({ players }: { players: PlayerRow[] }
             {/* All-view group headers */}
             {isAllView && (
               <tr className="bg-card border-b border-border-t/30">
-                <th className="sticky left-0 z-30 bg-card w-10" />
-                <th className="sticky left-10 z-30 bg-card" style={{ minWidth: 200 }} />
+                <th className="sm:sticky sm:left-0 sm:z-30 bg-card w-10" />
+                <th className="sm:sticky sm:left-10 sm:z-30 bg-card" style={{ minWidth: 140 }} />
                 {COLUMN_GROUPS.map((group) => (
                   <th
                     key={group.id}
@@ -408,10 +409,10 @@ export default function AdvancedStatsTable({ players }: { players: PlayerRow[] }
             )}
             {/* Column headers */}
             <tr className="bg-card border-b border-border-t/50">
-              <th className="sticky left-0 z-30 text-left pl-4 pr-2 py-3 text-[11px] font-medium text-text-muted uppercase tracking-wider w-10 bg-card">
+              <th className="sm:sticky sm:left-0 sm:z-30 text-left pl-4 pr-2 py-3 text-[11px] font-medium text-text-muted uppercase tracking-wider w-10 bg-card">
                 #
               </th>
-              <th className="sticky left-10 z-30 text-left px-3 py-3 text-[11px] font-medium text-text-muted uppercase tracking-wider bg-card after:absolute after:right-0 after:top-0 after:bottom-0 after:w-px after:bg-border-t/40" style={{ minWidth: 200 }}>
+              <th className="sm:sticky sm:left-10 sm:z-30 text-left px-3 py-3 text-[11px] font-medium text-text-muted uppercase tracking-wider bg-card sm:after:absolute sm:after:right-0 sm:after:top-0 sm:after:bottom-0 sm:after:w-px sm:after:bg-border-t/40" style={{ minWidth: 140 }}>
                 Joueur
               </th>
               {visibleColumns.map((col, ci) => {
@@ -453,7 +454,7 @@ export default function AdvancedStatsTable({ players }: { players: PlayerRow[] }
                     key={`${player.name}-${player.team}`}
                     className="border-b border-border-t/20 transition-colors hover:bg-card-hover/60 group"
                   >
-                    <td className="sticky left-0 z-10 bg-card pl-4 pr-2 py-3 group-hover:bg-card-hover/60">
+                    <td className="sm:sticky sm:left-0 sm:z-10 bg-card pl-4 pr-2 py-3 group-hover:bg-card-hover/60">
                       <span className={`inline-flex h-6 w-6 items-center justify-center rounded-md text-[11px] font-bold ${
                         rank === 1
                           ? "bg-accent/15 text-accent"
@@ -464,8 +465,8 @@ export default function AdvancedStatsTable({ players }: { players: PlayerRow[] }
                         {rank}
                       </span>
                     </td>
-                    <td className="sticky left-10 z-10 bg-card px-3 py-3 group-hover:bg-card-hover/60 after:absolute after:right-0 after:top-0 after:bottom-0 after:w-px after:bg-border-t/40">
-                      <div className="flex items-center gap-3">
+                    <td className="sm:sticky sm:left-10 sm:z-10 bg-card px-3 py-3 group-hover:bg-card-hover/60 sm:after:absolute sm:after:right-0 sm:after:top-0 sm:after:bottom-0 sm:after:w-px sm:after:bg-border-t/40">
+                      <Link href={`/joueurs/${player.playerId}`} className="flex items-center gap-3">
                         <div className="relative h-9 w-9 shrink-0">
                           <img
                             src={playerPhotoUrl(player.playerId)}
@@ -480,10 +481,10 @@ export default function AdvancedStatsTable({ players }: { players: PlayerRow[] }
                           />
                         </div>
                         <div className="min-w-0">
-                          <p className="font-semibold text-text-primary truncate text-[13px] leading-tight">{player.name}</p>
+                          <p className="font-semibold text-text-primary truncate text-[13px] leading-tight hover:text-accent transition-colors">{player.name}</p>
                           <p className="text-[10px] text-text-faint mt-0.5">{player.team}</p>
                         </div>
-                      </div>
+                      </Link>
                     </td>
                     {visibleColumns.map((col, ci) => {
                       const val = player.stats[col.key];
