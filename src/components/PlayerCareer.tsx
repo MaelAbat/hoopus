@@ -23,11 +23,25 @@ export default function PlayerCareer({ playerId }: { playerId: number }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`/api/player-career?id=${playerId}`)
-      .then((r) => r.json())
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 15000);
+
+    fetch(`/api/player-career?id=${playerId}`, { signal: controller.signal })
+      .then((r) => {
+        if (!r.ok) throw new Error("fetch failed");
+        return r.json();
+      })
       .then((data) => setSeasons(data.seasons || []))
       .catch(() => setSeasons([]))
-      .finally(() => setLoading(false));
+      .finally(() => {
+        clearTimeout(timer);
+        setLoading(false);
+      });
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
   }, [playerId]);
 
   if (loading) {

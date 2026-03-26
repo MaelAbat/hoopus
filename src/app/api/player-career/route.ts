@@ -33,7 +33,7 @@ function fetchNba(url: string): Promise<NbaResponse> {
       });
     });
     req.on("error", reject);
-    req.setTimeout(30000, () => { req.destroy(); reject(new Error("Timeout")); });
+    req.setTimeout(10000, () => { req.destroy(); reject(new Error("Timeout")); });
   });
 }
 
