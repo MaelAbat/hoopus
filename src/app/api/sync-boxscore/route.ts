@@ -3,8 +3,10 @@ import { syncBoxscore } from "@/lib/sync-boxscore";
 
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
-  const isAuthorized = authHeader === `Bearer ${process.env.CRON_SECRET}`;
-
+  const querySecret = request.nextUrl.searchParams.get("cron_secret");
+  const isAuthorized =
+    authHeader === `Bearer ${process.env.CRON_SECRET}` ||
+    querySecret === process.env.CRON_SECRET;
   if (!isAuthorized) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

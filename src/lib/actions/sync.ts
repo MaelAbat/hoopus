@@ -27,24 +27,20 @@ export async function triggerSync(): Promise<{
 }> {
   await requireAdmin();
 
-  const baseUrl = process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3002";
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3002";
 
-  const cronSecret = process.env.CRON_SECRET;
-  const headers: Record<string, string> = {
-    authorization: `Bearer ${cronSecret}`,
-  };
+  const cronSecret = process.env.CRON_SECRET || "";
+  const authParam = `cron_secret=${encodeURIComponent(cronSecret)}`;
 
   try {
     const [statsRes, gamesRes, standingsRes, teamStatsRes, playoffsRes, rostersRes, playersRes] = await Promise.all([
-      fetch(`${baseUrl}/api/sync-stats`, { headers, redirect: "manual" }),
-      fetch(`${baseUrl}/api/sync-games`, { headers, redirect: "manual" }),
-      fetch(`${baseUrl}/api/sync-standings`, { headers, redirect: "manual" }),
-      fetch(`${baseUrl}/api/sync-team-stats`, { headers, redirect: "manual" }),
-      fetch(`${baseUrl}/api/sync-playoffs`, { headers, redirect: "manual" }),
-      fetch(`${baseUrl}/api/sync-rosters`, { headers, redirect: "manual" }),
-      fetch(`${baseUrl}/api/sync-players`, { headers, redirect: "manual" }),
+      fetch(`${baseUrl}/api/sync-stats?${authParam}`),
+      fetch(`${baseUrl}/api/sync-games?${authParam}`),
+      fetch(`${baseUrl}/api/sync-standings?${authParam}`),
+      fetch(`${baseUrl}/api/sync-team-stats?${authParam}`),
+      fetch(`${baseUrl}/api/sync-playoffs?${authParam}`),
+      fetch(`${baseUrl}/api/sync-rosters?${authParam}`),
+      fetch(`${baseUrl}/api/sync-players?${authParam}`),
     ]);
 
     const [statsData, gamesData, standingsData, teamStatsData, playoffsData, rostersData, playersData] =

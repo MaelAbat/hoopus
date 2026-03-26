@@ -4,25 +4,26 @@ import { NextRequest, NextResponse } from "next/server";
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
 
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  const querySecret = request.nextUrl.searchParams.get("cron_secret");
+  const isAuthorized =
+    authHeader === `Bearer ${process.env.CRON_SECRET}` ||
+    querySecret === process.env.CRON_SECRET;
+  if (!isAuthorized) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const baseUrl = process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : request.nextUrl.origin;
-  const headers = {
-    authorization: `Bearer ${process.env.CRON_SECRET}`,
-  };
+  const baseUrl = request.nextUrl.origin;
+  const cronSecret = process.env.CRON_SECRET || "";
+  const authParam = `cron_secret=${encodeURIComponent(cronSecret)}`;
 
   // Sync all data sources in parallel
   const [statsRes, gamesRes, standingsRes, teamStatsRes, playoffsRes, rostersRes] = await Promise.all([
-    fetch(`${baseUrl}/api/sync-stats`, { headers, redirect: "manual" }),
-    fetch(`${baseUrl}/api/sync-games`, { headers, redirect: "manual" }),
-    fetch(`${baseUrl}/api/sync-standings`, { headers, redirect: "manual" }),
-    fetch(`${baseUrl}/api/sync-team-stats`, { headers, redirect: "manual" }),
-    fetch(`${baseUrl}/api/sync-playoffs`, { headers, redirect: "manual" }),
-    fetch(`${baseUrl}/api/sync-rosters`, { headers, redirect: "manual" }),
+    fetch(`${baseUrl}/api/sync-stats?${authParam}`),
+    fetch(`${baseUrl}/api/sync-games?${authParam}`),
+    fetch(`${baseUrl}/api/sync-standings?${authParam}`),
+    fetch(`${baseUrl}/api/sync-team-stats?${authParam}`),
+    fetch(`${baseUrl}/api/sync-playoffs?${authParam}`),
+    fetch(`${baseUrl}/api/sync-rosters?${authParam}`),
   ]);
 
   const [statsData, gamesData, standingsData, teamStatsData, playoffsData, rostersData] = await Promise.all([
