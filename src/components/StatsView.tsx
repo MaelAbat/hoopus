@@ -37,7 +37,7 @@ export default function StatsView({
   return (
     <div className="space-y-6">
       {/* Main section tabs */}
-      <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="flex rounded-xl bg-card border border-border-t p-1">
           <button
             onClick={() => setSection("players")}
@@ -65,10 +65,10 @@ export default function StatsView({
 
         {/* Player sub-tabs */}
         {section === "players" && (
-          <div className="flex rounded-lg bg-input p-0.5">
+          <div className="flex rounded-lg bg-input p-0.5 overflow-x-auto">
             <button
               onClick={() => setPlayerView("carousel")}
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap ${
                 playerView === "carousel"
                   ? "bg-card text-text-primary shadow-sm"
                   : "text-text-muted hover:text-text-primary"
@@ -79,7 +79,7 @@ export default function StatsView({
             </button>
             <button
               onClick={() => setPlayerView("table")}
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap ${
                 playerView === "table"
                   ? "bg-card text-text-primary shadow-sm"
                   : "text-text-muted hover:text-text-primary"
@@ -90,7 +90,7 @@ export default function StatsView({
             </button>
             <button
               onClick={() => setPlayerView("advanced")}
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap ${
                 playerView === "advanced"
                   ? "bg-card text-text-primary shadow-sm"
                   : "text-text-muted hover:text-text-primary"

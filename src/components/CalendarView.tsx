@@ -185,7 +185,7 @@ export default function CalendarView({ games }: { games: Game[] }) {
   const todayStr = today.toISOString().split("T")[0];
 
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_350px] h-[calc(100vh-12rem)]">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_350px] lg:h-[calc(100vh-12rem)]">
       {/* Calendar */}
       <div className="rounded-2xl bg-card border border-border-t p-5 flex flex-col">
         {/* Header */}

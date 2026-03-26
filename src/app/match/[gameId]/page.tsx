@@ -85,27 +85,28 @@ export default async function MatchPage({ params }: PageProps) {
       {/* Score header */}
       <ScrollReveal variant="scale">
         <div className="rounded-2xl bg-card border border-border-t overflow-hidden">
-          <div className="px-6 py-8 sm:px-10 sm:py-10">
-            <div className="flex items-center justify-center gap-6 sm:gap-12">
+          <div className="px-4 py-6 sm:px-10 sm:py-10">
+            <div className="flex items-center justify-center gap-4 sm:gap-12">
               {/* Away team */}
-              <div className="flex flex-col items-center gap-3">
-                <img src={teamLogoUrl(awayTeam)} alt={awayTeam} className="h-16 w-16 sm:h-20 sm:w-20 object-contain" />
+              <div className="flex flex-col items-center gap-2 sm:gap-3">
+                <img src={teamLogoUrl(awayTeam)} alt={awayTeam} className="h-12 w-12 sm:h-20 sm:w-20 object-contain" />
                 <div className="text-center">
-                  <p className={`text-lg font-bold ${awayWon ? "text-text-primary" : "text-text-muted"}`}>
-                    {gameData?.away_team_name || awayTeam}
+                  <p className={`text-sm sm:text-lg font-bold ${awayWon ? "text-text-primary" : "text-text-muted"}`}>
+                    <span className="hidden sm:inline">{gameData?.away_team_name || awayTeam}</span>
+                    <span className="sm:hidden">{awayTeam}</span>
                   </p>
-                  <p className="text-xs text-text-faint">{awayTeam}</p>
+                  <p className="text-xs text-text-faint hidden sm:block">{awayTeam}</p>
                 </div>
               </div>
 
               {/* Score */}
-              <div className="flex flex-col items-center gap-2">
-                <div className="flex items-center gap-4">
-                  <span className={`text-4xl sm:text-5xl font-extrabold tabular-nums ${awayWon ? "text-text-primary" : "text-text-muted"}`}>
+              <div className="flex flex-col items-center gap-1 sm:gap-2">
+                <div className="flex items-center gap-2 sm:gap-4">
+                  <span className={`text-3xl sm:text-5xl font-extrabold tabular-nums ${awayWon ? "text-text-primary" : "text-text-muted"}`}>
                     {awayScore}
                   </span>
-                  <span className="text-xl text-text-faint font-light">-</span>
-                  <span className={`text-4xl sm:text-5xl font-extrabold tabular-nums ${homeWon ? "text-text-primary" : "text-text-muted"}`}>
+                  <span className="text-lg sm:text-xl text-text-faint font-light">-</span>
+                  <span className={`text-3xl sm:text-5xl font-extrabold tabular-nums ${homeWon ? "text-text-primary" : "text-text-muted"}`}>
                     {homeScore}
                   </span>
                 </div>
@@ -121,13 +122,14 @@ export default async function MatchPage({ params }: PageProps) {
               </div>
 
               {/* Home team */}
-              <div className="flex flex-col items-center gap-3">
-                <img src={teamLogoUrl(homeTeam)} alt={homeTeam} className="h-16 w-16 sm:h-20 sm:w-20 object-contain" />
+              <div className="flex flex-col items-center gap-2 sm:gap-3">
+                <img src={teamLogoUrl(homeTeam)} alt={homeTeam} className="h-12 w-12 sm:h-20 sm:w-20 object-contain" />
                 <div className="text-center">
-                  <p className={`text-lg font-bold ${homeWon ? "text-text-primary" : "text-text-muted"}`}>
-                    {gameData?.home_team_name || homeTeam}
+                  <p className={`text-sm sm:text-lg font-bold ${homeWon ? "text-text-primary" : "text-text-muted"}`}>
+                    <span className="hidden sm:inline">{gameData?.home_team_name || homeTeam}</span>
+                    <span className="sm:hidden">{homeTeam}</span>
                   </p>
-                  <p className="text-xs text-text-faint">{homeTeam}</p>
+                  <p className="text-xs text-text-faint hidden sm:block">{homeTeam}</p>
                 </div>
               </div>
             </div>

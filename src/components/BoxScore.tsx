@@ -238,7 +238,7 @@ export default function BoxScore({
   return (
     <div className="space-y-4">
       {/* Tab toggle */}
-      <div className="flex rounded-xl bg-card border border-border-t p-1 w-fit">
+      <div className="flex rounded-xl bg-card border border-border-t p-1 w-fit max-w-full overflow-x-auto">
         <button
           onClick={() => setActiveTab("away")}
           className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all ${

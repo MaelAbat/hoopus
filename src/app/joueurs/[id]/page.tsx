@@ -66,7 +66,7 @@ export default async function PlayerDetail({ params }: { params: Promise<{ id: s
       {/* Hero card */}
       <div className="relative overflow-hidden rounded-2xl border border-border-t bg-card">
         <div className="absolute inset-0 bg-gradient-to-br from-accent/8 via-transparent to-transparent" />
-        <div className="relative flex flex-col items-center gap-8 p-8 sm:flex-row sm:items-start sm:p-10">
+        <div className="relative flex flex-col items-center gap-6 p-5 sm:flex-row sm:items-start sm:gap-8 sm:p-10">
           <div className="relative shrink-0">
             <div className="h-40 w-48 overflow-hidden rounded-2xl bg-gradient-to-b from-accent/15 to-accent/5 shadow-lg">
               <img src={photoUrl} alt={`${player.first_name} ${player.last_name}`} className="h-full w-full object-cover object-top" />

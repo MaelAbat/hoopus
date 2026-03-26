@@ -22,7 +22,7 @@ const PAGE_SIZE = 50;
 function PlayerRow({ player, displayRank }: { player: PlayerStatLeader; displayRank?: number }) {
   const rank = displayRank ?? player.rank;
   return (
-    <div className="flex items-center gap-4 px-6 py-3.5 transition-colors hover:bg-card-hover">
+    <div className="flex items-center gap-3 sm:gap-4 px-3 sm:px-6 py-3.5 transition-colors hover:bg-card-hover">
       <span
         className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
           rank === 1
@@ -131,15 +131,15 @@ export default function StatsCarousel({ boards }: { boards: Board[] }) {
   }, [search]);
 
   return (
-    <div className="flex items-center gap-4 h-[calc(100vh-14rem)]">
+    <div className="flex items-center gap-2 sm:gap-4 h-[calc(100vh-18rem)] sm:h-[calc(100vh-14rem)]">
       <button
         onClick={() => go(-1)}
-        className="shrink-0 flex h-10 w-10 items-center justify-center rounded-full bg-card border border-border-t text-text-muted hover:bg-input hover:text-text-primary transition-colors"
+        className="hidden sm:flex shrink-0 h-10 w-10 items-center justify-center rounded-full bg-card border border-border-t text-text-muted hover:bg-input hover:text-text-primary transition-colors"
       >
         <ChevronLeft size={22} />
       </button>
 
-      <div className="rounded-2xl bg-card border border-border-t overflow-hidden flex flex-col flex-1 h-full">
+      <div className="rounded-2xl bg-card border border-border-t overflow-hidden flex flex-col flex-1 h-full min-w-0">
         {/* Category tabs */}
         <div className="border-b border-border-t py-3 overflow-hidden">
           <div
@@ -164,7 +164,7 @@ export default function StatsCarousel({ boards }: { boards: Board[] }) {
         </div>
 
         {/* Controls bar */}
-        <div className="flex flex-wrap items-center gap-2 px-6 py-2.5 border-b border-border-t/50">
+        <div className="flex flex-wrap items-center gap-2 px-3 sm:px-6 py-2.5 border-b border-border-t/50">
           <div className="flex rounded-lg bg-input p-0.5">
             <button
               onClick={() => setMode("top10")}
@@ -230,7 +230,7 @@ export default function StatsCarousel({ boards }: { boards: Board[] }) {
         </div>
 
         {/* Header row */}
-        <div className="flex items-center justify-between px-6 py-3 border-b border-border-t/50">
+        <div className="flex items-center justify-between px-3 sm:px-6 py-3 border-b border-border-t/50">
           <span className="text-xs font-medium text-text-muted uppercase tracking-wider">Joueur</span>
           <span className="text-xs font-medium text-text-muted uppercase tracking-wider">{board.unit}</span>
         </div>
@@ -292,7 +292,7 @@ export default function StatsCarousel({ boards }: { boards: Board[] }) {
 
       <button
         onClick={() => go(1)}
-        className="shrink-0 flex h-10 w-10 items-center justify-center rounded-full bg-card border border-border-t text-text-muted hover:bg-input hover:text-text-primary transition-colors"
+        className="hidden sm:flex shrink-0 h-10 w-10 items-center justify-center rounded-full bg-card border border-border-t text-text-muted hover:bg-input hover:text-text-primary transition-colors"
       >
         <ChevronRight size={22} />
       </button>

@@ -27,30 +27,24 @@ export async function triggerSync(): Promise<{
 }> {
   await requireAdmin();
 
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL
-    || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3002");
+  const baseUrl = process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3002";
 
+  const cronSecret = process.env.CRON_SECRET;
   const headers: Record<string, string> = {
-    authorization: `Bearer ${process.env.CRON_SECRET}`,
+    authorization: `Bearer ${cronSecret}`,
   };
-  const secret = `secret=${process.env.REVALIDATE_SECRET}`;
-
-  console.log("[triggerSync] debug:", {
-    baseUrl,
-    cronSecretLength: process.env.CRON_SECRET?.length,
-    cronSecretDefined: !!process.env.CRON_SECRET,
-    headerSent: headers.authorization?.slice(0, 20) + "...",
-  });
 
   try {
     const [statsRes, gamesRes, standingsRes, teamStatsRes, playoffsRes, rostersRes, playersRes] = await Promise.all([
-      fetch(`${baseUrl}/api/sync-stats?${secret}`, { headers }),
-      fetch(`${baseUrl}/api/sync-games?${secret}`, { headers }),
-      fetch(`${baseUrl}/api/sync-standings?${secret}`, { headers }),
-      fetch(`${baseUrl}/api/sync-team-stats?${secret}`, { headers }),
-      fetch(`${baseUrl}/api/sync-playoffs?${secret}`, { headers }),
-      fetch(`${baseUrl}/api/sync-rosters?${secret}`, { headers }),
-      fetch(`${baseUrl}/api/sync-players?${secret}`, { headers }),
+      fetch(`${baseUrl}/api/sync-stats`, { headers, redirect: "manual" }),
+      fetch(`${baseUrl}/api/sync-games`, { headers, redirect: "manual" }),
+      fetch(`${baseUrl}/api/sync-standings`, { headers, redirect: "manual" }),
+      fetch(`${baseUrl}/api/sync-team-stats`, { headers, redirect: "manual" }),
+      fetch(`${baseUrl}/api/sync-playoffs`, { headers, redirect: "manual" }),
+      fetch(`${baseUrl}/api/sync-rosters`, { headers, redirect: "manual" }),
+      fetch(`${baseUrl}/api/sync-players`, { headers, redirect: "manual" }),
     ]);
 
     const [statsData, gamesData, standingsData, teamStatsData, playoffsData, rostersData, playersData] =

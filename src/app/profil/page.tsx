@@ -40,15 +40,15 @@ export default async function Profil() {
       </div>
 
       {/* User card */}
-      <div className="flex items-center gap-6 rounded-2xl bg-card border border-border-t p-6">
-        <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-accent to-accent-hover text-3xl font-bold text-white shadow-lg">
+      <div className="flex flex-col items-center gap-4 rounded-2xl bg-card border border-border-t p-6 sm:flex-row sm:items-center sm:gap-6">
+        <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-accent to-accent-hover text-3xl font-bold text-white shadow-lg">
           {profile?.display_name?.charAt(0).toUpperCase() || "U"}
         </div>
-        <div className="flex-1">
+        <div className="flex-1 text-center sm:text-left">
           <h2 className="text-2xl font-bold text-text-primary">{profile?.display_name}</h2>
           <p className="text-sm text-text-muted">{user.email}</p>
           <p className="text-xs text-text-faint mt-1">Membre depuis {memberSince}</p>
-          <div className="mt-2 flex gap-2">
+          <div className="mt-2 flex justify-center gap-2 sm:justify-start">
             {profile?.is_admin ? (
               <span className="inline-flex items-center gap-1 rounded-full bg-accent-light px-3 py-1 text-xs font-medium text-accent-text">
                 <Shield size={12} /> Administrateur

@@ -72,17 +72,8 @@ function getStat(
 
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
-  const expected = `Bearer ${process.env.CRON_SECRET}`;
 
-  console.log("[sync-standings] auth debug:", {
-    received: authHeader?.slice(0, 20) + "...",
-    expected: expected?.slice(0, 20) + "...",
-    match: authHeader === expected,
-    cronSecretLength: process.env.CRON_SECRET?.length,
-    cronSecretDefined: !!process.env.CRON_SECRET,
-  });
-
-  const isAuthorized = authHeader === expected;
+  const isAuthorized = authHeader === `Bearer ${process.env.CRON_SECRET}`;
 
   if (!isAuthorized) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

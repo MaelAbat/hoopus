@@ -50,7 +50,7 @@ function StandingsTable({ teams, showConference, scrollRef }: { teams: Standing[
         <thead className="sticky top-0 z-10 bg-card">
           <tr className="border-b border-border-t text-text-muted">
             {HEADERS.map((h) => (
-              <th key={h.key} className={`px-4 py-3 font-medium ${h.className}`}>
+              <th key={h.key} className={`px-2 sm:px-4 py-3 font-medium ${h.className}`}>
                 {h.label}
               </th>
             ))}
@@ -73,7 +73,7 @@ function StandingsTable({ teams, showConference, scrollRef }: { teams: Standing[
                   </tr>
                 )}
                 <tr className="border-b border-border-t/50 transition-colors hover:bg-card-hover">
-                  <td className="px-4 py-3">
+                  <td className="px-2 sm:px-4 py-3">
                     <span
                       className={`flex h-6 w-6 items-center justify-center rounded-md text-xs font-bold ${
                         rank === 1
@@ -88,16 +88,17 @@ function StandingsTable({ teams, showConference, scrollRef }: { teams: Standing[
                       {rank}
                     </span>
                   </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
+                  <td className="px-2 sm:px-4 py-3">
+                    <div className="flex items-center gap-2 sm:gap-3">
                       <img
                         src={teamLogoUrl(team.team_tricode)}
                         alt={team.team_tricode}
-                        className="h-7 w-7 object-contain"
+                        className="h-6 w-6 sm:h-7 sm:w-7 object-contain shrink-0"
                       />
-                      <div className="flex flex-col">
-                        <span className={`font-medium ${isPlayoff ? "text-text-primary" : isPlayIn ? "text-text-secondary" : "text-text-muted"}`}>
-                          {team.team_city} {team.team_name}
+                      <div className="flex flex-col min-w-0">
+                        <span className={`font-medium truncate ${isPlayoff ? "text-text-primary" : isPlayIn ? "text-text-secondary" : "text-text-muted"}`}>
+                          <span className="hidden sm:inline">{team.team_city} {team.team_name}</span>
+                          <span className="sm:hidden">{team.team_tricode}</span>
                         </span>
                         {showConference && (
                           <span className="text-[10px] text-text-faint">
@@ -115,10 +116,10 @@ function StandingsTable({ teams, showConference, scrollRef }: { teams: Standing[
                   <td className="px-4 py-3 text-center text-text-muted">
                     {computeGB(leader, team)}
                   </td>
-                  <td className="hidden px-4 py-3 text-center text-text-muted md:table-cell">{team.home_record}</td>
-                  <td className="hidden px-4 py-3 text-center text-text-muted md:table-cell">{team.road_record}</td>
-                  <td className="hidden px-4 py-3 text-center text-text-muted lg:table-cell">{team.last_10}</td>
-                  <td className="hidden px-4 py-3 text-center lg:table-cell">
+                  <td className="hidden px-2 sm:px-4 py-3 text-center text-text-muted md:table-cell">{team.home_record}</td>
+                  <td className="hidden px-2 sm:px-4 py-3 text-center text-text-muted md:table-cell">{team.road_record}</td>
+                  <td className="hidden px-2 sm:px-4 py-3 text-center text-text-muted lg:table-cell">{team.last_10}</td>
+                  <td className="hidden px-2 sm:px-4 py-3 text-center lg:table-cell">
                     <span
                       className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
                         team.streak.startsWith("W")
@@ -180,7 +181,7 @@ export default function StandingsView({ east, west }: { east: Standing[]; west: 
 
       {/* Table */}
       <div className="rounded-2xl bg-card border border-border-t overflow-hidden">
-        <div className="border-b border-border-t px-6 py-4 flex items-center justify-between">
+        <div className="border-b border-border-t px-4 sm:px-6 py-4 flex items-center justify-between">
           <h2 className="text-lg font-bold text-text-primary">
             {view === "east" ? "Conférence Est" : view === "west" ? "Conférence Ouest" : "Classement général"}
           </h2>
@@ -202,7 +203,7 @@ export default function StandingsView({ east, west }: { east: Standing[]; west: 
             />
 
             {/* Legend */}
-            <div className="flex gap-6 px-6 py-3 border-t border-border-t">
+            <div className="flex flex-wrap gap-4 sm:gap-6 px-4 sm:px-6 py-3 border-t border-border-t">
               <span className="flex items-center gap-2 text-xs text-text-muted">
                 <span className="h-2 w-2 rounded-full bg-accent" />
                 Playoffs (1-6)

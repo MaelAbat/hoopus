@@ -8,19 +8,21 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const baseUrl = request.nextUrl.origin;
+  const baseUrl = process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : request.nextUrl.origin;
   const headers = {
     authorization: `Bearer ${process.env.CRON_SECRET}`,
   };
 
-  // Sync all data sources in parallel — auth via header only, no secrets in URL
+  // Sync all data sources in parallel
   const [statsRes, gamesRes, standingsRes, teamStatsRes, playoffsRes, rostersRes] = await Promise.all([
-    fetch(`${baseUrl}/api/sync-stats`, { headers }),
-    fetch(`${baseUrl}/api/sync-games`, { headers }),
-    fetch(`${baseUrl}/api/sync-standings`, { headers }),
-    fetch(`${baseUrl}/api/sync-team-stats`, { headers }),
-    fetch(`${baseUrl}/api/sync-playoffs`, { headers }),
-    fetch(`${baseUrl}/api/sync-rosters`, { headers }),
+    fetch(`${baseUrl}/api/sync-stats`, { headers, redirect: "manual" }),
+    fetch(`${baseUrl}/api/sync-games`, { headers, redirect: "manual" }),
+    fetch(`${baseUrl}/api/sync-standings`, { headers, redirect: "manual" }),
+    fetch(`${baseUrl}/api/sync-team-stats`, { headers, redirect: "manual" }),
+    fetch(`${baseUrl}/api/sync-playoffs`, { headers, redirect: "manual" }),
+    fetch(`${baseUrl}/api/sync-rosters`, { headers, redirect: "manual" }),
   ]);
 
   const [statsData, gamesData, standingsData, teamStatsData, playoffsData, rostersData] = await Promise.all([

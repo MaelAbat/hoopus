@@ -584,10 +584,10 @@ export default function PlayoffBracket({ east, west, series, playinGames }: { ea
         </div>
       ) : view === "playin" ? (
         <div className="space-y-6">
-          <div className="rounded-2xl bg-card border border-border-t p-6">
+          <div className="rounded-2xl bg-card border border-border-t p-3 sm:p-6 overflow-x-auto">
             <PlayInConference teams={east} label="Play-In — Conférence Est" games={playinGames.filter(g => g.conference === "East")} />
           </div>
-          <div className="rounded-2xl bg-card border border-border-t p-6">
+          <div className="rounded-2xl bg-card border border-border-t p-3 sm:p-6 overflow-x-auto">
             <PlayInConference teams={west} label="Play-In — Conférence Ouest" games={playinGames.filter(g => g.conference === "West")} />
           </div>
           <div className="rounded-xl border border-border-t bg-card/50 p-4 space-y-2">
@@ -600,7 +600,7 @@ export default function PlayoffBracket({ east, west, series, playinGames }: { ea
           </div>
         </div>
       ) : (
-        <div className="rounded-2xl bg-card border border-border-t p-6">
+        <div className="rounded-2xl bg-card border border-border-t p-3 sm:p-6">
           <FullBracket east={east} west={west} series={series} />
         </div>
       )}

@@ -26,7 +26,7 @@ export default function ProfileForm({ currentName }: { currentName: string }) {
   return (
     <form onSubmit={handleSubmit} className="rounded-2xl bg-card border border-border-t p-6">
       <h3 className="text-sm font-semibold text-text-secondary mb-4">Modifier le profil</h3>
-      <div className="flex items-end gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
         <div className="flex-1">
           <label htmlFor="display_name" className="block text-xs font-medium text-text-muted mb-1.5">
             Nom d&apos;affichage
