@@ -25,9 +25,12 @@ function MiniScore({ game }: { game: Game }) {
   const awayWon = isFinal && game.away_score > game.home_score;
 
   return (
-    <Link href={`/match/${game.game_id}`} className="flex items-center gap-3 rounded-lg bg-card border border-border-t px-3 py-2 shrink-0 min-w-[180px] transition-colors hover:border-border-hover">
+    <Link
+      href={`/match/${game.game_id}`}
+      className="flex items-center gap-2.5 sm:gap-3 rounded-lg bg-card border border-border-t px-2.5 sm:px-3 py-2 shrink-0 min-w-[160px] sm:min-w-[180px] transition-colors hover:border-border-hover"
+    >
       {/* Away */}
-      <div className="flex flex-col items-center gap-0.5 w-10">
+      <div className="flex flex-col items-center gap-0.5 w-8 sm:w-10">
         <img src={teamLogoUrl(game.away_team)} alt={game.away_team} className="h-5 w-5 object-contain" />
         <span className={`text-[10px] font-bold ${awayWon ? "text-text-primary" : "text-text-muted"}`}>
           {game.away_team}
@@ -57,7 +60,7 @@ function MiniScore({ game }: { game: Game }) {
       </div>
 
       {/* Home */}
-      <div className="flex flex-col items-center gap-0.5 w-10">
+      <div className="flex flex-col items-center gap-0.5 w-8 sm:w-10">
         <img src={teamLogoUrl(game.home_team)} alt={game.home_team} className="h-5 w-5 object-contain" />
         <span className={`text-[10px] font-bold ${homeWon ? "text-text-primary" : "text-text-muted"}`}>
           {game.home_team}
@@ -118,16 +121,33 @@ export default function ScoresTicker({ games }: { games: Game[] }) {
       })
     : "Derniers scores";
 
+  // Count finals and live games
+  const liveCount = games.filter(g => g.status === 2).length;
+  const finalCount = games.filter(g => g.status === 3).length;
+
   return (
     <div className="mb-4 rounded-xl bg-card/60 border border-border-t overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-border-t/50">
-        <div className="flex items-center gap-2">
-          <Trophy size={13} className="text-accent" />
-          <span className="text-xs font-semibold text-text-primary capitalize">{dateLabel}</span>
-          <span className="text-[10px] text-text-faint">{games.length} match{games.length > 1 ? "s" : ""}</span>
+      <div className="flex items-center justify-between px-3 sm:px-4 py-2 border-b border-border-t/50">
+        <div className="flex items-center gap-2 min-w-0">
+          <Trophy size={13} className="text-accent shrink-0" />
+          <span className="text-xs font-semibold text-text-primary capitalize truncate">{dateLabel}</span>
+          <div className="flex items-center gap-1.5 shrink-0">
+            {liveCount > 0 && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-red-500/20 px-1.5 py-0.5 text-[9px] font-bold text-red-400">
+                <span className="h-1 w-1 rounded-full bg-red-400 animate-pulse" />
+                {liveCount} LIVE
+              </span>
+            )}
+            {finalCount > 0 && (
+              <span className="text-[10px] text-text-faint">{finalCount} termin.</span>
+            )}
+            {games.length - finalCount - liveCount > 0 && (
+              <span className="text-[10px] text-text-faint">{games.length - finalCount - liveCount} a venir</span>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
           <button
             onClick={() => scroll(-1)}
             className="rounded-md p-1 text-text-muted hover:text-text-primary hover:bg-input transition-colors"
@@ -142,7 +162,7 @@ export default function ScoresTicker({ games }: { games: Game[] }) {
           </button>
           <button
             onClick={toggle}
-            className="rounded-md p-1 ml-1 text-text-faint hover:text-text-primary hover:bg-input transition-colors"
+            className="rounded-md p-1 ml-0.5 sm:ml-1 text-text-faint hover:text-text-primary hover:bg-input transition-colors"
             title="Masquer les scores"
           >
             <X size={14} />
@@ -153,7 +173,7 @@ export default function ScoresTicker({ games }: { games: Game[] }) {
       {/* Scores row */}
       <div
         ref={scrollRef}
-        className="flex gap-2 px-4 py-3 overflow-x-auto no-scrollbar"
+        className="flex gap-2 px-3 sm:px-4 py-2.5 sm:py-3 overflow-x-auto no-scrollbar"
       >
         {games.map((game) => (
           <MiniScore key={game.game_id} game={game} />

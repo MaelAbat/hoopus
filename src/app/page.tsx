@@ -122,9 +122,9 @@ export default async function Home() {
   const funFact = getDaily(funFacts);
 
   return (
-    <div className="mx-auto max-w-6xl space-y-14">
+    <div className="mx-auto max-w-6xl space-y-8 sm:space-y-14">
       {/* ── Hero with background image ───────── */}
-      <section className="relative overflow-hidden rounded-3xl border border-border-t">
+      <section className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-border-t">
         {/* Background photo */}
         <div className="absolute inset-0">
           <img
@@ -135,7 +135,7 @@ export default async function Home() {
           <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-black/40" />
         </div>
 
-        <div className="relative px-8 py-14 sm:px-12 sm:py-20">
+        <div className="relative px-5 py-10 sm:px-12 sm:py-20">
           <div className="max-w-2xl space-y-5">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-1.5 text-xs font-semibold text-white backdrop-blur-sm">
               <span className="relative flex h-2 w-2">
@@ -145,7 +145,7 @@ export default async function Home() {
               Saison 2025-26 en cours
             </div>
 
-            <h1 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl">
+            <h1 className="text-3xl font-extrabold tracking-tight text-white sm:text-5xl">
               Bienvenue sur{" "}
               <span className="bg-gradient-to-r from-accent to-accent-hover bg-clip-text text-transparent">
                 Hoopus
@@ -218,17 +218,17 @@ export default async function Home() {
                 </div>
               )}
 
-              <div className="flex flex-1 flex-col justify-center p-8 lg:p-10">
+              <div className="flex flex-1 flex-col justify-center p-5 sm:p-8 lg:p-10">
                 <span className="inline-block w-fit rounded-full bg-accent-light px-3 py-1 text-xs font-semibold text-accent-text">
                   {featured.tag}
                 </span>
-                <h3 className="mt-4 text-2xl font-bold leading-snug text-text-primary transition-colors group-hover:text-accent-text sm:text-3xl">
+                <h3 className="mt-3 sm:mt-4 text-xl sm:text-2xl font-bold leading-snug text-text-primary transition-colors group-hover:text-accent-text lg:text-3xl">
                   {featured.title}
                 </h3>
                 <p className="mt-3 text-base leading-relaxed text-text-secondary line-clamp-3">
                   {featured.excerpt}
                 </p>
-                <div className="mt-6 flex items-center gap-4 text-sm text-text-muted">
+                <div className="mt-4 sm:mt-6 flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-text-muted">
                   <span className="font-medium text-text-secondary">{featured.author}</span>
                   <span className="flex items-center gap-1">
                     <BookOpen size={14} />
@@ -305,7 +305,7 @@ export default async function Home() {
 
       {/* ── Le saviez-vous ───────────────────── */}
       <ScrollReveal variant="right">
-        <section className="relative overflow-hidden rounded-2xl border border-accent/15 bg-gradient-to-r from-accent/8 via-card to-card p-7 sm:p-8">
+        <section className="relative overflow-hidden rounded-2xl border border-accent/15 bg-gradient-to-r from-accent/8 via-card to-card p-5 sm:p-8">
           <div className="flex items-start gap-4">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-light">
               <Sparkles size={20} className="text-accent" />
@@ -333,7 +333,7 @@ export default async function Home() {
             />
             <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/50 to-black/30" />
           </div>
-          <div className="relative flex flex-col items-start gap-6 p-8 sm:flex-row sm:items-center sm:justify-between sm:p-10">
+          <div className="relative flex flex-col items-start gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:p-10">
             <div>
               <h3 className="text-xl font-bold text-white">
                 On joue ce soir ?

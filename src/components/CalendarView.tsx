@@ -259,7 +259,7 @@ export default function CalendarView({ games }: { games: Game[] }) {
       </div>
 
       {/* Games for selected date */}
-      <div className="flex flex-col min-h-0">
+      <div className="flex flex-col min-h-0 max-h-[50vh] lg:max-h-none">
         <h3 className="text-sm font-semibold text-text-secondary mb-3 shrink-0">
           {new Date(selectedDate + "T12:00:00").toLocaleDateString("fr-FR", {
             weekday: "long",
