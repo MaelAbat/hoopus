@@ -27,13 +27,13 @@ function MobileScore({ game }: { game: Game }) {
   return (
     <Link
       href={`/match/${game.game_id}`}
-      className="flex items-center justify-between rounded-xl bg-card border border-border-t px-4 py-3 shrink-0 min-w-[200px] transition-colors hover:border-border-hover"
+      className="grid grid-cols-[1fr_auto_1fr] items-center rounded-xl bg-card border border-border-t px-3 py-3 shrink-0 min-w-[220px] gap-3 transition-colors hover:border-border-hover"
     >
       {/* Away */}
-      <div className="flex items-center gap-2.5">
-        <img src={teamLogoUrl(game.away_team)} alt={game.away_team} className="h-7 w-7 object-contain" />
-        <div className="flex flex-col">
-          <span className={`text-sm font-bold ${awayWon ? "text-text-primary" : "text-text-muted"}`}>
+      <div className="flex items-center gap-2">
+        <img src={teamLogoUrl(game.away_team)} alt={game.away_team} className="h-7 w-7 object-contain shrink-0" />
+        <div className="flex flex-col min-w-0">
+          <span className={`text-xs font-bold ${awayWon ? "text-text-primary" : "text-text-muted"}`}>
             {game.away_team}
           </span>
           {(isFinal || isLive) && (
@@ -44,8 +44,8 @@ function MobileScore({ game }: { game: Game }) {
         </div>
       </div>
 
-      {/* Status */}
-      <div className="flex flex-col items-center px-2">
+      {/* Status - fixed center */}
+      <div className="flex flex-col items-center justify-center">
         {isLive ? (
           <span className="inline-flex items-center gap-1 rounded-full bg-red-500/20 px-2 py-0.5 text-[10px] font-bold text-red-400">
             <span className="h-1.5 w-1.5 rounded-full bg-red-400 animate-pulse" />
@@ -54,14 +54,14 @@ function MobileScore({ game }: { game: Game }) {
         ) : isFinal ? (
           <span className="text-[10px] font-semibold text-text-faint uppercase">Final</span>
         ) : (
-          <span className="text-[10px] text-text-muted">{game.status_text}</span>
+          <span className="text-[10px] text-text-muted text-center">{game.status_text}</span>
         )}
       </div>
 
       {/* Home */}
-      <div className="flex items-center gap-2.5">
-        <div className="flex flex-col items-end">
-          <span className={`text-sm font-bold ${homeWon ? "text-text-primary" : "text-text-muted"}`}>
+      <div className="flex items-center gap-2 justify-end">
+        <div className="flex flex-col items-end min-w-0">
+          <span className={`text-xs font-bold ${homeWon ? "text-text-primary" : "text-text-muted"}`}>
             {game.home_team}
           </span>
           {(isFinal || isLive) && (
@@ -70,7 +70,7 @@ function MobileScore({ game }: { game: Game }) {
             </span>
           )}
         </div>
-        <img src={teamLogoUrl(game.home_team)} alt={game.home_team} className="h-7 w-7 object-contain" />
+        <img src={teamLogoUrl(game.home_team)} alt={game.home_team} className="h-7 w-7 object-contain shrink-0" />
       </div>
     </Link>
   );
