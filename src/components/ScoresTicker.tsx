@@ -205,7 +205,7 @@ export default function ScoresTicker({ games }: { games: Game[] }) {
       {/* Scores - mobile: bigger vertical cards, desktop: compact horizontal */}
       <div
         ref={scrollRef}
-        className="flex gap-2 px-3 sm:px-4 py-3 overflow-x-auto no-scrollbar"
+        className="flex gap-2 px-3 sm:px-4 py-3 overflow-x-auto no-scrollbar touch-pan-x"
       >
         {games.map((game) => (
           <span key={game.game_id} className="contents">
