@@ -108,12 +108,12 @@ function StandingsTable({ teams, showConference, scrollRef }: { teams: Standing[
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-center font-semibold text-text-primary">{team.wins}</td>
-                  <td className="px-4 py-3 text-center text-text-muted">{team.losses}</td>
-                  <td className="px-4 py-3 text-center font-medium text-text-secondary">
+                  <td className="px-1.5 sm:px-4 py-3 text-center font-semibold text-text-primary">{team.wins}</td>
+                  <td className="px-1.5 sm:px-4 py-3 text-center text-text-muted">{team.losses}</td>
+                  <td className="px-1.5 sm:px-4 py-3 text-center font-medium text-text-secondary">
                     {(team.win_pct * 100).toFixed(1)}
                   </td>
-                  <td className="px-4 py-3 text-center text-text-muted">
+                  <td className="px-1.5 sm:px-4 py-3 text-center text-text-muted">
                     {computeGB(leader, team)}
                   </td>
                   <td className="hidden px-2 sm:px-4 py-3 text-center text-text-muted md:table-cell">{team.home_record}</td>

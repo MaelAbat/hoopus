@@ -105,7 +105,7 @@ function TeamTable({
         <table className="w-full text-[12px]">
           <thead>
             <tr className="border-b border-border-t/50 bg-card">
-              <th className="sticky left-0 z-10 bg-card text-left px-3 py-2 font-medium text-text-muted uppercase tracking-wider min-w-[180px]">
+              <th className="sticky left-0 z-10 bg-card text-left px-3 py-2 font-medium text-text-muted uppercase tracking-wider min-w-[130px] sm:min-w-[180px]">
                 Joueur
               </th>
               {STAT_COLS.map((col) => (
