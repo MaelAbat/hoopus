@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, SlidersHorizontal, X } from "lucide-react";
+import Link from "next/link";
 import { teamLogoUrl, playerPhotoUrl } from "@/lib/nba-teams";
 
 export interface PlayerRow {
@@ -294,7 +295,7 @@ export default function StatsTable({ players }: { players: PlayerRow[] }) {
                       </span>
                     </td>
                     <td className="px-3 py-2.5">
-                      <div className="flex items-center gap-2.5">
+                      <Link href={`/joueurs/${player.playerId}`} className="flex items-center gap-2.5 group">
                         <div className="relative h-9 w-9 shrink-0">
                           <img
                             src={playerPhotoUrl(player.playerId)}
@@ -309,10 +310,10 @@ export default function StatsTable({ players }: { players: PlayerRow[] }) {
                           />
                         </div>
                         <div className="min-w-0">
-                          <p className="font-semibold text-text-primary truncate text-sm">{player.name}</p>
+                          <p className="font-semibold text-text-primary truncate text-sm group-hover:text-accent transition-colors">{player.name}</p>
                           <p className="text-[10px] text-text-muted">{player.team}</p>
                         </div>
-                      </div>
+                      </Link>
                     </td>
                     {COLUMNS.map((col) => {
                       const val = player.stats[col.key];

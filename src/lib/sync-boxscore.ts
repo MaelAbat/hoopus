@@ -130,14 +130,6 @@ export async function syncBoxscore(gameId: string): Promise<boolean> {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
-  // Check if already synced
-  const { count } = await supabase
-    .from("boxscores")
-    .select("*", { count: "exact", head: true })
-    .eq("game_id", gameId);
-
-  if (count && count > 0) return true;
-
   try {
     const data = await fetchBoxscore(gameId);
     const game = data.game;
@@ -149,6 +141,9 @@ export async function syncBoxscore(gameId: string): Promise<boolean> {
     ];
 
     if (rows.length === 0) return false;
+
+    // Delete existing rows first to prevent duplicates
+    await supabase.from("boxscores").delete().eq("game_id", gameId);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await supabase.from("boxscores").insert(rows as any);

@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useMemo } from "react";
 import { ChevronLeft, ChevronRight, Trophy, List, Filter } from "lucide-react";
+import Link from "next/link";
 import type { PlayerStatLeader } from "@/lib/nba-api";
 import { teamLogoUrl, playerPhotoUrl } from "@/lib/nba-teams";
 
@@ -22,7 +23,7 @@ const PAGE_SIZE = 50;
 function PlayerRow({ player, displayRank }: { player: PlayerStatLeader; displayRank?: number }) {
   const rank = displayRank ?? player.rank;
   return (
-    <div className="flex items-center gap-3 sm:gap-4 px-3 sm:px-6 py-3.5 transition-colors hover:bg-card-hover">
+    <Link href={`/joueurs/${player.player_id}`} className="flex items-center gap-3 sm:gap-4 px-3 sm:px-6 py-3.5 transition-colors hover:bg-card-hover">
       <span
         className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
           rank === 1
@@ -48,13 +49,13 @@ function PlayerRow({ player, displayRank }: { player: PlayerStatLeader; displayR
         />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="font-semibold text-text-primary truncate">{player.name}</p>
+        <p className="font-semibold text-text-primary truncate group-hover:text-accent transition-colors">{player.name}</p>
         <p className="text-xs text-text-muted">{player.team}</p>
       </div>
       <span className="text-xl font-bold text-text-primary tabular-nums">
         {player.value}
       </span>
-    </div>
+    </Link>
   );
 }
 
