@@ -240,7 +240,7 @@ export default function AdvancedStatsTable({ players }: { players: PlayerRow[] }
   const hasActiveFilters = activeFilterCount > 0;
 
   return (
-    <div className="rounded-2xl bg-card border border-border-t overflow-hidden flex flex-col h-[calc(100vh-18rem)] sm:h-[calc(100vh-14rem)]">
+    <div className="rounded-2xl bg-card border border-border-t overflow-hidden flex flex-col sm:h-[calc(100vh-14rem)]">
 
       {/* ── Group tabs ── */}
       <div className="flex items-center gap-1 px-4 py-2.5 border-b border-border-t/50 overflow-x-auto">
@@ -387,7 +387,7 @@ export default function AdvancedStatsTable({ players }: { players: PlayerRow[] }
       )}
 
       {/* ── Table ── */}
-      <div className="flex-1 overflow-auto min-h-0 scrollbar-visible">
+      <div className="flex-1 overflow-x-auto sm:overflow-auto min-h-0 scrollbar-visible">
         <table className="w-full text-sm border-collapse">
           <thead className="sticky top-0 z-20">
             {/* All-view group headers */}

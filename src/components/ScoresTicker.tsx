@@ -18,7 +18,7 @@ interface Game {
   away_score: number;
 }
 
-function MiniScore({ game }: { game: Game }) {
+function MobileScore({ game }: { game: Game }) {
   const isFinal = game.status === 3;
   const isLive = game.status === 2;
   const homeWon = isFinal && game.home_score > game.away_score;
@@ -27,28 +27,77 @@ function MiniScore({ game }: { game: Game }) {
   return (
     <Link
       href={`/match/${game.game_id}`}
-      className="flex items-center gap-2.5 sm:gap-3 rounded-lg bg-card border border-border-t px-2.5 sm:px-3 py-2 shrink-0 min-w-[160px] sm:min-w-[180px] transition-colors hover:border-border-hover"
+      className="flex items-center justify-between rounded-xl bg-card border border-border-t px-4 py-3 shrink-0 min-w-[200px] transition-colors hover:border-border-hover"
     >
       {/* Away */}
-      <div className="flex flex-col items-center gap-0.5 w-8 sm:w-10">
-        <img src={teamLogoUrl(game.away_team)} alt={game.away_team} className="h-5 w-5 object-contain" />
-        <span className={`text-[10px] font-bold ${awayWon ? "text-text-primary" : "text-text-muted"}`}>
-          {game.away_team}
-        </span>
+      <div className="flex items-center gap-2.5">
+        <img src={teamLogoUrl(game.away_team)} alt={game.away_team} className="h-7 w-7 object-contain" />
+        <div className="flex flex-col">
+          <span className={`text-sm font-bold ${awayWon ? "text-text-primary" : "text-text-muted"}`}>
+            {game.away_team}
+          </span>
+          {(isFinal || isLive) && (
+            <span className={`text-lg font-extrabold tabular-nums leading-tight ${awayWon ? "text-text-primary" : "text-text-muted"}`}>
+              {game.away_score}
+            </span>
+          )}
+        </div>
       </div>
 
-      {/* Score */}
+      {/* Status */}
+      <div className="flex flex-col items-center px-2">
+        {isLive ? (
+          <span className="inline-flex items-center gap-1 rounded-full bg-red-500/20 px-2 py-0.5 text-[10px] font-bold text-red-400">
+            <span className="h-1.5 w-1.5 rounded-full bg-red-400 animate-pulse" />
+            LIVE
+          </span>
+        ) : isFinal ? (
+          <span className="text-[10px] font-semibold text-text-faint uppercase">Final</span>
+        ) : (
+          <span className="text-[10px] text-text-muted">{game.status_text}</span>
+        )}
+      </div>
+
+      {/* Home */}
+      <div className="flex items-center gap-2.5">
+        <div className="flex flex-col items-end">
+          <span className={`text-sm font-bold ${homeWon ? "text-text-primary" : "text-text-muted"}`}>
+            {game.home_team}
+          </span>
+          {(isFinal || isLive) && (
+            <span className={`text-lg font-extrabold tabular-nums leading-tight ${homeWon ? "text-text-primary" : "text-text-muted"}`}>
+              {game.home_score}
+            </span>
+          )}
+        </div>
+        <img src={teamLogoUrl(game.home_team)} alt={game.home_team} className="h-7 w-7 object-contain" />
+      </div>
+    </Link>
+  );
+}
+
+function DesktopScore({ game }: { game: Game }) {
+  const isFinal = game.status === 3;
+  const isLive = game.status === 2;
+  const homeWon = isFinal && game.home_score > game.away_score;
+  const awayWon = isFinal && game.away_score > game.home_score;
+
+  return (
+    <Link
+      href={`/match/${game.game_id}`}
+      className="flex items-center gap-3 rounded-lg bg-card border border-border-t px-3 py-2 shrink-0 min-w-[180px] transition-colors hover:border-border-hover"
+    >
+      <div className="flex flex-col items-center gap-0.5 w-10">
+        <img src={teamLogoUrl(game.away_team)} alt={game.away_team} className="h-5 w-5 object-contain" />
+        <span className={`text-[10px] font-bold ${awayWon ? "text-text-primary" : "text-text-muted"}`}>{game.away_team}</span>
+      </div>
       <div className="flex flex-col items-center">
         {isFinal || isLive ? (
           <>
             <div className="flex items-center gap-1.5">
-              <span className={`text-sm font-bold tabular-nums ${awayWon ? "text-text-primary" : "text-text-muted"}`}>
-                {game.away_score}
-              </span>
+              <span className={`text-sm font-bold tabular-nums ${awayWon ? "text-text-primary" : "text-text-muted"}`}>{game.away_score}</span>
               <span className="text-[10px] text-text-faint">-</span>
-              <span className={`text-sm font-bold tabular-nums ${homeWon ? "text-text-primary" : "text-text-muted"}`}>
-                {game.home_score}
-              </span>
+              <span className={`text-sm font-bold tabular-nums ${homeWon ? "text-text-primary" : "text-text-muted"}`}>{game.home_score}</span>
             </div>
             <span className={`text-[9px] font-medium mt-0.5 ${isLive ? "text-red-400" : "text-text-faint"}`}>
               {isLive ? "LIVE" : "Final"}
@@ -58,13 +107,9 @@ function MiniScore({ game }: { game: Game }) {
           <span className="text-[10px] text-text-muted">{game.status_text}</span>
         )}
       </div>
-
-      {/* Home */}
-      <div className="flex flex-col items-center gap-0.5 w-8 sm:w-10">
+      <div className="flex flex-col items-center gap-0.5 w-10">
         <img src={teamLogoUrl(game.home_team)} alt={game.home_team} className="h-5 w-5 object-contain" />
-        <span className={`text-[10px] font-bold ${homeWon ? "text-text-primary" : "text-text-muted"}`}>
-          {game.home_team}
-        </span>
+        <span className={`text-[10px] font-bold ${homeWon ? "text-text-primary" : "text-text-muted"}`}>{game.home_team}</span>
       </div>
     </Link>
   );
@@ -75,7 +120,6 @@ export default function ScoresTicker({ games }: { games: Game[] }) {
   const [hydrated, setHydrated] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Hydrate visibility from localStorage
   useEffect(() => {
     const stored = localStorage.getItem("ticker-visible");
     if (stored === "false") setVisible(false);
@@ -95,7 +139,6 @@ export default function ScoresTicker({ games }: { games: Game[] }) {
   if (!hydrated) return null;
   if (games.length === 0) return null;
 
-  // Collapsed state: small toggle button
   if (!visible) {
     return (
       <div className="mb-4">
@@ -111,7 +154,6 @@ export default function ScoresTicker({ games }: { games: Game[] }) {
     );
   }
 
-  // Find the date label
   const dateStr = games[0]?.game_date;
   const dateLabel = dateStr
     ? new Date(dateStr + "T12:00:00").toLocaleDateString("fr-FR", {
@@ -121,9 +163,9 @@ export default function ScoresTicker({ games }: { games: Game[] }) {
       })
     : "Derniers scores";
 
-  // Count finals and live games
   const liveCount = games.filter(g => g.status === 2).length;
   const finalCount = games.filter(g => g.status === 3).length;
+  const upcomingCount = games.length - finalCount - liveCount;
 
   return (
     <div className="mb-4 rounded-xl bg-card/60 border border-border-t overflow-hidden">
@@ -142,41 +184,34 @@ export default function ScoresTicker({ games }: { games: Game[] }) {
             {finalCount > 0 && (
               <span className="text-[10px] text-text-faint">{finalCount} termin.</span>
             )}
-            {games.length - finalCount - liveCount > 0 && (
-              <span className="text-[10px] text-text-faint">{games.length - finalCount - liveCount} a venir</span>
+            {upcomingCount > 0 && (
+              <span className="text-[10px] text-text-faint hidden sm:inline">{upcomingCount} a venir</span>
             )}
           </div>
         </div>
         <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
-          <button
-            onClick={() => scroll(-1)}
-            className="rounded-md p-1 text-text-muted hover:text-text-primary hover:bg-input transition-colors"
-          >
+          <button onClick={() => scroll(-1)} className="rounded-md p-1 text-text-muted hover:text-text-primary hover:bg-input transition-colors">
             <ChevronLeft size={14} />
           </button>
-          <button
-            onClick={() => scroll(1)}
-            className="rounded-md p-1 text-text-muted hover:text-text-primary hover:bg-input transition-colors"
-          >
+          <button onClick={() => scroll(1)} className="rounded-md p-1 text-text-muted hover:text-text-primary hover:bg-input transition-colors">
             <ChevronRight size={14} />
           </button>
-          <button
-            onClick={toggle}
-            className="rounded-md p-1 ml-0.5 sm:ml-1 text-text-faint hover:text-text-primary hover:bg-input transition-colors"
-            title="Masquer les scores"
-          >
+          <button onClick={toggle} className="rounded-md p-1 ml-0.5 text-text-faint hover:text-text-primary hover:bg-input transition-colors" title="Masquer les scores">
             <X size={14} />
           </button>
         </div>
       </div>
 
-      {/* Scores row */}
+      {/* Scores - mobile: bigger vertical cards, desktop: compact horizontal */}
       <div
         ref={scrollRef}
-        className="flex gap-2 px-3 sm:px-4 py-2.5 sm:py-3 overflow-x-auto no-scrollbar"
+        className="flex gap-2 px-3 sm:px-4 py-3 overflow-x-auto no-scrollbar"
       >
         {games.map((game) => (
-          <MiniScore key={game.game_id} game={game} />
+          <span key={game.game_id} className="contents">
+            <span className="sm:hidden"><MobileScore game={game} /></span>
+            <span className="hidden sm:inline"><DesktopScore game={game} /></span>
+          </span>
         ))}
       </div>
     </div>
