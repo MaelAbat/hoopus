@@ -25,14 +25,13 @@ export default function ScrollReveal({
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        el.style.transitionDelay = `${delay}ms`;
         if (entry.isIntersecting) {
+          el.style.transitionDelay = `${delay}ms`;
           el.classList.add("scroll-visible");
-        } else {
-          el.classList.remove("scroll-visible");
+          observer.disconnect();
         }
       },
-      { threshold: 0.01, rootMargin: "0px 0px -20px 0px" },
+      { threshold: 0.01, rootMargin: "50px 0px 0px 0px" },
     );
 
     observer.observe(el);
