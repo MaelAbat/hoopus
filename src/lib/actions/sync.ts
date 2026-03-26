@@ -35,6 +35,13 @@ export async function triggerSync(): Promise<{
   };
   const secret = `secret=${process.env.REVALIDATE_SECRET}`;
 
+  console.log("[triggerSync] debug:", {
+    baseUrl,
+    cronSecretLength: process.env.CRON_SECRET?.length,
+    cronSecretDefined: !!process.env.CRON_SECRET,
+    headerSent: headers.authorization?.slice(0, 20) + "...",
+  });
+
   try {
     const [statsRes, gamesRes, standingsRes, teamStatsRes, playoffsRes, rostersRes, playersRes] = await Promise.all([
       fetch(`${baseUrl}/api/sync-stats?${secret}`, { headers }),
