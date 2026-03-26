@@ -45,7 +45,7 @@ function StandingsTable({ teams, showConference, scrollRef }: { teams: Standing[
   const leader = teams[0];
 
   return (
-    <div ref={scrollRef} className="overflow-x-auto max-h-[65vh] overflow-y-auto">
+    <div ref={scrollRef} className="overflow-x-auto sm:max-h-[65vh] sm:overflow-y-auto">
       <table className="w-full text-sm">
         <thead className="sticky top-0 z-10 bg-card">
           <tr className="border-b border-border-t text-text-muted">

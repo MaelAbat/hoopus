@@ -131,7 +131,7 @@ export default function StatsCarousel({ boards }: { boards: Board[] }) {
   }, [search]);
 
   return (
-    <div className="flex items-center gap-2 sm:gap-4 h-[calc(100vh-18rem)] sm:h-[calc(100vh-14rem)]">
+    <div className="flex items-center gap-2 sm:gap-4 sm:h-[calc(100vh-14rem)]">
       <button
         onClick={() => go(-1)}
         className="hidden sm:flex shrink-0 h-10 w-10 items-center justify-center rounded-full bg-card border border-border-t text-text-muted hover:bg-input hover:text-text-primary transition-colors"
@@ -236,7 +236,7 @@ export default function StatsCarousel({ boards }: { boards: Board[] }) {
         </div>
 
         {/* Players list */}
-        <div ref={listRef} className="flex-1 overflow-y-auto min-h-0">
+        <div ref={listRef} className="flex-1 sm:overflow-y-auto min-h-0">
           {displayPlayers.length === 0 ? (
             <div className="px-6 py-12 text-center text-sm text-text-muted">
               {search ? "Aucun resultat" : "Aucune donnee disponible"}

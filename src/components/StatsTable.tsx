@@ -125,7 +125,7 @@ export default function StatsTable({ players }: { players: PlayerRow[] }) {
   const hasActiveFilters = activeFilterCount > 0;
 
   return (
-    <div className="rounded-2xl bg-card border border-border-t overflow-hidden flex flex-col h-[calc(100vh-18rem)] sm:h-[calc(100vh-14rem)]">
+    <div className="rounded-2xl bg-card border border-border-t overflow-hidden flex flex-col sm:h-[calc(100vh-14rem)]">
       {/* ── Toolbar ── */}
       <div className="flex flex-wrap items-center gap-2 px-4 py-2 border-b border-border-t/50">
         <button
@@ -236,7 +236,7 @@ export default function StatsTable({ players }: { players: PlayerRow[] }) {
       )}
 
       {/* Table */}
-      <div className="flex-1 overflow-auto min-h-0">
+      <div className="flex-1 overflow-x-auto sm:overflow-auto min-h-0">
         <table className="w-full text-sm">
           <thead className="sticky top-0 z-10 bg-card">
             <tr className="border-b border-border-t/50">
