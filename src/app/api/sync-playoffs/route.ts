@@ -338,11 +338,14 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    // Filter out series with undefined teams (e.g. Finals not yet determined)
+    const validRows = rows.filter(r => r.team_top && r.team_bottom);
+
     // Clear and reinsert
     await supabase.from("playoff_series").delete().eq("season", SEASON);
 
-    if (rows.length > 0) {
-      const { error } = await supabase.from("playoff_series").insert(rows);
+    if (validRows.length > 0) {
+      const { error } = await supabase.from("playoff_series").insert(validRows);
       if (error) {
         console.error("Error inserting playoff series:", error);
         return NextResponse.json({ error: error.message }, { status: 500 });
@@ -351,7 +354,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       ok: true,
-      series: rows.length,
+      series: validRows.length,
+      skipped: rows.length - validRows.length,
       playin: playinRows.length,
       timestamp: now,
     });
