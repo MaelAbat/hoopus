@@ -45,10 +45,10 @@ export default function MarkdownContent({ content }: { content: string }) {
           <hr className="my-8 border-border-t" />
         ),
         img: ({ src, alt }) => (
-          <figure className="my-6">
+          <span className="block my-6">
             <img src={src} alt={alt || ""} className="w-full rounded-xl border border-border-t" />
-            {alt && <figcaption className="mt-2 text-center text-xs text-text-faint">{alt}</figcaption>}
-          </figure>
+            {alt && <span className="block mt-2 text-center text-xs text-text-faint">{alt}</span>}
+          </span>
         ),
         code: ({ className, children }) => {
           const isBlock = className?.includes("language-");
