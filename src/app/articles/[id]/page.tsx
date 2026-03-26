@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, Clock, BookOpen, User } from "lucide-react";
 import ScrollReveal from "@/components/ScrollReveal";
+import MarkdownContent from "@/components/MarkdownContent";
 
 export const revalidate = 3600;
 
@@ -98,9 +99,7 @@ export default async function ArticleDetail({ params }: { params: Promise<{ id: 
       {/* Article body */}
       <ScrollReveal variant="up" delay={100}>
         <div className="rounded-2xl bg-card border border-border-t p-5 sm:p-8 lg:p-10">
-          <div className="prose-custom text-base leading-relaxed text-text-secondary whitespace-pre-wrap">
-            {article.content}
-          </div>
+          <MarkdownContent content={article.content} />
         </div>
       </ScrollReveal>
 

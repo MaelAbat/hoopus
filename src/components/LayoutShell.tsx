@@ -20,7 +20,7 @@ export default function LayoutShell({
   return (
     <>
       <Sidebar />
-      <main className="min-h-screen pt-14 px-3 pb-4 sm:px-6 sm:pb-6 lg:ml-64 lg:pt-0 lg:p-8 overflow-x-hidden">
+      <main className="min-h-screen pt-14 px-3 pb-4 sm:px-6 sm:pb-6 lg:ml-64 lg:pt-0 lg:p-8 overflow-clip">
         {ticker && (
           <div className="mb-2">
             {ticker}

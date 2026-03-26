@@ -5,6 +5,7 @@ import { createArticle, updateArticle } from "@/lib/actions/articles";
 import type { Article } from "@/lib/types/database";
 import { X } from "lucide-react";
 import ImageUpload from "./ImageUpload";
+import MarkdownEditor from "./MarkdownEditor";
 
 interface ArticleFormProps {
   article?: Article;
@@ -25,7 +26,7 @@ export default function ArticleForm({ article, onClose }: ArticleFormProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-card border border-border-hover p-6">
+      <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-card border border-border-hover p-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-text-primary">
             {article ? "Modifier l'article" : "Nouvel article"}
@@ -97,16 +98,12 @@ export default function ArticleForm({ article, onClose }: ArticleFormProps) {
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-text-secondary mb-1">Contenu</label>
-            <textarea
-              name="content"
-              defaultValue={article?.content}
-              rows={6}
-              className="w-full rounded-xl bg-input border border-border-t px-4 py-2.5 text-text-primary placeholder-text-faint focus:border-accent/50 focus:outline-none transition-colors resize-none"
-              placeholder="Contenu complet de l'article..."
-            />
-          </div>
+          <MarkdownEditor
+            name="content"
+            defaultValue={article?.content ?? ""}
+            placeholder="Ecrivez le contenu de l'article en Markdown..."
+            rows={14}
+          />
 
           <div className="flex gap-3 pt-2">
             <button
