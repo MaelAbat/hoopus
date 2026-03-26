@@ -114,7 +114,7 @@ export default function Sidebar() {
     <>
       {/* Logo */}
       <div className="flex items-center justify-between px-6 py-6">
-        <div className="flex items-center gap-3">
+        <Link href="/" className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-accent to-accent-hover shadow-lg">
             <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 32 32" fill="none" className="text-white">
               <path d="M16 1 C16 1 20.5 5.5 20.5 9 C20.5 11.5 18.5 13 16 13 C13.5 13 11.5 11.5 11.5 9 C11.5 5.5 16 1 16 1Z" fill="currentColor" opacity="0.5" />
@@ -129,7 +129,7 @@ export default function Sidebar() {
           <span className="text-xl font-bold tracking-tight text-text-primary">
             Hoop<span className="text-accent">us</span>
           </span>
-        </div>
+        </Link>
         {/* Close button (mobile only) */}
         <button
           onClick={closeMobile}
@@ -231,7 +231,7 @@ export default function Sidebar() {
         >
           <Menu size={22} />
         </button>
-        <div className="flex items-center gap-2">
+        <Link href="/" className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-accent to-accent-hover shadow">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 32 32" fill="none" className="text-white">
               <path d="M16 1 C16 1 20.5 5.5 20.5 9 C20.5 11.5 18.5 13 16 13 C13.5 13 11.5 11.5 11.5 9 C11.5 5.5 16 1 16 1Z" fill="currentColor" opacity="0.5" />
@@ -244,7 +244,7 @@ export default function Sidebar() {
           <span className="text-lg font-bold tracking-tight text-text-primary">
             Hoop<span className="text-accent">us</span>
           </span>
-        </div>
+        </Link>
       </div>
 
       {/* Mobile overlay */}
