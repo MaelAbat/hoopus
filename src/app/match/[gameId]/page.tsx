@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { syncBoxscore } from "@/lib/sync-boxscore";
 import { getHighlightVideoId } from "@/lib/youtube";
 import BoxScore from "@/components/BoxScore";
+import FloatingVideo from "@/components/FloatingVideo";
 import ScrollReveal from "@/components/ScrollReveal";
 import ScrollToTop from "@/components/ScrollToTop";
 import { teamLogoUrl } from "@/lib/nba-teams";
@@ -175,20 +176,7 @@ export default async function MatchPage({ params }: PageProps) {
       {/* Highlight video */}
       {highlightVideoId && (
         <ScrollReveal variant="up" delay={150}>
-          <div className="rounded-2xl bg-card border border-border-t overflow-hidden">
-            <div className="px-4 py-3 sm:px-6 sm:py-4 border-b border-border-t/50">
-              <h2 className="text-sm font-semibold text-text-primary">Resume du match</h2>
-            </div>
-            <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
-              <iframe
-                src={`https://www.youtube.com/embed/${highlightVideoId}`}
-                title="Highlights"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                className="absolute inset-0 w-full h-full"
-              />
-            </div>
-          </div>
+          <FloatingVideo videoId={highlightVideoId} />
         </ScrollReveal>
       )}
     </div>
