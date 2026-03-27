@@ -182,10 +182,10 @@ export default function ScoresTicker({ games }: { games: Game[] }) {
               </span>
             )}
             {finalCount > 0 && (
-              <span className="text-[10px] text-text-faint">{finalCount} termin.</span>
+              <span className="text-[10px] text-text-faint">{finalCount} terminé{finalCount > 1 ? "s" : ""}</span>
             )}
             {upcomingCount > 0 && (
-              <span className="text-[10px] text-text-faint hidden sm:inline">{upcomingCount} a venir</span>
+              <span className="text-[10px] text-text-faint hidden sm:inline">{upcomingCount} à venir</span>
             )}
           </div>
         </div>
