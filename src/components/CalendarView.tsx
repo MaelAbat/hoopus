@@ -80,7 +80,7 @@ function GameCard({ game }: { game: Game }) {
             LIVE
           </span>
         ) : isFinal ? (
-          <span className="text-xs font-medium text-text-muted">Final</span>
+          <span className="text-xs font-medium text-text-muted">Terminé</span>
         ) : (
           <span className="text-xs font-medium text-text-muted">
             {toParisTime(game.game_date, game.game_time) || game.status_text}

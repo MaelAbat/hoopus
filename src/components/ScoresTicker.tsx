@@ -52,7 +52,7 @@ function MobileScore({ game }: { game: Game }) {
             LIVE
           </span>
         ) : isFinal ? (
-          <span className="text-[10px] font-semibold text-text-faint uppercase">Final</span>
+          <span className="text-[10px] font-semibold text-text-faint uppercase">Terminé</span>
         ) : (
           <span className="text-[10px] text-text-muted text-center">{game.status_text}</span>
         )}
@@ -100,7 +100,7 @@ function DesktopScore({ game }: { game: Game }) {
               <span className={`text-sm font-bold tabular-nums ${homeWon ? "text-text-primary" : "text-text-muted"}`}>{game.home_score}</span>
             </div>
             <span className={`text-[9px] font-medium mt-0.5 ${isLive ? "text-red-400" : "text-text-faint"}`}>
-              {isLive ? "LIVE" : "Final"}
+              {isLive ? "LIVE" : "Terminé"}
             </span>
           </>
         ) : (

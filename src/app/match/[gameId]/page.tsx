@@ -135,7 +135,7 @@ export default async function MatchPage({ params }: PageProps) {
                   </span>
                 </div>
                 <span className="text-xs font-medium text-text-faint uppercase tracking-wider">
-                  {gameData?.status === 3 ? "Final" : gameData?.status === 2 ? "En cours" : gameData?.status_text || ""}
+                  {gameData?.status === 3 ? "Terminé" : gameData?.status === 2 ? "En cours" : gameData?.status_text || ""}
                 </span>
                 {gameDate && (
                   <p className="text-xs text-text-faint capitalize">{gameDate}</p>
