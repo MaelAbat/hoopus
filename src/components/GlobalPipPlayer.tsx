@@ -57,15 +57,21 @@ export default function GlobalPipPlayer() {
   const isOnMatchPage = matchPageVideoId === videoId && matchPageVideoId !== null;
   const showFloating = !!(pip && videoId);
 
-  /* Place bottom-right on first open or when video changes */
+  /* Place bottom-right on first open or when video changes, adapt to screen */
   useEffect(() => {
     if (!showFloating) return;
     if (initialized.current && lastVideoId.current === videoId) return;
-    setRect((r) => ({
-      ...r,
-      x: window.innerWidth - r.w - 24,
-      y: window.innerHeight - r.h - 24,
-    }));
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const margin = vw < 640 ? 8 : 24;
+    const w = Math.min(480, vw - margin * 2);
+    const h = Math.round(w * 9 / 16) + 32;
+    setRect({
+      w,
+      h,
+      x: vw - w - margin,
+      y: vh - h - margin,
+    });
     initialized.current = true;
     lastVideoId.current = videoId;
   }, [showFloating, videoId]);
