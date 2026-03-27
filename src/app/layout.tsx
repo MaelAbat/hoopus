@@ -31,7 +31,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" data-theme="light">
+    <html lang="fr" data-theme="light" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem("theme");if(t){document.documentElement.setAttribute("data-theme",t)}else{document.documentElement.setAttribute("data-theme",window.innerWidth>=1024?"dark":"light")}}catch(e){}})()` }} />
+      </head>
       <body className="antialiased">
         <ThemeProvider>
           <LayoutShell

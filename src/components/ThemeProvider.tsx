@@ -29,7 +29,10 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
       setThemeState(stored);
       document.documentElement.setAttribute("data-theme", stored);
     } else {
-      document.documentElement.setAttribute("data-theme", "light");
+      // Default: dark on desktop, light on mobile
+      const defaultTheme: Theme = window.innerWidth >= 1024 ? "dark" : "light";
+      setThemeState(defaultTheme);
+      document.documentElement.setAttribute("data-theme", defaultTheme);
     }
 
     const supabase = createClient();
