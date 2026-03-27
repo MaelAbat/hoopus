@@ -99,8 +99,8 @@ export default function NewsList({ news, isAdmin }: { news: News[]; isAdmin: boo
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-input mb-5">
             <Clock size={28} className="text-text-faint" />
           </div>
-          <p className="text-lg font-semibold text-text-primary">Aucune actualite pour l&apos;instant</p>
-          <p className="mt-2 text-sm text-text-muted">Les dernieres nouvelles de la NBA apparaitront ici.</p>
+          <p className="text-lg font-semibold text-text-primary">Aucune actualité pour l&apos;instant</p>
+          <p className="mt-2 text-sm text-text-muted">Les dernières nouvelles de la NBA apparaîtront ici.</p>
         </div>
       )}
 

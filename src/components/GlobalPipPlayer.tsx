@@ -209,7 +209,7 @@ export default function GlobalPipPlayer() {
         onMouseDown={onDragStart}
         className="flex items-center justify-between px-3 py-1.5 bg-card border-b border-border-t/50 cursor-grab active:cursor-grabbing select-none rounded-t-xl"
       >
-        <span className="text-[10px] font-medium text-text-muted truncate mr-2">Resume du match</span>
+        <span className="text-[10px] font-medium text-text-muted truncate mr-2">Résumé du match</span>
         <div className="flex items-center gap-1 shrink-0">
           {isOnMatchPage && (
             <button

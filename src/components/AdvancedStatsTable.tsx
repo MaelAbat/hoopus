@@ -33,7 +33,7 @@ const COLUMN_GROUPS: ColumnGroup[] = [
     icon: "~",
     description: "Temps de jeu et rythme",
     columns: [
-      { key: "GP", label: "Matchs joues", short: "GP", format: "int" },
+      { key: "GP", label: "Matchs joués", short: "GP", format: "int" },
       { key: "MIN", label: "Minutes / match", short: "MIN" },
       { key: "TOT_MIN", label: "Minutes totales", short: "TMIN", format: "int" },
       { key: "USG_PCT", label: "Usage Rate", short: "USG%", format: "pct" },
@@ -53,7 +53,7 @@ const COLUMN_GROUPS: ColumnGroup[] = [
   },
   {
     id: "efficiency",
-    label: "Efficacite",
+    label: "Efficacité",
     icon: "~",
     description: "True Shooting, eFG et impact",
     columns: [
@@ -380,7 +380,7 @@ export default function AdvancedStatsTable({ players }: { players: PlayerRow[] }
                 onClick={() => { setMinGP(0); setMinMPG(0); setMinUSG(0); setMinAttempts({}); setPage(0); }}
                 className="text-[11px] text-accent hover:underline"
               >
-                Reinitialiser tous les filtres
+                Réinitialiser tous les filtres
               </button>
             </>
           )}
@@ -443,7 +443,7 @@ export default function AdvancedStatsTable({ players }: { players: PlayerRow[] }
             {paged.length === 0 ? (
               <tr>
                 <td colSpan={visibleColumns.length + 2} className="px-4 py-16 text-center text-text-muted text-sm">
-                  {search ? "Aucun resultat" : "Aucune donnee"}
+                  {search ? "Aucun résultat" : "Aucune donnée"}
                 </td>
               </tr>
             ) : (

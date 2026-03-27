@@ -48,7 +48,7 @@ function StandingsTable({ teams, showConference, scrollRef }: { teams: Standing[
         <thead className="sticky top-0 z-10 bg-card">
           <tr className="border-b border-border-t text-text-muted">
             <th className="sticky left-0 z-20 bg-card px-2 py-3 font-medium text-left w-10">#</th>
-            <th className="sticky left-8 z-20 bg-card px-2 py-3 font-medium text-left min-w-[100px] sm:min-w-[180px]">Equipe</th>
+            <th className="sticky left-8 z-20 bg-card px-2 py-3 font-medium text-left min-w-[100px] sm:min-w-[180px]">Équipe</th>
             {HEADERS.map((h) => (
               <th key={h.key} className={`px-2 sm:px-3 py-3 font-medium whitespace-nowrap ${h.className}`}>
                 {h.label}

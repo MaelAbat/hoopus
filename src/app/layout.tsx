@@ -10,10 +10,10 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://hoopus.fr";
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: "Hoopus",
-  description: "Votre olympe du basketball — actualites, articles, statistiques",
+  description: "Votre olympe du basketball — actualités, articles, statistiques",
   openGraph: {
     title: "Hoopus",
-    description: "Votre olympe du basketball — actualites, articles, statistiques",
+    description: "Votre olympe du basketball — actualités, articles, statistiques",
     siteName: "Hoopus",
     locale: "fr_FR",
     type: "website",
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Hoopus",
-    description: "Votre olympe du basketball — actualites, articles, statistiques",
+    description: "Votre olympe du basketball — actualités, articles, statistiques",
   },
 };
 

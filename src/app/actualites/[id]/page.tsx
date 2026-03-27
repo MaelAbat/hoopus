@@ -101,7 +101,7 @@ export default async function NewsDetail({ params }: { params: Promise<{ id: str
       {otherNews && otherNews.length > 0 && (
         <ScrollReveal variant="up" delay={200}>
           <div className="space-y-4">
-            <h2 className="text-lg font-bold text-text-primary">Autres actualites</h2>
+            <h2 className="text-lg font-bold text-text-primary">Autres actualités</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {otherNews.map((item) => (
                 <Link
@@ -139,7 +139,7 @@ export default async function NewsDetail({ params }: { params: Promise<{ id: str
           className="inline-flex items-center gap-2 rounded-xl bg-input px-5 py-2.5 text-sm font-medium text-text-muted transition-colors hover:bg-card-hover hover:text-text-primary"
         >
           <ChevronLeft size={14} />
-          Retour aux actualites
+          Retour aux actualités
         </Link>
       </div>
     </div>

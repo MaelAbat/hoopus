@@ -55,7 +55,7 @@ export default function ArticlesList({ articles, isAdmin }: { articles: Article[
             <BookOpen size={28} className="text-text-faint" />
           </div>
           <p className="text-lg font-semibold text-text-primary">Aucun article pour l&apos;instant</p>
-          <p className="mt-2 text-sm text-text-muted">Les analyses et articles de fond apparaitront ici.</p>
+          <p className="mt-2 text-sm text-text-muted">Les analyses et articles de fond apparaîtront ici.</p>
         </div>
       )}
 

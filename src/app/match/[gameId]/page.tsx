@@ -54,8 +54,8 @@ export default async function MatchPage({ params }: PageProps) {
           Retour au calendrier
         </Link>
         <div className="rounded-2xl bg-card border border-border-t p-12 text-center">
-          <p className="text-text-muted">Aucune donnee disponible pour ce match.</p>
-          <p className="text-xs text-text-faint mt-2">Le match n&apos;a peut-etre pas encore eu lieu ou les donnees ne sont pas disponibles.</p>
+          <p className="text-text-muted">Aucune donnée disponible pour ce match.</p>
+          <p className="text-xs text-text-faint mt-2">Le match n&apos;a peut-être pas encore eu lieu ou les données ne sont pas disponibles.</p>
         </div>
       </div>
     );

@@ -59,7 +59,7 @@ export default function StatsView({
             }`}
           >
             <Users size={16} />
-            Equipes
+            Équipes
           </button>
         </div>
 
@@ -75,7 +75,7 @@ export default function StatsView({
               }`}
             >
               <LayoutGrid size={13} />
-              Par categorie
+              Par catégorie
             </button>
             <button
               onClick={() => setPlayerView("table")}
@@ -97,7 +97,7 @@ export default function StatsView({
               }`}
             >
               <TrendingUp size={13} />
-              Stats avancees
+              Stats avancées
             </button>
           </div>
         )}

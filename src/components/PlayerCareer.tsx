@@ -35,7 +35,7 @@ export default function PlayerCareer({ seasons }: { seasons: SeasonStats[] }) {
     <div className="space-y-6">
       {/* Teams timeline */}
       <div className="rounded-2xl bg-card border border-border-t p-6">
-        <h2 className="mb-4 text-lg font-bold text-text-primary">Equipes</h2>
+        <h2 className="mb-4 text-lg font-bold text-text-primary">Équipes</h2>
         <div className="space-y-2">
           {careerTeams.map((t, i) => {
             const logoUrl = teamLogoUrl(t.team);
@@ -59,14 +59,14 @@ export default function PlayerCareer({ seasons }: { seasons: SeasonStats[] }) {
       {/* Career stats table */}
       <div className="rounded-2xl bg-card border border-border-t overflow-hidden">
         <div className="border-b border-border-t px-6 py-4">
-          <h2 className="text-lg font-bold text-text-primary">Statistiques de carriere</h2>
+          <h2 className="text-lg font-bold text-text-primary">Statistiques de carrière</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="sticky top-0 z-10 bg-card">
               <tr className="border-b border-border-t text-text-muted">
                 <th className="sticky left-0 z-20 bg-card px-3 sm:px-4 py-3 text-left font-medium whitespace-nowrap">Saison</th>
-                <th className="px-3 sm:px-4 py-3 text-left font-medium">Equipe</th>
+                <th className="px-3 sm:px-4 py-3 text-left font-medium">Équipe</th>
                 <th className="px-2 sm:px-4 py-3 text-center font-medium">MJ</th>
                 <th className="px-2 sm:px-4 py-3 text-center font-medium">MIN</th>
                 <th className="px-2 sm:px-4 py-3 text-center font-medium">PTS</th>

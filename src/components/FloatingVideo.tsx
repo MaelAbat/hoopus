@@ -23,15 +23,15 @@ export default function FloatingVideo({ videoId }: { videoId: string }) {
   return (
     <div className="rounded-2xl bg-card border border-border-t overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4 border-b border-border-t/50">
-        <h2 className="text-sm font-semibold text-text-primary">Resume du match</h2>
+        <h2 className="text-sm font-semibold text-text-primary">Résumé du match</h2>
         {!isActiveInPip && (
           <button
             onClick={detach}
             className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-text-muted hover:text-text-primary hover:bg-input transition-colors"
-            title="Detacher la video"
+            title="Détacher la vidéo"
           >
             <PictureInPicture2 size={14} />
-            <span className="hidden sm:inline">Detacher</span>
+            <span className="hidden sm:inline">Détacher</span>
           </button>
         )}
       </div>
@@ -52,7 +52,7 @@ export default function FloatingVideo({ videoId }: { videoId: string }) {
               className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-text-muted hover:text-text-primary hover:bg-card transition-colors border border-border-t"
             >
               <Undo2 size={14} />
-              Rattacher la video
+              Rattacher la vidéo
             </button>
           </div>
         )}

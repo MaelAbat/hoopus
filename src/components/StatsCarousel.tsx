@@ -202,7 +202,7 @@ export default function StatsCarousel({ boards }: { boards: Board[] }) {
                 }`}
               >
                 <Filter size={12} />
-                Eligibles
+                Éligibles
                 <span className="text-text-faint">({board.eligibleCount})</span>
               </button>
               <button
@@ -240,7 +240,7 @@ export default function StatsCarousel({ boards }: { boards: Board[] }) {
         <div ref={listRef} className="flex-1 sm:overflow-y-auto min-h-0">
           {displayPlayers.length === 0 ? (
             <div className="px-6 py-12 text-center text-sm text-text-muted">
-              {search ? "Aucun resultat" : "Aucune donnee disponible"}
+              {search ? "Aucun résultat" : "Aucune donnée disponible"}
             </div>
           ) : (
             <div className="divide-y divide-border-t/50">

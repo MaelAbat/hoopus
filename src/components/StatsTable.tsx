@@ -20,7 +20,7 @@ interface Column {
 }
 
 const COLUMNS: Column[] = [
-  { key: "GP", label: "Matchs joues", short: "GP" },
+  { key: "GP", label: "Matchs joués", short: "GP" },
   { key: "MIN", label: "Minutes/match", short: "MIN" },
   { key: "TOT_MIN", label: "Minutes totales", short: "TMIN" },
   { key: "PTS", label: "Points", short: "PTS" },
@@ -28,7 +28,7 @@ const COLUMNS: Column[] = [
   { key: "AST", label: "Passes", short: "AST" },
   { key: "BLK", label: "Contres", short: "BLK" },
   { key: "STL", label: "Interceptions", short: "STL" },
-  { key: "EFF", label: "Efficacite", short: "EFF" },
+  { key: "EFF", label: "Efficacité", short: "EFF" },
   { key: "TOV", label: "Pertes", short: "TOV" },
   { key: "FG_PCT", label: "% tir", short: "FG%" },
   { key: "FG2_PCT", label: "% 2pts", short: "2P%" },
@@ -229,7 +229,7 @@ export default function StatsTable({ players }: { players: PlayerRow[] }) {
                 onClick={() => { setMinGP(0); setMinMPG(0); setMinUSG(0); setMinAttempts({}); setPage(0); }}
                 className="text-[11px] text-accent hover:underline"
               >
-                Reinitialiser tous les filtres
+                Réinitialiser tous les filtres
               </button>
             </>
           )}
@@ -272,7 +272,7 @@ export default function StatsTable({ players }: { players: PlayerRow[] }) {
             {paged.length === 0 ? (
               <tr>
                 <td colSpan={COLUMNS.length + 2} className="px-4 py-12 text-center text-text-muted">
-                  {search ? "Aucun resultat" : "Aucune donnee"}
+                  {search ? "Aucun résultat" : "Aucune donnée"}
                 </td>
               </tr>
             ) : (

@@ -21,11 +21,11 @@ const BOARDS: BoardConfig[] = [
   { title: "Contres", stat: "BLK", unit: "BPG" },
   { title: "Interceptions", stat: "STL", unit: "SPG" },
   { title: "Minutes", stat: "MIN", unit: "MPG" },
-  { title: "Efficacite", stat: "EFF", unit: "EFF" },
+  { title: "Efficacité", stat: "EFF", unit: "EFF" },
   { title: "Pertes", stat: "TOV", unit: "TPG" },
   { title: "% au tir", stat: "FG_PCT", unit: "%" },
-  { title: "% a 2pts", stat: "FG2_PCT", unit: "%" },
-  { title: "% a 3pts", stat: "FG3_PCT", unit: "%" },
+  { title: "% à 2pts", stat: "FG2_PCT", unit: "%" },
+  { title: "% à 3pts", stat: "FG3_PCT", unit: "%" },
   { title: "% LF", stat: "FT_PCT", unit: "%" },
   { title: "TS%", stat: "TS_PCT", unit: "%" },
   { title: "eFG%", stat: "EFG_PCT", unit: "%" },
@@ -172,7 +172,7 @@ export default async function Statistiques() {
         subtitle="Leaders de la saison 2025-26"
         image="https://images.unsplash.com/photo-1705594975210-02cbcc7af5ad?w=1200&fit=crop"
         extra={hasData ? (
-          <span className="text-xs text-white/40">Mis a jour le {lastUpdate}</span>
+          <span className="text-xs text-white/40">Mis à jour le {lastUpdate}</span>
         ) : (
           <span className="inline-flex items-center rounded-full bg-yellow-500/20 px-2 py-0.5 text-xs text-yellow-300">
             Synchronisation requise
