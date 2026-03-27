@@ -3,16 +3,32 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { X, PictureInPicture2, Undo2 } from "lucide-react";
 
+type Edge = "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw";
+
+const MIN_W = 280;
+const MIN_H = 158;
+const EDGE_SIZE = 6;
+
+const CURSORS: Record<Edge, string> = {
+  n: "cursor-ns-resize",
+  s: "cursor-ns-resize",
+  e: "cursor-ew-resize",
+  w: "cursor-ew-resize",
+  ne: "cursor-nesw-resize",
+  nw: "cursor-nwse-resize",
+  se: "cursor-nwse-resize",
+  sw: "cursor-nesw-resize",
+};
+
 export default function FloatingVideo({ videoId }: { videoId: string }) {
   const [pip, setPip] = useState(false);
 
-  /* ── PiP geometry ── */
   const pipRef = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const [size, setSize] = useState({ w: 480, h: 270 });
   const dragging = useRef(false);
-  const resizing = useRef(false);
-  const offset = useRef({ x: 0, y: 0 });
+  const resizeEdge = useRef<Edge | null>(null);
+  const origin = useRef({ x: 0, y: 0 });
   const initialized = useRef(false);
 
   /* Place bottom-right on first open */
@@ -28,19 +44,18 @@ export default function FloatingVideo({ videoId }: { videoId: string }) {
 
   /* ── Drag ── */
   const onDragStart = useCallback((e: React.MouseEvent) => {
-    // Don't drag if clicking a button
     if ((e.target as HTMLElement).closest("button")) return;
     e.preventDefault();
     dragging.current = true;
-    offset.current = { x: e.clientX - pos.x, y: e.clientY - pos.y };
+    origin.current = { x: e.clientX - pos.x, y: e.clientY - pos.y };
   }, [pos]);
 
-  /* ── Resize ── */
-  const onResizeStart = useCallback((e: React.MouseEvent) => {
+  /* ── Resize from any edge/corner ── */
+  const onEdgeDown = useCallback((edge: Edge) => (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    resizing.current = true;
-    offset.current = { x: e.clientX, y: e.clientY };
+    resizeEdge.current = edge;
+    origin.current = { x: e.clientX, y: e.clientY };
   }, []);
 
   /* ── Global mouse handlers ── */
@@ -50,24 +65,51 @@ export default function FloatingVideo({ videoId }: { videoId: string }) {
     function onMove(e: MouseEvent) {
       if (dragging.current) {
         setPos({
-          x: Math.max(0, Math.min(window.innerWidth - 100, e.clientX - offset.current.x)),
-          y: Math.max(0, Math.min(window.innerHeight - 60, e.clientY - offset.current.y)),
+          x: Math.max(0, Math.min(window.innerWidth - 100, e.clientX - origin.current.x)),
+          y: Math.max(0, Math.min(window.innerHeight - 60, e.clientY - origin.current.y)),
         });
+        return;
       }
-      if (resizing.current) {
-        const dx = e.clientX - offset.current.x;
-        const dy = e.clientY - offset.current.y;
-        offset.current = { x: e.clientX, y: e.clientY };
-        setSize((prev) => ({
-          w: Math.max(280, Math.min(window.innerWidth - 32, prev.w + dx)),
-          h: Math.max(158, Math.min(window.innerHeight - 32, prev.h + dy)),
-        }));
-      }
+
+      const edge = resizeEdge.current;
+      if (!edge) return;
+
+      const dx = e.clientX - origin.current.x;
+      const dy = e.clientY - origin.current.y;
+      origin.current = { x: e.clientX, y: e.clientY };
+
+      setPos((p) => {
+        let { x, y } = p;
+        setSize((s) => {
+          let { w, h } = s;
+
+          // Horizontal
+          if (edge.includes("e")) {
+            w = Math.max(MIN_W, w + dx);
+          } else if (edge.includes("w")) {
+            const newW = Math.max(MIN_W, w - dx);
+            x += w - newW;
+            w = newW;
+          }
+
+          // Vertical
+          if (edge.includes("s")) {
+            h = Math.max(MIN_H, h + dy);
+          } else if (edge.includes("n")) {
+            const newH = Math.max(MIN_H, h - dy);
+            y += h - newH;
+            h = newH;
+          }
+
+          return { w, h };
+        });
+        return { x, y };
+      });
     }
 
     function onUp() {
       dragging.current = false;
-      resizing.current = false;
+      resizeEdge.current = null;
     }
 
     window.addEventListener("mousemove", onMove);
@@ -84,41 +126,53 @@ export default function FloatingVideo({ videoId }: { videoId: string }) {
     const el = pipRef.current;
     if (!el) return;
 
-    let action: "drag" | "resize" | null = null;
+    let action: "drag" | Edge | null = null;
 
     function onTouchStart(e: TouchEvent) {
       const target = e.target as HTMLElement;
       if (target.closest("button")) return;
-      if (target.closest("[data-resize]")) {
-        action = "resize";
+
+      const edgeEl = target.closest<HTMLElement>("[data-edge]");
+      if (edgeEl) {
+        action = edgeEl.dataset.edge as Edge;
       } else if (target.closest("[data-dragbar]")) {
         action = "drag";
       } else {
         return;
       }
       const t = e.touches[0];
-      offset.current = { x: t.clientX, y: t.clientY };
+      origin.current = { x: t.clientX, y: t.clientY };
     }
 
     function onTouchMove(e: TouchEvent) {
       if (!action) return;
       e.preventDefault();
       const t = e.touches[0];
-      const dx = t.clientX - offset.current.x;
-      const dy = t.clientY - offset.current.y;
-      offset.current = { x: t.clientX, y: t.clientY };
+      const dx = t.clientX - origin.current.x;
+      const dy = t.clientY - origin.current.y;
+      origin.current = { x: t.clientX, y: t.clientY };
 
       if (action === "drag") {
         setPos((prev) => ({
           x: Math.max(0, Math.min(window.innerWidth - 100, prev.x + dx)),
           y: Math.max(0, Math.min(window.innerHeight - 60, prev.y + dy)),
         }));
-      } else {
-        setSize((prev) => ({
-          w: Math.max(280, Math.min(window.innerWidth - 32, prev.w + dx)),
-          h: Math.max(158, Math.min(window.innerHeight - 32, prev.h + dy)),
-        }));
+        return;
       }
+
+      const edge = action;
+      setPos((p) => {
+        let { x, y } = p;
+        setSize((s) => {
+          let { w, h } = s;
+          if (edge.includes("e")) w = Math.max(MIN_W, w + dx);
+          else if (edge.includes("w")) { const nw = Math.max(MIN_W, w - dx); x += w - nw; w = nw; }
+          if (edge.includes("s")) h = Math.max(MIN_H, h + dy);
+          else if (edge.includes("n")) { const nh = Math.max(MIN_H, h - dy); y += h - nh; h = nh; }
+          return { w, h };
+        });
+        return { x, y };
+      });
     }
 
     function onTouchEnd() {
@@ -134,6 +188,20 @@ export default function FloatingVideo({ videoId }: { videoId: string }) {
       el.removeEventListener("touchend", onTouchEnd);
     };
   }, [pip]);
+
+  /* ── Resize edge zones ── */
+  const edges: { edge: Edge; className: string }[] = [
+    // Corners
+    { edge: "nw", className: `absolute -top-0.5 -left-0.5 z-20 ${CURSORS.nw}` },
+    { edge: "ne", className: `absolute -top-0.5 -right-0.5 z-20 ${CURSORS.ne}` },
+    { edge: "sw", className: `absolute -bottom-0.5 -left-0.5 z-20 ${CURSORS.sw}` },
+    { edge: "se", className: `absolute -bottom-0.5 -right-0.5 z-20 ${CURSORS.se}` },
+    // Edges
+    { edge: "n", className: `absolute -top-0.5 left-3 right-3 z-10 ${CURSORS.n}` },
+    { edge: "s", className: `absolute -bottom-0.5 left-3 right-3 z-10 ${CURSORS.s}` },
+    { edge: "w", className: `absolute top-3 -left-0.5 bottom-3 z-10 ${CURSORS.w}` },
+    { edge: "e", className: `absolute top-3 -right-0.5 bottom-3 z-10 ${CURSORS.e}` },
+  ];
 
   return (
     <>
@@ -152,10 +220,7 @@ export default function FloatingVideo({ videoId }: { videoId: string }) {
             </button>
           )}
         </div>
-        <div
-          className={`relative w-full ${pip ? "" : ""}`}
-          style={{ paddingBottom: "56.25%" }}
-        >
+        <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
           {!pip && (
             <iframe
               src={`https://www.youtube.com/embed/${videoId}`}
@@ -183,19 +248,34 @@ export default function FloatingVideo({ videoId }: { videoId: string }) {
       {pip && (
         <div
           ref={pipRef}
-          className="fixed z-50 rounded-xl overflow-hidden shadow-2xl border border-border-t bg-card"
-          style={{
-            left: pos.x,
-            top: pos.y,
-            width: size.w,
-            height: size.h,
-          }}
+          className="fixed z-50 rounded-xl overflow-visible shadow-2xl border border-border-t bg-card"
+          style={{ left: pos.x, top: pos.y, width: size.w, height: size.h }}
         >
+          {/* Resize handles — edges & corners */}
+          {edges.map(({ edge, className }) => {
+            const isCorner = edge.length === 2;
+            return (
+              <div
+                key={edge}
+                data-edge={edge}
+                onMouseDown={onEdgeDown(edge)}
+                className={className}
+                style={
+                  isCorner
+                    ? { width: EDGE_SIZE * 2, height: EDGE_SIZE * 2 }
+                    : edge === "n" || edge === "s"
+                      ? { height: EDGE_SIZE }
+                      : { width: EDGE_SIZE }
+                }
+              />
+            );
+          })}
+
           {/* Drag bar */}
           <div
             data-dragbar
             onMouseDown={onDragStart}
-            className="flex items-center justify-between px-3 py-1.5 bg-card border-b border-border-t/50 cursor-grab active:cursor-grabbing select-none"
+            className="flex items-center justify-between px-3 py-1.5 bg-card border-b border-border-t/50 cursor-grab active:cursor-grabbing select-none rounded-t-xl"
           >
             <span className="text-[10px] font-medium text-text-muted truncate mr-2">Resume du match</span>
             <div className="flex items-center gap-1 shrink-0">
@@ -217,7 +297,7 @@ export default function FloatingVideo({ videoId }: { videoId: string }) {
           </div>
 
           {/* Video */}
-          <div className="relative" style={{ height: "calc(100% - 32px)" }}>
+          <div className="relative rounded-b-xl overflow-hidden" style={{ height: "calc(100% - 32px)" }}>
             <iframe
               src={`https://www.youtube.com/embed/${videoId}`}
               title="Highlights"
@@ -225,23 +305,6 @@ export default function FloatingVideo({ videoId }: { videoId: string }) {
               allowFullScreen
               className="absolute inset-0 w-full h-full"
             />
-          </div>
-
-          {/* Resize handle */}
-          <div
-            data-resize
-            onMouseDown={onResizeStart}
-            className="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize z-10"
-          >
-            <svg
-              viewBox="0 0 16 16"
-              className="w-full h-full text-text-faint/60"
-              fill="currentColor"
-            >
-              <circle cx="12" cy="12" r="1.5" />
-              <circle cx="7" cy="12" r="1.5" />
-              <circle cx="12" cy="7" r="1.5" />
-            </svg>
           </div>
         </div>
       )}
