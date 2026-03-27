@@ -160,7 +160,7 @@ function MatchupBox({ series, topTeam, bottomTeam, seedTop, seedBottom, accent }
           hasGames ? "cursor-pointer" : ""
         } ${
           hasFav
-            ? "border-2 border-accent/40 bg-card ring-1 ring-accent/10"
+            ? "border-2 border-accent/60 bg-card ring-2 ring-accent/20 shadow-[0_0_12px_rgba(var(--accent-rgb,249,115,22),0.15)]"
             : accent
               ? "border-2 border-accent/40 bg-card"
               : isCompleted
@@ -472,7 +472,7 @@ function PlayInMatchupBox({ game, topTeam, bottomTeam, seedTop, seedBottom }: {
       <div
         className={`rounded-lg overflow-hidden shadow-sm shrink-0 ${
           hasFav
-            ? "border-2 border-accent/40 bg-card ring-1 ring-accent/10"
+            ? "border-2 border-accent/60 bg-card ring-2 ring-accent/20 shadow-[0_0_12px_rgba(var(--accent-rgb,249,115,22),0.15)]"
             : finished ? "border border-border-t/60 bg-card/80" : "border border-border-t bg-card"
         }`}
         style={{ width: BOX_W }}

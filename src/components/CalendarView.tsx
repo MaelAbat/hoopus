@@ -74,7 +74,7 @@ function GameCard({ game }: { game: Game }) {
   const canLink = isFinal || isLive;
 
   const card = (
-    <div className={`rounded-xl bg-sidebar border p-3 transition-all duration-200 hover:border-border-hover ${canLink ? "cursor-pointer" : ""} ${isFav ? "border-accent/30 ring-1 ring-accent/10" : "border-border-t"}`}>
+    <div className={`rounded-xl bg-sidebar border p-3 transition-all duration-200 hover:border-border-hover ${canLink ? "cursor-pointer" : ""} ${isFav ? "border-accent/60 ring-2 ring-accent/20 shadow-[0_0_12px_rgba(var(--accent-rgb,249,115,22),0.15)]" : "border-border-t"}`}>
       {/* Status */}
       <div className="flex items-center justify-between mb-2">
         {isLive ? (

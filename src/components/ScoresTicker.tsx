@@ -29,7 +29,7 @@ function MobileScore({ game, isFav }: { game: Game; isFav: boolean }) {
     <Link
       href={`/match/${game.game_id}`}
       className={`grid grid-cols-[1fr_auto_1fr] items-center rounded-xl bg-card border px-3 py-3 shrink-0 min-w-[220px] gap-3 transition-colors hover:border-border-hover ${
-        isFav ? "border-accent/30 ring-1 ring-accent/10" : "border-border-t"
+        isFav ? "border-accent/60 ring-2 ring-accent/20 shadow-[0_0_12px_rgba(var(--accent-rgb,249,115,22),0.15)]" : "border-border-t"
       }`}
     >
       {/* Away */}
@@ -89,7 +89,7 @@ function DesktopScore({ game, isFav }: { game: Game; isFav: boolean }) {
     <Link
       href={`/match/${game.game_id}`}
       className={`flex items-center gap-3 rounded-lg bg-card border px-3 py-2 shrink-0 min-w-[180px] transition-colors hover:border-border-hover ${
-        isFav ? "border-accent/30 ring-1 ring-accent/10" : "border-border-t"
+        isFav ? "border-accent/60 ring-2 ring-accent/20 shadow-[0_0_12px_rgba(var(--accent-rgb,249,115,22),0.15)]" : "border-border-t"
       }`}
     >
       <div className="flex flex-col items-center gap-0.5 w-10">
