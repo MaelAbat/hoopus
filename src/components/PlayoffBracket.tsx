@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { teamLogoUrl } from "@/lib/nba-teams";
+import { useFavorites } from "@/context/FavoritesContext";
 
 interface Standing {
   id: string;
@@ -143,6 +144,7 @@ function MatchupBox({ series, topTeam, bottomTeam, seedTop, seedBottom, accent }
   accent?: boolean;
 }) {
   const [showGames, setShowGames] = useState(false);
+  const { isTeamFavorite } = useFavorites();
 
   // If we have series data, use it
   if (series) {
@@ -150,17 +152,20 @@ function MatchupBox({ series, topTeam, bottomTeam, seedTop, seedBottom, accent }
     const topWinner = isCompleted && series.wins_top === 4;
     const bottomWinner = isCompleted && series.wins_bottom === 4;
     const hasGames = series.games && series.games.some(g => g.status === 3);
+    const hasFav = isTeamFavorite(series.team_top) || isTeamFavorite(series.team_bottom);
 
     return (
       <div
         className={`relative rounded-lg overflow-visible shadow-sm shrink-0 ${
           hasGames ? "cursor-pointer" : ""
         } ${
-          accent
-            ? "border-2 border-accent/40 bg-card"
-            : isCompleted
-              ? "border border-border-t/60 bg-card/80"
-              : "border border-border-t bg-card"
+          hasFav
+            ? "border-2 border-accent/40 bg-card ring-1 ring-accent/10"
+            : accent
+              ? "border-2 border-accent/40 bg-card"
+              : isCompleted
+                ? "border border-border-t/60 bg-card/80"
+                : "border border-border-t bg-card"
         }`}
         style={{ width: BOX_W }}
         onMouseEnter={() => hasGames && setShowGames(true)}
@@ -445,6 +450,8 @@ function PlayInMatchupBox({ game, topTeam, bottomTeam, seedTop, seedBottom }: {
   seedTop?: number;
   seedBottom?: number;
 }) {
+  const { isTeamFavorite } = useFavorites();
+
   if (game) {
     const finished = game.status === 3;
     const homeSeed = game.home_seed;
@@ -459,11 +466,14 @@ function PlayInMatchupBox({ game, topTeam, bottomTeam, seedTop, seedBottom }: {
     const bottomSeed = topIsHome ? game.away_seed : game.home_seed;
     const topWon = finished && game.winner === topTricode;
     const bottomWon = finished && game.winner === bottomTricode;
+    const hasFav = isTeamFavorite(topTricode) || isTeamFavorite(bottomTricode);
 
     return (
       <div
         className={`rounded-lg overflow-hidden shadow-sm shrink-0 ${
-          finished ? "border border-border-t/60 bg-card/80" : "border border-border-t bg-card"
+          hasFav
+            ? "border-2 border-accent/40 bg-card ring-1 ring-accent/10"
+            : finished ? "border border-border-t/60 bg-card/80" : "border border-border-t bg-card"
         }`}
         style={{ width: BOX_W }}
       >

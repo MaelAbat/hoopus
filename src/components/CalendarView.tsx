@@ -140,6 +140,7 @@ export default function CalendarView({ games }: { games: Game[] }) {
     today.toISOString().split("T")[0]
   );
   const gamesListRef = useRef<HTMLDivElement>(null);
+  const { isTeamFavorite } = useFavorites();
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -184,7 +185,14 @@ export default function CalendarView({ games }: { games: Game[] }) {
     return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
   }
 
-  const selectedGames = gamesByDate[selectedDate] || [];
+  const selectedGames = useMemo(() => {
+    const list = gamesByDate[selectedDate] || [];
+    return [...list].sort((a, b) => {
+      const aFav = isTeamFavorite(a.home_team) || isTeamFavorite(a.away_team) ? 1 : 0;
+      const bFav = isTeamFavorite(b.home_team) || isTeamFavorite(b.away_team) ? 1 : 0;
+      return bFav - aFav;
+    });
+  }, [gamesByDate, selectedDate, isTeamFavorite]);
   const todayStr = today.toISOString().split("T")[0];
 
   return (
@@ -226,6 +234,7 @@ export default function CalendarView({ games }: { games: Game[] }) {
             const isToday = dateKey === todayStr;
             const isSelected = dateKey === selectedDate;
             const hasLive = dayGames?.some((g) => g.status === 2);
+            const hasFav = dayGames?.some((g) => isTeamFavorite(g.home_team) || isTeamFavorite(g.away_team));
 
             return (
               <button
@@ -243,17 +252,24 @@ export default function CalendarView({ games }: { games: Game[] }) {
               >
                 {day}
                 {gameCount > 0 && (
-                  <span
-                    className={`text-[9px] font-bold leading-none mt-0.5 ${
-                      isSelected
-                        ? "text-white/80"
-                        : hasLive
-                          ? "text-red-400"
-                          : "text-accent/60"
-                    }`}
-                  >
-                    {gameCount}
-                  </span>
+                  <div className="flex items-center gap-0.5 mt-0.5">
+                    {hasFav && !isSelected && (
+                      <Star size={8} className="fill-accent text-accent" />
+                    )}
+                    <span
+                      className={`text-[9px] font-bold leading-none ${
+                        isSelected
+                          ? "text-white/80"
+                          : hasLive
+                            ? "text-red-400"
+                            : hasFav
+                              ? "text-accent"
+                              : "text-accent/60"
+                      }`}
+                    >
+                      {gameCount}
+                    </span>
+                  </div>
                 )}
               </button>
             );
