@@ -281,7 +281,7 @@ export default function StatsTable({ players }: { players: PlayerRow[] }) {
                 return (
                   <tr
                     key={`${player.name}-${player.team}`}
-                    className="border-b border-border-t/30 transition-colors hover:bg-card-hover"
+                    className="border-b border-border-t/30 transition-all duration-150 hover:bg-card-hover cursor-pointer"
                   >
                     <td className="px-3 py-2.5">
                       <span className={`inline-flex h-6 w-6 items-center justify-center rounded text-xs font-bold ${

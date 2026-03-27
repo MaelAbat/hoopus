@@ -28,7 +28,7 @@ function MobileScore({ game, isFav }: { game: Game; isFav: boolean }) {
   return (
     <Link
       href={`/match/${game.game_id}`}
-      className={`grid grid-cols-[1fr_auto_1fr] items-center rounded-xl bg-card border px-3 py-3 shrink-0 min-w-[220px] gap-3 transition-colors hover:border-border-hover ${
+      className={`grid grid-cols-[1fr_auto_1fr] items-center rounded-xl bg-card border px-3 py-3 shrink-0 min-w-[220px] gap-3 transition-all duration-200 hover:border-border-hover hover:shadow-lg hover:-translate-y-0.5 ${
         isFav ? "border-accent/60 ring-2 ring-accent/20 shadow-[0_0_12px_rgba(var(--accent-rgb,249,115,22),0.15)]" : "border-border-t"
       }`}
     >
@@ -88,7 +88,7 @@ function DesktopScore({ game, isFav }: { game: Game; isFav: boolean }) {
   return (
     <Link
       href={`/match/${game.game_id}`}
-      className={`flex items-center gap-3 rounded-lg bg-card border px-3 py-2 shrink-0 min-w-[180px] transition-colors hover:border-border-hover ${
+      className={`flex items-center gap-3 rounded-lg bg-card border px-3 py-2 shrink-0 min-w-[180px] transition-all duration-200 hover:border-border-hover hover:shadow-lg hover:-translate-y-0.5 ${
         isFav ? "border-accent/60 ring-2 ring-accent/20 shadow-[0_0_12px_rgba(var(--accent-rgb,249,115,22),0.15)]" : "border-border-t"
       }`}
     >

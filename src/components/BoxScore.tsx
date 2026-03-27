@@ -169,7 +169,7 @@ function TeamTable({
 
 function PlayerRow({ player: p }: { player: PlayerLine }) {
   return (
-    <tr className="border-b border-border-t/20 hover:bg-card-hover/40 transition-colors">
+    <tr className="border-b border-border-t/20 hover:bg-card-hover/40 transition-all duration-150 cursor-pointer">
       <td className="sticky left-0 z-10 bg-card hover:bg-card-hover/40 px-3 py-2">
         <Link href={`/joueurs/${p.player_id}`} className="flex items-center gap-2 group">
           <div className="relative h-7 w-7 shrink-0">

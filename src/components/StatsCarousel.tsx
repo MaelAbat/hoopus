@@ -26,7 +26,7 @@ function PlayerRow({ player, displayRank }: { player: PlayerStatLeader; displayR
   const { isPlayerFollowed } = useFavorites();
   const followed = isPlayerFollowed(player.player_id);
   return (
-    <Link href={`/joueurs/${player.player_id}`} className={`flex items-center gap-3 sm:gap-4 px-3 sm:px-6 py-3.5 transition-colors hover:bg-card-hover ${followed ? "bg-accent/5" : ""}`}>
+    <Link href={`/joueurs/${player.player_id}`} className={`flex items-center gap-3 sm:gap-4 px-3 sm:px-6 py-3.5 transition-all duration-150 hover:bg-card-hover hover:pl-4 sm:hover:pl-7 ${followed ? "bg-accent/5" : ""}`}>
       <span
         className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
           rank === 1

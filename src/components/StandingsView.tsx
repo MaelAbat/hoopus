@@ -75,7 +75,7 @@ function StandingsTable({ teams, showConference, scrollRef }: { teams: Standing[
                     </td>
                   </tr>
                 )}
-                <tr className={`border-b border-border-t/50 transition-colors hover:bg-card-hover ${isFav ? "bg-accent/5" : ""}`}>
+                <tr className={`border-b border-border-t/50 transition-all duration-150 hover:bg-card-hover ${isFav ? "bg-accent/5" : ""}`}>
                   <td className="sticky left-0 z-10 bg-card px-2 py-3">
                     <span
                       className={`flex h-6 w-6 items-center justify-center rounded-md text-xs font-bold ${

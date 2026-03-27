@@ -64,7 +64,7 @@ export default function ArticlesList({ articles, isAdmin }: { articles: Article[
           <Link
             key={article.id}
             href={`/articles/${article.id}`}
-            className="group relative flex flex-col overflow-hidden rounded-2xl bg-card border border-border-t transition-all duration-300 hover:border-border-hover hover:shadow-lg"
+            className="group relative flex flex-col overflow-hidden rounded-2xl bg-card border border-border-t transition-all duration-300 hover:border-border-hover hover:shadow-lg hover:-translate-y-1"
           >
             <div className="aspect-[16/9] w-full overflow-hidden bg-input">
               {article.image_url ? (

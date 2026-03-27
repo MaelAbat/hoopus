@@ -110,7 +110,7 @@ export default function NewsList({ news, isAdmin }: { news: News[]; isAdmin: boo
           <Link
             key={item.id}
             href={`/actualites/${item.id}`}
-            className="group relative block overflow-hidden rounded-2xl bg-card border border-border-t transition-all duration-200 hover:border-border-hover hover:shadow-lg"
+            className="group relative block overflow-hidden rounded-2xl bg-card border border-border-t transition-all duration-200 hover:border-border-hover hover:shadow-lg hover:-translate-y-0.5"
           >
             <div className="flex">
               {item.image_url && (

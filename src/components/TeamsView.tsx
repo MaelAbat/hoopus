@@ -42,7 +42,7 @@ function TeamGrid({ teams, onSelect }: { teams: { tricode: string; city: string;
         <button
           key={t.tricode}
           onClick={() => onSelect(t.tricode)}
-          className="group flex flex-col items-center gap-2 rounded-2xl bg-card border border-border-t p-4 transition-all duration-200 hover:border-border-hover hover:shadow-lg"
+          className="group flex flex-col items-center gap-2 rounded-2xl bg-card border border-border-t p-4 transition-all duration-200 hover:border-border-hover hover:shadow-lg hover:-translate-y-1"
         >
           <img
             src={teamLogoUrl(t.tricode)}

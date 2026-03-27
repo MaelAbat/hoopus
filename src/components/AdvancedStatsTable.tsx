@@ -452,7 +452,7 @@ export default function AdvancedStatsTable({ players }: { players: PlayerRow[] }
                 return (
                   <tr
                     key={`${player.name}-${player.team}`}
-                    className="border-b border-border-t/20 transition-colors hover:bg-card-hover/60 group"
+                    className="border-b border-border-t/20 transition-all duration-150 hover:bg-card-hover/60 cursor-pointer group"
                   >
                     <td className="sm:sticky sm:left-0 sm:z-10 bg-card pl-4 pr-2 py-3 group-hover:bg-card-hover/60">
                       <span className={`inline-flex h-6 w-6 items-center justify-center rounded-md text-[11px] font-bold ${
