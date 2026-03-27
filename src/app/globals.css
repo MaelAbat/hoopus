@@ -21,6 +21,7 @@
 /* ── Dark (défaut) ────────────────────────── */
 :root,
 [data-theme="dark"] {
+  color-scheme: dark;
   --bg: #090f1d;
   --bg-card: #111827;
   --bg-card-hover: #1a2234;
@@ -45,6 +46,7 @@
 
 /* ── Light – indigo élégant ──────────────── */
 [data-theme="light"] {
+  color-scheme: light;
   --bg: #f8fafc;
   --bg-card: #ffffff;
   --bg-card-hover: #f1f5f9;
@@ -69,6 +71,7 @@
 
 /* ── Midnight – violet profond ────────────── */
 [data-theme="midnight"] {
+  color-scheme: dark;
   --bg: #0b0a1a;
   --bg-card: #13112a;
   --bg-card-hover: #1c1938;
@@ -93,6 +96,7 @@
 
 /* ── Emerald – vert émeraude ──────────────── */
 [data-theme="emerald"] {
+  color-scheme: dark;
   --bg: #071a12;
   --bg-card: #0d2818;
   --bg-card-hover: #143622;
@@ -117,6 +121,7 @@
 
 /* ── Sakura – rose/cerisier ───────────────── */
 [data-theme="sakura"] {
+  color-scheme: dark;
   --bg: #1a0a12;
   --bg-card: #281218;
   --bg-card-hover: #361a22;
@@ -141,6 +146,7 @@
 
 /* ── Ocean – bleu profond ─────────────────── */
 [data-theme="ocean"] {
+  color-scheme: dark;
   --bg: #060e1f;
   --bg-card: #0c1a30;
   --bg-card-hover: #12243e;

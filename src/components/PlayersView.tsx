@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { Search } from "lucide-react";
+import { Search, ChevronDown } from "lucide-react";
 import type { Player } from "@/lib/types/database";
 import { teamLogoUrl, playerPhotoUrl, ACTIVE_TEAM_IDS } from "@/lib/nba-teams";
 
@@ -97,27 +97,26 @@ export default function PlayersView({ players }: { players: Player[] }) {
             </button>
           ))}
 
-          <select
+          <Dropdown
             value={posFilter}
-            onChange={(e) => { setPosFilter(e.target.value); setPage(0); }}
-            className="rounded-lg bg-input border border-border-t px-3 py-1.5 text-xs text-text-primary focus:border-accent/50 focus:outline-none"
-          >
-            <option value="">Position</option>
-            <option value="G">Guard</option>
-            <option value="F">Forward</option>
-            <option value="C">Center</option>
-          </select>
+            onChange={(v) => { setPosFilter(v); setPage(0); }}
+            placeholder="Position"
+            options={[
+              { value: "G", label: "Guard" },
+              { value: "F", label: "Forward" },
+              { value: "C", label: "Center" },
+            ]}
+          />
 
-          <select
+          <Dropdown
             value={teamFilter}
-            onChange={(e) => { setTeamFilter(e.target.value); setPage(0); }}
-            className="rounded-lg bg-input border border-border-t px-3 py-1.5 text-xs text-text-primary focus:border-accent/50 focus:outline-none"
-          >
-            <option value="">Équipe</option>
-            {teamOptions.map((tri) => (
-              <option key={tri} value={tri}>{tri} — {TEAM_NAMES[tri] || tri}</option>
-            ))}
-          </select>
+            onChange={(v) => { setTeamFilter(v); setPage(0); }}
+            placeholder="Équipe"
+            options={teamOptions.map((tri) => ({
+              value: tri,
+              label: `${tri} — ${TEAM_NAMES[tri] || tri}`,
+            }))}
+          />
         </div>
       </div>
 
@@ -204,6 +203,73 @@ export default function PlayersView({ players }: { players: Player[] }) {
           >
             Suivant
           </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── Themed dropdown ─── */
+
+interface DropdownProps {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+  options: { value: string; label: string }[];
+}
+
+function Dropdown({ value, onChange, placeholder, options }: DropdownProps) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function close(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [open]);
+
+  const selected = options.find((o) => o.value === value);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-all ${
+          value
+            ? "bg-accent/10 border-accent/30 text-accent"
+            : "bg-input border-border-t text-text-muted hover:text-text-primary"
+        }`}
+      >
+        {selected?.label || placeholder}
+        <ChevronDown size={12} className={`transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {open && (
+        <div className="absolute top-full left-0 z-40 mt-1 min-w-[160px] max-h-64 overflow-y-auto rounded-xl bg-card border border-border-t shadow-xl">
+          <button
+            onClick={() => { onChange(""); setOpen(false); }}
+            className={`w-full text-left px-3 py-2 text-xs transition-colors ${
+              !value ? "text-accent font-semibold bg-accent/5" : "text-text-muted hover:bg-card-hover hover:text-text-primary"
+            }`}
+          >
+            {placeholder} (tous)
+          </button>
+          {options.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => { onChange(opt.value); setOpen(false); }}
+              className={`w-full text-left px-3 py-2 text-xs transition-colors ${
+                value === opt.value
+                  ? "text-accent font-semibold bg-accent/5"
+                  : "text-text-primary hover:bg-card-hover"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
         </div>
       )}
     </div>
