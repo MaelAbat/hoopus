@@ -2,9 +2,10 @@
 
 import { useMemo, useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { Search, ChevronDown } from "lucide-react";
+import { Search, ChevronDown, Heart } from "lucide-react";
 import type { Player } from "@/lib/types/database";
 import { teamLogoUrl, playerPhotoUrl, ACTIVE_TEAM_IDS } from "@/lib/nba-teams";
+import { useFavorites } from "@/context/FavoritesContext";
 
 const TEAM_NAMES: Record<string, string> = {
   ATL: "Hawks", BOS: "Celtics", BKN: "Nets", CHA: "Hornets",
@@ -25,6 +26,7 @@ export default function PlayersView({ players }: { players: Player[] }) {
   const [posFilter, setPosFilter] = useState("");
   const [teamFilter, setTeamFilter] = useState("");
   const [page, setPage] = useState(0);
+  const { isPlayerFollowed, togglePlayer } = useFavorites();
 
   // Build team list from active players for the dropdown
   const teamOptions = useMemo(() => {
@@ -152,6 +154,16 @@ export default function PlayersView({ players }: { players: Player[] }) {
                   className="absolute bottom-2 right-2 h-6 w-6 object-contain opacity-70"
                 />
               )}
+              <button
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); togglePlayer(p.player_id); }}
+                className={`absolute top-2 right-2 rounded-full p-1.5 transition-all ${
+                  isPlayerFollowed(p.player_id)
+                    ? "bg-accent/20 text-accent backdrop-blur-sm"
+                    : "bg-black/30 text-white/60 backdrop-blur-sm opacity-0 group-hover:opacity-100 hover:text-accent"
+                }`}
+              >
+                <Heart size={14} className={isPlayerFollowed(p.player_id) ? "fill-accent" : ""} />
+              </button>
               {!p.is_active && (
                 <span className="absolute top-2 left-2 rounded bg-black/50 px-1.5 py-0.5 text-[9px] font-semibold text-white/70 backdrop-blur-sm">
                   {p.to_year || "Retiré"}
