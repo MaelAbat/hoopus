@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { syncPlayerCareer } from "@/lib/sync-career";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, MapPin, GraduationCap, Calendar, Ruler, Weight, Hash } from "lucide-react";
@@ -39,12 +40,47 @@ export default async function PlayerDetail({ params }: { params: Promise<{ id: s
   const { id } = await params;
   const supabase = await createClient();
 
+  const playerId = Number(id);
+
   const [{ data: player }, { data: rosterEntry }] = await Promise.all([
-    supabase.from("players").select("*").eq("player_id", Number(id)).single(),
-    supabase.from("rosters").select("*").eq("player_id", Number(id)).eq("season", "2025-26").single(),
+    supabase.from("players").select("*").eq("player_id", playerId).single(),
+    supabase.from("rosters").select("*").eq("player_id", playerId).eq("season", "2025-26").single(),
   ]);
 
   if (!player) notFound();
+
+  // Fetch career stats from DB
+  let { data: careerStats } = await supabase
+    .from("player_career_stats")
+    .select("*")
+    .eq("player_id", playerId)
+    .order("season", { ascending: true });
+
+  // On-demand sync if no career data in DB
+  if (!careerStats || careerStats.length === 0) {
+    await syncPlayerCareer(playerId);
+    const result = await supabase
+      .from("player_career_stats")
+      .select("*")
+      .eq("player_id", playerId)
+      .order("season", { ascending: true });
+    careerStats = result.data;
+  }
+
+  const careerSeasons = (careerStats || []).map((row) => ({
+    season: row.season,
+    team: row.team,
+    gp: row.gp,
+    pts: Number(row.pts),
+    reb: Number(row.reb),
+    ast: Number(row.ast),
+    stl: Number(row.stl),
+    blk: Number(row.blk),
+    fgPct: Number(row.fg_pct),
+    fg3Pct: Number(row.fg3_pct),
+    ftPct: Number(row.ft_pct),
+    min: Number(row.min),
+  }));
 
   const photoUrl = `https://cdn.nba.com/headshots/nba/latest/260x190/${player.player_id}.png`;
   const careerSpan = player.from_year && player.to_year
@@ -133,8 +169,8 @@ export default async function PlayerDetail({ params }: { params: Promise<{ id: s
         <InfoRow icon={<Calendar size={14} />} label="Carrière" value={careerSpan} />
       </div>
 
-      {/* Career: teams + stats table (client component, fetches async) */}
-      <PlayerCareer playerId={player.player_id} />
+      {/* Career: teams + stats table */}
+      <PlayerCareer seasons={careerSeasons} />
     </div>
   );
 }

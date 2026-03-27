@@ -1,6 +1,3 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import { teamLogoUrl } from "@/lib/nba-teams";
 
 interface SeasonStats {
@@ -18,58 +15,8 @@ interface SeasonStats {
   min: number;
 }
 
-export default function PlayerCareer({ playerId }: { playerId: number }) {
-  const [seasons, setSeasons] = useState<SeasonStats[] | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 15000);
-
-    fetch(`/api/player-career?id=${playerId}`, { signal: controller.signal })
-      .then((r) => {
-        if (!r.ok) throw new Error("fetch failed");
-        return r.json();
-      })
-      .then((data) => setSeasons(data.seasons || []))
-      .catch(() => setSeasons([]))
-      .finally(() => {
-        clearTimeout(timer);
-        setLoading(false);
-      });
-
-    return () => {
-      clearTimeout(timer);
-      controller.abort();
-    };
-  }, [playerId]);
-
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="rounded-2xl bg-card border border-border-t p-6">
-          <div className="h-6 w-32 animate-pulse rounded bg-input mb-4" />
-          <div className="space-y-3">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-12 animate-pulse rounded-xl bg-input" />
-            ))}
-          </div>
-        </div>
-        <div className="rounded-2xl bg-card border border-border-t p-6">
-          <div className="h-6 w-48 animate-pulse rounded bg-input mb-4" />
-          <div className="space-y-2">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-10 animate-pulse rounded bg-input" />
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!seasons || seasons.length === 0) {
-    return null;
-  }
+export default function PlayerCareer({ seasons }: { seasons: SeasonStats[] }) {
+  if (seasons.length === 0) return null;
 
   // Unique teams timeline (skip TOT = season totals for traded players)
   const careerTeams: { team: string; first: string; last: string; count: number }[] = [];
@@ -88,7 +35,7 @@ export default function PlayerCareer({ playerId }: { playerId: number }) {
     <div className="space-y-6">
       {/* Teams timeline */}
       <div className="rounded-2xl bg-card border border-border-t p-6">
-        <h2 className="mb-4 text-lg font-bold text-text-primary">Équipes</h2>
+        <h2 className="mb-4 text-lg font-bold text-text-primary">Equipes</h2>
         <div className="space-y-2">
           {careerTeams.map((t, i) => {
             const logoUrl = teamLogoUrl(t.team);
@@ -112,7 +59,7 @@ export default function PlayerCareer({ playerId }: { playerId: number }) {
       {/* Career stats table */}
       <div className="rounded-2xl bg-card border border-border-t overflow-hidden">
         <div className="border-b border-border-t px-6 py-4">
-          <h2 className="text-lg font-bold text-text-primary">Statistiques de carrière</h2>
+          <h2 className="text-lg font-bold text-text-primary">Statistiques de carriere</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
