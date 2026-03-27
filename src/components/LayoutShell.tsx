@@ -2,6 +2,8 @@
 
 import { usePathname } from "next/navigation";
 import Sidebar from "./Sidebar";
+import GlobalPipPlayer from "./GlobalPipPlayer";
+import { VideoProvider } from "@/context/VideoContext";
 
 export default function LayoutShell({
   children,
@@ -18,7 +20,7 @@ export default function LayoutShell({
   }
 
   return (
-    <>
+    <VideoProvider>
       <Sidebar />
       <main className="min-h-screen pt-14 px-3 pb-4 sm:px-6 sm:pb-6 lg:ml-64 lg:pt-0 lg:p-8 overflow-clip">
         {ticker && (
@@ -28,6 +30,7 @@ export default function LayoutShell({
         )}
         {children}
       </main>
-    </>
+      <GlobalPipPlayer />
+    </VideoProvider>
   );
 }
