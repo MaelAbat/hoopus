@@ -1,8 +1,9 @@
 "use client";
 
 import { useRef, useState, useMemo } from "react";
-import { ChevronLeft, ChevronRight, MapPin } from "lucide-react";
+import { ChevronLeft, ChevronRight, MapPin, Star } from "lucide-react";
 import { teamLogoUrl } from "@/lib/nba-teams";
+import { useFavorites } from "@/context/FavoritesContext";
 import Link from "next/link";
 
 interface Game {
@@ -67,11 +68,13 @@ function GameCard({ game }: { game: Game }) {
   const isLive = game.status === 2;
   const homeWon = isFinal && game.home_score > game.away_score;
   const awayWon = isFinal && game.away_score > game.home_score;
+  const { isTeamFavorite } = useFavorites();
+  const isFav = isTeamFavorite(game.home_team) || isTeamFavorite(game.away_team);
 
   const canLink = isFinal || isLive;
 
   const card = (
-    <div className={`rounded-xl bg-sidebar border border-border-t p-3 transition-all duration-200 hover:border-border-hover ${canLink ? "cursor-pointer" : ""}`}>
+    <div className={`rounded-xl bg-sidebar border p-3 transition-all duration-200 hover:border-border-hover ${canLink ? "cursor-pointer" : ""} ${isFav ? "border-accent/30 ring-1 ring-accent/10" : "border-border-t"}`}>
       {/* Status */}
       <div className="flex items-center justify-between mb-2">
         {isLive ? (

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { ChevronLeft, ChevronRight, X, Trophy } from "lucide-react";
 import { teamLogoUrl } from "@/lib/nba-teams";
+import { useFavorites } from "@/context/FavoritesContext";
 import Link from "next/link";
 
 interface Game {
@@ -18,7 +19,7 @@ interface Game {
   away_score: number;
 }
 
-function MobileScore({ game }: { game: Game }) {
+function MobileScore({ game, isFav }: { game: Game; isFav: boolean }) {
   const isFinal = game.status === 3;
   const isLive = game.status === 2;
   const homeWon = isFinal && game.home_score > game.away_score;
@@ -27,7 +28,9 @@ function MobileScore({ game }: { game: Game }) {
   return (
     <Link
       href={`/match/${game.game_id}`}
-      className="grid grid-cols-[1fr_auto_1fr] items-center rounded-xl bg-card border border-border-t px-3 py-3 shrink-0 min-w-[220px] gap-3 transition-colors hover:border-border-hover"
+      className={`grid grid-cols-[1fr_auto_1fr] items-center rounded-xl bg-card border px-3 py-3 shrink-0 min-w-[220px] gap-3 transition-colors hover:border-border-hover ${
+        isFav ? "border-accent/30 ring-1 ring-accent/10" : "border-border-t"
+      }`}
     >
       {/* Away */}
       <div className="flex items-center gap-2">
@@ -76,7 +79,7 @@ function MobileScore({ game }: { game: Game }) {
   );
 }
 
-function DesktopScore({ game }: { game: Game }) {
+function DesktopScore({ game, isFav }: { game: Game; isFav: boolean }) {
   const isFinal = game.status === 3;
   const isLive = game.status === 2;
   const homeWon = isFinal && game.home_score > game.away_score;
@@ -85,7 +88,9 @@ function DesktopScore({ game }: { game: Game }) {
   return (
     <Link
       href={`/match/${game.game_id}`}
-      className="flex items-center gap-3 rounded-lg bg-card border border-border-t px-3 py-2 shrink-0 min-w-[180px] transition-colors hover:border-border-hover"
+      className={`flex items-center gap-3 rounded-lg bg-card border px-3 py-2 shrink-0 min-w-[180px] transition-colors hover:border-border-hover ${
+        isFav ? "border-accent/30 ring-1 ring-accent/10" : "border-border-t"
+      }`}
     >
       <div className="flex flex-col items-center gap-0.5 w-10">
         <img src={teamLogoUrl(game.away_team)} alt={game.away_team} className="h-5 w-5 object-contain" />
@@ -119,6 +124,15 @@ export default function ScoresTicker({ games }: { games: Game[] }) {
   const [visible, setVisible] = useState(true);
   const [hydrated, setHydrated] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { isTeamFavorite } = useFavorites();
+
+  const sortedGames = useMemo(() => {
+    return [...games].sort((a, b) => {
+      const aFav = isTeamFavorite(a.home_team) || isTeamFavorite(a.away_team) ? 1 : 0;
+      const bFav = isTeamFavorite(b.home_team) || isTeamFavorite(b.away_team) ? 1 : 0;
+      return bFav - aFav;
+    });
+  }, [games, isTeamFavorite]);
 
   useEffect(() => {
     const stored = localStorage.getItem("ticker-visible");
@@ -207,12 +221,15 @@ export default function ScoresTicker({ games }: { games: Game[] }) {
         ref={scrollRef}
         className="flex gap-2 px-3 sm:px-4 py-3 overflow-x-auto no-scrollbar touch-pan-x"
       >
-        {games.map((game) => (
-          <span key={game.game_id} className="contents">
-            <span className="sm:hidden"><MobileScore game={game} /></span>
-            <span className="hidden sm:inline"><DesktopScore game={game} /></span>
-          </span>
-        ))}
+        {sortedGames.map((game) => {
+          const fav = isTeamFavorite(game.home_team) || isTeamFavorite(game.away_team);
+          return (
+            <span key={game.game_id} className="contents">
+              <span className="sm:hidden"><MobileScore game={game} isFav={fav} /></span>
+              <span className="hidden sm:inline"><DesktopScore game={game} isFav={fav} /></span>
+            </span>
+          );
+        })}
       </div>
     </div>
   );

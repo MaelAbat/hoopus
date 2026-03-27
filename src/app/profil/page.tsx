@@ -1,17 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { Star, TrendingUp, Shield } from "lucide-react";
+import { Star, Shield } from "lucide-react";
 import LogoutButton from "@/components/LogoutButton";
 import ProfileForm from "@/components/ProfileForm";
 import ThemePicker from "@/components/ThemePicker";
-
-const favoriteTeams = ["Los Angeles Lakers", "San Antonio Spurs", "Boston Celtics"];
-
-const favoritePlayers = [
-  { name: "Victor Wembanyama", team: "SAS", position: "C" },
-  { name: "Luka Doncic", team: "DAL", position: "PG" },
-  { name: "Jayson Tatum", team: "BOS", position: "SF" },
-];
+import ProfileFavorites from "@/components/ProfileFavorites";
 
 export default async function Profil() {
   const supabase = await createClient();
@@ -21,11 +14,14 @@ export default async function Profil() {
     redirect("/auth/login");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
+  const [{ data: profile }, { data: activePlayers }] = await Promise.all([
+    supabase.from("profiles").select("*").eq("id", user.id).single(),
+    supabase
+      .from("players")
+      .select("player_id, first_name, last_name, team_tricode, position")
+      .eq("is_active", true)
+      .order("last_name"),
+  ]);
 
   const memberSince = new Date(user.created_at).toLocaleDateString("fr-FR", {
     month: "long",
@@ -69,42 +65,8 @@ export default async function Profil() {
       {/* Apparence */}
       <ThemePicker />
 
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-        {/* Favorite teams */}
-        <div className="rounded-2xl bg-card border border-border-t overflow-hidden">
-          <div className="border-b border-border-t px-6 py-4">
-            <h3 className="flex items-center gap-2 font-bold text-text-primary">
-              <Star size={16} className="text-accent" />
-              Équipes favorites
-            </h3>
-          </div>
-          <div className="divide-y divide-border-t">
-            {favoriteTeams.map((team) => (
-              <div key={team} className="px-6 py-4 text-sm text-text-secondary transition-colors hover:bg-card-hover">
-                {team}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Favorite players */}
-        <div className="rounded-2xl bg-card border border-border-t overflow-hidden">
-          <div className="border-b border-border-t px-6 py-4">
-            <h3 className="flex items-center gap-2 font-bold text-text-primary">
-              <TrendingUp size={16} className="text-accent" />
-              Joueurs suivis
-            </h3>
-          </div>
-          <div className="divide-y divide-border-t">
-            {favoritePlayers.map((player) => (
-              <div key={player.name} className="flex items-center justify-between px-6 py-4 transition-colors hover:bg-card-hover">
-                <span className="text-sm font-medium text-text-secondary">{player.name}</span>
-                <span className="text-xs text-text-muted">{player.team} · {player.position}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      {/* Favorites */}
+      <ProfileFavorites allPlayers={activePlayers || []} />
     </div>
   );
 }

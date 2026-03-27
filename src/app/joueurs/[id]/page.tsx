@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, MapPin, GraduationCap, Calendar, Ruler, Weight, Hash } from "lucide-react";
 import PlayerCareer from "@/components/PlayerCareer";
+import FollowPlayerButton from "@/components/FollowPlayerButton";
 import { teamLogoUrl } from "@/lib/nba-teams";
 
 export const revalidate = 3600;
@@ -139,6 +140,10 @@ export default async function PlayerDetail({ params }: { params: Promise<{ id: s
                 Salaire 2025-26 : <strong className="text-text-primary">{rosterEntry.salary}</strong>
               </p>
             )}
+
+            <div className="mt-4">
+              <FollowPlayerButton playerId={player.player_id} />
+            </div>
           </div>
         </div>
       </div>

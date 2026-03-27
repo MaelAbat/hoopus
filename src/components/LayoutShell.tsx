@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import Sidebar from "./Sidebar";
 import GlobalPipPlayer from "./GlobalPipPlayer";
 import { VideoProvider } from "@/context/VideoContext";
+import { FavoritesProvider } from "@/context/FavoritesContext";
 
 export default function LayoutShell({
   children,
@@ -20,17 +21,19 @@ export default function LayoutShell({
   }
 
   return (
-    <VideoProvider>
-      <Sidebar />
-      <main className="min-h-screen pt-14 px-3 pb-4 sm:px-6 sm:pb-6 lg:ml-64 lg:pt-0 lg:p-8">
-        {ticker && (
-          <div className="sticky top-14 lg:top-0 z-30 mb-2">
-            {ticker}
-          </div>
-        )}
-        {children}
-      </main>
-      <GlobalPipPlayer />
-    </VideoProvider>
+    <FavoritesProvider>
+      <VideoProvider>
+        <Sidebar />
+        <main className="min-h-screen pt-14 px-3 pb-4 sm:px-6 sm:pb-6 lg:ml-64 lg:pt-0 lg:p-8">
+          {ticker && (
+            <div className="sticky top-14 lg:top-0 z-30 mb-2">
+              {ticker}
+            </div>
+          )}
+          {children}
+        </main>
+        <GlobalPipPlayer />
+      </VideoProvider>
+    </FavoritesProvider>
   );
 }
