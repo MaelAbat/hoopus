@@ -50,24 +50,18 @@ export default async function PlayerDetail({ params }: { params: Promise<{ id: s
   if (!player) notFound();
 
   // Fetch career stats from DB
-  let { data: careerStats } = await supabase
+  const { data: careerStats } = await supabase
     .from("player_career_stats")
     .select("*")
     .eq("player_id", playerId)
     .order("season", { ascending: true });
 
-  // On-demand sync if no career data in DB
-  if (!careerStats || careerStats.length === 0) {
-    await syncPlayerCareer(playerId);
-    const result = await supabase
-      .from("player_career_stats")
-      .select("*")
-      .eq("player_id", playerId)
-      .order("season", { ascending: true });
-    careerStats = result.data;
-  }
+  // Use DB data if available, otherwise sync from NBA API and use returned data directly
+  const rawCareer = careerStats && careerStats.length > 0
+    ? careerStats
+    : await syncPlayerCareer(playerId);
 
-  const careerSeasons = (careerStats || []).map((row) => ({
+  const careerSeasons = (Array.isArray(rawCareer) ? rawCareer : []).map((row) => ({
     season: row.season,
     team: row.team,
     gp: row.gp,
@@ -76,9 +70,9 @@ export default async function PlayerDetail({ params }: { params: Promise<{ id: s
     ast: Number(row.ast),
     stl: Number(row.stl),
     blk: Number(row.blk),
-    fgPct: Number(row.fg_pct),
-    fg3Pct: Number(row.fg3_pct),
-    ftPct: Number(row.ft_pct),
+    fgPct: Number(row.fg_pct ?? row.fgPct ?? 0),
+    fg3Pct: Number(row.fg3_pct ?? row.fg3Pct ?? 0),
+    ftPct: Number(row.ft_pct ?? row.ftPct ?? 0),
     min: Number(row.min),
   }));
 

@@ -37,18 +37,33 @@ function fetchNba(url: string): Promise<NbaResponse> {
   });
 }
 
+export interface CareerSeason {
+  season: string;
+  team: string;
+  gp: number;
+  min: number;
+  pts: number;
+  reb: number;
+  ast: number;
+  stl: number;
+  blk: number;
+  fg_pct: number;
+  fg3_pct: number;
+  ft_pct: number;
+}
+
 /**
  * Sync a single player's career stats from the NBA API into Supabase.
- * Called on-demand when a player page is visited and no career data exists.
+ * Returns the career data directly so the caller doesn't need to re-query.
  */
-export async function syncPlayerCareer(playerId: number): Promise<boolean> {
+export async function syncPlayerCareer(playerId: number): Promise<CareerSeason[]> {
   try {
     const data = await fetchNba(
       `https://stats.nba.com/stats/playercareerstats?LeagueID=00&PerMode=PerGame&PlayerID=${playerId}`
     );
 
     const rs = data.resultSets.find((r) => r.headers.includes("SEASON_ID"));
-    if (!rs || rs.rowSet.length === 0) return false;
+    if (!rs || rs.rowSet.length === 0) return [];
 
     const h = rs.headers;
     const ii = (name: string) => h.indexOf(name);
@@ -71,17 +86,17 @@ export async function syncPlayerCareer(playerId: number): Promise<boolean> {
       updated_at: now,
     }));
 
+    // Persist in DB (awaited to ensure data is stored for next visit)
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
-
-    // Replace all career data for this player
     await supabase.from("player_career_stats").delete().eq("player_id", playerId);
     await supabase.from("player_career_stats").insert(rows);
 
-    return true;
+    // Return data directly — no need to re-query DB
+    return rows;
   } catch {
-    return false;
+    return [];
   }
 }
