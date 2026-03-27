@@ -340,7 +340,8 @@ function SalaryCapView({ players, payrolls }: { players: Player[]; payrolls: Tea
 /* ─── Main component ─── */
 export default function TeamsView({ players, payrolls }: { players: Player[]; payrolls: TeamPayroll[] }) {
   const [view, setView] = useState<"rosters" | "cap">("rosters");
-  const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
+  const searchParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+  const [selectedTeam, setSelectedTeam] = useState<string | null>(searchParams?.get("team") || null);
 
   const views: { key: "rosters" | "cap"; label: string }[] = [
     { key: "rosters", label: "Effectifs" },

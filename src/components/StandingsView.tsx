@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { teamLogoUrl } from "@/lib/nba-teams";
 import { useFavorites } from "@/context/FavoritesContext";
 
@@ -43,6 +44,7 @@ function computeGB(leader: Standing, team: Standing): string {
 function StandingsTable({ teams, showConference, scrollRef }: { teams: Standing[]; showConference?: boolean; scrollRef?: React.RefObject<HTMLDivElement | null> }) {
   const leader = teams[0];
   const { isTeamFavorite } = useFavorites();
+  const router = useRouter();
 
   return (
     <div ref={scrollRef} className="overflow-x-auto sm:max-h-[65vh] sm:overflow-y-auto">
@@ -75,7 +77,10 @@ function StandingsTable({ teams, showConference, scrollRef }: { teams: Standing[
                     </td>
                   </tr>
                 )}
-                <tr className={`border-b border-border-t/50 transition-all duration-150 hover:bg-card-hover ${isFav ? "bg-accent/5" : ""}`}>
+                <tr
+                  onClick={() => router.push(`/equipes?team=${team.team_tricode}`)}
+                  className={`border-b border-border-t/50 transition-all duration-150 hover:bg-card-hover cursor-pointer ${isFav ? "bg-accent/5" : ""}`}
+                >
                   <td className="sticky left-0 z-10 bg-card px-2 py-3">
                     <span
                       className={`flex h-6 w-6 items-center justify-center rounded-md text-xs font-bold ${

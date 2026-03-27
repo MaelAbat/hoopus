@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { ChevronUp, ChevronDown } from "lucide-react";
 import { teamLogoUrl } from "@/lib/nba-teams";
 
@@ -54,6 +55,7 @@ function formatVal(val: number, col: Column): string {
 export default function TeamStatsTable({ teams }: { teams: TeamRow[] }) {
   const [sortKey, setSortKey] = useState("net_rating");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const router = useRouter();
 
   function handleSort(col: Column) {
     if (sortKey === col.key) {
@@ -124,7 +126,8 @@ export default function TeamStatsTable({ teams }: { teams: TeamRow[] }) {
             {sorted.map((team, i) => (
               <tr
                 key={team.team_tricode}
-                className="border-b border-border-t/30 transition-colors hover:bg-card-hover"
+                onClick={() => router.push(`/equipes?team=${team.team_tricode}`)}
+                className="border-b border-border-t/30 transition-all duration-150 hover:bg-card-hover cursor-pointer"
               >
                 <td className="px-3 py-2.5">
                   <span className={`inline-flex h-6 w-6 items-center justify-center rounded text-xs font-bold ${
