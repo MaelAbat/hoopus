@@ -48,6 +48,17 @@ export default function ArticlesList({ articles, isAdmin }: { articles: Article[
         </div>
       )}
 
+      {/* Empty state */}
+      {articles.length === 0 && (
+        <div className="rounded-2xl bg-card border border-border-t p-12 sm:p-16 text-center">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-input mb-5">
+            <BookOpen size={28} className="text-text-faint" />
+          </div>
+          <p className="text-lg font-semibold text-text-primary">Aucun article pour l&apos;instant</p>
+          <p className="mt-2 text-sm text-text-muted">Les analyses et articles de fond apparaitront ici.</p>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         {articles.map((article) => (
           <Link

@@ -93,6 +93,17 @@ export default function NewsList({ news, isAdmin }: { news: News[]; isAdmin: boo
         </Link>
       )}
 
+      {/* Empty state */}
+      {news.length === 0 && (
+        <div className="rounded-2xl bg-card border border-border-t p-12 sm:p-16 text-center">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-input mb-5">
+            <Clock size={28} className="text-text-faint" />
+          </div>
+          <p className="text-lg font-semibold text-text-primary">Aucune actualite pour l&apos;instant</p>
+          <p className="mt-2 text-sm text-text-muted">Les dernieres nouvelles de la NBA apparaitront ici.</p>
+        </div>
+      )}
+
       {/* News list */}
       <div className="space-y-3">
         {others.map((item) => (
