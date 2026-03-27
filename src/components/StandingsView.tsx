@@ -2,6 +2,7 @@
 
 import { Fragment, useMemo, useRef, useState } from "react";
 import { teamLogoUrl } from "@/lib/nba-teams";
+import { useFavorites } from "@/context/FavoritesContext";
 
 interface Standing {
   id: string;
@@ -41,6 +42,7 @@ function computeGB(leader: Standing, team: Standing): string {
 
 function StandingsTable({ teams, showConference, scrollRef }: { teams: Standing[]; showConference?: boolean; scrollRef?: React.RefObject<HTMLDivElement | null> }) {
   const leader = teams[0];
+  const { isTeamFavorite } = useFavorites();
 
   return (
     <div ref={scrollRef} className="overflow-x-auto sm:max-h-[65vh] sm:overflow-y-auto">
@@ -62,6 +64,7 @@ function StandingsTable({ teams, showConference, scrollRef }: { teams: Standing[
             const isPlayoff = team.conference_rank <= 6;
             const isPlayIn = team.conference_rank >= 7 && team.conference_rank <= 10;
             const showSeparator = !showConference && (i === 6 || i === 10);
+            const isFav = isTeamFavorite(team.team_tricode);
 
             return (
               <Fragment key={team.id}>
@@ -72,7 +75,7 @@ function StandingsTable({ teams, showConference, scrollRef }: { teams: Standing[
                     </td>
                   </tr>
                 )}
-                <tr className="border-b border-border-t/50 transition-colors hover:bg-card-hover">
+                <tr className={`border-b border-border-t/50 transition-colors hover:bg-card-hover ${isFav ? "bg-accent/5" : ""}`}>
                   <td className="sticky left-0 z-10 bg-card px-2 py-3">
                     <span
                       className={`flex h-6 w-6 items-center justify-center rounded-md text-xs font-bold ${
@@ -96,7 +99,7 @@ function StandingsTable({ teams, showConference, scrollRef }: { teams: Standing[
                         className="h-6 w-6 object-contain shrink-0"
                       />
                       <div className="flex flex-col min-w-0">
-                        <span className={`font-medium truncate text-xs sm:text-sm ${isPlayoff ? "text-text-primary" : isPlayIn ? "text-text-secondary" : "text-text-muted"}`}>
+                        <span className={`font-medium truncate text-xs sm:text-sm ${isFav ? "text-accent-text" : isPlayoff ? "text-text-primary" : isPlayIn ? "text-text-secondary" : "text-text-muted"}`}>
                           <span className="hidden sm:inline">{team.team_city} {team.team_name}</span>
                           <span className="sm:hidden">{team.team_tricode}</span>
                         </span>
