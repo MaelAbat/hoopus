@@ -51,6 +51,8 @@ export default async function Statistiques() {
         .select("*")
         .eq("season", "2025-26")
         .order("rank", { ascending: true })
+        .order("category", { ascending: true })
+        .order("player_id", { ascending: true })
         .range(i * 1000, (i + 1) * 1000 - 1)
     )
   );
@@ -76,8 +78,14 @@ export default async function Statistiques() {
   }
 
   function getLeaders(category: StatCategory): PlayerStatLeader[] {
+    const seen = new Set<number>();
     return allLeaders
       .filter((row) => row.category === category && row.rank > 0)
+      .filter((row) => {
+        if (row.player_id && seen.has(row.player_id)) return false;
+        if (row.player_id) seen.add(row.player_id);
+        return true;
+      })
       .map((row) => ({
         rank: row.rank,
         name: row.player_name,
