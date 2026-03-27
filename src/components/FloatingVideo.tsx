@@ -20,12 +20,25 @@ const CURSORS: Record<Edge, string> = {
   sw: "cursor-nesw-resize",
 };
 
+interface Rect { x: number; y: number; w: number; h: number }
+
+function applyResize(rect: Rect, edge: Edge, dx: number, dy: number): Rect {
+  let { x, y, w, h } = rect;
+
+  if (edge.includes("e")) w = Math.max(MIN_W, w + dx);
+  else if (edge.includes("w")) { const nw = Math.max(MIN_W, w - dx); x += w - nw; w = nw; }
+
+  if (edge.includes("s")) h = Math.max(MIN_H, h + dy);
+  else if (edge.includes("n")) { const nh = Math.max(MIN_H, h - dy); y += h - nh; h = nh; }
+
+  return { x, y, w, h };
+}
+
 export default function FloatingVideo({ videoId }: { videoId: string }) {
   const [pip, setPip] = useState(false);
 
   const pipRef = useRef<HTMLDivElement>(null);
-  const [pos, setPos] = useState({ x: 0, y: 0 });
-  const [size, setSize] = useState({ w: 480, h: 270 });
+  const [rect, setRect] = useState<Rect>({ x: 0, y: 0, w: 480, h: 270 });
   const dragging = useRef(false);
   const resizeEdge = useRef<Edge | null>(null);
   const origin = useRef({ x: 0, y: 0 });
@@ -34,21 +47,22 @@ export default function FloatingVideo({ videoId }: { videoId: string }) {
   /* Place bottom-right on first open */
   useEffect(() => {
     if (pip && !initialized.current) {
-      setPos({
-        x: window.innerWidth - size.w - 24,
-        y: window.innerHeight - size.h - 24,
-      });
+      setRect((r) => ({
+        ...r,
+        x: window.innerWidth - r.w - 24,
+        y: window.innerHeight - r.h - 24,
+      }));
       initialized.current = true;
     }
-  }, [pip, size.w, size.h]);
+  }, [pip]);
 
   /* ── Drag ── */
   const onDragStart = useCallback((e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest("button")) return;
     e.preventDefault();
     dragging.current = true;
-    origin.current = { x: e.clientX - pos.x, y: e.clientY - pos.y };
-  }, [pos]);
+    origin.current = { x: e.clientX - rect.x, y: e.clientY - rect.y };
+  }, [rect.x, rect.y]);
 
   /* ── Resize from any edge/corner ── */
   const onEdgeDown = useCallback((edge: Edge) => (e: React.MouseEvent) => {
@@ -64,10 +78,11 @@ export default function FloatingVideo({ videoId }: { videoId: string }) {
 
     function onMove(e: MouseEvent) {
       if (dragging.current) {
-        setPos({
+        setRect((r) => ({
+          ...r,
           x: Math.max(0, Math.min(window.innerWidth - 100, e.clientX - origin.current.x)),
           y: Math.max(0, Math.min(window.innerHeight - 60, e.clientY - origin.current.y)),
-        });
+        }));
         return;
       }
 
@@ -78,33 +93,7 @@ export default function FloatingVideo({ videoId }: { videoId: string }) {
       const dy = e.clientY - origin.current.y;
       origin.current = { x: e.clientX, y: e.clientY };
 
-      setPos((p) => {
-        let { x, y } = p;
-        setSize((s) => {
-          let { w, h } = s;
-
-          // Horizontal
-          if (edge.includes("e")) {
-            w = Math.max(MIN_W, w + dx);
-          } else if (edge.includes("w")) {
-            const newW = Math.max(MIN_W, w - dx);
-            x += w - newW;
-            w = newW;
-          }
-
-          // Vertical
-          if (edge.includes("s")) {
-            h = Math.max(MIN_H, h + dy);
-          } else if (edge.includes("n")) {
-            const newH = Math.max(MIN_H, h - dy);
-            y += h - newH;
-            h = newH;
-          }
-
-          return { w, h };
-        });
-        return { x, y };
-      });
+      setRect((r) => applyResize(r, edge, dx, dy));
     }
 
     function onUp() {
@@ -153,26 +142,16 @@ export default function FloatingVideo({ videoId }: { videoId: string }) {
       origin.current = { x: t.clientX, y: t.clientY };
 
       if (action === "drag") {
-        setPos((prev) => ({
-          x: Math.max(0, Math.min(window.innerWidth - 100, prev.x + dx)),
-          y: Math.max(0, Math.min(window.innerHeight - 60, prev.y + dy)),
+        setRect((r) => ({
+          ...r,
+          x: Math.max(0, Math.min(window.innerWidth - 100, r.x + dx)),
+          y: Math.max(0, Math.min(window.innerHeight - 60, r.y + dy)),
         }));
         return;
       }
 
       const edge = action;
-      setPos((p) => {
-        let { x, y } = p;
-        setSize((s) => {
-          let { w, h } = s;
-          if (edge.includes("e")) w = Math.max(MIN_W, w + dx);
-          else if (edge.includes("w")) { const nw = Math.max(MIN_W, w - dx); x += w - nw; w = nw; }
-          if (edge.includes("s")) h = Math.max(MIN_H, h + dy);
-          else if (edge.includes("n")) { const nh = Math.max(MIN_H, h - dy); y += h - nh; h = nh; }
-          return { w, h };
-        });
-        return { x, y };
-      });
+      setRect((r) => applyResize(r, edge, dx, dy));
     }
 
     function onTouchEnd() {
@@ -249,7 +228,7 @@ export default function FloatingVideo({ videoId }: { videoId: string }) {
         <div
           ref={pipRef}
           className="fixed z-50 rounded-xl overflow-visible shadow-2xl border border-border-t bg-card"
-          style={{ left: pos.x, top: pos.y, width: size.w, height: size.h }}
+          style={{ left: rect.x, top: rect.y, width: rect.w, height: rect.h }}
         >
           {/* Resize handles — edges & corners */}
           {edges.map(({ edge, className }) => {
