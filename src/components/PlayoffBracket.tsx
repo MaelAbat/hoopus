@@ -192,12 +192,18 @@ function MatchupBox({ series, topTeam, bottomTeam, seedTop, seedBottom, accent }
   }
 
   // Fallback: use standings data (pre-playoff seeding)
+  const fallbackFav =
+    (topTeam?.team_tricode && isTeamFavorite(topTeam.team_tricode)) ||
+    (bottomTeam?.team_tricode && isTeamFavorite(bottomTeam.team_tricode));
+
   return (
     <div
       className={`rounded-lg overflow-hidden shadow-sm shrink-0 ${
-        accent
-          ? "border-2 border-accent/40 bg-card"
-          : "border border-border-t bg-card"
+        fallbackFav
+          ? "border-2 border-accent/60 bg-card ring-2 ring-accent/20 shadow-[0_0_12px_rgba(var(--accent-rgb,249,115,22),0.15)]"
+          : accent
+            ? "border-2 border-accent/40 bg-card"
+            : "border border-border-t bg-card"
       }`}
       style={{ width: BOX_W }}
     >
@@ -206,7 +212,7 @@ function MatchupBox({ series, topTeam, bottomTeam, seedTop, seedBottom, accent }
         seed={seedTop}
         record={topTeam ? `${topTeam.wins}-${topTeam.losses}` : undefined}
       />
-      <div className={`h-px ${accent ? "bg-accent/30" : "bg-border-t"}`} />
+      <div className={`h-px ${fallbackFav ? "bg-accent/30" : accent ? "bg-accent/30" : "bg-border-t"}`} />
       <TeamRow
         tricode={bottomTeam?.team_tricode || null}
         seed={seedBottom}
