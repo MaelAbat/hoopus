@@ -86,7 +86,7 @@ function fetchAllPlayers(
       });
     });
     req.on("error", reject);
-    req.setTimeout(120000, () => {
+    req.setTimeout(300000, () => {
       req.destroy();
       reject(new Error(`NBA API timeout (${measureType})`));
     });
