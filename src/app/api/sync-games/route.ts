@@ -140,7 +140,7 @@ export async function GET(request: NextRequest) {
     // Insert in batches of 200
     for (let i = 0; i < allGames.length; i += 200) {
       const batch = allGames.slice(i, i + 200);
-      const { error } = await supabase.from("games").insert(batch);
+      const { error } = await supabase.from("games").upsert(batch, { onConflict: "game_id" });
       if (error) {
         console.error(`Error inserting batch ${i}:`, error);
       } else {
