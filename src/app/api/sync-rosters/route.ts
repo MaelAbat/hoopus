@@ -1,4 +1,5 @@
 import https from "node:https";
+import { revalidatePath } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -319,6 +320,9 @@ export async function GET(request: NextRequest) {
       const { error: payrollError } = await supabase.from("team_payrolls").insert(payrollRows as any);
       if (payrollError) console.error("Payroll insert error:", payrollError);
     }
+
+    revalidatePath("/equipes");
+    console.log(`[SYNC-ROSTERS] Completed at ${now}`);
 
     return NextResponse.json({
       ok: true,

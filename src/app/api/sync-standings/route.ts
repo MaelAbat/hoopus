@@ -1,4 +1,5 @@
 import https from "node:https";
+import { revalidatePath } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -123,6 +124,9 @@ export async function GET(request: NextRequest) {
       console.error("Error inserting standings:", error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
+    revalidatePath("/classement");
+    console.log(`[SYNC-STANDINGS] Completed at ${now}`);
 
     return NextResponse.json({
       ok: true,

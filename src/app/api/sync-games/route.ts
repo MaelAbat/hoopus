@@ -1,4 +1,5 @@
 import https from "node:https";
+import { revalidatePath } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -146,6 +147,9 @@ export async function GET(request: NextRequest) {
         totalInserted += batch.length;
       }
     }
+
+    revalidatePath("/calendrier");
+    console.log(`[SYNC-GAMES] Completed at ${now}`);
 
     return NextResponse.json({
       ok: true,

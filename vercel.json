@@ -2,6 +2,15 @@
   "functions": {
     "src/app/api/cron/route.ts": {
       "maxDuration": 60
+    },
+    "src/app/api/sync-stats/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/sync-team-stats/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/sync-rosters/route.ts": {
+      "maxDuration": 60
     }
   },
   "crons": [

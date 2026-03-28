@@ -1,4 +1,5 @@
 import https from "node:https";
+import { revalidatePath } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -585,6 +586,9 @@ export async function GET(request: NextRequest) {
       { status: 502 }
     );
   }
+
+  revalidatePath("/statistiques");
+  console.log(`[SYNC-STATS] Completed at ${new Date().toISOString()}`);
 
   return NextResponse.json({
     ok: true,
