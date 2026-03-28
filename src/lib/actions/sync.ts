@@ -32,51 +32,41 @@ export async function triggerSync(): Promise<{
   const cronSecret = process.env.CRON_SECRET || "";
   const authParam = `cron_secret=${encodeURIComponent(cronSecret)}`;
 
-  try {
-    const [statsRes, gamesRes, standingsRes, teamStatsRes, playoffsRes, rostersRes, playersRes] = await Promise.all([
-      fetch(`${baseUrl}/api/sync-stats?${authParam}`),
-      fetch(`${baseUrl}/api/sync-games?${authParam}`),
-      fetch(`${baseUrl}/api/sync-standings?${authParam}`),
-      fetch(`${baseUrl}/api/sync-team-stats?${authParam}`),
-      fetch(`${baseUrl}/api/sync-playoffs?${authParam}`),
-      fetch(`${baseUrl}/api/sync-rosters?${authParam}`),
-      fetch(`${baseUrl}/api/sync-players?${authParam}`),
-    ]);
+  const endpoints = [
+    { key: "stats", path: "/api/sync-stats" },
+    { key: "games", path: "/api/sync-games" },
+    { key: "standings", path: "/api/sync-standings" },
+    { key: "teamStats", path: "/api/sync-team-stats" },
+    { key: "playoffs", path: "/api/sync-playoffs" },
+    { key: "rosters", path: "/api/sync-rosters" },
+    { key: "players", path: "/api/sync-players" },
+  ];
 
-    const [statsData, gamesData, standingsData, teamStatsData, playoffsData, rostersData, playersData] =
-      await Promise.all([
-        statsRes.json(),
-        gamesRes.json(),
-        standingsRes.json(),
-        teamStatsRes.json(),
-        playoffsRes.json(),
-        rostersRes.json(),
-        playersRes.json(),
-      ]);
+  const results: Record<string, unknown> = {};
+  const errors: string[] = [];
 
-    revalidatePath("/calendrier");
-    revalidatePath("/classement");
-    revalidatePath("/statistiques");
-    revalidatePath("/playoffs");
-    revalidatePath("/equipes");
-    revalidatePath("/joueurs");
+  await Promise.all(
+    endpoints.map(async ({ key, path }) => {
+      try {
+        const res = await fetch(`${baseUrl}${path}?${authParam}`);
+        results[key] = await res.json();
+      } catch (e) {
+        results[key] = { error: e instanceof Error ? e.message : "failed" };
+        errors.push(key);
+      }
+    })
+  );
 
-    return {
-      ok: true,
-      results: {
-        stats: statsData,
-        games: gamesData,
-        standings: standingsData,
-        teamStats: teamStatsData,
-        playoffs: playoffsData,
-        rosters: rostersData,
-        players: playersData,
-      },
-    };
-  } catch (e) {
-    return {
-      ok: false,
-      error: e instanceof Error ? e.message : "Erreur lors de la synchronisation",
-    };
-  }
+  revalidatePath("/calendrier");
+  revalidatePath("/classement");
+  revalidatePath("/statistiques");
+  revalidatePath("/playoffs");
+  revalidatePath("/equipes");
+  revalidatePath("/joueurs");
+
+  return {
+    ok: errors.length === 0,
+    error: errors.length > 0 ? `Échec partiel: ${errors.join(", ")}` : undefined,
+    results,
+  };
 }
