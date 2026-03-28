@@ -53,7 +53,7 @@ function fetchTeamStats(measureType: "Base" | "Advanced"): Promise<NbaDashRespon
       });
     });
     req.on("error", reject);
-    req.setTimeout(60000, () => {
+    req.setTimeout(120000, () => {
       req.destroy();
       reject(new Error("NBA API timeout"));
     });
