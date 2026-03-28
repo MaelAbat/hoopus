@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
 
   console.log(`[CRON] Sync started at ${new Date().toISOString()}`);
 
-  const baseUrl = request.nextUrl.origin;
+  const baseUrl = process.env.INTERNAL_URL || "http://localhost:10000";
   const cronSecret = process.env.CRON_SECRET || "";
   const authParam = `cron_secret=${encodeURIComponent(cronSecret)}`;
 

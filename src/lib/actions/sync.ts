@@ -27,7 +27,7 @@ export async function triggerSync(): Promise<{
 }> {
   await requireAdmin();
 
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3002";
+  const baseUrl = process.env.INTERNAL_URL || "http://localhost:10000";
 
   const cronSecret = process.env.CRON_SECRET || "";
   const authParam = `cron_secret=${encodeURIComponent(cronSecret)}`;
