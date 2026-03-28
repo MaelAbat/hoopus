@@ -128,19 +128,24 @@ export async function GET(request: NextRequest) {
   const now = new Date().toISOString();
 
   try {
-    // Fetch base totals and advanced stats in parallel
-    const [baseData, advData] = await Promise.all([
+    // Fetch base totals, per-game, and advanced stats in parallel
+    const [baseData, perGameData, advData] = await Promise.all([
       fetchAllPlayers("Totals", "Base"),
+      fetchAllPlayers("PerGame", "Base"),
       fetchAllPlayers("PerGame", "Advanced"),
     ]);
 
     const headers = baseData.resultSets[0].headers;
     const rows = baseData.resultSets[0].rowSet;
 
+    const pgHeaders = perGameData.resultSets[0].headers;
+    const pgRows = perGameData.resultSets[0].rowSet;
+
     const advHeaders = advData.resultSets[0].headers;
     const advRows = advData.resultSets[0].rowSet;
 
     const idx = (name: string) => headers.indexOf(name);
+    const pgIdx = (name: string) => pgHeaders.indexOf(name);
     const aIdx = (name: string) => advHeaders.indexOf(name);
 
     const playerIdIdx = idx("PLAYER_ID");
@@ -155,6 +160,13 @@ export async function GET(request: NextRequest) {
     const ftaIdx = idx("FTA");
     const ftmIdx = idx("FTM");
     const nbaFantasyIdx = idx("NBA_FANTASY_PTS");
+
+    // Index per-game data by player_id (official NBA per-game averages)
+    const pgByPlayer = new Map<number, (string | number)[]>();
+    const pgPlayerIdIdx = pgIdx("PLAYER_ID");
+    for (const row of pgRows) {
+      pgByPlayer.set(Number(row[pgPlayerIdIdx]), row);
+    }
 
     // Index advanced data by player_id
     const advByPlayer = new Map<number, (string | number)[]>();
@@ -296,16 +308,21 @@ export async function GET(request: NextRequest) {
     // ── Delete all existing stat_leaders for this season ──
     await supabase.from("stat_leaders").delete().eq("season", SEASON);
 
-    // ── Direct categories (per-game from totals) ──
+    // ── Direct categories (per-game from official NBA PerGame data) ──
     for (const { category, statField } of DIRECT_CATEGORIES) {
-      const si = idx(statField);
+      const pgStatIdx = pgIdx(statField);
 
-      const allPlayers = rows.map((row) => ({
-        row,
-        playerId: Number(row[playerIdIdx]),
-        val: perGame(row, si),
-        eligible: Number(row[gpIdx]) >= MIN_GP,
-      }));
+      const allPlayers = rows.map((row) => {
+        const pid = Number(row[playerIdIdx]);
+        const pgRow = pgByPlayer.get(pid);
+        const val = pgRow && pgStatIdx !== -1 ? Number(pgRow[pgStatIdx]) : perGame(row, idx(statField));
+        return {
+          row,
+          playerId: pid,
+          val,
+          eligible: Number(row[gpIdx]) >= MIN_GP,
+        };
+      });
 
       const leaders = buildLeadersWithEligibility(category, allPlayers);
       results[category] = await batchInsert(supabase, leaders);
