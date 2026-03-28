@@ -59,7 +59,7 @@ function fetchSchedule(): Promise<NbaSchedule> {
       }
     );
     req.on("error", reject);
-    req.setTimeout(30000, () => {
+    req.setTimeout(120000, () => {
       req.destroy();
       reject(new Error("CDN timeout"));
     });

@@ -57,7 +57,7 @@ function fetchStandings(): Promise<EspnStandingsResponse> {
       });
     });
     req.on("error", reject);
-    req.setTimeout(30000, () => {
+    req.setTimeout(120000, () => {
       req.destroy();
       reject(new Error("ESPN API timeout"));
     });
