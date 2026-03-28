@@ -11,14 +11,26 @@ const MIN_FGA = 8;
 const MIN_FTA = 2;
 const MIN_FG2A = 4;
 
-const BR_YEAR = "2026"; // Basketball Reference uses end-year of season
-
-// Basketball Reference tricode → NBA tricode
-const TRICODE_MAP: Record<string, string> = {
-  BRK: "BKN",
-  CHO: "CHA",
-  PHO: "PHX",
+const NBA_HEADERS: Record<string, string> = {
+  Accept: "application/json, text/plain, */*",
+  "Accept-Encoding": "identity",
+  "Accept-Language": "en-US,en;q=0.9",
+  Connection: "keep-alive",
+  Host: "stats.nba.com",
+  Origin: "https://www.nba.com",
+  Referer: "https://www.nba.com/",
+  "User-Agent":
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+  "x-nba-stats-origin": "stats",
+  "x-nba-stats-token": "true",
 };
+
+interface NbaDashResponse {
+  resultSets: {
+    headers: string[];
+    rowSet: (string | number)[][];
+  }[];
+}
 
 interface LeaderRow {
   category: string;
@@ -31,159 +43,54 @@ interface LeaderRow {
   updated_at: string;
 }
 
-interface BRPlayer {
-  name: string;
-  team: string; // already mapped to NBA tricode
-  stats: Record<string, number>;
-}
+const DIRECT_CATEGORIES: { category: string; statField: string }[] = [
+  { category: "PTS", statField: "PTS" },
+  { category: "REB", statField: "REB" },
+  { category: "AST", statField: "AST" },
+  { category: "BLK", statField: "BLK" },
+  { category: "STL", statField: "STL" },
+  { category: "EFF", statField: "NBA_FANTASY_PTS" },
+  { category: "TOV", statField: "TOV" },
+  { category: "MIN", statField: "MIN" },
+  { category: "OREB", statField: "OREB" },
+  { category: "DREB", statField: "DREB" },
+];
 
-/* ─── HTML fetching with redirect handling ─── */
-function fetchHtml(url: string, redirects = 0): Promise<string> {
-  if (redirects > 5) return Promise.reject(new Error("Too many redirects"));
+function fetchAllPlayers(
+  perMode: "Totals" | "PerGame" = "Totals",
+  measureType: "Base" | "Advanced" = "Base"
+): Promise<NbaDashResponse> {
+  const url =
+    "https://stats.nba.com/stats/leaguedashplayerstats?" +
+    "Conference=&DateFrom=&DateTo=&Division=&GameScope=&GameSegment=&Height=&ISTRound=" +
+    "&LastNGames=0&LeagueID=00&Location=&MeasureType=" + measureType + "&Month=0&OpponentTeamID=0" +
+    "&Outcome=&PORound=0&PaceAdjust=N&PerMode=" + perMode + "&Period=0&PlayerExperience=" +
+    "&PlayerPosition=&PlusMinus=N&Rank=N&Season=" + SEASON +
+    "&SeasonSegment=&SeasonType=Regular+Season&ShotClockRange=&StarterBench=" +
+    "&TeamID=0&TwoWay=0&VsConference=&VsDivision=&Weight=";
+
   return new Promise((resolve, reject) => {
-    try {
-      const req = https.get(url, {
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-          Accept: "text/html,application/xhtml+xml",
-          "Accept-Language": "en-US,en;q=0.9",
-        },
-      }, (res) => {
-        if ((res.statusCode === 301 || res.statusCode === 302) && res.headers.location) {
-          let location = res.headers.location;
-          if (location.startsWith("/")) {
-            const parsed = new URL(url);
-            location = `${parsed.protocol}//${parsed.host}${location}`;
-          }
-          res.resume();
-          fetchHtml(location, redirects + 1).then(resolve).catch(reject);
+    const req = https.get(url, { headers: NBA_HEADERS }, (res) => {
+      let data = "";
+      res.on("data", (chunk: string) => (data += chunk));
+      res.on("end", () => {
+        if (res.statusCode !== 200) {
+          reject(new Error(`NBA API error (${measureType}): ${res.statusCode}`));
           return;
         }
-        let data = "";
-        res.on("data", (chunk: string) => (data += chunk));
-        res.on("end", () => {
-          if (res.statusCode !== 200) {
-            reject(new Error(`HTML fetch error: ${res.statusCode} for ${url}`));
-            return;
-          }
-          resolve(data);
-        });
+        try {
+          resolve(JSON.parse(data));
+        } catch {
+          reject(new Error(`Failed to parse NBA API response (${measureType})`));
+        }
       });
-      req.on("error", reject);
-      req.setTimeout(120000, () => {
-        req.destroy();
-        reject(new Error(`HTML fetch timeout for ${url}`));
-      });
-    } catch (err) {
-      reject(err);
-    }
+    });
+    req.on("error", reject);
+    req.setTimeout(300000, () => {
+      req.destroy();
+      reject(new Error(`NBA API timeout (${measureType})`));
+    });
   });
-}
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function mapTricode(brTeam: string): string {
-  const upper = brTeam.toUpperCase();
-  return TRICODE_MAP[upper] || upper;
-}
-
-/**
- * Parse a Basketball Reference stats table.
- * Each player row is a <tr> containing <td data-stat="...">value</td> cells.
- * The player name is inside <td data-stat="player"><a ...>Name</a></td>.
- * The team is inside <td data-stat="team_id"><a ...>TM</a></td>.
- */
-function parseBRTable(html: string): BRPlayer[] {
-  const players: BRPlayer[] = [];
-
-  // Basketball Reference wraps the main table in comments for some pages.
-  // Uncomment any hidden tables: <!-- <div ...>...</div> -->
-  const uncommented = html.replace(/<!--\s*([\s\S]*?)-->/g, "$1");
-
-  // Match each player row: <tr ...>...</tr>
-  // Skip header rows (they have <th> for all cells)
-  const rowRegex = /<tr[^>]*>[\s\S]*?<\/tr>/g;
-  let rowMatch: RegExpExecArray | null;
-
-  while ((rowMatch = rowRegex.exec(uncommented)) !== null) {
-    const rowHtml = rowMatch[0];
-
-    // Skip header rows and separator rows
-    if (rowHtml.includes('class="thead"') || rowHtml.includes('class="over_header"')) continue;
-    // Skip rows without data-stat="player"
-    if (!rowHtml.includes('data-stat="player"')) continue;
-
-    // Extract player name from <td data-stat="player"><a ...>Name</a></td>
-    const nameMatch = rowHtml.match(/data-stat="player"[^>]*>(?:<[^>]*>)*([^<]+)/);
-    if (!nameMatch) continue;
-    const name = nameMatch[1].trim();
-    if (!name) continue;
-
-    // Extract team
-    const teamMatch = rowHtml.match(/data-stat="team_id"[^>]*>(?:<a[^>]*>)?([^<]+)/);
-    const brTeam = teamMatch ? teamMatch[1].trim() : "";
-    // Skip "TOT" rows (players traded mid-season who appear multiple times)
-    // We'll keep the TOT row if it exists (represents full season), but skip partial team rows
-    // Actually, BR lists TOT first, then individual team rows. We want individual team rows
-    // for team mapping, but TOT for stats. Let's keep all and deduplicate later.
-
-    const team = mapTricode(brTeam);
-
-    // Extract all data-stat values
-    const stats: Record<string, number> = {};
-    const cellRegex = /data-stat="([^"]+)"[^>]*>([^<]*)/g;
-    let cellMatch: RegExpExecArray | null;
-    while ((cellMatch = cellRegex.exec(rowHtml)) !== null) {
-      const [, statName, rawVal] = cellMatch;
-      if (statName === "player" || statName === "team_id") continue;
-      const val = parseFloat(rawVal);
-      if (!isNaN(val)) {
-        stats[statName] = val;
-      }
-    }
-
-    // Must have at least a games played stat
-    if (stats["g"] === undefined) continue;
-
-    players.push({ name, team, stats });
-  }
-
-  return players;
-}
-
-/**
- * Deduplicate players: if a player has a "TOT" row (traded mid-season),
- * use their TOT stats but assign them to their most recent team.
- * BR lists TOT first, then individual team rows.
- */
-function deduplicatePlayers(players: BRPlayer[]): BRPlayer[] {
-  const seen = new Map<string, BRPlayer>();
-  const lastTeam = new Map<string, string>();
-
-  // First pass: find the last (most recent) team for each player
-  for (const p of players) {
-    if (p.team !== "TOT") {
-      lastTeam.set(p.name, p.team);
-    }
-  }
-
-  // Second pass: keep TOT rows with resolved team, or single-team rows
-  for (const p of players) {
-    const key = p.name;
-    if (p.team === "TOT") {
-      // Use TOT stats with the last known team
-      const resolvedTeam = lastTeam.get(p.name) || "TOT";
-      seen.set(key, { ...p, team: resolvedTeam });
-    } else if (!seen.has(key)) {
-      // Single-team player (no TOT row)
-      seen.set(key, p);
-    }
-    // Skip individual team rows if we already have TOT
-  }
-
-  return Array.from(seen.values());
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -221,73 +128,66 @@ export async function GET(request: NextRequest) {
   const now = new Date().toISOString();
 
   try {
-    // ── Build player name → player_id lookup from rosters table ──
-    const { data: rosterData } = await supabase
-      .from("rosters")
-      .select("player_id, first_name, last_name, team_tricode")
-      .eq("season", SEASON);
+    // Fetch base totals, per-game, and advanced stats in parallel
+    const [baseData, perGameData, advData] = await Promise.all([
+      fetchAllPlayers("Totals", "Base"),
+      fetchAllPlayers("PerGame", "Base"),
+      fetchAllPlayers("PerGame", "Advanced"),
+    ]);
 
-    const nameToPlayerId = new Map<string, number>();
-    if (rosterData) {
-      for (const r of rosterData) {
-        const key = `${r.first_name} ${r.last_name}`.toLowerCase();
-        nameToPlayerId.set(key, r.player_id);
-        // Also store with team for disambiguation
-        nameToPlayerId.set(`${key}|${r.team_tricode}`, r.player_id);
-      }
+    const headers = baseData.resultSets[0].headers;
+    const rows = baseData.resultSets[0].rowSet;
+
+    const pgHeaders = perGameData.resultSets[0].headers;
+    const pgRows = perGameData.resultSets[0].rowSet;
+
+    const advHeaders = advData.resultSets[0].headers;
+    const advRows = advData.resultSets[0].rowSet;
+
+    const idx = (name: string) => headers.indexOf(name);
+    const pgIdx = (name: string) => pgHeaders.indexOf(name);
+    const aIdx = (name: string) => advHeaders.indexOf(name);
+
+    const playerIdIdx = idx("PLAYER_ID");
+    const playerIdx = idx("PLAYER_NAME");
+    const teamIdx = idx("TEAM_ABBREVIATION");
+    const gpIdx = idx("GP");
+    const ptsIdx = idx("PTS");
+    const fgaIdx = idx("FGA");
+    const fgmIdx = idx("FGM");
+    const fg3mIdx = idx("FG3M");
+    const fg3aIdx = idx("FG3A");
+    const ftaIdx = idx("FTA");
+    const ftmIdx = idx("FTM");
+    const nbaFantasyIdx = idx("NBA_FANTASY_PTS");
+
+    // Index per-game data by player_id (official NBA per-game averages)
+    const pgByPlayer = new Map<number, (string | number)[]>();
+    const pgPlayerIdIdx = pgIdx("PLAYER_ID");
+    for (const row of pgRows) {
+      pgByPlayer.set(Number(row[pgPlayerIdIdx]), row);
     }
 
-    function resolvePlayerId(name: string, team: string): number {
-      const lowerName = name.toLowerCase();
-      // Try name+team first for disambiguation
-      return nameToPlayerId.get(`${lowerName}|${team}`) ||
-        nameToPlayerId.get(lowerName) || 0;
+    // Index advanced data by player_id
+    const advByPlayer = new Map<number, (string | number)[]>();
+    const advPlayerIdIdx = aIdx("PLAYER_ID");
+    const advGpIdx = aIdx("GP");
+    for (const row of advRows) {
+      advByPlayer.set(Number(row[advPlayerIdIdx]), row);
     }
 
-    // ── Fetch Basketball Reference pages with delays ──
-    console.log("[SYNC-STATS] Fetching per-game stats...");
-    const perGameHtml = await fetchHtml(
-      `https://www.basketball-reference.com/leagues/NBA_${BR_YEAR}_per_game.html`
-    );
-    await delay(3000);
-
-    console.log("[SYNC-STATS] Fetching totals stats...");
-    const totalsHtml = await fetchHtml(
-      `https://www.basketball-reference.com/leagues/NBA_${BR_YEAR}_totals.html`
-    );
-    await delay(3000);
-
-    console.log("[SYNC-STATS] Fetching advanced stats...");
-    const advancedHtml = await fetchHtml(
-      `https://www.basketball-reference.com/leagues/NBA_${BR_YEAR}_advanced.html`
-    );
-
-    // ── Parse tables ──
-    const perGamePlayers = deduplicatePlayers(parseBRTable(perGameHtml));
-    const totalsPlayers = deduplicatePlayers(parseBRTable(totalsHtml));
-    const advancedPlayers = deduplicatePlayers(parseBRTable(advancedHtml));
-
-    console.log(`[SYNC-STATS] Parsed: ${perGamePlayers.length} per-game, ${totalsPlayers.length} totals, ${advancedPlayers.length} advanced`);
-
-    // Index totals and advanced by player name for cross-referencing
-    const totalsByName = new Map<string, BRPlayer>();
-    for (const p of totalsPlayers) totalsByName.set(p.name, p);
-
-    const advByName = new Map<string, BRPlayer>();
-    for (const p of advancedPlayers) advByName.set(p.name, p);
-
-    // ── League averages for "+" stats (from totals) ──
+    // ── League averages for "+" stats ──
     let leaguePTS = 0, leagueFGA = 0, leagueFGM = 0;
     let leagueFG3M = 0, leagueFG3A = 0;
     let leagueFTM = 0, leagueFTA = 0;
-    for (const p of totalsPlayers) {
-      leaguePTS += p.stats["pts"] || 0;
-      leagueFGA += p.stats["fga"] || 0;
-      leagueFGM += p.stats["fg"] || 0;
-      leagueFG3M += p.stats["fg3"] || 0;
-      leagueFG3A += p.stats["fg3a"] || 0;
-      leagueFTM += p.stats["ft"] || 0;
-      leagueFTA += p.stats["fta"] || 0;
+    for (const r of rows) {
+      leaguePTS += Number(r[ptsIdx]);
+      leagueFGA += Number(r[fgaIdx]);
+      leagueFGM += Number(r[fgmIdx]);
+      leagueFG3M += Number(r[fg3mIdx]);
+      leagueFG3A += Number(r[fg3aIdx]);
+      leagueFTM += Number(r[ftmIdx]);
+      leagueFTA += Number(r[ftaIdx]);
     }
 
     const leagueTS = leagueFGA + 0.44 * leagueFTA > 0
@@ -301,10 +201,19 @@ export async function GET(request: NextRequest) {
     const leagueFG2A = leagueFGA - leagueFG3A;
     const leagueFG2 = leagueFG2A > 0 ? (leagueFG2M / leagueFG2A) * 100 : 0;
 
-    // ── Helper: build leaders with eligibility ──
+    // ── Helpers ──
+    const perGame = (row: (string | number)[], totalIdx: number) => {
+      const gp = Number(row[gpIdx]);
+      return gp > 0 ? Number(row[totalIdx]) / gp : 0;
+    };
+
+    const fgaPerGame = (row: (string | number)[]) => perGame(row, fgaIdx);
+    const fg3aPerGame = (row: (string | number)[]) => perGame(row, fg3aIdx);
+    const ftaPerGame = (row: (string | number)[]) => perGame(row, ftaIdx);
+
     function buildLeadersWithEligibility(
       category: string,
-      allPlayers: { name: string; team: string; playerId: number; val: number; eligible: boolean }[]
+      allPlayers: { row: (string | number)[]; playerId: number; val: number; eligible: boolean }[]
     ): LeaderRow[] {
       const eligible = allPlayers.filter((p) => p.eligible).sort((a, b) => b.val - a.val);
       const ineligible = allPlayers.filter((p) => !p.eligible).sort((a, b) => b.val - a.val);
@@ -324,26 +233,26 @@ export async function GET(request: NextRequest) {
         updated_at: now,
       });
 
-      eligible.forEach(({ name, team, playerId, val }, i) => {
+      eligible.forEach(({ row, playerId, val }, i) => {
         leaders.push({
           category,
           rank: i + 1,
-          player_name: name,
+          player_name: String(row[playerIdx]),
           player_id: playerId,
-          team,
+          team: String(row[teamIdx]),
           value: Math.round(val * 100) / 100,
           season: SEASON,
           updated_at: now,
         });
       });
 
-      ineligible.forEach(({ name, team, playerId, val }, i) => {
+      ineligible.forEach(({ row, playerId, val }, i) => {
         leaders.push({
           category,
           rank: eligibleCount + i + 1,
-          player_name: name,
+          player_name: String(row[playerIdx]),
           player_id: playerId,
-          team,
+          team: String(row[teamIdx]),
           value: Math.round(val * 100) / 100,
           season: SEASON,
           updated_at: now,
@@ -353,403 +262,339 @@ export async function GET(request: NextRequest) {
       return leaders;
     }
 
+    // Advanced percentage fields come as decimals (0.285 for 28.5%) — multiply by 100
+    const ADV_PCT_FIELDS = new Set([
+      "USG_PCT", "AST_PCT", "OREB_PCT", "DREB_PCT", "REB_PCT", "PIE",
+      "EFG_PCT", "TS_PCT",
+    ]);
+
+    // Helper for advanced categories (data comes from advByPlayer)
+    function buildAdvancedCategory(
+      category: string,
+      statField: string,
+      extraEligibility?: (advRow: (string | number)[], baseRow: (string | number)[]) => boolean
+    ): LeaderRow[] {
+      const allPlayers: { row: (string | number)[]; playerId: number; val: number; eligible: boolean }[] = [];
+      const isPct = ADV_PCT_FIELDS.has(statField);
+
+      for (const baseRow of rows) {
+        const pid = Number(baseRow[playerIdIdx]);
+        const advRow = advByPlayer.get(pid);
+        if (!advRow) continue;
+
+        const advStatIdx = aIdx(statField);
+        if (advStatIdx === -1) continue;
+
+        let val = Number(advRow[advStatIdx]);
+        if (isNaN(val)) continue;
+
+        // Convert decimal percentages to whole-number form (0.285 → 28.5)
+        if (isPct) val *= 100;
+
+        const gpEligible = Number(baseRow[gpIdx]) >= MIN_GP;
+        const extraOk = extraEligibility ? extraEligibility(advRow, baseRow) : true;
+
+        allPlayers.push({
+          row: baseRow,
+          playerId: pid,
+          val,
+          eligible: gpEligible && extraOk,
+        });
+      }
+
+      return buildLeadersWithEligibility(category, allPlayers);
+    }
+
     // ── Delete all existing stat_leaders for this season ──
     await supabase.from("stat_leaders").delete().eq("season", SEASON);
 
-    // ── Per-game categories (from per-game page) ──
-    // Maps our category names to BR data-stat field names
-    const PER_GAME_CATEGORIES: { category: string; brField: string }[] = [
-      { category: "PTS", brField: "pts_per_g" },
-      { category: "REB", brField: "trb_per_g" },
-      { category: "AST", brField: "ast_per_g" },
-      { category: "BLK", brField: "blk_per_g" },
-      { category: "STL", brField: "stl_per_g" },
-      { category: "TOV", brField: "tov_per_g" },
-      { category: "MIN", brField: "mp_per_g" },
-      { category: "OREB", brField: "orb_per_g" },
-      { category: "DREB", brField: "drb_per_g" },
-    ];
+    // ── Direct categories (per-game from official NBA PerGame data) ──
+    for (const { category, statField } of DIRECT_CATEGORIES) {
+      const pgStatIdx = pgIdx(statField);
 
-    for (const { category, brField } of PER_GAME_CATEGORIES) {
-      const allPlayers = perGamePlayers
-        .filter((p) => p.stats[brField] !== undefined)
-        .map((p) => ({
-          name: p.name,
-          team: p.team,
-          playerId: resolvePlayerId(p.name, p.team),
-          val: p.stats[brField],
-          eligible: (p.stats["g"] || 0) >= MIN_GP,
-        }));
+      const allPlayers = rows.map((row) => {
+        const pid = Number(row[playerIdIdx]);
+        const pgRow = pgByPlayer.get(pid);
+        const val = pgRow && pgStatIdx !== -1 ? Number(pgRow[pgStatIdx]) : perGame(row, idx(statField));
+        return {
+          row,
+          playerId: pid,
+          val,
+          eligible: Number(row[gpIdx]) >= MIN_GP,
+        };
+      });
+
       const leaders = buildLeadersWithEligibility(category, allPlayers);
       results[category] = await batchInsert(supabase, leaders);
     }
 
-    // ── EFF (simplified fantasy: PTS + REB + AST + STL + BLK - TOV) per game ──
-    {
-      const allPlayers = perGamePlayers.map((p) => {
-        const val = (p.stats["pts_per_g"] || 0) +
-          (p.stats["trb_per_g"] || 0) +
-          (p.stats["ast_per_g"] || 0) +
-          (p.stats["stl_per_g"] || 0) +
-          (p.stats["blk_per_g"] || 0) -
-          (p.stats["tov_per_g"] || 0);
-        return {
-          name: p.name,
-          team: p.team,
-          playerId: resolvePlayerId(p.name, p.team),
-          val,
-          eligible: (p.stats["g"] || 0) >= MIN_GP,
-        };
-      });
-      const leaders = buildLeadersWithEligibility("EFF", allPlayers);
-      results["EFF"] = await batchInsert(supabase, leaders);
-    }
+    // ── GP (games played — raw count, not per-game) ──
+    const gpAllPlayers = rows.map((row) => ({
+      row,
+      playerId: Number(row[playerIdIdx]),
+      val: Number(row[gpIdx]),
+      eligible: Number(row[gpIdx]) >= MIN_GP,
+    }));
+    results["GP"] = await batchInsert(supabase, buildLeadersWithEligibility("GP", gpAllPlayers));
 
-    // ── GP (games played — raw count) ──
-    {
-      const allPlayers = perGamePlayers.map((p) => ({
-        name: p.name,
-        team: p.team,
-        playerId: resolvePlayerId(p.name, p.team),
-        val: p.stats["g"] || 0,
-        eligible: (p.stats["g"] || 0) >= MIN_GP,
-      }));
-      results["GP"] = await batchInsert(supabase, buildLeadersWithEligibility("GP", allPlayers));
-    }
+    // ── TOT_MIN (total minutes played — raw, not per-game) ──
+    const minIdx = idx("MIN");
+    const totMinAll = rows.map((row) => ({
+      row,
+      playerId: Number(row[playerIdIdx]),
+      val: Number(row[minIdx]),
+      eligible: Number(row[gpIdx]) >= MIN_GP,
+    }));
+    results["TOT_MIN"] = await batchInsert(supabase, buildLeadersWithEligibility("TOT_MIN", totMinAll));
 
-    // ── TOT_MIN (total minutes from totals page) ──
-    {
-      const allPlayers = totalsPlayers.map((p) => ({
-        name: p.name,
-        team: p.team,
-        playerId: resolvePlayerId(p.name, p.team),
-        val: p.stats["mp"] || 0,
-        eligible: (p.stats["g"] || 0) >= MIN_GP,
-      }));
-      results["TOT_MIN"] = await batchInsert(supabase, buildLeadersWithEligibility("TOT_MIN", allPlayers));
-    }
-
-    // ── Season totals (from totals page) ──
-    const TOTAL_CATEGORIES: { category: string; brField: string }[] = [
-      { category: "PTS_TOT", brField: "pts" },
-      { category: "REB_TOT", brField: "trb" },
-      { category: "AST_TOT", brField: "ast" },
-      { category: "BLK_TOT", brField: "blk" },
-      { category: "STL_TOT", brField: "stl" },
-      { category: "TOV_TOT", brField: "tov" },
-      { category: "FGM_TOT", brField: "fg" },
-      { category: "FG3M_TOT", brField: "fg3" },
-      { category: "FTM_TOT", brField: "ft" },
-      { category: "OREB_TOT", brField: "orb" },
-      { category: "DREB_TOT", brField: "drb" },
-      { category: "PF_TOT", brField: "pf" },
-      { category: "FGA_TOT", brField: "fga" },
-      { category: "FG3A_TOT", brField: "fg3a" },
-      { category: "FTA_TOT", brField: "fta" },
+    // ── Shooting attempt totals (raw season totals for filtering) ──
+    const attemptCategories: { category: string; totalIdx: number }[] = [
+      { category: "FGA_TOT", totalIdx: fgaIdx },
+      { category: "FG3A_TOT", totalIdx: fg3aIdx },
+      { category: "FTA_TOT", totalIdx: idx("FTA") },
     ];
 
-    for (const { category, brField } of TOTAL_CATEGORIES) {
-      const allPlayers = totalsPlayers.map((p) => ({
-        name: p.name,
-        team: p.team,
-        playerId: resolvePlayerId(p.name, p.team),
-        val: p.stats[brField] || 0,
-        eligible: (p.stats["g"] || 0) >= MIN_GP,
+    for (const { category, totalIdx } of attemptCategories) {
+      const all = rows.map((row) => ({
+        row,
+        playerId: Number(row[playerIdIdx]),
+        val: Number(row[totalIdx]),
+        eligible: Number(row[gpIdx]) >= MIN_GP,
       }));
-      results[category] = await batchInsert(supabase, buildLeadersWithEligibility(category, allPlayers));
+      results[category] = await batchInsert(supabase, buildLeadersWithEligibility(category, all));
     }
 
     // FG2A_TOT = FGA - FG3A
-    {
-      const allPlayers = totalsPlayers.map((p) => ({
-        name: p.name,
-        team: p.team,
-        playerId: resolvePlayerId(p.name, p.team),
-        val: (p.stats["fga"] || 0) - (p.stats["fg3a"] || 0),
-        eligible: (p.stats["g"] || 0) >= MIN_GP,
+    const fg2aTotAll = rows.map((row) => ({
+      row,
+      playerId: Number(row[playerIdIdx]),
+      val: Number(row[fgaIdx]) - Number(row[fg3aIdx]),
+      eligible: Number(row[gpIdx]) >= MIN_GP,
+    }));
+    results["FG2A_TOT"] = await batchInsert(supabase, buildLeadersWithEligibility("FG2A_TOT", fg2aTotAll));
+
+    // ── Season totals (raw cumulative stats) ──
+    const totalCategories: { category: string; totalIdx: number }[] = [
+      { category: "PTS_TOT", totalIdx: ptsIdx },
+      { category: "REB_TOT", totalIdx: idx("REB") },
+      { category: "AST_TOT", totalIdx: idx("AST") },
+      { category: "BLK_TOT", totalIdx: idx("BLK") },
+      { category: "STL_TOT", totalIdx: idx("STL") },
+      { category: "TOV_TOT", totalIdx: idx("TOV") },
+      { category: "FGM_TOT", totalIdx: fgmIdx },
+      { category: "FG3M_TOT", totalIdx: fg3mIdx },
+      { category: "FTM_TOT", totalIdx: ftmIdx },
+      { category: "OREB_TOT", totalIdx: idx("OREB") },
+      { category: "DREB_TOT", totalIdx: idx("DREB") },
+      { category: "PF_TOT", totalIdx: idx("PF") },
+      { category: "PLUS_MINUS_TOT", totalIdx: idx("PLUS_MINUS") },
+    ];
+
+    for (const { category, totalIdx } of totalCategories) {
+      const all = rows.map((row) => ({
+        row,
+        playerId: Number(row[playerIdIdx]),
+        val: Number(row[totalIdx]),
+        eligible: Number(row[gpIdx]) >= MIN_GP,
       }));
-      results["FG2A_TOT"] = await batchInsert(supabase, buildLeadersWithEligibility("FG2A_TOT", allPlayers));
+      results[category] = await batchInsert(supabase, buildLeadersWithEligibility(category, all));
     }
 
     // FG2M_TOT = FGM - FG3M
-    {
-      const allPlayers = totalsPlayers.map((p) => ({
-        name: p.name,
-        team: p.team,
-        playerId: resolvePlayerId(p.name, p.team),
-        val: (p.stats["fg"] || 0) - (p.stats["fg3"] || 0),
-        eligible: (p.stats["g"] || 0) >= MIN_GP,
-      }));
-      results["FG2M_TOT"] = await batchInsert(supabase, buildLeadersWithEligibility("FG2M_TOT", allPlayers));
-    }
+    const fg2mTotAll = rows.map((row) => ({
+      row,
+      playerId: Number(row[playerIdIdx]),
+      val: Number(row[fgmIdx]) - Number(row[fg3mIdx]),
+      eligible: Number(row[gpIdx]) >= MIN_GP,
+    }));
+    results["FG2M_TOT"] = await batchInsert(supabase, buildLeadersWithEligibility("FG2M_TOT", fg2mTotAll));
 
-    // PLUS_MINUS_TOT — check if available on totals page
-    {
-      const hasData = totalsPlayers.some((p) => p.stats["plus_minus"] !== undefined);
-      if (hasData) {
-        const allPlayers = totalsPlayers.map((p) => ({
-          name: p.name,
-          team: p.team,
-          playerId: resolvePlayerId(p.name, p.team),
-          val: p.stats["plus_minus"] || 0,
-          eligible: (p.stats["g"] || 0) >= MIN_GP,
-        }));
-        results["PLUS_MINUS_TOT"] = await batchInsert(supabase, buildLeadersWithEligibility("PLUS_MINUS_TOT", allPlayers));
-      }
-    }
-
-    // ── Percentage categories (calculated from totals for precision) ──
-
-    // Helper: per-game attempts from totals
-    const fgaPerGame = (p: BRPlayer) => {
-      const gp = p.stats["g"] || 0;
-      return gp > 0 ? (p.stats["fga"] || 0) / gp : 0;
-    };
-    const fg3aPerGame = (p: BRPlayer) => {
-      const gp = p.stats["g"] || 0;
-      return gp > 0 ? (p.stats["fg3a"] || 0) / gp : 0;
-    };
-    const ftaPerGame = (p: BRPlayer) => {
-      const gp = p.stats["g"] || 0;
-      return gp > 0 ? (p.stats["fta"] || 0) / gp : 0;
-    };
+    // ── Calculated percentage categories (from totals for precision) ──
 
     // FG3_PCT
-    {
-      const allPlayers = totalsPlayers
-        .filter((p) => (p.stats["fg3a"] || 0) > 0)
-        .map((p) => ({
-          name: p.name,
-          team: p.team,
-          playerId: resolvePlayerId(p.name, p.team),
-          val: ((p.stats["fg3"] || 0) / (p.stats["fg3a"] || 1)) * 100,
-          eligible: (p.stats["g"] || 0) >= MIN_GP && fg3aPerGame(p) >= MIN_FG3A,
-        }));
-      results["FG3_PCT"] = await batchInsert(supabase, buildLeadersWithEligibility("FG3_PCT", allPlayers));
-    }
+    const fg3All = rows
+      .filter((r) => Number(r[fg3aIdx]) > 0)
+      .map((r) => ({
+        row: r,
+        playerId: Number(r[playerIdIdx]),
+        val: (Number(r[fg3mIdx]) / Number(r[fg3aIdx])) * 100,
+        eligible: Number(r[gpIdx]) >= MIN_GP && fg3aPerGame(r) >= MIN_FG3A,
+      }));
+    results["FG3_PCT"] = await batchInsert(supabase, buildLeadersWithEligibility("FG3_PCT", fg3All));
 
     // FG2_PCT
-    {
-      const allPlayers = totalsPlayers
-        .filter((p) => (p.stats["fga"] || 0) - (p.stats["fg3a"] || 0) > 0)
-        .map((p) => {
-          const fg2m = (p.stats["fg"] || 0) - (p.stats["fg3"] || 0);
-          const fg2a = (p.stats["fga"] || 0) - (p.stats["fg3a"] || 0);
-          const gp = p.stats["g"] || 0;
-          const fg2aPerG = gp > 0 ? fg2a / gp : 0;
-          return {
-            name: p.name,
-            team: p.team,
-            playerId: resolvePlayerId(p.name, p.team),
-            val: fg2a > 0 ? (fg2m / fg2a) * 100 : 0,
-            eligible: (p.stats["g"] || 0) >= MIN_GP && fg2aPerG >= MIN_FG2A,
-          };
-        });
-      results["FG2_PCT"] = await batchInsert(supabase, buildLeadersWithEligibility("FG2_PCT", allPlayers));
-    }
+    const fg2All = rows
+      .filter((r) => Number(r[fgaIdx]) - Number(r[fg3aIdx]) > 0)
+      .map((r) => {
+        const fg2m = Number(r[fgmIdx]) - Number(r[fg3mIdx]);
+        const fg2a = Number(r[fgaIdx]) - Number(r[fg3aIdx]);
+        const fg2aPerG = Number(r[gpIdx]) > 0 ? fg2a / Number(r[gpIdx]) : 0;
+        return {
+          row: r,
+          playerId: Number(r[playerIdIdx]),
+          val: fg2a > 0 ? (fg2m / fg2a) * 100 : 0,
+          eligible: Number(r[gpIdx]) >= MIN_GP && fg2aPerG >= MIN_FG2A,
+        };
+      });
+    results["FG2_PCT"] = await batchInsert(supabase, buildLeadersWithEligibility("FG2_PCT", fg2All));
 
     // TS_PCT
-    {
-      const allPlayers = totalsPlayers
-        .filter((p) => (p.stats["fga"] || 0) > 0)
-        .map((p) => {
-          const pts = p.stats["pts"] || 0;
-          const fga = p.stats["fga"] || 0;
-          const fta = p.stats["fta"] || 0;
-          return {
-            name: p.name,
-            team: p.team,
-            playerId: resolvePlayerId(p.name, p.team),
-            val: (pts / (2 * (fga + 0.44 * fta))) * 100,
-            eligible: (p.stats["g"] || 0) >= MIN_GP && fgaPerGame(p) >= MIN_FGA,
-          };
-        });
-      results["TS_PCT"] = await batchInsert(supabase, buildLeadersWithEligibility("TS_PCT", allPlayers));
-    }
+    const tsAll = rows
+      .filter((r) => Number(r[fgaIdx]) > 0)
+      .map((r) => {
+        const pts = Number(r[ptsIdx]);
+        const fga = Number(r[fgaIdx]);
+        const fta = Number(r[ftaIdx]);
+        return {
+          row: r,
+          playerId: Number(r[playerIdIdx]),
+          val: (pts / (2 * (fga + 0.44 * fta))) * 100,
+          eligible: Number(r[gpIdx]) >= MIN_GP && fgaPerGame(r) >= MIN_FGA,
+        };
+      });
+    results["TS_PCT"] = await batchInsert(supabase, buildLeadersWithEligibility("TS_PCT", tsAll));
 
     // FG_PCT
-    {
-      const allPlayers = totalsPlayers
-        .filter((p) => (p.stats["fga"] || 0) > 0)
-        .map((p) => ({
-          name: p.name,
-          team: p.team,
-          playerId: resolvePlayerId(p.name, p.team),
-          val: ((p.stats["fg"] || 0) / (p.stats["fga"] || 1)) * 100,
-          eligible: (p.stats["g"] || 0) >= MIN_GP && fgaPerGame(p) >= MIN_FGA,
-        }));
-      results["FG_PCT"] = await batchInsert(supabase, buildLeadersWithEligibility("FG_PCT", allPlayers));
-    }
+    const fgAll = rows
+      .filter((r) => Number(r[fgaIdx]) > 0)
+      .map((r) => ({
+        row: r,
+        playerId: Number(r[playerIdIdx]),
+        val: (Number(r[fgmIdx]) / Number(r[fgaIdx])) * 100,
+        eligible: Number(r[gpIdx]) >= MIN_GP && fgaPerGame(r) >= MIN_FGA,
+      }));
+    results["FG_PCT"] = await batchInsert(supabase, buildLeadersWithEligibility("FG_PCT", fgAll));
 
     // FT_PCT
-    {
-      const allPlayers = totalsPlayers
-        .filter((p) => (p.stats["fta"] || 0) > 0)
-        .map((p) => ({
-          name: p.name,
-          team: p.team,
-          playerId: resolvePlayerId(p.name, p.team),
-          val: ((p.stats["ft"] || 0) / (p.stats["fta"] || 1)) * 100,
-          eligible: (p.stats["g"] || 0) >= MIN_GP && ftaPerGame(p) >= MIN_FTA,
-        }));
-      results["FT_PCT"] = await batchInsert(supabase, buildLeadersWithEligibility("FT_PCT", allPlayers));
-    }
+    const ftAll = rows
+      .filter((r) => Number(r[ftaIdx]) > 0)
+      .map((r) => ({
+        row: r,
+        playerId: Number(r[playerIdIdx]),
+        val: (Number(r[ftmIdx]) / Number(r[ftaIdx])) * 100,
+        eligible: Number(r[gpIdx]) >= MIN_GP && ftaPerGame(r) >= MIN_FTA,
+      }));
+    results["FT_PCT"] = await batchInsert(supabase, buildLeadersWithEligibility("FT_PCT", ftAll));
 
-    // EFG_PCT
-    {
-      const allPlayers = totalsPlayers
-        .filter((p) => (p.stats["fga"] || 0) > 0)
-        .map((p) => ({
-          name: p.name,
-          team: p.team,
-          playerId: resolvePlayerId(p.name, p.team),
-          val: (((p.stats["fg"] || 0) + 0.5 * (p.stats["fg3"] || 0)) / (p.stats["fga"] || 1)) * 100,
-          eligible: (p.stats["g"] || 0) >= MIN_GP && fgaPerGame(p) >= MIN_FGA,
-        }));
-      results["EFG_PCT"] = await batchInsert(supabase, buildLeadersWithEligibility("EFG_PCT", allPlayers));
-    }
+    // EFG_PCT — (FGM + 0.5 * FG3M) / FGA (from totals)
+    const efgAll = rows
+      .filter((r) => Number(r[fgaIdx]) > 0)
+      .map((r) => ({
+        row: r,
+        playerId: Number(r[playerIdIdx]),
+        val: ((Number(r[fgmIdx]) + 0.5 * Number(r[fg3mIdx])) / Number(r[fgaIdx])) * 100,
+        eligible: Number(r[gpIdx]) >= MIN_GP && fgaPerGame(r) >= MIN_FGA,
+      }));
+    results["EFG_PCT"] = await batchInsert(supabase, buildLeadersWithEligibility("EFG_PCT", efgAll));
 
-    // ── Advanced categories (from advanced page) ──
-    // BR stores percentages as decimals (0.285 = 28.5%), so multiply by 100
-    const ADV_PCT_FIELDS = new Set([
-      "usg_pct", "ast_pct", "orb_pct", "drb_pct", "trb_pct",
-      "stl_pct", "blk_pct", "tov_pct",
-    ]);
-
-    const ADVANCED_CATEGORIES: { category: string; brField: string }[] = [
-      { category: "USG_PCT", brField: "usg_pct" },
-      { category: "OFF_RATING", brField: "off_rtg" },
-      { category: "DEF_RATING", brField: "def_rtg" },
-      { category: "AST_PCT", brField: "ast_pct" },
-      { category: "OREB_PCT", brField: "orb_pct" },
-      { category: "DREB_PCT", brField: "drb_pct" },
-      { category: "REB_PCT", brField: "trb_pct" },
+    // ── Advanced rate categories (from NBA Advanced API) ──
+    const advancedCats: { category: string; statField: string }[] = [
+      { category: "USG_PCT", statField: "USG_PCT" },
+      { category: "OFF_RATING", statField: "OFF_RATING" },
+      { category: "DEF_RATING", statField: "DEF_RATING" },
+      { category: "NET_RATING", statField: "NET_RATING" },
+      { category: "AST_PCT", statField: "AST_PCT" },
+      { category: "OREB_PCT", statField: "OREB_PCT" },
+      { category: "DREB_PCT", statField: "DREB_PCT" },
+      { category: "REB_PCT", statField: "REB_PCT" },
+      { category: "PACE", statField: "PACE" },
+      { category: "PIE", statField: "PIE" },
     ];
 
-    for (const { category, brField } of ADVANCED_CATEGORIES) {
-      const isPct = ADV_PCT_FIELDS.has(brField);
-      const allPlayers = advancedPlayers
-        .filter((p) => p.stats[brField] !== undefined)
-        .map((p) => ({
-          name: p.name,
-          team: p.team,
-          playerId: resolvePlayerId(p.name, p.team),
-          val: isPct ? p.stats[brField] * 100 : p.stats[brField],
-          eligible: (p.stats["g"] || 0) >= MIN_GP,
-        }));
-      results[category] = await batchInsert(supabase, buildLeadersWithEligibility(category, allPlayers));
-    }
-
-    // NET_RATING = OFF_RATING - DEF_RATING
-    {
-      const allPlayers = advancedPlayers
-        .filter((p) => p.stats["off_rtg"] !== undefined && p.stats["def_rtg"] !== undefined)
-        .map((p) => ({
-          name: p.name,
-          team: p.team,
-          playerId: resolvePlayerId(p.name, p.team),
-          val: p.stats["off_rtg"] - p.stats["def_rtg"],
-          eligible: (p.stats["g"] || 0) >= MIN_GP,
-        }));
-      results["NET_RATING"] = await batchInsert(supabase, buildLeadersWithEligibility("NET_RATING", allPlayers));
+    for (const { category, statField } of advancedCats) {
+      const leaders = buildAdvancedCategory(category, statField);
+      results[category] = await batchInsert(supabase, leaders);
     }
 
     // ── Adjusted "+" stats (player / league average * 100) ──
 
     // TS+
     if (leagueTS > 0) {
-      const allPlayers = totalsPlayers
-        .filter((p) => (p.stats["fga"] || 0) > 0)
-        .map((p) => {
-          const pts = p.stats["pts"] || 0;
-          const fga = p.stats["fga"] || 0;
-          const fta = p.stats["fta"] || 0;
+      const tsPlus = rows
+        .filter((r) => Number(r[fgaIdx]) > 0)
+        .map((r) => {
+          const pts = Number(r[ptsIdx]);
+          const fga = Number(r[fgaIdx]);
+          const fta = Number(r[ftaIdx]);
           const playerTS = (pts / (2 * (fga + 0.44 * fta))) * 100;
           return {
-            name: p.name,
-            team: p.team,
-            playerId: resolvePlayerId(p.name, p.team),
+            row: r,
+            playerId: Number(r[playerIdIdx]),
             val: (playerTS / leagueTS) * 100,
-            eligible: (p.stats["g"] || 0) >= MIN_GP && fgaPerGame(p) >= MIN_FGA,
+            eligible: Number(r[gpIdx]) >= MIN_GP && fgaPerGame(r) >= MIN_FGA,
           };
         });
-      results["TS_PLUS"] = await batchInsert(supabase, buildLeadersWithEligibility("TS_PLUS", allPlayers));
+      results["TS_PLUS"] = await batchInsert(supabase, buildLeadersWithEligibility("TS_PLUS", tsPlus));
     }
 
     // eFG+
     if (leagueEFG > 0) {
-      const allPlayers = totalsPlayers
-        .filter((p) => (p.stats["fga"] || 0) > 0)
-        .map((p) => ({
-          name: p.name,
-          team: p.team,
-          playerId: resolvePlayerId(p.name, p.team),
-          val: ((((p.stats["fg"] || 0) + 0.5 * (p.stats["fg3"] || 0)) / (p.stats["fga"] || 1)) * 100 / leagueEFG) * 100,
-          eligible: (p.stats["g"] || 0) >= MIN_GP && fgaPerGame(p) >= MIN_FGA,
+      const efgPlus = rows
+        .filter((r) => Number(r[fgaIdx]) > 0)
+        .map((r) => ({
+          row: r,
+          playerId: Number(r[playerIdIdx]),
+          val: (((Number(r[fgmIdx]) + 0.5 * Number(r[fg3mIdx])) / Number(r[fgaIdx])) * 100 / leagueEFG) * 100,
+          eligible: Number(r[gpIdx]) >= MIN_GP && fgaPerGame(r) >= MIN_FGA,
         }));
-      results["EFG_PLUS"] = await batchInsert(supabase, buildLeadersWithEligibility("EFG_PLUS", allPlayers));
+      results["EFG_PLUS"] = await batchInsert(supabase, buildLeadersWithEligibility("EFG_PLUS", efgPlus));
     }
 
     // FG+
     if (leagueFG > 0) {
-      const allPlayers = totalsPlayers
-        .filter((p) => (p.stats["fga"] || 0) > 0)
-        .map((p) => ({
-          name: p.name,
-          team: p.team,
-          playerId: resolvePlayerId(p.name, p.team),
-          val: (((p.stats["fg"] || 0) / (p.stats["fga"] || 1)) * 100 / leagueFG) * 100,
-          eligible: (p.stats["g"] || 0) >= MIN_GP && fgaPerGame(p) >= MIN_FGA,
+      const fgPlus = rows
+        .filter((r) => Number(r[fgaIdx]) > 0)
+        .map((r) => ({
+          row: r,
+          playerId: Number(r[playerIdIdx]),
+          val: ((Number(r[fgmIdx]) / Number(r[fgaIdx])) * 100 / leagueFG) * 100,
+          eligible: Number(r[gpIdx]) >= MIN_GP && fgaPerGame(r) >= MIN_FGA,
         }));
-      results["FG_PLUS"] = await batchInsert(supabase, buildLeadersWithEligibility("FG_PLUS", allPlayers));
+      results["FG_PLUS"] = await batchInsert(supabase, buildLeadersWithEligibility("FG_PLUS", fgPlus));
     }
 
     // 3P+
     if (leagueFG3 > 0) {
-      const allPlayers = totalsPlayers
-        .filter((p) => (p.stats["fg3a"] || 0) > 0)
-        .map((p) => ({
-          name: p.name,
-          team: p.team,
-          playerId: resolvePlayerId(p.name, p.team),
-          val: (((p.stats["fg3"] || 0) / (p.stats["fg3a"] || 1)) * 100 / leagueFG3) * 100,
-          eligible: (p.stats["g"] || 0) >= MIN_GP && fg3aPerGame(p) >= MIN_FG3A,
+      const fg3Plus = rows
+        .filter((r) => Number(r[fg3aIdx]) > 0)
+        .map((r) => ({
+          row: r,
+          playerId: Number(r[playerIdIdx]),
+          val: ((Number(r[fg3mIdx]) / Number(r[fg3aIdx])) * 100 / leagueFG3) * 100,
+          eligible: Number(r[gpIdx]) >= MIN_GP && fg3aPerGame(r) >= MIN_FG3A,
         }));
-      results["FG3_PLUS"] = await batchInsert(supabase, buildLeadersWithEligibility("FG3_PLUS", allPlayers));
+      results["FG3_PLUS"] = await batchInsert(supabase, buildLeadersWithEligibility("FG3_PLUS", fg3Plus));
     }
 
     // FT+
     if (leagueFT > 0) {
-      const allPlayers = totalsPlayers
-        .filter((p) => (p.stats["fta"] || 0) > 0)
-        .map((p) => ({
-          name: p.name,
-          team: p.team,
-          playerId: resolvePlayerId(p.name, p.team),
-          val: (((p.stats["ft"] || 0) / (p.stats["fta"] || 1)) * 100 / leagueFT) * 100,
-          eligible: (p.stats["g"] || 0) >= MIN_GP && ftaPerGame(p) >= MIN_FTA,
+      const ftPlus = rows
+        .filter((r) => Number(r[ftaIdx]) > 0)
+        .map((r) => ({
+          row: r,
+          playerId: Number(r[playerIdIdx]),
+          val: ((Number(r[ftmIdx]) / Number(r[ftaIdx])) * 100 / leagueFT) * 100,
+          eligible: Number(r[gpIdx]) >= MIN_GP && ftaPerGame(r) >= MIN_FTA,
         }));
-      results["FT_PLUS"] = await batchInsert(supabase, buildLeadersWithEligibility("FT_PLUS", allPlayers));
+      results["FT_PLUS"] = await batchInsert(supabase, buildLeadersWithEligibility("FT_PLUS", ftPlus));
     }
 
     // 2P+
     if (leagueFG2 > 0) {
-      const allPlayers = totalsPlayers
-        .filter((p) => (p.stats["fga"] || 0) - (p.stats["fg3a"] || 0) > 0)
-        .map((p) => {
-          const fg2m = (p.stats["fg"] || 0) - (p.stats["fg3"] || 0);
-          const fg2a = (p.stats["fga"] || 0) - (p.stats["fg3a"] || 0);
-          const gp = p.stats["g"] || 0;
-          const fg2aPerG = gp > 0 ? fg2a / gp : 0;
+      const fg2Plus = rows
+        .filter((r) => Number(r[fgaIdx]) - Number(r[fg3aIdx]) > 0)
+        .map((r) => {
+          const fg2m = Number(r[fgmIdx]) - Number(r[fg3mIdx]);
+          const fg2a = Number(r[fgaIdx]) - Number(r[fg3aIdx]);
+          const fg2aPerG = Number(r[gpIdx]) > 0 ? fg2a / Number(r[gpIdx]) : 0;
           return {
-            name: p.name,
-            team: p.team,
-            playerId: resolvePlayerId(p.name, p.team),
+            row: r,
+            playerId: Number(r[playerIdIdx]),
             val: fg2a > 0 ? ((fg2m / fg2a) * 100 / leagueFG2) * 100 : 0,
-            eligible: (p.stats["g"] || 0) >= MIN_GP && fg2aPerG >= MIN_FG2A,
+            eligible: Number(r[gpIdx]) >= MIN_GP && fg2aPerG >= MIN_FG2A,
           };
         });
-      results["FG2_PLUS"] = await batchInsert(supabase, buildLeadersWithEligibility("FG2_PLUS", allPlayers));
+      results["FG2_PLUS"] = await batchInsert(supabase, buildLeadersWithEligibility("FG2_PLUS", fg2Plus));
     }
   } catch (err) {
     console.error("Error syncing stats:", err);
