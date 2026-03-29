@@ -25,15 +25,6 @@ const NBA_HEADERS: Record<string, string> = {
   "x-nba-stats-token": "true",
 };
 
-const TEAM_IDS = [
-  1610612737, 1610612738, 1610612739, 1610612740, 1610612741,
-  1610612742, 1610612743, 1610612744, 1610612745, 1610612746,
-  1610612747, 1610612748, 1610612749, 1610612750, 1610612751,
-  1610612752, 1610612753, 1610612754, 1610612755, 1610612756,
-  1610612757, 1610612758, 1610612759, 1610612760, 1610612761,
-  1610612762, 1610612763, 1610612764, 1610612765, 1610612766,
-];
-
 interface NbaDashResponse {
   resultSets: {
     headers: string[];
@@ -65,14 +56,9 @@ const DIRECT_CATEGORIES: { category: string; statField: string }[] = [
   { category: "DREB", statField: "DREB" },
 ];
 
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 function fetchAllPlayers(
   perMode: "Totals" | "PerGame" = "Totals",
-  measureType: "Base" | "Advanced" = "Base",
-  teamId: number = 0
+  measureType: "Base" | "Advanced" = "Base"
 ): Promise<NbaDashResponse> {
   const url =
     "https://stats.nba.com/stats/leaguedashplayerstats?" +
@@ -81,7 +67,7 @@ function fetchAllPlayers(
     "&Outcome=&PORound=0&PaceAdjust=N&PerMode=" + perMode + "&Period=0&PlayerExperience=" +
     "&PlayerPosition=&PlusMinus=N&Rank=N&Season=" + SEASON +
     "&SeasonSegment=&SeasonType=Regular+Season&ShotClockRange=&StarterBench=" +
-    "&TeamID=" + teamId + "&TwoWay=0&VsConference=&VsDivision=&Weight=";
+    "&TeamID=0&TwoWay=0&VsConference=&VsDivision=&Weight=";
 
   return new Promise((resolve, reject) => {
     const req = https.get(url, { headers: NBA_HEADERS }, (res) => {
@@ -89,61 +75,22 @@ function fetchAllPlayers(
       res.on("data", (chunk: string) => (data += chunk));
       res.on("end", () => {
         if (res.statusCode !== 200) {
-          reject(new Error(`NBA API error (${measureType}, team ${teamId}): ${res.statusCode}`));
+          reject(new Error(`NBA API error (${measureType}): ${res.statusCode}`));
           return;
         }
         try {
           resolve(JSON.parse(data));
         } catch {
-          reject(new Error(`Failed to parse NBA API response (${measureType}, team ${teamId})`));
+          reject(new Error(`Failed to parse NBA API response (${measureType})`));
         }
       });
     });
     req.on("error", reject);
-    req.setTimeout(15000, () => {
+    req.setTimeout(300000, () => {
       req.destroy();
-      reject(new Error(`NBA API timeout (${measureType}, team ${teamId})`));
+      reject(new Error(`NBA API timeout (${measureType})`));
     });
   });
-}
-
-async function fetchAllPlayersAllTeams(
-  perMode: "Totals" | "PerGame",
-  measureType: "Base" | "Advanced"
-): Promise<NbaDashResponse> {
-  let headers: string[] = [];
-  const allRows: (string | number)[][] = [];
-
-  // Fetch in parallel batches of 6 teams
-  for (let i = 0; i < TEAM_IDS.length; i += 6) {
-    const batch = TEAM_IDS.slice(i, i + 6);
-    console.log(`[SYNC-STATS] Fetching ${perMode} ${measureType} batch ${Math.floor(i / 6) + 1}/5...`);
-
-    const results = await Promise.allSettled(
-      batch.map((teamId) => fetchAllPlayers(perMode, measureType, teamId))
-    );
-
-    for (let j = 0; j < results.length; j++) {
-      const result = results[j];
-      if (result.status === "fulfilled") {
-        const resultSet = result.value.resultSets[0];
-        if (resultSet.headers.length > 0 && headers.length === 0) {
-          headers = resultSet.headers;
-        }
-        allRows.push(...resultSet.rowSet);
-      } else {
-        console.error(`[SYNC-STATS] Team ${batch[j]} failed (${perMode} ${measureType}):`, result.reason?.message || result.reason);
-      }
-    }
-
-    if (i + 6 < TEAM_IDS.length) {
-      await delay(300);
-    }
-  }
-
-  return {
-    resultSets: [{ headers, rowSet: allRows }],
-  };
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -181,12 +128,12 @@ export async function GET(request: NextRequest) {
   const now = new Date().toISOString();
 
   try {
-    // Fetch all 3 data types in parallel (each internally batches teams)
-    console.log("[SYNC-STATS] Fetching all stats in parallel batches...");
+    // Fetch all 3 data types in parallel (single calls, all players)
+    console.log("[SYNC-STATS] Fetching all stats...");
     const [baseData, perGameData, advData] = await Promise.all([
-      fetchAllPlayersAllTeams("Totals", "Base"),
-      fetchAllPlayersAllTeams("PerGame", "Base"),
-      fetchAllPlayersAllTeams("PerGame", "Advanced"),
+      fetchAllPlayers("Totals", "Base"),
+      fetchAllPlayers("PerGame", "Base"),
+      fetchAllPlayers("PerGame", "Advanced"),
     ]);
 
     const headers = baseData.resultSets[0].headers;

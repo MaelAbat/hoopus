@@ -20,17 +20,6 @@ const NBA_HEADERS: Record<string, string> = {
   "x-nba-stats-token": "true",
 };
 
-const TEAM_IDS: [number, string][] = [
-  [1610612737, "ATL"], [1610612738, "BOS"], [1610612751, "BKN"], [1610612766, "CHA"],
-  [1610612741, "CHI"], [1610612739, "CLE"], [1610612742, "DAL"], [1610612743, "DEN"],
-  [1610612765, "DET"], [1610612744, "GSW"], [1610612745, "HOU"], [1610612754, "IND"],
-  [1610612746, "LAC"], [1610612747, "LAL"], [1610612763, "MEM"], [1610612748, "MIA"],
-  [1610612749, "MIL"], [1610612750, "MIN"], [1610612740, "NOP"], [1610612752, "NYK"],
-  [1610612760, "OKC"], [1610612753, "ORL"], [1610612755, "PHI"], [1610612756, "PHX"],
-  [1610612757, "POR"], [1610612758, "SAC"], [1610612759, "SAS"], [1610612761, "TOR"],
-  [1610612762, "UTA"], [1610612764, "WAS"],
-];
-
 interface NbaResponse {
   resultSets: {
     headers: string[];
@@ -166,7 +155,7 @@ async function fetchSalaries(): Promise<Map<string, string>> {
   return salaryMap;
 }
 
-function fetchNba(url: string, timeoutMs = 15000): Promise<NbaResponse> {
+function fetchNba(url: string, timeoutMs = 300000): Promise<NbaResponse> {
   return new Promise((resolve, reject) => {
     const req = https.get(url, { headers: NBA_HEADERS }, (res) => {
       let data = "";
@@ -191,46 +180,35 @@ function fetchNba(url: string, timeoutMs = 15000): Promise<NbaResponse> {
   });
 }
 
-/** Fetch biostats for all 30 teams in parallel batches */
+/** Fetch biostats for all players in a single call */
 async function fetchAllBioStats(): Promise<Map<number, number>> {
   const ageMap = new Map<number, number>();
 
-  const teamIds = TEAM_IDS.map(([id]) => id);
-
-  for (let i = 0; i < teamIds.length; i += 6) {
-    const batch = teamIds.slice(i, i + 6);
-    console.log(`[SYNC-ROSTERS] Fetching bio batch ${Math.floor(i / 6) + 1}/5...`);
-
-    const results = await Promise.allSettled(
-      batch.map((teamId) =>
-        fetchNba(
-          "https://stats.nba.com/stats/leaguedashplayerbiostats?" +
-            "College=&Conference=&Country=&DateFrom=&DateTo=&Division=" +
-            "&DraftPick=&DraftYear=&GameScope=&GameSegment=&Height=" +
-            "&ISTRound=&LastNGames=0&LeagueID=00&Location=&Month=0" +
-            "&OpponentTeamID=0&Outcome=&PORound=0&PerMode=PerGame" +
-            "&Period=0&PlayerExperience=&PlayerPosition=&Season=" + SEASON +
-            "&SeasonSegment=&SeasonType=Regular+Season" +
-            "&ShotClockRange=&StarterBench=&TeamID=" + teamId +
-            "&VsConference=&VsDivision=&Weight="
-        )
-      )
+  try {
+    console.log("[SYNC-ROSTERS] Fetching bio stats...");
+    const bioData = await fetchNba(
+      "https://stats.nba.com/stats/leaguedashplayerbiostats?" +
+        "College=&Conference=&Country=&DateFrom=&DateTo=&Division=" +
+        "&DraftPick=&DraftYear=&GameScope=&GameSegment=&Height=" +
+        "&ISTRound=&LastNGames=0&LeagueID=00&Location=&Month=0" +
+        "&OpponentTeamID=0&Outcome=&PORound=0&PerMode=PerGame" +
+        "&Period=0&PlayerExperience=&PlayerPosition=&Season=" + SEASON +
+        "&SeasonSegment=&SeasonType=Regular+Season" +
+        "&ShotClockRange=&StarterBench=&TeamID=0" +
+        "&VsConference=&VsDivision=&Weight="
     );
 
-    for (const result of results) {
-      if (result.status === "fulfilled") {
-        const headers = result.value.resultSets[0].headers;
-        const pidIdx = headers.indexOf("PLAYER_ID");
-        const ageIdx = headers.indexOf("AGE");
-        for (const row of result.value.resultSets[0].rowSet) {
-          const pid = Number(row[pidIdx]);
-          const age = row[ageIdx] != null ? Number(row[ageIdx]) : null;
-          if (pid && age) ageMap.set(pid, age);
-        }
-      }
+    const headers = bioData.resultSets[0].headers;
+    const pidIdx = headers.indexOf("PLAYER_ID");
+    const ageIdx = headers.indexOf("AGE");
+    for (const row of bioData.resultSets[0].rowSet) {
+      const pid = Number(row[pidIdx]);
+      const age = row[ageIdx] != null ? Number(row[ageIdx]) : null;
+      if (pid && age) ageMap.set(pid, age);
     }
-
-    if (i + 6 < teamIds.length) await delay(300);
+    console.log(`[SYNC-ROSTERS] Got ages for ${ageMap.size} players`);
+  } catch (err) {
+    console.error("[SYNC-ROSTERS] Bio stats fetch failed (non-fatal):", (err as Error).message);
   }
 
   return ageMap;

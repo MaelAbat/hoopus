@@ -19,15 +19,6 @@ const NBA_HEADERS: Record<string, string> = {
   "x-nba-stats-token": "true",
 };
 
-const TEAM_IDS = [
-  1610612737, 1610612738, 1610612739, 1610612740, 1610612741,
-  1610612742, 1610612743, 1610612744, 1610612745, 1610612746,
-  1610612747, 1610612748, 1610612749, 1610612750, 1610612751,
-  1610612752, 1610612753, 1610612754, 1610612755, 1610612756,
-  1610612757, 1610612758, 1610612759, 1610612760, 1610612761,
-  1610612762, 1610612763, 1610612764, 1610612765, 1610612766,
-];
-
 interface NbaDashResponse {
   resultSets: {
     headers: string[];
@@ -35,7 +26,7 @@ interface NbaDashResponse {
   }[];
 }
 
-function fetchTeamStats(measureType: "Base" | "Advanced", teamId: number): Promise<NbaDashResponse> {
+function fetchTeamStats(measureType: "Base" | "Advanced"): Promise<NbaDashResponse> {
   const url =
     "https://stats.nba.com/stats/leaguedashteamstats?" +
     "Conference=&DateFrom=&DateTo=&Division=&GameScope=&GameSegment=&Height=&ISTRound=" +
@@ -43,7 +34,7 @@ function fetchTeamStats(measureType: "Base" | "Advanced", teamId: number): Promi
     "&Month=0&OpponentTeamID=0&Outcome=&PORound=0&PaceAdjust=N&PerMode=PerGame&Period=0" +
     "&PlayerExperience=&PlayerPosition=&PlusMinus=N&Rank=N&Season=" + SEASON +
     "&SeasonSegment=&SeasonType=Regular+Season&ShotClockRange=&StarterBench=" +
-    "&TeamID=" + teamId + "&TwoWay=0&VsConference=&VsDivision=";
+    "&TeamID=0&TwoWay=0&VsConference=&VsDivision=";
 
   return new Promise((resolve, reject) => {
     const req = https.get(url, { headers: NBA_HEADERS }, (res) => {
@@ -62,65 +53,11 @@ function fetchTeamStats(measureType: "Base" | "Advanced", teamId: number): Promi
       });
     });
     req.on("error", reject);
-    req.setTimeout(15000, () => {
+    req.setTimeout(300000, () => {
       req.destroy();
       reject(new Error("NBA API timeout"));
     });
   });
-}
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-async function fetchAllTeamStats(): Promise<{
-  baseHeaders: string[];
-  baseRows: (string | number)[][];
-  advHeaders: string[];
-  advRows: (string | number)[][];
-}> {
-  const baseRows: (string | number)[][] = [];
-  const advRows: (string | number)[][] = [];
-  let baseHeaders: string[] = [];
-  let advHeaders: string[] = [];
-
-  // Fetch in parallel batches of 6 teams
-  for (let i = 0; i < TEAM_IDS.length; i += 6) {
-    const batch = TEAM_IDS.slice(i, i + 6);
-    console.log(`[SYNC-TEAM-STATS] Fetching batch ${Math.floor(i / 6) + 1}/5...`);
-
-    const results = await Promise.allSettled(
-      batch.map(async (teamId) => {
-        const [baseData, advData] = await Promise.all([
-          fetchTeamStats("Base", teamId),
-          fetchTeamStats("Advanced", teamId),
-        ]);
-        return { baseData, advData };
-      })
-    );
-
-    for (const result of results) {
-      if (result.status === "fulfilled") {
-        const { baseData, advData } = result.value;
-        if (baseHeaders.length === 0) {
-          baseHeaders = baseData.resultSets[0].headers;
-          advHeaders = advData.resultSets[0].headers;
-        }
-        if (baseData.resultSets[0].rowSet.length > 0) {
-          baseRows.push(...baseData.resultSets[0].rowSet);
-        }
-        if (advData.resultSets[0].rowSet.length > 0) {
-          advRows.push(...advData.resultSets[0].rowSet);
-        }
-      }
-    }
-
-    if (i + 6 < TEAM_IDS.length) {
-      await delay(300);
-    }
-  }
-
-  return { baseHeaders, baseRows, advHeaders, advRows };
 }
 
 export async function GET(request: NextRequest) {
@@ -141,10 +78,19 @@ export async function GET(request: NextRequest) {
   const now = new Date().toISOString();
 
   try {
-    const { baseHeaders, baseRows, advHeaders, advRows } = await fetchAllTeamStats();
+    console.log("[SYNC-TEAM-STATS] Fetching base and advanced stats...");
+    const [baseData, advData] = await Promise.all([
+      fetchTeamStats("Base"),
+      fetchTeamStats("Advanced"),
+    ]);
 
-    const bIdx = (name: string) => baseHeaders.indexOf(name);
-    const aIdx = (name: string) => advHeaders.indexOf(name);
+    const baseH = baseData.resultSets[0].headers;
+    const baseRows = baseData.resultSets[0].rowSet;
+    const advH = advData.resultSets[0].headers;
+    const advRows = advData.resultSets[0].rowSet;
+
+    const bIdx = (name: string) => baseH.indexOf(name);
+    const aIdx = (name: string) => advH.indexOf(name);
 
     // Index advanced rows by team ID for merging
     const advByTeam = new Map<number, (string | number)[]>();
