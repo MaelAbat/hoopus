@@ -99,7 +99,7 @@ async function batchInsert(supabase: any, rows: LeaderRow[]): Promise<number> {
   for (let i = 0; i < rows.length; i += BATCH_SIZE) {
     const batch = rows.slice(i, i + BATCH_SIZE);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await supabase.from("stat_leaders").insert(batch as any);
+    const { error } = await supabase.from("stat_leaders").upsert(batch as any, { onConflict: "category,player_name,season" });
     if (error) {
       console.error(`Batch insert error at ${i}:`, error);
     } else {
@@ -309,8 +309,7 @@ export async function GET(request: NextRequest) {
       throw new Error("No player data fetched from NBA API");
     }
 
-    // ── Delete all existing stat_leaders for this season ──
-    await supabase.from("stat_leaders").delete().eq("season", SEASON);
+    // ── Upsert stat_leaders (no delete — preserves data on partial failures) ──
 
     // ── Direct categories (per-game from official NBA PerGame data) ──
     for (const { category, statField } of DIRECT_CATEGORIES) {

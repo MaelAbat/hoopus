@@ -228,9 +228,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Upsert play-in games
-    await supabase.from("playin_games").delete().eq("season", SEASON);
     if (playinRows.length > 0) {
-      const { error: playinError } = await supabase.from("playin_games").insert(playinRows);
+      const { error: playinError } = await supabase.from("playin_games").upsert(playinRows, { onConflict: "season,conference,matchup_type" });
       if (playinError) {
         console.error("Error inserting play-in games:", playinError);
       }
@@ -342,11 +341,8 @@ export async function GET(request: NextRequest) {
     // Filter out series with undefined teams (e.g. Finals not yet determined)
     const validRows = rows.filter(r => r.team_top && r.team_bottom);
 
-    // Clear and reinsert
-    await supabase.from("playoff_series").delete().eq("season", SEASON);
-
     if (validRows.length > 0) {
-      const { error } = await supabase.from("playoff_series").insert(validRows);
+      const { error } = await supabase.from("playoff_series").upsert(validRows, { onConflict: "season,round,team_top,team_bottom" });
       if (error) {
         console.error("Error inserting playoff series:", error);
         return NextResponse.json({ error: error.message }, { status: 500 });

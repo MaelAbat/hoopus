@@ -112,8 +112,7 @@ export async function GET(request: NextRequest) {
     try {
       const rows = await fetchPlayerCareer(Number(singleId));
       if (rows.length > 0) {
-        await supabase.from("player_career_stats").delete().eq("player_id", Number(singleId));
-        await supabase.from("player_career_stats").insert(rows);
+        await supabase.from("player_career_stats").upsert(rows, { onConflict: "player_id,season,team" });
       }
       return NextResponse.json({ ok: true, player_id: singleId, seasons: rows.length });
     } catch (err) {

@@ -116,10 +116,7 @@ export async function GET(request: NextRequest) {
       });
     });
 
-    // Clear and reinsert
-    await supabase.from("standings").delete().eq("season", SEASON);
-
-    const { error } = await supabase.from("standings").insert(standings);
+    const { error } = await supabase.from("standings").upsert(standings, { onConflict: "team_tricode,season" });
     if (error) {
       console.error("Error inserting standings:", error);
       return NextResponse.json({ error: error.message }, { status: 500 });

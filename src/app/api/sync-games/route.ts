@@ -134,10 +134,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Clear and reinsert all games
-    await supabase.from("games").delete().eq("season", SEASON);
-
-    // Insert in batches of 200
+    // Upsert in batches of 200
     for (let i = 0; i < allGames.length; i += 200) {
       const batch = allGames.slice(i, i + 200);
       const { error } = await supabase.from("games").upsert(batch, { onConflict: "game_id" });

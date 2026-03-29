@@ -293,8 +293,7 @@ export async function syncPlayerCareer(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
-    await supabase.from("player_career_stats").delete().eq("player_id", playerId);
-    await supabase.from("player_career_stats").insert(rows);
+    await supabase.from("player_career_stats").upsert(rows, { onConflict: "player_id,season,team" });
 
     return rows;
   } catch {
