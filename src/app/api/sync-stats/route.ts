@@ -353,6 +353,12 @@ export async function GET(request: NextRequest) {
       return buildLeadersWithEligibility(category, allPlayers);
     }
 
+    console.log(`[SYNC-STATS] Data fetched: ${rows.length} base rows, ${pgRows.length} perGame rows, ${advRows.length} advanced rows`);
+
+    if (rows.length === 0) {
+      throw new Error("No player data fetched from NBA API");
+    }
+
     // ── Delete all existing stat_leaders for this season ──
     await supabase.from("stat_leaders").delete().eq("season", SEASON);
 
@@ -651,6 +657,9 @@ export async function GET(request: NextRequest) {
       { status: 502 }
     );
   }
+
+  const totalInserted = Object.values(results).reduce((a, b) => a + b, 0);
+  console.log(`[SYNC-STATS] Inserted ${totalInserted} rows across ${Object.keys(results).length} categories`);
 
   revalidatePath("/statistiques");
   console.log(`[SYNC-STATS] Completed at ${new Date().toISOString()}`);
