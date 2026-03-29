@@ -350,16 +350,16 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Clear and reinsert
-    await supabase.from("rosters").delete().eq("season", SEASON);
-
+    // Upsert rosters (avoids emptying table on partial failures)
     let inserted = 0;
     for (let i = 0; i < players.length; i += BATCH_SIZE) {
       const batch = players.slice(i, i + BATCH_SIZE);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await supabase.from("rosters").insert(batch as any);
+      const { error } = await supabase.from("rosters").upsert(batch as any, {
+        onConflict: "player_id,season",
+      });
       if (error) {
-        console.error(`Batch insert error at ${i}:`, error);
+        console.error(`Batch upsert error at ${i}:`, error);
       } else {
         inserted += batch.length;
       }
@@ -367,7 +367,6 @@ export async function GET(request: NextRequest) {
 
     // Store team payroll totals
     if (payrollMap.size > 0) {
-      await supabase.from("team_payrolls").delete().eq("season", SEASON);
       const payrollRows = Array.from(payrollMap.entries()).map(([tricode, payroll]) => ({
         season: SEASON,
         team_tricode: tricode,
@@ -375,8 +374,10 @@ export async function GET(request: NextRequest) {
         updated_at: now,
       }));
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: payrollError } = await supabase.from("team_payrolls").insert(payrollRows as any);
-      if (payrollError) console.error("Payroll insert error:", payrollError);
+      const { error: payrollError } = await supabase.from("team_payrolls").upsert(payrollRows as any, {
+        onConflict: "team_tricode,season",
+      });
+      if (payrollError) console.error("Payroll upsert error:", payrollError);
     }
 
     revalidatePath("/equipes");

@@ -121,6 +121,8 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  const CURRENT_SEASON = "2025-26";
+
   // Bulk: sync all active players
   const { data: activePlayers } = await supabase
     .from("players")
@@ -131,15 +133,37 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: true, synced: 0, message: "No active players" });
   }
 
+  // Find players who already have historical data — only update current season
+  const { data: existingCareer } = await supabase
+    .from("player_career_stats")
+    .select("player_id")
+    .neq("season", CURRENT_SEASON);
+
+  const playersWithHistory = new Set(
+    (existingCareer || []).map((r) => r.player_id)
+  );
+
   let synced = 0;
+  let skipped = 0;
   let failed = 0;
   const allRows: CareerRow[] = [];
 
   for (let i = 0; i < activePlayers.length; i++) {
     const pid = activePlayers[i].player_id;
+    const hasHistory = playersWithHistory.has(pid);
+
     try {
       const rows = await fetchPlayerCareer(pid);
-      allRows.push(...rows);
+
+      if (hasHistory) {
+        // Only keep current season row — historical data already in DB
+        const currentRows = rows.filter((r) => r.season === CURRENT_SEASON);
+        allRows.push(...currentRows);
+        skipped++;
+      } else {
+        // New player — insert full career
+        allRows.push(...rows);
+      }
       synced++;
     } catch {
       failed++;
@@ -170,6 +194,7 @@ export async function GET(request: NextRequest) {
     ok: true,
     total: activePlayers.length,
     synced,
+    skipped,
     failed,
   });
 }
