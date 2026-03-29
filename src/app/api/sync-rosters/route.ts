@@ -203,48 +203,51 @@ async function fetchAllTeamsFromNba(): Promise<{
   let allBioHeaders: string[] = [];
   let allBioRows: (string | number | null)[][] = [];
 
-  for (let i = 0; i < TEAM_IDS.length; i++) {
-    const [teamId, tricode] = TEAM_IDS[i];
-    console.log(`[SYNC-ROSTERS] Fetching team ${i + 1}/30 (${tricode})...`);
+  // Fetch in parallel batches of 6 teams
+  for (let i = 0; i < TEAM_IDS.length; i += 6) {
+    const batch = TEAM_IDS.slice(i, i + 6);
+    console.log(`[SYNC-ROSTERS] Fetching batch ${Math.floor(i / 6) + 1}/5...`);
 
-    try {
-      const [indexData, bioData] = await Promise.all([
-        fetchNba(
-          "https://stats.nba.com/stats/playerindex?" +
-            "College=&Conference=&Country=&DraftPick=&DraftRound=&DraftYear=" +
-            "&Height=&Historical=0&LeagueID=00&Season=" + SEASON +
-            "&SeasonType=Regular+Season&TeamID=" + teamId + "&Weight="
-        ),
-        fetchNba(
-          "https://stats.nba.com/stats/leaguedashplayerbiostats?" +
-            "College=&Conference=&Country=&DateFrom=&DateTo=&Division=" +
-            "&DraftPick=&DraftYear=&GameScope=&GameSegment=&Height=" +
-            "&ISTRound=&LastNGames=0&LeagueID=00&Location=&Month=0" +
-            "&OpponentTeamID=0&Outcome=&PORound=0&PerMode=PerGame" +
-            "&Period=0&PlayerExperience=&PlayerPosition=&Season=" + SEASON +
-            "&SeasonSegment=&SeasonType=Regular+Season" +
-            "&ShotClockRange=&StarterBench=&TeamID=" + teamId +
-            "&VsConference=&VsDivision=&Weight="
-        ),
-      ]);
+    const results = await Promise.allSettled(
+      batch.map(async ([teamId]) => {
+        const [indexData, bioData] = await Promise.all([
+          fetchNba(
+            "https://stats.nba.com/stats/playerindex?" +
+              "College=&Conference=&Country=&DraftPick=&DraftRound=&DraftYear=" +
+              "&Height=&Historical=0&LeagueID=00&Season=" + SEASON +
+              "&SeasonType=Regular+Season&TeamID=" + teamId + "&Weight="
+          ),
+          fetchNba(
+            "https://stats.nba.com/stats/leaguedashplayerbiostats?" +
+              "College=&Conference=&Country=&DateFrom=&DateTo=&Division=" +
+              "&DraftPick=&DraftYear=&GameScope=&GameSegment=&Height=" +
+              "&ISTRound=&LastNGames=0&LeagueID=00&Location=&Month=0" +
+              "&OpponentTeamID=0&Outcome=&PORound=0&PerMode=PerGame" +
+              "&Period=0&PlayerExperience=&PlayerPosition=&Season=" + SEASON +
+              "&SeasonSegment=&SeasonType=Regular+Season" +
+              "&ShotClockRange=&StarterBench=&TeamID=" + teamId +
+              "&VsConference=&VsDivision=&Weight="
+          ),
+        ]);
+        return { indexData, bioData };
+      })
+    );
 
-      // Capture headers from first successful response
-      if (allIdxHeaders.length === 0) {
-        allIdxHeaders = indexData.resultSets[0].headers;
+    for (const result of results) {
+      if (result.status === "fulfilled") {
+        const { indexData, bioData } = result.value;
+        if (allIdxHeaders.length === 0) {
+          allIdxHeaders = indexData.resultSets[0].headers;
+        }
+        if (allBioHeaders.length === 0) {
+          allBioHeaders = bioData.resultSets[0].headers;
+        }
+        allIdxRows = allIdxRows.concat(indexData.resultSets[0].rowSet);
+        allBioRows = allBioRows.concat(bioData.resultSets[0].rowSet);
       }
-      if (allBioHeaders.length === 0) {
-        allBioHeaders = bioData.resultSets[0].headers;
-      }
-
-      allIdxRows = allIdxRows.concat(indexData.resultSets[0].rowSet);
-      allBioRows = allBioRows.concat(bioData.resultSets[0].rowSet);
-    } catch (err) {
-      console.error(`[SYNC-ROSTERS] Failed to fetch team ${tricode} (${teamId}):`, (err as Error).message);
-      // Continue with other teams
     }
 
-    // 500ms delay between teams
-    if (i < TEAM_IDS.length - 1) await delay(500);
+    if (i + 6 < TEAM_IDS.length) await delay(300);
   }
 
   return { allIdxHeaders, allIdxRows, allBioHeaders, allBioRows };

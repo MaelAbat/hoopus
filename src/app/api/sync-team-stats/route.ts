@@ -84,34 +84,39 @@ async function fetchAllTeamStats(): Promise<{
   let baseHeaders: string[] = [];
   let advHeaders: string[] = [];
 
-  for (let i = 0; i < TEAM_IDS.length; i++) {
-    const teamId = TEAM_IDS[i];
-    console.log(`[SYNC-TEAM-STATS] Fetching team ${i + 1}/30...`);
+  // Fetch in parallel batches of 6 teams
+  for (let i = 0; i < TEAM_IDS.length; i += 6) {
+    const batch = TEAM_IDS.slice(i, i + 6);
+    console.log(`[SYNC-TEAM-STATS] Fetching batch ${Math.floor(i / 6) + 1}/5...`);
 
-    try {
-      const [baseData, advData] = await Promise.all([
-        fetchTeamStats("Base", teamId),
-        fetchTeamStats("Advanced", teamId),
-      ]);
+    const results = await Promise.allSettled(
+      batch.map(async (teamId) => {
+        const [baseData, advData] = await Promise.all([
+          fetchTeamStats("Base", teamId),
+          fetchTeamStats("Advanced", teamId),
+        ]);
+        return { baseData, advData };
+      })
+    );
 
-      if (i === 0) {
-        baseHeaders = baseData.resultSets[0].headers;
-        advHeaders = advData.resultSets[0].headers;
+    for (const result of results) {
+      if (result.status === "fulfilled") {
+        const { baseData, advData } = result.value;
+        if (baseHeaders.length === 0) {
+          baseHeaders = baseData.resultSets[0].headers;
+          advHeaders = advData.resultSets[0].headers;
+        }
+        if (baseData.resultSets[0].rowSet.length > 0) {
+          baseRows.push(...baseData.resultSets[0].rowSet);
+        }
+        if (advData.resultSets[0].rowSet.length > 0) {
+          advRows.push(...advData.resultSets[0].rowSet);
+        }
       }
-
-      if (baseData.resultSets[0].rowSet.length > 0) {
-        baseRows.push(...baseData.resultSets[0].rowSet);
-      }
-      if (advData.resultSets[0].rowSet.length > 0) {
-        advRows.push(...advData.resultSets[0].rowSet);
-      }
-    } catch (err) {
-      console.error(`[SYNC-TEAM-STATS] Failed for team ${teamId}:`, err);
-      continue;
     }
 
-    if (i < TEAM_IDS.length - 1) {
-      await delay(500);
+    if (i + 6 < TEAM_IDS.length) {
+      await delay(300);
     }
   }
 

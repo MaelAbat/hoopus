@@ -114,26 +114,27 @@ async function fetchAllPlayersAllTeams(
   let headers: string[] = [];
   const allRows: (string | number)[][] = [];
 
-  for (let i = 0; i < TEAM_IDS.length; i++) {
-    const teamId = TEAM_IDS[i];
-    console.log(`[SYNC-STATS] Fetching ${perMode} ${measureType} for team ${i + 1}/30...`);
+  // Fetch in parallel batches of 6 teams
+  for (let i = 0; i < TEAM_IDS.length; i += 6) {
+    const batch = TEAM_IDS.slice(i, i + 6);
+    console.log(`[SYNC-STATS] Fetching ${perMode} ${measureType} batch ${Math.floor(i / 6) + 1}/5...`);
 
-    try {
-      const data = await fetchAllPlayers(perMode, measureType, teamId);
-      const resultSet = data.resultSets[0];
+    const results = await Promise.allSettled(
+      batch.map((teamId) => fetchAllPlayers(perMode, measureType, teamId))
+    );
 
-      if (resultSet.headers.length > 0 && headers.length === 0) {
-        headers = resultSet.headers;
+    for (const result of results) {
+      if (result.status === "fulfilled") {
+        const resultSet = result.value.resultSets[0];
+        if (resultSet.headers.length > 0 && headers.length === 0) {
+          headers = resultSet.headers;
+        }
+        allRows.push(...resultSet.rowSet);
       }
-
-      allRows.push(...resultSet.rowSet);
-    } catch (err) {
-      console.error(`[SYNC-STATS] Failed for team ${teamId} (${perMode} ${measureType}):`, (err as Error).message);
-      // Continue with other teams
     }
 
-    if (i < TEAM_IDS.length - 1) {
-      await delay(500);
+    if (i + 6 < TEAM_IDS.length) {
+      await delay(300);
     }
   }
 
@@ -177,19 +178,13 @@ export async function GET(request: NextRequest) {
   const now = new Date().toISOString();
 
   try {
-    // Fetch base totals, per-game, and advanced stats sequentially (per-team calls)
-    console.log("[SYNC-STATS] Starting base totals fetch...");
-    const baseData = await fetchAllPlayersAllTeams("Totals", "Base");
-
-    await delay(2000);
-
-    console.log("[SYNC-STATS] Starting per-game base fetch...");
-    const perGameData = await fetchAllPlayersAllTeams("PerGame", "Base");
-
-    await delay(2000);
-
-    console.log("[SYNC-STATS] Starting per-game advanced fetch...");
-    const advData = await fetchAllPlayersAllTeams("PerGame", "Advanced");
+    // Fetch all 3 data types in parallel (each internally batches teams)
+    console.log("[SYNC-STATS] Fetching all stats in parallel batches...");
+    const [baseData, perGameData, advData] = await Promise.all([
+      fetchAllPlayersAllTeams("Totals", "Base"),
+      fetchAllPlayersAllTeams("PerGame", "Base"),
+      fetchAllPlayersAllTeams("PerGame", "Advanced"),
+    ]);
 
     const headers = baseData.resultSets[0].headers;
     const rows = baseData.resultSets[0].rowSet;
