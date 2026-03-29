@@ -123,13 +123,16 @@ async function fetchAllPlayersAllTeams(
       batch.map((teamId) => fetchAllPlayers(perMode, measureType, teamId))
     );
 
-    for (const result of results) {
+    for (let j = 0; j < results.length; j++) {
+      const result = results[j];
       if (result.status === "fulfilled") {
         const resultSet = result.value.resultSets[0];
         if (resultSet.headers.length > 0 && headers.length === 0) {
           headers = resultSet.headers;
         }
         allRows.push(...resultSet.rowSet);
+      } else {
+        console.error(`[SYNC-STATS] Team ${batch[j]} failed (${perMode} ${measureType}):`, result.reason?.message || result.reason);
       }
     }
 
