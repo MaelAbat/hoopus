@@ -43,7 +43,7 @@ function fetchNba(url: string): Promise<NbaResponse> {
       });
     });
     req.on("error", reject);
-    req.setTimeout(120000, () => {
+    req.setTimeout(300000, () => {
       req.destroy();
       reject(new Error("NBA API timeout"));
     });
@@ -113,16 +113,16 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Clear and reinsert
-    await supabase.from("players").delete().neq("player_id", 0);
-
+    // Upsert players
     let inserted = 0;
     for (let i = 0; i < players.length; i += BATCH_SIZE) {
       const batch = players.slice(i, i + BATCH_SIZE);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await supabase.from("players").insert(batch as any);
+      const { error } = await supabase.from("players").upsert(batch as any, {
+        onConflict: "player_id",
+      });
       if (error) {
-        console.error(`Batch insert error at ${i}:`, error);
+        console.error(`Batch upsert error at ${i}:`, error);
       } else {
         inserted += batch.length;
       }

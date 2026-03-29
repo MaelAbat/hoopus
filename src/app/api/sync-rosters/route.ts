@@ -191,66 +191,49 @@ function fetchNba(url: string, timeoutMs = 15000): Promise<NbaResponse> {
   });
 }
 
-/** Fetch playerindex + biostats for all 30 teams sequentially */
-async function fetchAllTeamsFromNba(): Promise<{
-  allIdxHeaders: string[];
-  allIdxRows: (string | number | null)[][];
-  allBioHeaders: string[];
-  allBioRows: (string | number | null)[][];
-}> {
-  let allIdxHeaders: string[] = [];
-  let allIdxRows: (string | number | null)[][] = [];
-  let allBioHeaders: string[] = [];
-  let allBioRows: (string | number | null)[][] = [];
+/** Fetch biostats for all 30 teams in parallel batches */
+async function fetchAllBioStats(): Promise<Map<number, number>> {
+  const ageMap = new Map<number, number>();
 
-  // Fetch in parallel batches of 6 teams
-  for (let i = 0; i < TEAM_IDS.length; i += 6) {
-    const batch = TEAM_IDS.slice(i, i + 6);
-    console.log(`[SYNC-ROSTERS] Fetching batch ${Math.floor(i / 6) + 1}/5...`);
+  const teamIds = TEAM_IDS.map(([id]) => id);
+
+  for (let i = 0; i < teamIds.length; i += 6) {
+    const batch = teamIds.slice(i, i + 6);
+    console.log(`[SYNC-ROSTERS] Fetching bio batch ${Math.floor(i / 6) + 1}/5...`);
 
     const results = await Promise.allSettled(
-      batch.map(async ([teamId]) => {
-        const [indexData, bioData] = await Promise.all([
-          fetchNba(
-            "https://stats.nba.com/stats/playerindex?" +
-              "College=&Conference=&Country=&DraftPick=&DraftRound=&DraftYear=" +
-              "&Height=&Historical=0&LeagueID=00&Season=" + SEASON +
-              "&SeasonType=Regular+Season&TeamID=" + teamId + "&Weight="
-          ),
-          fetchNba(
-            "https://stats.nba.com/stats/leaguedashplayerbiostats?" +
-              "College=&Conference=&Country=&DateFrom=&DateTo=&Division=" +
-              "&DraftPick=&DraftYear=&GameScope=&GameSegment=&Height=" +
-              "&ISTRound=&LastNGames=0&LeagueID=00&Location=&Month=0" +
-              "&OpponentTeamID=0&Outcome=&PORound=0&PerMode=PerGame" +
-              "&Period=0&PlayerExperience=&PlayerPosition=&Season=" + SEASON +
-              "&SeasonSegment=&SeasonType=Regular+Season" +
-              "&ShotClockRange=&StarterBench=&TeamID=" + teamId +
-              "&VsConference=&VsDivision=&Weight="
-          ),
-        ]);
-        return { indexData, bioData };
-      })
+      batch.map((teamId) =>
+        fetchNba(
+          "https://stats.nba.com/stats/leaguedashplayerbiostats?" +
+            "College=&Conference=&Country=&DateFrom=&DateTo=&Division=" +
+            "&DraftPick=&DraftYear=&GameScope=&GameSegment=&Height=" +
+            "&ISTRound=&LastNGames=0&LeagueID=00&Location=&Month=0" +
+            "&OpponentTeamID=0&Outcome=&PORound=0&PerMode=PerGame" +
+            "&Period=0&PlayerExperience=&PlayerPosition=&Season=" + SEASON +
+            "&SeasonSegment=&SeasonType=Regular+Season" +
+            "&ShotClockRange=&StarterBench=&TeamID=" + teamId +
+            "&VsConference=&VsDivision=&Weight="
+        )
+      )
     );
 
     for (const result of results) {
       if (result.status === "fulfilled") {
-        const { indexData, bioData } = result.value;
-        if (allIdxHeaders.length === 0) {
-          allIdxHeaders = indexData.resultSets[0].headers;
+        const headers = result.value.resultSets[0].headers;
+        const pidIdx = headers.indexOf("PLAYER_ID");
+        const ageIdx = headers.indexOf("AGE");
+        for (const row of result.value.resultSets[0].rowSet) {
+          const pid = Number(row[pidIdx]);
+          const age = row[ageIdx] != null ? Number(row[ageIdx]) : null;
+          if (pid && age) ageMap.set(pid, age);
         }
-        if (allBioHeaders.length === 0) {
-          allBioHeaders = bioData.resultSets[0].headers;
-        }
-        allIdxRows = allIdxRows.concat(indexData.resultSets[0].rowSet);
-        allBioRows = allBioRows.concat(bioData.resultSets[0].rowSet);
       }
     }
 
-    if (i + 6 < TEAM_IDS.length) await delay(300);
+    if (i + 6 < teamIds.length) await delay(300);
   }
 
-  return { allIdxHeaders, allIdxRows, allBioHeaders, allBioRows };
+  return ageMap;
 }
 
 export async function GET(request: NextRequest) {
@@ -269,9 +252,19 @@ export async function GET(request: NextRequest) {
   );
 
   try {
-    // Fetch per-team NBA data (critical) in parallel with salary scraping (best-effort)
-    const [nbaResult, salaryResult] = await Promise.all([
-      fetchAllTeamsFromNba(),
+    // Read active players from Supabase (already synced by sync-players)
+    const { data: dbPlayers, error: dbError } = await supabase
+      .from("players")
+      .select("*")
+      .eq("is_active", true);
+
+    if (dbError || !dbPlayers || dbPlayers.length === 0) {
+      throw new Error("No active players in database. Run sync-players first.");
+    }
+
+    // Fetch bio stats (ages) and salaries in parallel
+    const [ageMap, salaryResult] = await Promise.all([
+      fetchAllBioStats(),
       (async () => {
         let salaryMap = new Map<string, string>();
         let payrollMap = new Map<string, number>();
@@ -287,67 +280,38 @@ export async function GET(request: NextRequest) {
       })(),
     ]);
 
-    const { allIdxHeaders, allIdxRows, allBioHeaders, allBioRows } = nbaResult;
     const { salaryMap, payrollMap } = salaryResult;
-
-    if (allIdxHeaders.length === 0) {
-      throw new Error("No team data could be fetched from NBA API");
-    }
-
-    // Parse player index
-    const ii = (name: string) => allIdxHeaders.indexOf(name);
-
-    // Parse bio stats (for age)
-    const bi = (name: string) => allBioHeaders.indexOf(name);
-
-    // Build age lookup: player_id → age
-    const ageMap = new Map<number, number>();
-    for (const row of allBioRows) {
-      const playerId = Number(row[bi("PLAYER_ID")]);
-      const age = row[bi("AGE")] != null ? Number(row[bi("AGE")]) : null;
-      if (playerId && age) ageMap.set(playerId, age);
-    }
 
     const now = new Date().toISOString();
     const players = [];
 
-    for (const row of allIdxRows) {
-      const rosterStatus = row[ii("ROSTER_STATUS")];
-      // Only include players currently on a roster
-      if (rosterStatus !== 1 && rosterStatus !== "1") continue;
+    for (const p of dbPlayers) {
+      if (!p.team_tricode) continue;
 
-      const playerId = Number(row[ii("PERSON_ID")]);
-      const teamTricode = String(row[ii("TEAM_ABBREVIATION")] || "");
-      if (!teamTricode) continue;
-
-      const firstName = String(row[ii("PLAYER_FIRST_NAME")] || "");
-      const lastName = String(row[ii("PLAYER_LAST_NAME")] || "");
-
-      // Match salary by normalized name + team
-      const salaryKey = normalizeName(`${firstName} ${lastName}`) + "|" + teamTricode;
+      const salaryKey = normalizeName(`${p.first_name} ${p.last_name}`) + "|" + p.team_tricode;
       const salary = salaryMap.get(salaryKey) || null;
 
       players.push({
         season: SEASON,
-        player_id: playerId,
-        first_name: firstName,
-        last_name: lastName,
-        team_tricode: teamTricode,
-        team_name: String(row[ii("TEAM_NAME")] || ""),
-        team_city: String(row[ii("TEAM_CITY")] || ""),
-        jersey_number: String(row[ii("JERSEY_NUMBER")] ?? ""),
-        position: String(row[ii("POSITION")] || ""),
-        height: String(row[ii("HEIGHT")] || ""),
-        weight: String(row[ii("WEIGHT")] || ""),
-        age: ageMap.get(playerId) || null,
-        college: String(row[ii("COLLEGE")] || ""),
-        country: String(row[ii("COUNTRY")] || ""),
-        draft_year: row[ii("DRAFT_YEAR")] ? Number(row[ii("DRAFT_YEAR")]) : null,
-        draft_round: row[ii("DRAFT_ROUND")] ? Number(row[ii("DRAFT_ROUND")]) : null,
-        draft_number: row[ii("DRAFT_NUMBER")] ? Number(row[ii("DRAFT_NUMBER")]) : null,
-        pts: row[ii("PTS")] != null ? Number(row[ii("PTS")]) : null,
-        reb: row[ii("REB")] != null ? Number(row[ii("REB")]) : null,
-        ast: row[ii("AST")] != null ? Number(row[ii("AST")]) : null,
+        player_id: p.player_id,
+        first_name: p.first_name,
+        last_name: p.last_name,
+        team_tricode: p.team_tricode,
+        team_name: p.team_name || "",
+        team_city: p.team_city || "",
+        jersey_number: p.jersey_number ?? "",
+        position: p.position || "",
+        height: p.height || "",
+        weight: p.weight || "",
+        age: ageMap.get(p.player_id) || null,
+        college: p.college || "",
+        country: p.country || "",
+        draft_year: p.draft_year || null,
+        draft_round: p.draft_round || null,
+        draft_number: p.draft_number || null,
+        pts: p.pts,
+        reb: p.reb,
+        ast: p.ast,
         salary,
         updated_at: now,
       });

@@ -211,11 +211,10 @@ export async function GET(request: NextRequest) {
       ts.team_tricode = TRICODE_MAP[ts.team_id] || ts.team_tricode;
     }
 
-    // Upsert team stats (avoids emptying table on partial failures)
+    // Delete and reinsert
+    await supabase.from("team_stats").delete().eq("season", SEASON);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await supabase.from("team_stats").upsert(teamStats as any, {
-      onConflict: "team_id,season",
-    });
+    const { error } = await supabase.from("team_stats").insert(teamStats as any);
 
     if (error) {
       console.error("Error inserting team stats:", error);
