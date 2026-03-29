@@ -229,7 +229,10 @@ export async function GET(request: NextRequest) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
+  const startTime = Date.now();
+
   try {
+    console.log("[SYNC-ROSTERS] Starting sync...");
     // Read active players from Supabase (already synced by sync-players)
     const { data: dbPlayers, error: dbError } = await supabase
       .from("players")
@@ -239,8 +242,10 @@ export async function GET(request: NextRequest) {
     if (dbError || !dbPlayers || dbPlayers.length === 0) {
       throw new Error("No active players in database. Run sync-players first.");
     }
+    console.log(`[SYNC-ROSTERS] Found ${dbPlayers.length} active players in database`);
 
     // Fetch bio stats (ages) and salaries in parallel
+    console.log("[SYNC-ROSTERS] Fetching from NBA API and Basketball Reference...");
     const [ageMap, salaryResult] = await Promise.all([
       fetchAllBioStats(),
       (async () => {
@@ -259,6 +264,7 @@ export async function GET(request: NextRequest) {
     ]);
 
     const { salaryMap, payrollMap } = salaryResult;
+    console.log(`[SYNC-ROSTERS] Fetched ${ageMap.size} ages, ${salaryMap.size} salaries, ${payrollMap.size} payrolls`);
 
     const now = new Date().toISOString();
     const players = [];
@@ -296,6 +302,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Upsert rosters (avoids emptying table on partial failures)
+    console.log(`[SYNC-ROSTERS] Upserting ${players.length} rows into rosters...`);
     let inserted = 0;
     for (let i = 0; i < players.length; i += BATCH_SIZE) {
       const batch = players.slice(i, i + BATCH_SIZE);
@@ -325,8 +332,10 @@ export async function GET(request: NextRequest) {
       if (payrollError) console.error("Payroll upsert error:", payrollError);
     }
 
+    console.log(`[SYNC-ROSTERS] Upserted ${inserted} rows successfully`);
     revalidatePath("/equipes");
-    console.log(`[SYNC-ROSTERS] Completed at ${now}`);
+    const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+    console.log(`[SYNC-ROSTERS] Completed at ${now} (took ${duration}s)`);
 
     return NextResponse.json({
       ok: true,

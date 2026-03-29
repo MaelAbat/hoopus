@@ -65,7 +65,11 @@ export async function GET(request: NextRequest) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
+  const startTime = Date.now();
+
   try {
+    console.log("[SYNC-PLAYERS] Starting sync...");
+    console.log("[SYNC-PLAYERS] Fetching from NBA API...");
     // Only fetch active players (Historical=0) — much smaller payload
     // Historical players already in DB are preserved via upsert
     const indexData = await fetchNba(
@@ -78,6 +82,8 @@ export async function GET(request: NextRequest) {
     const headers = indexData.resultSets[0].headers;
     const rows = indexData.resultSets[0].rowSet;
     const ii = (name: string) => headers.indexOf(name);
+
+    console.log(`[SYNC-PLAYERS] Fetched ${rows.length} rows from API`);
 
     const now = new Date().toISOString();
     const players = [];
@@ -116,6 +122,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Upsert players
+    console.log(`[SYNC-PLAYERS] Upserting ${players.length} rows into players...`);
     let inserted = 0;
     for (let i = 0; i < players.length; i += BATCH_SIZE) {
       const batch = players.slice(i, i + BATCH_SIZE);
@@ -129,6 +136,10 @@ export async function GET(request: NextRequest) {
         inserted += batch.length;
       }
     }
+
+    console.log(`[SYNC-PLAYERS] Upserted ${inserted} rows successfully`);
+    const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+    console.log(`[SYNC-PLAYERS] Completed at ${now} (took ${duration}s)`);
 
     return NextResponse.json({
       ok: true,

@@ -81,7 +81,11 @@ export async function GET(request: NextRequest) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
+  const startTime = Date.now();
+
   try {
+    console.log("[SYNC-GAMES] Starting sync...");
+    console.log("[SYNC-GAMES] Fetching from NBA CDN...");
     const schedule = await fetchSchedule();
     const gameDates = schedule.leagueSchedule.gameDates;
 
@@ -134,6 +138,9 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    console.log(`[SYNC-GAMES] Fetched ${allGames.length} games from API`);
+    console.log(`[SYNC-GAMES] Upserting ${allGames.length} rows into games...`);
+
     // Upsert in batches of 200
     for (let i = 0; i < allGames.length; i += 200) {
       const batch = allGames.slice(i, i + 200);
@@ -145,8 +152,10 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    console.log(`[SYNC-GAMES] Upserted ${totalInserted} rows successfully`);
     revalidatePath("/calendrier");
-    console.log(`[SYNC-GAMES] Completed at ${now}`);
+    const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+    console.log(`[SYNC-GAMES] Completed at ${now} (took ${duration}s)`);
 
     return NextResponse.json({
       ok: true,

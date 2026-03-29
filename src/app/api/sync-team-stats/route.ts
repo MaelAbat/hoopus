@@ -76,9 +76,11 @@ export async function GET(request: NextRequest) {
   );
 
   const now = new Date().toISOString();
+  const startTime = Date.now();
 
   try {
-    console.log("[SYNC-TEAM-STATS] Fetching base and advanced stats...");
+    console.log("[SYNC-TEAM-STATS] Starting sync...");
+    console.log("[SYNC-TEAM-STATS] Fetching from NBA API...");
     const [baseData, advData] = await Promise.all([
       fetchTeamStats("Base"),
       fetchTeamStats("Advanced"),
@@ -91,6 +93,8 @@ export async function GET(request: NextRequest) {
 
     const bIdx = (name: string) => baseH.indexOf(name);
     const aIdx = (name: string) => advH.indexOf(name);
+
+    console.log(`[SYNC-TEAM-STATS] Fetched ${baseRows.length} base rows and ${advRows.length} advanced rows from API`);
 
     // Index advanced rows by team ID for merging
     const advByTeam = new Map<number, (string | number)[]>();
@@ -157,6 +161,7 @@ export async function GET(request: NextRequest) {
       ts.team_tricode = TRICODE_MAP[ts.team_id] || ts.team_tricode;
     }
 
+    console.log(`[SYNC-TEAM-STATS] Upserting ${teamStats.length} rows into team_stats...`);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await supabase.from("team_stats").upsert(teamStats as any, { onConflict: "team_id,season" });
 
@@ -165,9 +170,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    console.log(`[SYNC-TEAM-STATS] Upserted ${teamStats.length} rows successfully`);
     revalidatePath("/statistiques");
     revalidatePath("/equipes");
-    console.log(`[SYNC-TEAM-STATS] Completed at ${now}`);
+    const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+    console.log(`[SYNC-TEAM-STATS] Completed at ${now} (took ${duration}s)`);
 
     return NextResponse.json({
       ok: true,

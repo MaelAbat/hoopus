@@ -86,7 +86,11 @@ export async function GET(request: NextRequest) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
+  const startTime = Date.now();
+
   try {
+    console.log("[SYNC-STANDINGS] Starting sync...");
+    console.log("[SYNC-STANDINGS] Fetching from ESPN...");
     const response = await fetchStandings();
     const now = new Date().toISOString();
 
@@ -116,14 +120,18 @@ export async function GET(request: NextRequest) {
       });
     });
 
+    console.log(`[SYNC-STANDINGS] Fetched ${standings.length} rows from API`);
+    console.log(`[SYNC-STANDINGS] Upserting ${standings.length} rows into standings...`);
     const { error } = await supabase.from("standings").upsert(standings, { onConflict: "team_tricode,season" });
     if (error) {
       console.error("Error inserting standings:", error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    console.log(`[SYNC-STANDINGS] Upserted ${standings.length} rows successfully`);
     revalidatePath("/classement");
-    console.log(`[SYNC-STANDINGS] Completed at ${now}`);
+    const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+    console.log(`[SYNC-STANDINGS] Completed at ${now} (took ${duration}s)`);
 
     return NextResponse.json({
       ok: true,

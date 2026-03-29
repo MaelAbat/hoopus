@@ -173,9 +173,13 @@ export async function GET(request: NextRequest) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
+  const startTime = Date.now();
+
   try {
+    console.log("[SYNC-PLAYOFFS] Starting sync...");
     const now = new Date().toISOString();
     await fetchConferenceTeams(supabase);
+    console.log("[SYNC-PLAYOFFS] Fetching from NBA CDN...");
     const schedule = await fetchSchedule();
     const gameDates = schedule.leagueSchedule.gameDates;
 
@@ -191,6 +195,8 @@ export async function GET(request: NextRequest) {
         }
       }
     }
+
+    console.log(`[SYNC-PLAYOFFS] Fetched ${playoffGames.length} playoff games and ${playinGames.length} play-in games from API`);
 
     // ─── Process Play-In games ───
     const playinRows = [];
@@ -229,6 +235,7 @@ export async function GET(request: NextRequest) {
 
     // Upsert play-in games
     if (playinRows.length > 0) {
+      console.log(`[SYNC-PLAYOFFS] Upserting ${playinRows.length} rows into playin_games...`);
       const { error: playinError } = await supabase.from("playin_games").upsert(playinRows, { onConflict: "season,conference,matchup_type" });
       if (playinError) {
         console.error("Error inserting play-in games:", playinError);
@@ -342,6 +349,7 @@ export async function GET(request: NextRequest) {
     const validRows = rows.filter(r => r.team_top && r.team_bottom);
 
     if (validRows.length > 0) {
+      console.log(`[SYNC-PLAYOFFS] Upserting ${validRows.length} rows into playoff_series...`);
       const { error } = await supabase.from("playoff_series").upsert(validRows, { onConflict: "season,round,team_top,team_bottom" });
       if (error) {
         console.error("Error inserting playoff series:", error);
@@ -349,8 +357,10 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    console.log(`[SYNC-PLAYOFFS] Upserted ${validRows.length} series and ${playinRows.length} play-in games successfully`);
     revalidatePath("/playoffs");
-    console.log(`[SYNC-PLAYOFFS] Completed at ${now}`);
+    const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+    console.log(`[SYNC-PLAYOFFS] Completed at ${now} (took ${duration}s)`);
 
     return NextResponse.json({
       ok: true,

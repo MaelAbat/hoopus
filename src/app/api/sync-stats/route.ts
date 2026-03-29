@@ -126,10 +126,12 @@ export async function GET(request: NextRequest) {
 
   const results: Record<string, number> = {};
   const now = new Date().toISOString();
+  const startTime = Date.now();
 
   try {
     // Fetch all 3 data types in parallel (single calls, all players)
-    console.log("[SYNC-STATS] Fetching all stats...");
+    console.log("[SYNC-STATS] Starting sync...");
+    console.log("[SYNC-STATS] Fetching from NBA API...");
     const [baseData, perGameData, advData] = await Promise.all([
       fetchAllPlayers("Totals", "Base"),
       fetchAllPlayers("PerGame", "Base"),
@@ -303,13 +305,14 @@ export async function GET(request: NextRequest) {
       return buildLeadersWithEligibility(category, allPlayers);
     }
 
-    console.log(`[SYNC-STATS] Data fetched: ${rows.length} base rows, ${pgRows.length} perGame rows, ${advRows.length} advanced rows`);
+    console.log(`[SYNC-STATS] Fetched ${rows.length} base rows, ${pgRows.length} perGame rows, ${advRows.length} advanced rows from API`);
 
     if (rows.length === 0) {
       throw new Error("No player data fetched from NBA API");
     }
 
     // ── Upsert stat_leaders (no delete — preserves data on partial failures) ──
+    console.log("[SYNC-STATS] Upserting rows into stat_leaders...");
 
     // ── Direct categories (per-game from official NBA PerGame data) ──
     for (const { category, statField } of DIRECT_CATEGORIES) {
@@ -608,10 +611,11 @@ export async function GET(request: NextRequest) {
   }
 
   const totalInserted = Object.values(results).reduce((a, b) => a + b, 0);
-  console.log(`[SYNC-STATS] Inserted ${totalInserted} rows across ${Object.keys(results).length} categories`);
+  console.log(`[SYNC-STATS] Upserted ${totalInserted} rows successfully across ${Object.keys(results).length} categories`);
 
   revalidatePath("/statistiques");
-  console.log(`[SYNC-STATS] Completed at ${new Date().toISOString()}`);
+  const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+  console.log(`[SYNC-STATS] Completed at ${new Date().toISOString()} (took ${duration}s)`);
 
   return NextResponse.json({
     ok: true,

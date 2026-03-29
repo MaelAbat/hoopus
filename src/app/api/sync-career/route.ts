@@ -106,16 +106,26 @@ export async function GET(request: NextRequest) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
+  const startTime = Date.now();
+  console.log("[SYNC-CAREER] Starting sync...");
+
   // Optional: sync a single player
   const singleId = request.nextUrl.searchParams.get("player_id");
   if (singleId && /^\d+$/.test(singleId)) {
     try {
+      console.log(`[SYNC-CAREER] Fetching single player ${singleId} from NBA API...`);
       const rows = await fetchPlayerCareer(Number(singleId));
+      console.log(`[SYNC-CAREER] Fetched ${rows.length} seasons for player ${singleId}`);
       if (rows.length > 0) {
+        console.log(`[SYNC-CAREER] Upserting ${rows.length} rows into player_career_stats...`);
         await supabase.from("player_career_stats").upsert(rows, { onConflict: "player_id,season,team" });
+        console.log(`[SYNC-CAREER] Upserted ${rows.length} rows successfully`);
       }
+      const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+      console.log(`[SYNC-CAREER] Completed at ${new Date().toISOString()} (took ${duration}s)`);
       return NextResponse.json({ ok: true, player_id: singleId, seasons: rows.length });
     } catch (err) {
+      console.error(`[SYNC-CAREER] Error fetching player ${singleId}:`, err);
       return NextResponse.json({ error: (err as Error).message }, { status: 502 });
     }
   }
@@ -129,8 +139,11 @@ export async function GET(request: NextRequest) {
     .eq("is_active", true);
 
   if (!activePlayers || activePlayers.length === 0) {
+    console.log("[SYNC-CAREER] No active players found, skipping");
     return NextResponse.json({ ok: true, synced: 0, message: "No active players" });
   }
+  console.log(`[SYNC-CAREER] Found ${activePlayers.length} active players to sync`);
+  console.log("[SYNC-CAREER] Fetching from NBA API...");
 
   // Find players who already have historical data — only update current season
   const { data: existingCareer } = await supabase
@@ -189,10 +202,15 @@ export async function GET(request: NextRequest) {
 
   // Insert remaining
   if (allRows.length > 0) {
+    console.log(`[SYNC-CAREER] Upserting final ${allRows.length} rows into player_career_stats...`);
     await supabase.from("player_career_stats").upsert(allRows, {
       onConflict: "player_id,season,team",
     });
+    console.log(`[SYNC-CAREER] Upserted ${allRows.length} rows successfully`);
   }
+
+  const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+  console.log(`[SYNC-CAREER] Completed at ${new Date().toISOString()} (took ${duration}s) - synced: ${synced}, skipped: ${skipped}, failed: ${failed}`);
 
   return NextResponse.json({
     ok: true,
