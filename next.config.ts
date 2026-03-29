@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: [],
+  experimental: {
+    proxyTimeout: 600_000, // 10 minutes
+  },
   async headers() {
     return [
       {
