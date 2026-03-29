@@ -40,6 +40,7 @@ export async function triggerSync(): Promise<{
     { key: "playoffs", path: "/api/sync-playoffs" },
     { key: "rosters", path: "/api/sync-rosters" },
     { key: "players", path: "/api/sync-players" },
+    { key: "career", path: "/api/sync-career" },
   ];
 
   const results: Record<string, unknown> = {};
