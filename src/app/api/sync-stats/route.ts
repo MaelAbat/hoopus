@@ -86,7 +86,7 @@ function fetchAllPlayers(
       });
     });
     req.on("error", reject);
-    // No timeout — local sync can take as long as needed
+    req.setTimeout(600000, () => { req.destroy(); reject(new Error("NBA API timeout after 10min")); });
   });
 }
 
@@ -128,7 +128,7 @@ export async function GET(request: NextRequest) {
   try {
     // Fetch all 3 data types in parallel (single calls, all players)
     console.log("[SYNC-STATS] Starting sync...");
-    console.log("[SYNC-STATS] Fetching from NBA API...");
+    console.log("[SYNC-STATS] Fetching from stats.nba.com (3 parallel calls, timeout 10min each)...");
     const [baseData, perGameData, advData] = await Promise.all([
       fetchAllPlayers("Totals", "Base"),
       fetchAllPlayers("PerGame", "Base"),

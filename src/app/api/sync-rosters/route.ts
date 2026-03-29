@@ -61,7 +61,7 @@ function fetchHtml(url: string, redirects = 0): Promise<string> {
         });
       });
       req.on("error", reject);
-      // No timeout — local sync can take as long as needed
+      req.setTimeout(600000, () => { req.destroy(); reject(new Error("timeout after 10min")); });
     } catch (err) {
       reject(err);
     }
@@ -170,7 +170,7 @@ function fetchNba(url: string, timeoutMs = 300000): Promise<NbaResponse> {
       });
     });
     req.on("error", reject);
-    // No timeout — local sync can take as long as needed
+    req.setTimeout(600000, () => { req.destroy(); reject(new Error("timeout after 10min")); });
   });
 }
 
@@ -179,7 +179,7 @@ async function fetchAllBioStats(): Promise<Map<number, number>> {
   const ageMap = new Map<number, number>();
 
   try {
-    console.log("[SYNC-ROSTERS] Fetching bio stats...");
+    console.log("[SYNC-ROSTERS] Fetching bio stats from stats.nba.com (timeout 10min)...");
     const bioData = await fetchNba(
       "https://stats.nba.com/stats/leaguedashplayerbiostats?" +
         "College=&Conference=&Country=&DateFrom=&DateTo=&Division=" +

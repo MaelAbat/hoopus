@@ -53,7 +53,7 @@ function fetchTeamStats(measureType: "Base" | "Advanced"): Promise<NbaDashRespon
       });
     });
     req.on("error", reject);
-    // No timeout — local sync can take as long as needed
+    req.setTimeout(600000, () => { req.destroy(); reject(new Error("NBA API timeout after 10min")); });
   });
 }
 
@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
 
   try {
     console.log("[SYNC-TEAM-STATS] Starting sync...");
-    console.log("[SYNC-TEAM-STATS] Fetching from NBA API...");
+    console.log("[SYNC-TEAM-STATS] Fetching from stats.nba.com (2 parallel calls, timeout 10min each)...");
     const [baseData, advData] = await Promise.all([
       fetchTeamStats("Base"),
       fetchTeamStats("Advanced"),

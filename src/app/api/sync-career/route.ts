@@ -36,7 +36,7 @@ function fetchNba(url: string): Promise<NbaResponse> {
       });
     });
     req.on("error", reject);
-    // No timeout — local sync can take as long as needed
+    req.setTimeout(600000, () => { req.destroy(); reject(new Error("NBA API timeout after 10min")); });
   });
 }
 

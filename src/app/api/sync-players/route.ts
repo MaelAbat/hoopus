@@ -43,7 +43,7 @@ function fetchNba(url: string): Promise<NbaResponse> {
       });
     });
     req.on("error", reject);
-    // No timeout — local sync can take as long as needed
+    req.setTimeout(600000, () => { req.destroy(); reject(new Error("NBA API timeout after 10min")); });
   });
 }
 
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
 
   try {
     console.log("[SYNC-PLAYERS] Starting sync...");
-    console.log("[SYNC-PLAYERS] Fetching from NBA API...");
+    console.log("[SYNC-PLAYERS] Fetching from stats.nba.com (timeout 10min)...");
     // Only fetch active players (Historical=0) — much smaller payload
     // Historical players already in DB are preserved via upsert
     const indexData = await fetchNba(
