@@ -168,6 +168,11 @@ export async function GET(request: NextRequest) {
       failed++;
     }
 
+    // Log progress every 50 players
+    if ((i + 1) % 50 === 0 || i === activePlayers.length - 1) {
+      console.log(`[SYNC-CAREER] Progress: ${i + 1}/${activePlayers.length} (synced: ${synced}, failed: ${failed})`);
+    }
+
     // Rate limiting: ~1 request per 700ms to avoid NBA API throttling
     if (i < activePlayers.length - 1) {
       await sleep(700);

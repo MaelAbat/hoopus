@@ -53,7 +53,9 @@ async function main() {
     process.stdout.write(`  ⏳ ${endpoint.label}...`);
 
     try {
-      const res = await fetch(`${BASE_URL}/api/sync-${endpoint.key}?${authParam}`);
+      const res = await fetch(`${BASE_URL}/api/sync-${endpoint.key}?${authParam}`, {
+        signal: AbortSignal.timeout(30 * 60 * 1000), // 30 minutes max
+      });
       const data = await res.json();
       const duration = ((Date.now() - start) / 1000).toFixed(1);
 
