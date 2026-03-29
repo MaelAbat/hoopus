@@ -61,10 +61,7 @@ function fetchHtml(url: string, redirects = 0): Promise<string> {
         });
       });
       req.on("error", reject);
-      req.setTimeout(30000, () => {
-        req.destroy();
-        reject(new Error("HTML fetch timeout"));
-      });
+      // No timeout — local sync can take as long as needed
     } catch (err) {
       reject(err);
     }
@@ -173,10 +170,7 @@ function fetchNba(url: string, timeoutMs = 300000): Promise<NbaResponse> {
       });
     });
     req.on("error", reject);
-    req.setTimeout(timeoutMs, () => {
-      req.destroy();
-      reject(new Error("NBA API timeout"));
-    });
+    // No timeout — local sync can take as long as needed
   });
 }
 

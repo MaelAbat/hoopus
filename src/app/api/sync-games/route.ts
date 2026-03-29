@@ -59,10 +59,7 @@ function fetchSchedule(): Promise<NbaSchedule> {
       }
     );
     req.on("error", reject);
-    req.setTimeout(120000, () => {
-      req.destroy();
-      reject(new Error("CDN timeout"));
-    });
+    // No timeout — local sync can take as long as needed
   });
 }
 

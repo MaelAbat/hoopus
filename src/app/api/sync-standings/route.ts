@@ -57,10 +57,7 @@ function fetchStandings(): Promise<EspnStandingsResponse> {
       });
     });
     req.on("error", reject);
-    req.setTimeout(120000, () => {
-      req.destroy();
-      reject(new Error("ESPN API timeout"));
-    });
+    // No timeout — local sync can take as long as needed
   });
 }
 

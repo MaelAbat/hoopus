@@ -33,7 +33,7 @@ function fetchNba(url: string): Promise<NbaResponse> {
       });
     });
     req.on("error", reject);
-    req.setTimeout(15000, () => { req.destroy(); reject(new Error("Timeout")); });
+    // No timeout — local sync can take as long as needed
   });
 }
 

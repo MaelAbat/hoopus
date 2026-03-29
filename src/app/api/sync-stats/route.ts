@@ -86,10 +86,7 @@ function fetchAllPlayers(
       });
     });
     req.on("error", reject);
-    req.setTimeout(300000, () => {
-      req.destroy();
-      reject(new Error(`NBA API timeout (${measureType})`));
-    });
+    // No timeout — local sync can take as long as needed
   });
 }
 
