@@ -20,6 +20,17 @@ const NBA_HEADERS: Record<string, string> = {
   "x-nba-stats-token": "true",
 };
 
+const TEAM_IDS: [number, string][] = [
+  [1610612737, "ATL"], [1610612738, "BOS"], [1610612751, "BKN"], [1610612766, "CHA"],
+  [1610612741, "CHI"], [1610612739, "CLE"], [1610612742, "DAL"], [1610612743, "DEN"],
+  [1610612765, "DET"], [1610612744, "GSW"], [1610612745, "HOU"], [1610612754, "IND"],
+  [1610612746, "LAC"], [1610612747, "LAL"], [1610612763, "MEM"], [1610612748, "MIA"],
+  [1610612749, "MIL"], [1610612750, "MIN"], [1610612740, "NOP"], [1610612752, "NYK"],
+  [1610612760, "OKC"], [1610612753, "ORL"], [1610612755, "PHI"], [1610612756, "PHX"],
+  [1610612757, "POR"], [1610612758, "SAC"], [1610612759, "SAS"], [1610612761, "TOR"],
+  [1610612762, "UTA"], [1610612764, "WAS"],
+];
+
 interface NbaResponse {
   resultSets: {
     headers: string[];
@@ -155,7 +166,7 @@ async function fetchSalaries(): Promise<Map<string, string>> {
   return salaryMap;
 }
 
-function fetchNba(url: string): Promise<NbaResponse> {
+function fetchNba(url: string, timeoutMs = 15000): Promise<NbaResponse> {
   return new Promise((resolve, reject) => {
     const req = https.get(url, { headers: NBA_HEADERS }, (res) => {
       let data = "";
@@ -173,11 +184,70 @@ function fetchNba(url: string): Promise<NbaResponse> {
       });
     });
     req.on("error", reject);
-    req.setTimeout(120000, () => {
+    req.setTimeout(timeoutMs, () => {
       req.destroy();
       reject(new Error("NBA API timeout"));
     });
   });
+}
+
+/** Fetch playerindex + biostats for all 30 teams sequentially */
+async function fetchAllTeamsFromNba(): Promise<{
+  allIdxHeaders: string[];
+  allIdxRows: (string | number | null)[][];
+  allBioHeaders: string[];
+  allBioRows: (string | number | null)[][];
+}> {
+  let allIdxHeaders: string[] = [];
+  let allIdxRows: (string | number | null)[][] = [];
+  let allBioHeaders: string[] = [];
+  let allBioRows: (string | number | null)[][] = [];
+
+  for (let i = 0; i < TEAM_IDS.length; i++) {
+    const [teamId, tricode] = TEAM_IDS[i];
+    console.log(`[SYNC-ROSTERS] Fetching team ${i + 1}/30 (${tricode})...`);
+
+    try {
+      const [indexData, bioData] = await Promise.all([
+        fetchNba(
+          "https://stats.nba.com/stats/playerindex?" +
+            "College=&Conference=&Country=&DraftPick=&DraftRound=&DraftYear=" +
+            "&Height=&Historical=0&LeagueID=00&Season=" + SEASON +
+            "&SeasonType=Regular+Season&TeamID=" + teamId + "&Weight="
+        ),
+        fetchNba(
+          "https://stats.nba.com/stats/leaguedashplayerbiostats?" +
+            "College=&Conference=&Country=&DateFrom=&DateTo=&Division=" +
+            "&DraftPick=&DraftYear=&GameScope=&GameSegment=&Height=" +
+            "&ISTRound=&LastNGames=0&LeagueID=00&Location=&Month=0" +
+            "&OpponentTeamID=0&Outcome=&PORound=0&PerMode=PerGame" +
+            "&Period=0&PlayerExperience=&PlayerPosition=&Season=" + SEASON +
+            "&SeasonSegment=&SeasonType=Regular+Season" +
+            "&ShotClockRange=&StarterBench=&TeamID=" + teamId +
+            "&VsConference=&VsDivision=&Weight="
+        ),
+      ]);
+
+      // Capture headers from first successful response
+      if (allIdxHeaders.length === 0) {
+        allIdxHeaders = indexData.resultSets[0].headers;
+      }
+      if (allBioHeaders.length === 0) {
+        allBioHeaders = bioData.resultSets[0].headers;
+      }
+
+      allIdxRows = allIdxRows.concat(indexData.resultSets[0].rowSet);
+      allBioRows = allBioRows.concat(bioData.resultSets[0].rowSet);
+    } catch (err) {
+      console.error(`[SYNC-ROSTERS] Failed to fetch team ${tricode} (${teamId}):`, (err as Error).message);
+      // Continue with other teams
+    }
+
+    // 500ms delay between teams
+    if (i < TEAM_IDS.length - 1) await delay(500);
+  }
+
+  return { allIdxHeaders, allIdxRows, allBioHeaders, allBioRows };
 }
 
 export async function GET(request: NextRequest) {
@@ -196,52 +266,40 @@ export async function GET(request: NextRequest) {
   );
 
   try {
-    // Fetch player index and bio stats (critical), salary is best-effort
-    const [indexData, bioData] = await Promise.all([
-      fetchNba(
-        "https://stats.nba.com/stats/playerindex?" +
-          "College=&Conference=&Country=&DraftPick=&DraftRound=&DraftYear=" +
-          "&Height=&Historical=0&LeagueID=00&Season=" + SEASON +
-          "&SeasonType=Regular+Season&TeamID=0&Weight="
-      ),
-      fetchNba(
-        "https://stats.nba.com/stats/leaguedashplayerbiostats?" +
-          "College=&Conference=&Country=&DateFrom=&DateTo=&Division=" +
-          "&DraftPick=&DraftYear=&GameScope=&GameSegment=&Height=" +
-          "&ISTRound=&LastNGames=0&LeagueID=00&Location=&Month=0" +
-          "&OpponentTeamID=0&Outcome=&PORound=0&PerMode=PerGame" +
-          "&Period=0&PlayerExperience=&PlayerPosition=&Season=" + SEASON +
-          "&SeasonSegment=&SeasonType=Regular+Season" +
-          "&ShotClockRange=&StarterBench=&TeamID=0" +
-          "&VsConference=&VsDivision=&Weight="
-      ),
+    // Fetch per-team NBA data (critical) in parallel with salary scraping (best-effort)
+    const [nbaResult, salaryResult] = await Promise.all([
+      fetchAllTeamsFromNba(),
+      (async () => {
+        let salaryMap = new Map<string, string>();
+        let payrollMap = new Map<string, number>();
+        try {
+          [salaryMap, payrollMap] = await Promise.all([
+            fetchSalaries(),
+            fetchTeamPayrolls(),
+          ]);
+        } catch (err) {
+          console.error("Salary/payroll scraping failed (non-fatal):", err);
+        }
+        return { salaryMap, payrollMap };
+      })(),
     ]);
 
-    // Salary + payroll scraping is best-effort — never blocks the sync
-    let salaryMap = new Map<string, string>();
-    let payrollMap = new Map<string, number>();
-    try {
-      [salaryMap, payrollMap] = await Promise.all([
-        fetchSalaries(),
-        fetchTeamPayrolls(),
-      ]);
-    } catch (err) {
-      console.error("Salary/payroll scraping failed (non-fatal):", err);
+    const { allIdxHeaders, allIdxRows, allBioHeaders, allBioRows } = nbaResult;
+    const { salaryMap, payrollMap } = salaryResult;
+
+    if (allIdxHeaders.length === 0) {
+      throw new Error("No team data could be fetched from NBA API");
     }
 
     // Parse player index
-    const idxHeaders = indexData.resultSets[0].headers;
-    const idxRows = indexData.resultSets[0].rowSet;
-    const ii = (name: string) => idxHeaders.indexOf(name);
+    const ii = (name: string) => allIdxHeaders.indexOf(name);
 
     // Parse bio stats (for age)
-    const bioHeaders = bioData.resultSets[0].headers;
-    const bioRows = bioData.resultSets[0].rowSet;
-    const bi = (name: string) => bioHeaders.indexOf(name);
+    const bi = (name: string) => allBioHeaders.indexOf(name);
 
     // Build age lookup: player_id → age
     const ageMap = new Map<number, number>();
-    for (const row of bioRows) {
+    for (const row of allBioRows) {
       const playerId = Number(row[bi("PLAYER_ID")]);
       const age = row[bi("AGE")] != null ? Number(row[bi("AGE")]) : null;
       if (playerId && age) ageMap.set(playerId, age);
@@ -250,7 +308,7 @@ export async function GET(request: NextRequest) {
     const now = new Date().toISOString();
     const players = [];
 
-    for (const row of idxRows) {
+    for (const row of allIdxRows) {
       const rosterStatus = row[ii("ROSTER_STATUS")];
       // Only include players currently on a roster
       if (rosterStatus !== 1 && rosterStatus !== "1") continue;
