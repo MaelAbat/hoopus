@@ -43,7 +43,7 @@ function fetchNba(url: string): Promise<NbaResponse> {
       });
     });
     req.on("error", reject);
-    req.setTimeout(300000, () => {
+    req.setTimeout(30000, () => {
       req.destroy();
       reject(new Error("NBA API timeout"));
     });
@@ -66,10 +66,12 @@ export async function GET(request: NextRequest) {
   );
 
   try {
+    // Only fetch active players (Historical=0) — much smaller payload
+    // Historical players already in DB are preserved via upsert
     const indexData = await fetchNba(
       "https://stats.nba.com/stats/playerindex?" +
         "College=&Conference=&Country=&DraftPick=&DraftRound=&DraftYear=" +
-        "&Height=&Historical=1&LeagueID=00&Season=2025-26" +
+        "&Height=&Historical=0&LeagueID=00&Season=2025-26" +
         "&SeasonType=Regular+Season&TeamID=0&Weight="
     );
 
