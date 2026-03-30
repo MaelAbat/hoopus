@@ -243,7 +243,7 @@ export default function StatsCarousel({ boards }: { boards: Board[] }) {
               >
                 <Filter size={12} />
                 Éligibles
-                <span className="text-text-faint">({board.eligibleCount})</span>
+                <span className="text-text-faint">({board.full.filter((p) => p.rank <= board.eligibleCount).length})</span>
               </button>
               <button
                 onClick={() => { setMode("full"); setEligibility("all"); }}

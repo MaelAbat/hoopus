@@ -50,7 +50,7 @@ export default async function Statistiques({ searchParams }: { searchParams: Pro
   // Fetch season list and stat leaders in parallel
   const [{ data: seasonRows }, ...pages] = await Promise.all([
     supabase.from("standings").select("season").order("season", { ascending: false }).limit(1000),
-    ...Array.from({ length: 15 }, (_, i) =>
+    ...Array.from({ length: 30 }, (_, i) =>
       supabase
         .from("stat_leaders")
         .select("*")
