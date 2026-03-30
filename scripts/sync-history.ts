@@ -600,6 +600,117 @@ async function syncRostersForSeason(season: string): Promise<number> {
   return upserted;
 }
 
+/* ─── Team Stats (NBA API leaguedashteamstats) ─── */
+
+const TEAM_TRICODE_MAP: Record<number, string> = {
+  1610612737: "ATL", 1610612738: "BOS", 1610612751: "BKN", 1610612766: "CHA",
+  1610612741: "CHI", 1610612739: "CLE", 1610612742: "DAL", 1610612743: "DEN",
+  1610612765: "DET", 1610612744: "GSW", 1610612745: "HOU", 1610612754: "IND",
+  1610612746: "LAC", 1610612747: "LAL", 1610612763: "MEM", 1610612748: "MIA",
+  1610612749: "MIL", 1610612750: "MIN", 1610612740: "NOP", 1610612752: "NYK",
+  1610612760: "OKC", 1610612753: "ORL", 1610612755: "PHI", 1610612756: "PHX",
+  1610612757: "POR", 1610612758: "SAC", 1610612759: "SAS", 1610612761: "TOR",
+  1610612762: "UTA", 1610612764: "WAS",
+};
+
+async function syncTeamStatsForSeason(season: string): Promise<number> {
+  console.log(`    Stats equipes (2 appels API)...`);
+
+  let baseData: any, advData: any;
+  try {
+    const baseUrl =
+      `https://stats.nba.com/stats/leaguedashteamstats?` +
+      `Conference=&DateFrom=&DateTo=&Division=&GameScope=&GameSegment=&Height=&ISTRound=` +
+      `&LastNGames=0&LeagueID=00&Location=&MeasureType=Base` +
+      `&Month=0&OpponentTeamID=0&Outcome=&PORound=0&PaceAdjust=N&PerMode=PerGame&Period=0` +
+      `&PlayerExperience=&PlayerPosition=&PlusMinus=N&Rank=N&Season=${season}` +
+      `&SeasonSegment=&SeasonType=Regular+Season&ShotClockRange=&StarterBench=` +
+      `&TeamID=0&TwoWay=0&VsConference=&VsDivision=`;
+    baseData = await fetchJson(baseUrl, NBA_HEADERS);
+    await sleep(2000);
+
+    const advUrl =
+      `https://stats.nba.com/stats/leaguedashteamstats?` +
+      `Conference=&DateFrom=&DateTo=&Division=&GameScope=&GameSegment=&Height=&ISTRound=` +
+      `&LastNGames=0&LeagueID=00&Location=&MeasureType=Advanced` +
+      `&Month=0&OpponentTeamID=0&Outcome=&PORound=0&PaceAdjust=N&PerMode=PerGame&Period=0` +
+      `&PlayerExperience=&PlayerPosition=&PlusMinus=N&Rank=N&Season=${season}` +
+      `&SeasonSegment=&SeasonType=Regular+Season&ShotClockRange=&StarterBench=` +
+      `&TeamID=0&TwoWay=0&VsConference=&VsDivision=`;
+    advData = await fetchJson(advUrl, NBA_HEADERS);
+  } catch (err) {
+    console.log(`    Erreur API: ${(err as Error).message}`);
+    return 0;
+  }
+
+  const baseH = baseData.resultSets[0].headers as string[];
+  const baseRows = baseData.resultSets[0].rowSet;
+  const advH = advData.resultSets[0].headers as string[];
+  const advRows = advData.resultSets[0].rowSet;
+
+  const bIdx = (name: string) => baseH.indexOf(name);
+  const aIdx = (name: string) => advH.indexOf(name);
+
+  const advByTeam = new Map<number, any[]>();
+  for (const row of advRows) advByTeam.set(Number(row[aIdx("TEAM_ID")]), row);
+
+  const now = new Date().toISOString();
+  const teamStats = baseRows.map((row: any[]) => {
+    const teamId = Number(row[bIdx("TEAM_ID")]);
+    const adv = advByTeam.get(teamId);
+
+    return {
+      team_id: teamId,
+      team_name: String(row[bIdx("TEAM_NAME")]),
+      team_tricode: TEAM_TRICODE_MAP[teamId] || String(row[bIdx("TEAM_NAME")]).split(" ").pop() || "",
+      season,
+      gp: Number(row[bIdx("GP")]),
+      w: Number(row[bIdx("W")]),
+      l: Number(row[bIdx("L")]),
+      w_pct: Number(row[bIdx("W_PCT")]),
+      pts: Number(row[bIdx("PTS")]),
+      reb: Number(row[bIdx("REB")]),
+      ast: Number(row[bIdx("AST")]),
+      stl: Number(row[bIdx("STL")]),
+      blk: Number(row[bIdx("BLK")]),
+      tov: Number(row[bIdx("TOV")]),
+      fg_pct: Number(row[bIdx("FG_PCT")]),
+      fg3_pct: Number(row[bIdx("FG3_PCT")]),
+      ft_pct: Number(row[bIdx("FT_PCT")]),
+      oreb: Number(row[bIdx("OREB")]),
+      dreb: Number(row[bIdx("DREB")]),
+      plus_minus: Number(row[bIdx("PLUS_MINUS")]),
+      off_rating: adv ? Number(adv[aIdx("OFF_RATING")]) : 0,
+      def_rating: adv ? Number(adv[aIdx("DEF_RATING")]) : 0,
+      net_rating: adv ? Number(adv[aIdx("NET_RATING")]) : 0,
+      pace: adv ? Number(adv[aIdx("PACE")]) : 0,
+      ts_pct: adv ? Number(adv[aIdx("TS_PCT")]) : 0,
+      efg_pct: adv ? Number(adv[aIdx("EFG_PCT")]) : 0,
+      ast_pct: adv ? Number(adv[aIdx("AST_PCT")]) : 0,
+      ast_ratio: adv ? Number(adv[aIdx("AST_RATIO")]) : 0,
+      oreb_pct: adv ? Number(adv[aIdx("OREB_PCT")]) : 0,
+      dreb_pct: adv ? Number(adv[aIdx("DREB_PCT")]) : 0,
+      tm_tov_pct: adv ? Number(adv[aIdx("TM_TOV_PCT")]) : 0,
+      pie: adv ? Number(adv[aIdx("PIE")]) : 0,
+      updated_at: now,
+    };
+  });
+
+  if (teamStats.length === 0) {
+    console.log(`    Aucune stat equipe trouvee`);
+    return 0;
+  }
+
+  const { error } = await supabase.from("team_stats").upsert(teamStats, { onConflict: "team_id,season" });
+  if (error) {
+    console.log(`    Erreur: ${error.message}`);
+    return 0;
+  }
+
+  console.log(`    ${teamStats.length} equipes inserees/mises a jour`);
+  return teamStats.length;
+}
+
 /* ─── Playoffs (derived from games + standings already in DB) ─── */
 
 async function syncPlayoffsForSeason(season: string): Promise<number> {
@@ -751,61 +862,70 @@ async function syncPlayoffsForSeason(season: string): Promise<number> {
     .select("game_id, game_date, home_team, away_team, home_score, away_score, status")
     .eq("season", season)
     .like("game_id", "005%")
-    .order("game_date", { ascending: true });
+    .order("game_date", { ascending: true })
+    .order("game_id", { ascending: true });
 
   if (playinGamesData && playinGamesData.length > 0) {
+    // Group by conference, sorted by date
+    const byConf = new Map<string, typeof playinGamesData>();
+    for (const game of playinGamesData) {
+      const homeInfo = teamInfo.get(game.home_team);
+      const awayInfo = teamInfo.get(game.away_team);
+      if (!homeInfo || !awayInfo) continue;
+      const conf = homeInfo.conference === awayInfo.conference ? homeInfo.conference : null;
+      if (!conf) continue;
+      const list = byConf.get(conf) || [];
+      list.push(game);
+      byConf.set(conf, list);
+    }
+
+    // Play-in format: 3 games per conference in chronological order
+    // Game 1: 7 vs 8 (seven_eight)
+    // Game 2: 9 vs 10 (nine_ten)
+    // Game 3: loser of G1 vs winner of G2 (final)
+    const MATCHUP_ORDER = ["seven_eight", "nine_ten", "final"];
     const playinRows: any[] = [];
 
-    for (const game of playinGamesData) {
-      const home = game.home_team;
-      const away = game.away_team;
-      const homeInfo = teamInfo.get(home);
-      const awayInfo = teamInfo.get(away);
-      if (!homeInfo || !awayInfo) continue;
-      if (homeInfo.conference !== awayInfo.conference) continue;
-
-      // Determine matchup type from seeds
-      const seeds = [homeInfo.seed, awayInfo.seed].sort((a, b) => a - b);
-      let matchupType: string | null = null;
-      if (seeds[0] === 7 && seeds[1] === 8) matchupType = "seven_eight";
-      else if (seeds[0] === 9 && seeds[1] === 10) matchupType = "nine_ten";
-      else if ((seeds[0] >= 7 && seeds[0] <= 8) && (seeds[1] >= 9 && seeds[1] <= 10)) matchupType = "final";
-      if (!matchupType) continue;
-
-      const finished = game.status === 3;
-      const homeWon = finished && game.home_score > game.away_score;
-      const awayWon = finished && game.away_score > game.home_score;
-
-      playinRows.push({
-        season,
-        conference: homeInfo.conference,
-        matchup_type: matchupType,
-        home_team: home,
-        away_team: away,
-        home_seed: homeInfo.seed,
-        away_seed: awayInfo.seed,
-        home_score: game.home_score || 0,
-        away_score: game.away_score || 0,
-        status: game.status,
-        game_date: typeof game.game_date === "string" ? game.game_date.split("T")[0] : String(game.game_date),
-        winner: homeWon ? home : awayWon ? away : null,
-        updated_at: now,
+    for (const [conf, confGames] of byConf) {
+      // Sort by date then game_id for stable ordering
+      confGames.sort((a, b) => {
+        const dateCmp = String(a.game_date).localeCompare(String(b.game_date));
+        if (dateCmp !== 0) return dateCmp;
+        return a.game_id.localeCompare(b.game_id);
       });
+
+      for (let gi = 0; gi < confGames.length && gi < 3; gi++) {
+        const game = confGames[gi];
+        const homeInfo = teamInfo.get(game.home_team)!;
+        const awayInfo = teamInfo.get(game.away_team)!;
+        const finished = game.status === 3;
+        const homeWon = finished && game.home_score > game.away_score;
+        const awayWon = finished && game.away_score > game.home_score;
+
+        playinRows.push({
+          season,
+          conference: conf,
+          matchup_type: MATCHUP_ORDER[gi],
+          home_team: game.home_team,
+          away_team: game.away_team,
+          home_seed: homeInfo.seed,
+          away_seed: awayInfo.seed,
+          home_score: game.home_score || 0,
+          away_score: game.away_score || 0,
+          status: game.status,
+          game_date: typeof game.game_date === "string" ? game.game_date.split("T")[0] : String(game.game_date),
+          winner: homeWon ? game.home_team : awayWon ? game.away_team : null,
+          updated_at: now,
+        });
+      }
     }
 
-    // Deduplicate: keep only one row per (conference, matchup_type) — last one wins
-    const deduped = new Map<string, any>();
-    for (const r of playinRows) {
-      deduped.set(`${r.conference}-${r.matchup_type}`, r);
-    }
-    const uniquePlayin = [...deduped.values()];
-
-    if (uniquePlayin.length > 0) {
-      const { error: piErr } = await supabase.from("playin_games").upsert(uniquePlayin, {
+    if (playinRows.length > 0) {
+      const { error: piErr } = await supabase.from("playin_games").upsert(playinRows, {
         onConflict: "season,conference,matchup_type",
       });
       if (piErr) console.log(`    Erreur play-in: ${piErr.message}`);
-      else console.log(`    ${uniquePlayin.length} matchs play-in inseres/mis a jour`);
+      else console.log(`    ${playinRows.length} matchs play-in inseres/mis a jour`);
     }
   }
 
@@ -828,9 +948,12 @@ async function main() {
   const current = getCurrentSeason();
   const currentStartYear = seasonStartYear(current);
 
+  const onlyMode = args[0] === "--only" ? args[1] : null;
+  const seasonArgs = onlyMode ? args.slice(2) : args;
+
   let seasons: string[];
-  if (args.length > 0) {
-    seasons = args;
+  if (seasonArgs.length > 0) {
+    seasons = seasonArgs;
   } else {
     // Default: from 2015-16 to the season before current
     seasons = generateSeasons(2015, currentStartYear - 1);
@@ -844,7 +967,11 @@ async function main() {
     process.exit(0);
   }
 
-  console.log(`\n  Sync historique — ${seasons.length} saison(s)\n`);
+  const STEPS = ["games", "standings", "playoffs", "stats", "team-stats", "rosters"];
+  const runAll = !onlyMode;
+  const runStep = (step: string) => runAll || onlyMode === step;
+
+  console.log(`\n  Sync historique — ${seasons.length} saison(s)${onlyMode ? ` (${onlyMode} uniquement)` : ""}\n`);
   console.log(`  Saisons: ${seasons.join(", ")}\n`);
 
   const startTime = Date.now();
@@ -852,64 +979,85 @@ async function main() {
   let totalStandings = 0;
   let totalPlayoffs = 0;
   let totalStats = 0;
+  let totalTeamStats = 0;
   let totalRosters = 0;
 
   for (let i = 0; i < seasons.length; i++) {
     const season = seasons[i];
     console.log(`  [${i + 1}/${seasons.length}] ${season}`);
 
-    // Games
-    try {
-      const games = await syncGamesForSeason(season);
-      totalGames += games;
-    } catch (err) {
-      console.log(`    Erreur matchs: ${(err as Error).message}`);
+    if (runStep("games")) {
+      try {
+        const games = await syncGamesForSeason(season);
+        totalGames += games;
+      } catch (err) {
+        console.log(`    Erreur matchs: ${(err as Error).message}`);
+      }
+      await sleep(5000);
     }
-    await sleep(5000);
 
-    // Standings
-    try {
-      const standings = await syncStandingsForSeason(season);
-      totalStandings += standings;
-    } catch (err) {
-      console.log(`    Erreur classement: ${(err as Error).message}`);
+    if (runStep("standings")) {
+      try {
+        const standings = await syncStandingsForSeason(season);
+        totalStandings += standings;
+      } catch (err) {
+        console.log(`    Erreur classement: ${(err as Error).message}`);
+      }
+      await sleep(2000);
     }
-    await sleep(2000);
 
-    // Playoffs (derived from games + standings already inserted above)
-    try {
-      const playoffs = await syncPlayoffsForSeason(season);
-      totalPlayoffs += playoffs;
-    } catch (err) {
-      console.log(`    Erreur playoffs: ${(err as Error).message}`);
+    if (runStep("playoffs")) {
+      try {
+        const playoffs = await syncPlayoffsForSeason(season);
+        totalPlayoffs += playoffs;
+      } catch (err) {
+        console.log(`    Erreur playoffs: ${(err as Error).message}`);
+      }
+      await sleep(2000);
     }
-    await sleep(5000);
 
-    // Stats
-    try {
-      const stats = await syncStatsForSeason(season);
-      totalStats += stats;
-    } catch (err) {
-      console.log(`    Erreur stats: ${(err as Error).message}`);
+    if (runStep("stats")) {
+      try {
+        const stats = await syncStatsForSeason(season);
+        totalStats += stats;
+      } catch (err) {
+        console.log(`    Erreur stats: ${(err as Error).message}`);
+      }
+      await sleep(5000);
     }
-    await sleep(5000);
 
-    // Rosters
-    try {
-      const rosters = await syncRostersForSeason(season);
-      totalRosters += rosters;
-    } catch (err) {
-      console.log(`    Erreur effectifs: ${(err as Error).message}`);
+    if (runStep("team-stats")) {
+      try {
+        const ts = await syncTeamStatsForSeason(season);
+        totalTeamStats += ts;
+      } catch (err) {
+        console.log(`    Erreur stats equipes: ${(err as Error).message}`);
+      }
+      await sleep(5000);
     }
-    await sleep(5000);
+
+    if (runStep("rosters")) {
+      try {
+        const rosters = await syncRostersForSeason(season);
+        totalRosters += rosters;
+      } catch (err) {
+        console.log(`    Erreur effectifs: ${(err as Error).message}`);
+      }
+      await sleep(5000);
+    }
 
     console.log("");
   }
 
   const totalMin = ((Date.now() - startTime) / 1000 / 60).toFixed(1);
   console.log(`  Termine en ${totalMin} minutes`);
-  console.log(`  ${totalGames} matchs, ${totalStandings} classements, ${totalPlayoffs} series`);
-  console.log(`  ${totalStats} stats, ${totalRosters} effectifs inseres/mis a jour\n`);
+  if (runStep("games")) console.log(`  ${totalGames} matchs`);
+  if (runStep("standings")) console.log(`  ${totalStandings} classements`);
+  if (runStep("playoffs")) console.log(`  ${totalPlayoffs} series + play-in`);
+  if (runStep("stats")) console.log(`  ${totalStats} stats joueurs`);
+  if (runStep("team-stats")) console.log(`  ${totalTeamStats} stats equipes`);
+  if (runStep("rosters")) console.log(`  ${totalRosters} effectifs`);
+  console.log("");
 }
 
 main().catch((err) => {

@@ -12,15 +12,8 @@ export default async function Calendrier({ searchParams }: { searchParams: Promi
   const season = seasonParam || getCurrentSeason();
   const supabase = await createClient();
 
-  const { data: seasonRows } = await supabase
-    .from("standings")
-    .select("season")
-    .order("season", { ascending: false })
-    .limit(1000);
-  const availableSeasons = [...new Set((seasonRows || []).map((r: { season: string }) => r.season))];
-  if (!availableSeasons.includes(season)) availableSeasons.unshift(season);
-
-  const [{ data: page1 }, { data: page2 }] = await Promise.all([
+  const [{ data: seasonRows }, { data: page1 }, { data: page2 }] = await Promise.all([
+    supabase.from("standings").select("season").order("season", { ascending: false }).limit(1000),
     supabase
       .from("games")
       .select("*")
@@ -34,6 +27,8 @@ export default async function Calendrier({ searchParams }: { searchParams: Promi
       .order("game_date", { ascending: true })
       .range(1000, 1999),
   ]);
+  const availableSeasons = [...new Set((seasonRows || []).map((r: { season: string }) => r.season))];
+  if (!availableSeasons.includes(season)) availableSeasons.unshift(season);
 
   const games = [...(page1 || []), ...(page2 || [])];
 

@@ -47,17 +47,10 @@ export default async function Statistiques({ searchParams }: { searchParams: Pro
   const season = seasonParam || getCurrentSeason();
   const supabase = await createClient();
 
-  const { data: seasonRows } = await supabase
-    .from("standings")
-    .select("season")
-    .order("season", { ascending: false })
-    .limit(1000);
-  const availableSeasons = [...new Set((seasonRows || []).map((r: { season: string }) => r.season))];
-  if (!availableSeasons.includes(season)) availableSeasons.unshift(season);
-
-  // Fetch all stat leaders with pagination (more pages for advanced stats)
-  const pages = await Promise.all(
-    Array.from({ length: 20 }, (_, i) =>
+  // Fetch season list and stat leaders in parallel
+  const [{ data: seasonRows }, ...pages] = await Promise.all([
+    supabase.from("standings").select("season").order("season", { ascending: false }).limit(1000),
+    ...Array.from({ length: 15 }, (_, i) =>
       supabase
         .from("stat_leaders")
         .select("*")
@@ -66,8 +59,10 @@ export default async function Statistiques({ searchParams }: { searchParams: Pro
         .order("category", { ascending: true })
         .order("player_id", { ascending: true })
         .range(i * 1000, (i + 1) * 1000 - 1)
-    )
-  );
+    ),
+  ]);
+  const availableSeasons = [...new Set((seasonRows || []).map((r: { season: string }) => r.season))];
+  if (!availableSeasons.includes(season)) availableSeasons.unshift(season);
 
   const allLeaders = pages.flatMap((p) => p.data || []);
   const hasData = allLeaders.length > 0;

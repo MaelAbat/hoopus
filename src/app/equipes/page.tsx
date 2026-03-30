@@ -12,15 +12,8 @@ export default async function Equipes({ searchParams }: { searchParams: Promise<
   const season = seasonParam || getCurrentSeason();
   const supabase = await createClient();
 
-  const { data: seasonRows } = await supabase
-    .from("standings")
-    .select("season")
-    .order("season", { ascending: false })
-    .limit(1000);
-  const availableSeasons = [...new Set((seasonRows || []).map((r: { season: string }) => r.season))];
-  if (!availableSeasons.includes(season)) availableSeasons.unshift(season);
-
-  const [{ data: players, error }, { data: payrolls }] = await Promise.all([
+  const [{ data: seasonRows }, { data: players, error }, { data: payrolls }] = await Promise.all([
+    supabase.from("standings").select("season").order("season", { ascending: false }).limit(1000),
     supabase
       .from("rosters")
       .select("*")
@@ -32,6 +25,8 @@ export default async function Equipes({ searchParams }: { searchParams: Promise<
       .select("*")
       .eq("season", season),
   ]);
+  const availableSeasons = [...new Set((seasonRows || []).map((r: { season: string }) => r.season))];
+  if (!availableSeasons.includes(season)) availableSeasons.unshift(season);
 
   const hasData = !error && players && players.length > 0;
 

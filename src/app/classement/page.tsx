@@ -12,19 +12,12 @@ export default async function Classement({ searchParams }: { searchParams: Promi
   const season = seasonParam || getCurrentSeason();
   const supabase = await createClient();
 
-  const { data: seasonRows } = await supabase
-    .from("standings")
-    .select("season")
-    .order("season", { ascending: false })
-    .limit(1000);
+  const [{ data: seasonRows }, { data: standings, error }] = await Promise.all([
+    supabase.from("standings").select("season").order("season", { ascending: false }).limit(1000),
+    supabase.from("standings").select("*").eq("season", season).order("conference_rank", { ascending: true }),
+  ]);
   const availableSeasons = [...new Set((seasonRows || []).map((r: { season: string }) => r.season))];
   if (!availableSeasons.includes(season)) availableSeasons.unshift(season);
-
-  const { data: standings, error } = await supabase
-    .from("standings")
-    .select("*")
-    .eq("season", season)
-    .order("conference_rank", { ascending: true });
 
   const hasData = !error && standings && standings.length > 0;
 
