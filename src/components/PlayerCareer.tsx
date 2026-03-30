@@ -188,7 +188,7 @@ function formatVal(val: number, format: string): string {
   if (format === "net") return (val > 0 ? "+" : "") + val.toFixed(1);
   if (format === "ratio") return val.toFixed(2);
   if (format === "pm") return val > 0 ? `+${val.toFixed(1)}` : val.toFixed(1);
-  if (format === "plus") return val ? Math.round(val).toString() : "—";
+  if (format === "plus") return val ? Math.round(val).toString() : "N/A";
   return String(val);
 }
 

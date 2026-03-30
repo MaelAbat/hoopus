@@ -89,8 +89,7 @@ function RosterTable({ players, tricode, onBack }: { players: Player[]; tricode:
           <table className="w-full text-sm">
             <thead className="sticky top-0 z-10 bg-card">
               <tr className="border-b border-border-t text-text-muted">
-                <th className="sticky left-0 z-20 bg-card px-2 py-3 text-left font-medium w-10"></th>
-                <th className="sticky left-10 z-20 bg-card px-2 py-3 text-left font-medium min-w-[120px]">Joueur</th>
+                <th className="sticky left-0 z-20 bg-card px-2 sm:px-3 py-3 text-left font-medium min-w-[100px] sm:min-w-[160px]">Joueur</th>
                 <th className="px-2 py-3 text-center font-medium">#</th>
                 <th className="px-2 py-3 text-center font-medium">Pos</th>
                 <th className="px-2 py-3 text-center font-medium whitespace-nowrap">Taille</th>
@@ -106,34 +105,32 @@ function RosterTable({ players, tricode, onBack }: { players: Player[]; tricode:
             </thead>
             <tbody>
               {players.map((p) => (
-                <tr key={p.player_id} className="border-b border-border-t/50 transition-colors hover:bg-card-hover">
-                  <td className="sticky left-0 z-10 bg-card px-2 py-2">
-                    <img
-                      src={playerPhotoUrl(p.player_id)}
-                      alt={`${p.first_name} ${p.last_name}`}
-                      className="h-8 w-10 object-cover rounded"
-                      onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                    />
-                  </td>
-                  <td className="sticky left-10 z-10 bg-card px-2 py-2">
-                    <Link href={`/joueurs/${p.player_id}`} className="font-medium text-text-primary hover:text-accent-text transition-colors whitespace-nowrap">
-                      {p.first_name} <strong>{p.last_name}</strong>
+                <tr key={p.player_id} className="group border-b border-border-t/50 transition-colors hover:bg-card-hover">
+                  <td className="sticky left-0 z-10 bg-card group-hover:bg-card-hover px-2 sm:px-3 py-1.5 sm:py-2">
+                    <Link href={`/joueurs/${p.player_id}`} className="flex items-center gap-1.5 sm:gap-2 font-medium text-text-primary hover:text-accent-text transition-colors whitespace-nowrap">
+                      <img
+                        src={playerPhotoUrl(p.player_id)}
+                        alt=""
+                        className="h-6 w-6 sm:h-8 sm:w-8 shrink-0 rounded-full object-cover bg-input"
+                        onError={(e) => { (e.target as HTMLImageElement).src = ""; (e.target as HTMLImageElement).className = "h-6 w-6 sm:h-8 sm:w-8 shrink-0 rounded-full bg-input"; }}
+                      />
+                      <span className="text-xs sm:text-sm">{p.first_name.charAt(0)}. <strong>{p.last_name}</strong></span>
                     </Link>
                   </td>
                   <td className="px-2 py-2 text-center text-text-muted">{p.jersey_number}</td>
                   <td className="px-2 py-2 text-center">
                     <span className="inline-block rounded bg-input px-1.5 py-0.5 text-[10px] font-semibold text-text-secondary">
-                      {p.position || "\u2014"}
+                      {p.position || "N/A"}
                     </span>
                   </td>
-                  <td className="px-2 py-2 text-center text-text-muted whitespace-nowrap">{p.height || "\u2014"}</td>
+                  <td className="px-2 py-2 text-center text-text-muted whitespace-nowrap">{p.height || "N/A"}</td>
                   <td className="px-2 py-2 text-center text-text-muted whitespace-nowrap">
-                    {p.weight ? `${p.weight} lbs` : "\u2014"}
+                    {p.weight ? `${p.weight} lbs` : "N/A"}
                   </td>
-                  <td className="px-2 py-2 text-center text-text-muted">{p.age ?? "\u2014"}</td>
+                  <td className="px-2 py-2 text-center text-text-muted">{p.age ?? "N/A"}</td>
                   <td className="px-2 py-2 text-text-muted">
                     <div className="flex flex-col whitespace-nowrap">
-                      <span className="text-xs">{p.college || "\u2014"}</span>
+                      <span className="text-xs">{p.college || "N/A"}</span>
                       {p.country && p.country !== "USA" && (
                         <span className="text-[10px] text-text-faint">{p.country}</span>
                       )}
@@ -141,11 +138,11 @@ function RosterTable({ players, tricode, onBack }: { players: Player[]; tricode:
                   </td>
                   <td className="px-2 py-2 text-center text-text-muted text-xs whitespace-nowrap">{draftLabel(p)}</td>
                   <td className="px-2 py-2 text-right text-xs text-text-muted whitespace-nowrap">
-                    {p.salary || "\u2014"}
+                    {p.salary || "N/A"}
                   </td>
-                  <td className="px-2 py-2 text-center font-semibold text-text-primary">{p.pts?.toFixed(1) ?? "\u2014"}</td>
-                  <td className="px-2 py-2 text-center text-text-muted">{p.reb?.toFixed(1) ?? "\u2014"}</td>
-                  <td className="px-2 py-2 text-center text-text-muted">{p.ast?.toFixed(1) ?? "\u2014"}</td>
+                  <td className="px-2 py-2 text-center font-semibold text-text-primary">{p.pts?.toFixed(1) ?? "N/A"}</td>
+                  <td className="px-2 py-2 text-center text-text-muted">{p.reb?.toFixed(1) ?? "N/A"}</td>
+                  <td className="px-2 py-2 text-center text-text-muted">{p.ast?.toFixed(1) ?? "N/A"}</td>
                 </tr>
               ))}
             </tbody>

@@ -327,7 +327,7 @@ export default function StatsTable({ players }: { players: PlayerRow[] }) {
                               : "text-text-primary"
                           }`}
                         >
-                          {val != null ? (isInt ? Math.round(val) : val.toFixed(2)) : "\u2014"}
+                          {val != null ? (isInt ? Math.round(val) : val.toFixed(2)) : "N/A"}
                         </td>
                       );
                     })}

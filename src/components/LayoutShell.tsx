@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import Sidebar from "./Sidebar";
 import GlobalPipPlayer from "./GlobalPipPlayer";
+import ScrollButton from "./ScrollButton";
 import { VideoProvider } from "@/context/VideoContext";
 import { FavoritesProvider } from "@/context/FavoritesContext";
 
@@ -32,6 +33,7 @@ export default function LayoutShell({
           )}
           {children}
         </main>
+        <ScrollButton />
         <GlobalPipPlayer />
       </VideoProvider>
     </FavoritesProvider>

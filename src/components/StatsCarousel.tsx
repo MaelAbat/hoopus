@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { ChevronLeft, ChevronRight, Trophy, List, Filter, Heart } from "lucide-react";
 import Link from "next/link";
 import type { PlayerStatLeader } from "@/lib/nba-api";
@@ -109,6 +109,35 @@ export default function StatsCarousel({ boards }: { boards: Board[] }) {
     setActive((prev) => (prev + dir + boards.length) % boards.length);
   }
 
+  // Touch swipe handling
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+  const swiping = useRef(false);
+
+  const onTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+    swiping.current = false;
+  }, []);
+
+  const onTouchMove = useCallback((e: React.TouchEvent) => {
+    const dx = e.touches[0].clientX - touchStartX.current;
+    const dy = e.touches[0].clientY - touchStartY.current;
+    // Lock into horizontal swipe if horizontal movement > vertical
+    if (!swiping.current && Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 10) {
+      swiping.current = true;
+    }
+  }, []);
+
+  const onTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (!swiping.current) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    if (Math.abs(dx) > 50) {
+      go(dx < 0 ? 1 : -1);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [boards.length]);
+
   useEffect(() => {
     setPage(0);
     setSearch("");
@@ -146,7 +175,12 @@ export default function StatsCarousel({ boards }: { boards: Board[] }) {
         <ChevronLeft size={22} />
       </button>
 
-      <div className="rounded-2xl bg-card border border-border-t overflow-hidden flex flex-col flex-1 h-full min-w-0">
+      <div
+        className="rounded-2xl bg-card border border-border-t overflow-hidden flex flex-col flex-1 h-full min-w-0"
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+      >
         {/* Category tabs */}
         <div className="border-b border-border-t py-3 overflow-hidden">
           <div

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import {
   ChevronUp, ChevronDown, ChevronLeft, ChevronRight,
   SlidersHorizontal, X,
@@ -124,7 +124,7 @@ const PAGE_SIZE = 50;
 type SortDir = "asc" | "desc";
 
 function formatValue(val: number | undefined, format?: string): string {
-  if (val == null) return "\u2014";
+  if (val == null) return "N/A";
   switch (format) {
     case "int":
       return Math.round(val).toLocaleString();
@@ -138,7 +138,7 @@ function formatValue(val: number | undefined, format?: string): string {
 }
 
 function getPlusColor(val: number | undefined): string {
-  if (val == null) return "text-text-faint";
+  if (val == null) return "text-text-faint text-xs";
   if (val >= 115) return "text-emerald-400 font-bold";
   if (val >= 108) return "text-emerald-400/80";
   if (val >= 102) return "text-text-primary";
@@ -179,6 +179,21 @@ const ATTEMPT_FILTERS: AttemptFilter[] = [
 
 export default function AdvancedStatsTable({ players }: { players: PlayerRow[] }) {
   const [activeGroup, setActiveGroup] = useState<string>("volume");
+  const groupTabsRef = useRef<HTMLDivElement>(null);
+
+  const scrollActiveGroupTab = useCallback(() => {
+    const container = groupTabsRef.current;
+    if (!container) return;
+    const activeBtn = container.querySelector<HTMLElement>("[data-active-group]");
+    if (!activeBtn) return;
+    const left = activeBtn.offsetLeft - container.offsetWidth / 2 + activeBtn.offsetWidth / 2;
+    container.scrollTo({ left, behavior: "smooth" });
+  }, []);
+
+  useEffect(() => {
+    scrollActiveGroupTab();
+  }, [activeGroup, scrollActiveGroupTab]);
+
   const [sortKey, setSortKey] = useState("USG_PCT");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [search, setSearch] = useState("");
@@ -244,11 +259,12 @@ export default function AdvancedStatsTable({ players }: { players: PlayerRow[] }
     <div className="rounded-2xl bg-card border border-border-t overflow-hidden flex flex-col sm:h-[calc(100vh-14rem)]">
 
       {/* ── Group tabs ── */}
-      <div className="flex items-center gap-1 px-4 py-2.5 border-b border-border-t/50 overflow-x-auto">
+      <div ref={groupTabsRef} className="flex items-center gap-1 px-4 py-2.5 border-b border-border-t/50 overflow-x-auto no-scrollbar">
         {COLUMN_GROUPS.map((g) => (
           <button
             key={g.id}
             onClick={() => { setActiveGroup(g.id); setPage(0); }}
+            {...(activeGroup === g.id ? { "data-active-group": true } : {})}
             className={`whitespace-nowrap rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all ${
               activeGroup === g.id
                 ? "bg-accent text-white shadow-sm"
@@ -261,6 +277,7 @@ export default function AdvancedStatsTable({ players }: { players: PlayerRow[] }
         <div className="w-px h-5 bg-border-t/40 mx-1" />
         <button
           onClick={() => { setActiveGroup("all"); setPage(0); }}
+          {...(isAllView ? { "data-active-group": true } : {})}
           className={`whitespace-nowrap rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all ${
             isAllView
               ? "bg-accent text-white shadow-sm"

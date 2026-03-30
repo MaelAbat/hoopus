@@ -111,7 +111,7 @@ export default async function PlayerDetail({ params }: { params: Promise<{ id: s
     ? `${player.from_year} — ${player.to_year}`
     : player.from_year
       ? `Depuis ${player.from_year}`
-      : "—";
+      : "N/A";
 
   return (
     <div className="mx-auto max-w-5xl space-y-8">
@@ -180,9 +180,9 @@ export default async function PlayerDetail({ params }: { params: Promise<{ id: s
       {/* Stats highlights */}
       {(player.pts != null || player.reb != null || player.ast != null) && (
         <div className="grid grid-cols-3 gap-3">
-          <StatBox label="Points" value={player.pts?.toFixed(1) ?? "—"} />
-          <StatBox label="Rebonds" value={player.reb?.toFixed(1) ?? "—"} />
-          <StatBox label="Passes" value={player.ast?.toFixed(1) ?? "—"} />
+          <StatBox label="Points" value={player.pts?.toFixed(1) ?? "N/A"} />
+          <StatBox label="Rebonds" value={player.reb?.toFixed(1) ?? "N/A"} />
+          <StatBox label="Passes" value={player.ast?.toFixed(1) ?? "N/A"} />
         </div>
       )}
 
