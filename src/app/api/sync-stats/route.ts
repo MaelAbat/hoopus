@@ -237,7 +237,7 @@ export async function GET(request: NextRequest) {
           player_name: String(row[playerIdx]),
           player_id: playerId,
           team: String(row[teamIdx]),
-          value: Math.round(val * 100) / 100,
+          value: val,
           season: SEASON,
           updated_at: now,
         });
@@ -250,7 +250,7 @@ export async function GET(request: NextRequest) {
           player_name: String(row[playerIdx]),
           player_id: playerId,
           team: String(row[teamIdx]),
-          value: Math.round(val * 100) / 100,
+          value: val,
           season: SEASON,
           updated_at: now,
         });
@@ -311,14 +311,11 @@ export async function GET(request: NextRequest) {
     // ── Upsert stat_leaders (no delete — preserves data on partial failures) ──
     console.log("[SYNC-STATS] Upserting rows into stat_leaders...");
 
-    // ── Direct categories (per-game from official NBA PerGame data) ──
+    // ── Direct categories (per-game computed from totals for full precision) ──
     for (const { category, statField } of DIRECT_CATEGORIES) {
-      const pgStatIdx = pgIdx(statField);
-
       const allPlayers = rows.map((row) => {
         const pid = Number(row[playerIdIdx]);
-        const pgRow = pgByPlayer.get(pid);
-        const val = pgRow && pgStatIdx !== -1 ? Number(pgRow[pgStatIdx]) : perGame(row, idx(statField));
+        const val = perGame(row, idx(statField));
         return {
           row,
           playerId: pid,

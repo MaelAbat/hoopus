@@ -16,7 +16,6 @@ const FAST_ENDPOINTS = [
   { key: "standings", label: "Classement" },
   { key: "playoffs", label: "Playoffs" },
   { key: "rosters", label: "Effectifs" },
-  { key: "career", label: "Carrières" },
 ];
 
 // Endpoints lents — passent aussi par Next.js mais avec un timeout très long
@@ -24,6 +23,7 @@ const SLOW_ENDPOINTS = [
   { key: "players", label: "Joueurs" },
   { key: "stats", label: "Statistiques" },
   { key: "team-stats", label: "Stats équipes" },
+  { key: "career", label: "Carrières" },
 ];
 
 const ALL_ENDPOINTS = [...FAST_ENDPOINTS, ...SLOW_ENDPOINTS];

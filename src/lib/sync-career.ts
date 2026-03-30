@@ -204,17 +204,108 @@ async function fetchAdvancedByYear(playerId: number): Promise<Map<string, Record
   return map;
 }
 
+/**
+ * Quick sync: base stats + adjusted shooting only (1 API call).
+ * Does NOT overwrite advanced columns (off_rating, usg_pct, etc.)
+ * — those keep their existing values from the last full sync.
+ */
+export async function syncPlayerCareerQuick(
+  playerId: number,
+  season: string,
+): Promise<number> {
+  try {
+    const data = await fetchNba(
+      `https://stats.nba.com/stats/playercareerstats?LeagueID=00&PerMode=PerGame&PlayerID=${playerId}`
+    );
+    const rs = data.resultSets.find((r) => r.headers.includes("SEASON_ID"));
+    if (!rs) return 0;
+
+    const h = rs.headers;
+    const ii = (name: string) => h.indexOf(name);
+    const now = new Date().toISOString();
+
+    const seasonRows = rs.rowSet.filter(
+      (row) => String(row[ii("SEASON_ID")] || "") === season
+    );
+    if (seasonRows.length === 0) return 0;
+
+    const rows = seasonRows.map((row) => {
+      const fgm = Number(row[ii("FGM")] || 0);
+      const fga = Number(row[ii("FGA")] || 0);
+      const fg3m = Number(row[ii("FG3M")] || 0);
+      const fg3a = Number(row[ii("FG3A")] || 0);
+      const ftm = Number(row[ii("FTM")] || 0);
+      const fta = Number(row[ii("FTA")] || 0);
+      const pts = Number(row[ii("PTS")] || 0);
+      const fg_pct = Number(row[ii("FG_PCT")] || 0);
+      const fg3_pct = Number(row[ii("FG3_PCT")] || 0);
+      const ft_pct = Number(row[ii("FT_PCT")] || 0);
+
+      const adj = computeAdjustedShooting({
+        season, fg_pct, fg3_pct, ft_pct, fgm, fga, fg3m, fg3a, ftm, fta, pts,
+      });
+
+      // Only base + adjusted shooting columns — no advanced stats (off_rating etc.)
+      // so existing advanced values in DB are preserved
+      return {
+        player_id: playerId,
+        season,
+        team: String(row[ii("TEAM_ABBREVIATION")] || ""),
+        gp: Number(row[ii("GP")] || 0),
+        min: Number(row[ii("MIN")] || 0),
+        pts,
+        reb: Number(row[ii("REB")] || 0),
+        ast: Number(row[ii("AST")] || 0),
+        stl: Number(row[ii("STL")] || 0),
+        blk: Number(row[ii("BLK")] || 0),
+        fg_pct,
+        fg3_pct,
+        ft_pct,
+        fgm,
+        fga,
+        fg3m,
+        fg3a,
+        ftm,
+        fta,
+        oreb: Number(row[ii("OREB")] || 0),
+        dreb: Number(row[ii("DREB")] || 0),
+        tov: Number(row[ii("TOV")] || 0),
+        pf: Number(row[ii("PF")] || 0),
+        plus_minus: Number(row[ii("PLUS_MINUS")] || 0),
+        ts_plus: adj.ts_plus,
+        efg_plus: adj.efg_plus,
+        fg_plus: adj.fg_plus,
+        fg3_plus: adj.fg3_plus,
+        ft_plus: adj.ft_plus,
+        fg2_plus: adj.fg2_plus,
+        updated_at: now,
+      };
+    });
+
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+    await supabase.from("player_career_stats").upsert(rows, { onConflict: "player_id,season,team" });
+    return rows.length;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Full sync: base + advanced stats + adjusted shooting (2 API calls).
+ * Upserts ALL columns for ALL seasons.
+ */
 export async function syncPlayerCareer(
   playerId: number,
 ): Promise<CareerSeason[]> {
   try {
-    // Fetch base career stats and advanced stats in parallel
-    const [baseData, advancedMap] = await Promise.all([
-      fetchNba(
-        `https://stats.nba.com/stats/playercareerstats?LeagueID=00&PerMode=PerGame&PlayerID=${playerId}`
-      ),
-      fetchAdvancedByYear(playerId),
-    ]);
+    // Fetch base career stats first, then advanced (sequential to avoid NBA API throttling)
+    const baseData = await fetchNba(
+      `https://stats.nba.com/stats/playercareerstats?LeagueID=00&PerMode=PerGame&PlayerID=${playerId}`
+    );
+    const advancedMap = await fetchAdvancedByYear(playerId);
 
     const rs = baseData.resultSets.find((r) => r.headers.includes("SEASON_ID"));
     if (!rs || rs.rowSet.length === 0) return [];

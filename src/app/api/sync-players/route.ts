@@ -89,8 +89,8 @@ export async function GET(request: NextRequest) {
       const playerId = Number(row[ii("PERSON_ID")]);
       if (!playerId) continue;
 
-      const rosterStatus = row[ii("ROSTER_STATUS")];
-      const isActive = rosterStatus === 1 || rosterStatus === "1";
+      // Historical=0 already filters to active players only — all returned players are active
+      const isActive = true;
 
       players.push({
         player_id: playerId,

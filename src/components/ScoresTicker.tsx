@@ -182,7 +182,7 @@ export default function ScoresTicker({ games }: { games: Game[] }) {
   const upcomingCount = games.length - finalCount - liveCount;
 
   return (
-    <div className="mb-4 rounded-xl bg-card/60 border border-border-t overflow-hidden">
+    <div className="mb-4 rounded-xl bg-card border border-border-t overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-3 sm:px-4 py-2 border-b border-border-t/50">
         <div className="flex items-center gap-2 min-w-0">

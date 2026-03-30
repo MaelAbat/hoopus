@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { teamLogoUrl } from "@/lib/nba-teams";
 
 interface SeasonStats {
@@ -211,6 +211,20 @@ function netClass(val: number, format: string): string {
 
 export default function PlayerCareer({ seasons }: { seasons: SeasonStats[] }) {
   const [activeGroup, setActiveGroup] = useState("base");
+  const tabsRef = useRef<HTMLDivElement>(null);
+
+  const scrollActiveTabIntoView = useCallback(() => {
+    const container = tabsRef.current;
+    if (!container) return;
+    const activeBtn = container.querySelector<HTMLElement>("[data-active-tab]");
+    if (!activeBtn) return;
+    const left = activeBtn.offsetLeft - container.offsetWidth / 2 + activeBtn.offsetWidth / 2;
+    container.scrollTo({ left, behavior: "smooth" });
+  }, []);
+
+  useEffect(() => {
+    scrollActiveTabIntoView();
+  }, [activeGroup, scrollActiveTabIntoView]);
 
   if (seasons.length === 0) return null;
 
@@ -257,11 +271,12 @@ export default function PlayerCareer({ seasons }: { seasons: SeasonStats[] }) {
       <div className="rounded-2xl bg-card border border-border-t overflow-hidden">
         <div className="flex flex-col gap-3 border-b border-border-t px-4 sm:px-6 py-4">
           <h2 className="text-lg font-bold text-text-primary">Statistiques de carrière</h2>
-          <div className="flex rounded-lg bg-input p-0.5 overflow-x-auto">
+          <div ref={tabsRef} className="flex rounded-lg bg-input p-0.5 overflow-x-auto no-scrollbar">
             {GROUPS.map((g) => (
               <button
                 key={g.id}
                 onClick={() => setActiveGroup(g.id)}
+                {...(activeGroup === g.id ? { "data-active-tab": true } : {})}
                 className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap ${
                   activeGroup === g.id
                     ? "bg-card text-text-primary shadow-sm"
@@ -327,8 +342,8 @@ export default function PlayerCareer({ seasons }: { seasons: SeasonStats[] }) {
                 if (real.length === 0) return null;
                 const totalGP = real.reduce((sum, s) => sum + s.gp, 0);
                 return (
-                  <tr className="border-t-2 border-accent/30 bg-accent/5 font-semibold">
-                    <td className="sticky left-0 z-10 bg-accent/5 px-3 sm:px-4 py-3 text-accent-text whitespace-nowrap">Carrière</td>
+                  <tr className="border-t-2 border-accent/30 bg-card font-semibold">
+                    <td className="sticky left-0 z-10 bg-card px-3 sm:px-4 py-3 text-accent-text whitespace-nowrap">Carrière</td>
                     <td className="px-3 sm:px-4 py-3 text-accent-text text-xs">{real.length} saisons</td>
                     {group.columns.map((col) => {
                       let avg: number;
