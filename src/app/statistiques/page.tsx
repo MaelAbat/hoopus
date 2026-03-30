@@ -1,10 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentSeason, seasonLabel } from "@/lib/season";
 import type { PlayerStatLeader, StatCategory } from "@/lib/nba-api";
 import StatsView from "@/components/StatsView";
 import type { PlayerRow } from "@/components/StatsTable";
 import type { TeamRow } from "@/components/TeamStatsTable";
 import PageBanner from "@/components/PageBanner";
 import ScrollReveal from "@/components/ScrollReveal";
+import SeasonSelector from "@/components/SeasonSelector";
 
 export const revalidate = 3600;
 
@@ -40,8 +42,18 @@ const BOARDS: BoardConfig[] = [
 // Direct categories use GP-based eligibility
 const GP_CATEGORIES = new Set(["PTS", "REB", "AST", "BLK", "STL", "EFF", "TOV", "MIN", "OREB", "DREB"]);
 
-export default async function Statistiques() {
+export default async function Statistiques({ searchParams }: { searchParams: Promise<{ season?: string }> }) {
+  const { season: seasonParam } = await searchParams;
+  const season = seasonParam || getCurrentSeason();
   const supabase = await createClient();
+
+  const { data: seasonRows } = await supabase
+    .from("stat_leaders")
+    .select("season")
+    .order("season", { ascending: false })
+    .limit(1000);
+  const availableSeasons = [...new Set((seasonRows || []).map((r: { season: string }) => r.season))];
+  if (!availableSeasons.includes(season)) availableSeasons.unshift(season);
 
   // Fetch all stat leaders with pagination (more pages for advanced stats)
   const pages = await Promise.all(
@@ -49,7 +61,7 @@ export default async function Statistiques() {
       supabase
         .from("stat_leaders")
         .select("*")
-        .eq("season", "2025-26")
+        .eq("season", season)
         .order("rank", { ascending: true })
         .order("category", { ascending: true })
         .order("player_id", { ascending: true })
@@ -160,7 +172,7 @@ export default async function Statistiques() {
   const { data: teamStatsRaw } = await supabase
     .from("team_stats")
     .select("*")
-    .eq("season", "2025-26")
+    .eq("season", season)
     .order("net_rating", { ascending: false });
 
   const teamData: TeamRow[] = (teamStatsRaw || []).map((t) => ({ ...t } as TeamRow));
@@ -169,15 +181,20 @@ export default async function Statistiques() {
     <div className="mx-auto max-w-7xl space-y-8">
       <PageBanner
         title="Statistiques"
-        subtitle="Leaders de la saison 2025-26"
+        subtitle={`Leaders de la ${seasonLabel(season).toLowerCase()}`}
         image="https://images.unsplash.com/photo-1705594975210-02cbcc7af5ad?w=1200&fit=crop"
-        extra={hasData ? (
-          <span className="text-xs text-white/40">Mis à jour le {lastUpdate}</span>
-        ) : (
-          <span className="inline-flex items-center rounded-full bg-yellow-500/20 px-2 py-0.5 text-xs text-yellow-300">
-            Synchronisation requise
-          </span>
-        )}
+        extra={
+          <div className="flex flex-wrap items-center gap-3">
+            <SeasonSelector current={season} available={availableSeasons} />
+            {hasData ? (
+              <span className="text-xs text-white/40">Mis à jour le {lastUpdate}</span>
+            ) : (
+              <span className="inline-flex items-center rounded-full bg-yellow-500/20 px-2 py-0.5 text-xs text-yellow-300">
+                Synchronisation requise
+              </span>
+            )}
+          </div>
+        }
       />
 
       <ScrollReveal variant="up" delay={100}>

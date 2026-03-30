@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "sync": "tsx scripts/sync.ts",
-    "sync:inactive": "tsx scripts/sync-inactive-careers.ts"
+    "sync:inactive": "tsx scripts/sync-inactive-careers.ts",
+    "sync:history": "tsx scripts/sync-history.ts"
   },
   "repository": {
     "type": "git",

@@ -267,9 +267,9 @@ function SalaryCapView({ players, payrolls }: { players: Player[]; payrolls: Tea
               const status = getStatus(team.total);
 
               return (
-                <div key={team.tricode} className="flex items-center gap-2 px-4 py-1.5 hover:bg-card-hover transition-colors">
+                <div key={team.tricode} className="group flex items-center gap-2 pr-4 hover:bg-card-hover transition-colors">
                   {/* Team info */}
-                  <div className="flex items-center gap-2 w-28 shrink-0">
+                  <div className="sticky left-0 z-10 flex items-center gap-2 w-28 shrink-0 pl-4 py-1.5 bg-card group-hover:bg-card-hover transition-colors">
                     <img src={teamLogoUrl(team.tricode)} alt={team.tricode} className="h-5 w-5 object-contain" />
                     <span className="text-xs font-semibold text-text-primary">{team.tricode}</span>
                   </div>

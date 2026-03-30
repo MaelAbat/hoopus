@@ -2,8 +2,9 @@ import https from "node:https";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
+import { getCurrentSeason } from "@/lib/season";
 
-const SEASON = "2025-26";
+const SEASON = getCurrentSeason();
 
 /*
   NBA gameId format for playoffs: "004XXYYZZ"

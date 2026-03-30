@@ -2,10 +2,13 @@ import https from "node:https";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
+import { getCurrentSeason } from "@/lib/season";
 
-const SEASON = "2025-26";
+const SEASON = getCurrentSeason();
+// ESPN uses the END year of the season (e.g. "2025-26" → 2026)
+const ESPN_YEAR = parseInt(SEASON.split("-")[0], 10) + 1;
 const ESPN_URL =
-  "https://site.api.espn.com/apis/v2/sports/basketball/nba/standings?season=2026";
+  `https://site.api.espn.com/apis/v2/sports/basketball/nba/standings?season=${ESPN_YEAR}`;
 
 // ESPN uses different tricodes than NBA — map to standard NBA tricodes
 const TRICODE_MAP: Record<string, string> = {

@@ -14,6 +14,7 @@ import {
   BookOpen,
 } from "lucide-react";
 import { getArticles } from "@/lib/actions/articles";
+import { getCurrentSeason, seasonLabel } from "@/lib/season";
 import ScrollReveal from "@/components/ScrollReveal";
 
 /* ── Fun facts ───────────────────────────── */
@@ -117,6 +118,7 @@ function formatDate(dateStr: string) {
 }
 
 export default async function Home() {
+  const season = getCurrentSeason();
   const articles = await getArticles();
   const featured = articles[0] ?? null;
   const funFact = getDaily(funFacts);
@@ -142,7 +144,7 @@ export default async function Home() {
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-75" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
               </span>
-              Saison 2025-26 en cours
+              {seasonLabel(season)} en cours
             </div>
 
             <h1 className="text-3xl font-extrabold tracking-tight text-white sm:text-5xl">

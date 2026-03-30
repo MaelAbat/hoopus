@@ -1,6 +1,7 @@
 import https from "node:https";
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
+import { getCurrentSeason } from "@/lib/season";
 
 const BATCH_SIZE = 200;
 
@@ -72,7 +73,7 @@ export async function GET(request: NextRequest) {
     const indexData = await fetchNba(
       "https://stats.nba.com/stats/playerindex?" +
         "College=&Conference=&Country=&DraftPick=&DraftRound=&DraftYear=" +
-        "&Height=&Historical=0&LeagueID=00&Season=2025-26" +
+        `&Height=&Historical=0&LeagueID=00&Season=${getCurrentSeason()}` +
         "&SeasonType=Regular+Season&TeamID=0&Weight="
     );
 

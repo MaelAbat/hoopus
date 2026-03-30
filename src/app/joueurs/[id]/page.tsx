@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentSeason } from "@/lib/season";
 import { syncPlayerCareer } from "@/lib/sync-career";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -39,13 +40,14 @@ function StatBox({ label, value }: { label: string; value: string }) {
 
 export default async function PlayerDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const season = getCurrentSeason();
   const supabase = await createClient();
 
   const playerId = Number(id);
 
   const [{ data: player }, { data: rosterEntry }] = await Promise.all([
     supabase.from("players").select("*").eq("player_id", playerId).single(),
-    supabase.from("rosters").select("*").eq("player_id", playerId).eq("season", "2025-26").single(),
+    supabase.from("rosters").select("*").eq("player_id", playerId).eq("season", season).single(),
   ]);
 
   if (!player) notFound();
@@ -166,7 +168,7 @@ export default async function PlayerDetail({ params }: { params: Promise<{ id: s
 
             {rosterEntry?.salary && (
               <p className="mt-3 text-sm text-text-muted">
-                Salaire 2025-26 : <strong className="text-text-primary">{rosterEntry.salary}</strong>
+                Salaire {season} : <strong className="text-text-primary">{rosterEntry.salary}</strong>
               </p>
             )}
 

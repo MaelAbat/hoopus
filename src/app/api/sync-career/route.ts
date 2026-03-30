@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import { syncPlayerCareer, syncPlayerCareerQuick } from "@/lib/sync-career";
+import { getCurrentSeason } from "@/lib/season";
 
 function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  const CURRENT_SEASON = "2025-26";
+  const CURRENT_SEASON = getCurrentSeason();
 
   // Bulk: sync all active players
   const { data: activePlayers } = await supabase

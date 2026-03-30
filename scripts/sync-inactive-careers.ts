@@ -14,6 +14,7 @@ import https from "node:https";
 import { config } from "dotenv";
 import { createClient } from "@supabase/supabase-js";
 import { syncPlayerCareer } from "../src/lib/sync-career";
+import { getCurrentSeason } from "../src/lib/season";
 
 config({ path: ".env.local" });
 
@@ -46,7 +47,7 @@ interface AllPlayersResponse {
 function fetchAllPlayers(): Promise<AllPlayersResponse> {
   return new Promise((resolve, reject) => {
     const url =
-      "https://stats.nba.com/stats/commonallplayers?IsOnlyCurrentSeason=0&LeagueID=00&Season=2025-26";
+      `https://stats.nba.com/stats/commonallplayers?IsOnlyCurrentSeason=0&LeagueID=00&Season=${getCurrentSeason()}`;
     const req = https.get(url, { headers: NBA_HEADERS }, (res) => {
       let data = "";
       res.on("data", (chunk: string) => (data += chunk));

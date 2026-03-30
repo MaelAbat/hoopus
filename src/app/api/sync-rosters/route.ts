@@ -2,8 +2,9 @@ import https from "node:https";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
+import { getCurrentSeason } from "@/lib/season";
 
-const SEASON = "2025-26";
+const SEASON = getCurrentSeason();
 const BATCH_SIZE = 200;
 
 const NBA_HEADERS: Record<string, string> = {
