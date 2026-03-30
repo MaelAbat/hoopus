@@ -3,7 +3,7 @@ import { getCurrentSeason, seasonLabel } from "@/lib/season";
 import CalendarView from "@/components/CalendarView";
 import PageBanner from "@/components/PageBanner";
 import ScrollReveal from "@/components/ScrollReveal";
-import SeasonSelector from "@/components/SeasonSelector";
+import SeasonSelector, { SeasonTransitionProvider, SeasonContent } from "@/components/SeasonSelector";
 
 export const revalidate = 3600;
 
@@ -33,16 +33,20 @@ export default async function Calendrier({ searchParams }: { searchParams: Promi
   const games = [...(page1 || []), ...(page2 || [])];
 
   return (
-    <div className="mx-auto max-w-6xl space-y-8">
-      <PageBanner
-        title="Calendrier"
-        subtitle={`${seasonLabel(season)} -- saison régulière`}
-        image="https://images.unsplash.com/photo-1693164586646-f3f877aec626?w=1200&q=80"
-        extra={<SeasonSelector current={season} available={availableSeasons} />}
-      />
-      <ScrollReveal variant="up" delay={100}>
-        <CalendarView games={games || []} />
-      </ScrollReveal>
-    </div>
+    <SeasonTransitionProvider>
+      <div className="mx-auto max-w-6xl space-y-8">
+        <PageBanner
+          title="Calendrier"
+          subtitle={`${seasonLabel(season)} -- saison régulière`}
+          image="https://images.unsplash.com/photo-1693164586646-f3f877aec626?w=1200&q=80"
+          extra={<SeasonSelector current={season} available={availableSeasons} />}
+        />
+        <SeasonContent>
+          <ScrollReveal variant="up" delay={100}>
+            <CalendarView games={games || []} />
+          </ScrollReveal>
+        </SeasonContent>
+      </div>
+    </SeasonTransitionProvider>
   );
 }

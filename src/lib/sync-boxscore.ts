@@ -53,7 +53,13 @@ function fetchBoxscore(gameId: string): Promise<NbaBoxscoreResponse> {
   const url = `https://cdn.nba.com/static/json/liveData/boxscore/boxscore_${gameId}.json`;
 
   return new Promise((resolve, reject) => {
-    const req = https.get(url, (res) => {
+    const req = https.get(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+        "Referer": "https://www.nba.com/",
+        "Accept": "application/json",
+      },
+    }, (res) => {
       let data = "";
       res.on("data", (chunk: string) => (data += chunk));
       res.on("end", () => {
@@ -153,8 +159,8 @@ export async function syncBoxscore(gameId: string): Promise<boolean> {
     }
 
     return true;
-  } catch (err) {
-    console.error("Boxscore sync error:", err);
+  } catch {
+    // Silently fail — page will show "no data" fallback
     return false;
   }
 }

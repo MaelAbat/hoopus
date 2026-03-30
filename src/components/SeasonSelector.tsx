@@ -1,7 +1,39 @@
 "use client";
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { createContext, useContext, useTransition, type ReactNode } from "react";
 import { ChevronDown } from "lucide-react";
+
+// Shared transition context
+const SeasonPendingCtx = createContext<{
+  isPending: boolean;
+  startTransition: (cb: () => void) => void;
+}>({ isPending: false, startTransition: (cb) => cb() });
+
+export function SeasonTransitionProvider({ children }: { children: ReactNode }) {
+  const [isPending, startTransition] = useTransition();
+  return (
+    <SeasonPendingCtx.Provider value={{ isPending, startTransition }}>
+      {children}
+    </SeasonPendingCtx.Provider>
+  );
+}
+
+export function SeasonContent({ children }: { children: ReactNode }) {
+  const { isPending } = useContext(SeasonPendingCtx);
+  return (
+    <div
+      className="transition-all duration-300 ease-in-out"
+      style={{
+        opacity: isPending ? 0.4 : 1,
+        filter: isPending ? "blur(4px)" : "none",
+        pointerEvents: isPending ? "none" : "auto",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
 
 interface SeasonSelectorProps {
   current: string;
@@ -12,18 +44,20 @@ export default function SeasonSelector({ current, available }: SeasonSelectorPro
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { startTransition } = useContext(SeasonPendingCtx);
 
   function handleChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const season = e.target.value;
     const params = new URLSearchParams(searchParams.toString());
     if (season === available[0]) {
-      // Most recent season = default, remove param for clean URL
       params.delete("season");
     } else {
       params.set("season", season);
     }
     const qs = params.toString();
-    router.push(`${pathname}${qs ? `?${qs}` : ""}`);
+    startTransition(() => {
+      router.push(`${pathname}${qs ? `?${qs}` : ""}`);
+    });
   }
 
   return (

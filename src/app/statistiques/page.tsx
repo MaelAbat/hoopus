@@ -6,7 +6,7 @@ import type { PlayerRow } from "@/components/StatsTable";
 import type { TeamRow } from "@/components/TeamStatsTable";
 import PageBanner from "@/components/PageBanner";
 import ScrollReveal from "@/components/ScrollReveal";
-import SeasonSelector from "@/components/SeasonSelector";
+import SeasonSelector, { SeasonTransitionProvider, SeasonContent } from "@/components/SeasonSelector";
 
 export const revalidate = 3600;
 
@@ -173,28 +173,32 @@ export default async function Statistiques({ searchParams }: { searchParams: Pro
   const teamData: TeamRow[] = (teamStatsRaw || []).map((t) => ({ ...t } as TeamRow));
 
   return (
-    <div className="mx-auto max-w-7xl space-y-8">
-      <PageBanner
-        title="Statistiques"
-        subtitle={`Leaders de la ${seasonLabel(season).toLowerCase()}`}
-        image="https://images.unsplash.com/photo-1705594975210-02cbcc7af5ad?w=1200&fit=crop"
-        extra={
-          <div className="flex flex-wrap items-center gap-3">
-            <SeasonSelector current={season} available={availableSeasons} />
-            {hasData ? (
-              <span className="text-xs text-white/40">Mis à jour le {lastUpdate}</span>
-            ) : (
-              <span className="inline-flex items-center rounded-full bg-yellow-500/20 px-2 py-0.5 text-xs text-yellow-300">
-                Synchronisation requise
-              </span>
-            )}
-          </div>
-        }
-      />
+    <SeasonTransitionProvider>
+      <div className="mx-auto max-w-7xl space-y-8">
+        <PageBanner
+          title="Statistiques"
+          subtitle={`Leaders de la ${seasonLabel(season).toLowerCase()}`}
+          image="https://images.unsplash.com/photo-1705594975210-02cbcc7af5ad?w=1200&fit=crop"
+          extra={
+            <div className="flex flex-wrap items-center gap-3">
+              <SeasonSelector current={season} available={availableSeasons} />
+              {hasData ? (
+                <span className="text-xs text-white/40">Mis à jour le {lastUpdate}</span>
+              ) : (
+                <span className="inline-flex items-center rounded-full bg-yellow-500/20 px-2 py-0.5 text-xs text-yellow-300">
+                  Synchronisation requise
+                </span>
+              )}
+            </div>
+          }
+        />
 
-      <ScrollReveal variant="up" delay={100}>
-        <StatsView boards={boardsData} tableData={tableData} teamData={teamData} />
-      </ScrollReveal>
-    </div>
+        <SeasonContent>
+          <ScrollReveal variant="up" delay={100}>
+            <StatsView boards={boardsData} tableData={tableData} teamData={teamData} />
+          </ScrollReveal>
+        </SeasonContent>
+      </div>
+    </SeasonTransitionProvider>
   );
 }
