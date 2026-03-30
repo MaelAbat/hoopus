@@ -214,7 +214,6 @@ export default function CalendarView({ games }: { games: Game[] }) {
       return bFav - aFav;
     });
   }, [gamesByDate, selectedDate, isTeamFavorite]);
-  const todayStr = today.toISOString().split("T")[0];
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_350px] lg:h-[calc(100vh-12rem)]">
