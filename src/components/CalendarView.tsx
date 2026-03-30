@@ -1,7 +1,6 @@
 "use client";
 
-import { useRef, useState, useMemo, useEffect, useCallback } from "react";
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { useRef, useState, useMemo, useEffect } from "react";
 import { ChevronLeft, ChevronRight, MapPin, Star } from "lucide-react";
 import { teamLogoUrl } from "@/lib/nba-teams";
 import { useFavorites } from "@/context/FavoritesContext";
@@ -134,43 +133,33 @@ function GameCard({ game }: { game: Game }) {
   return card;
 }
 
-export default function CalendarView({ games, initialDate }: { games: Game[]; initialDate?: string }) {
+export default function CalendarView({ games }: { games: Game[] }) {
   const today = new Date();
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const todayStr = today.toISOString().split("T")[0];
 
-  const startDate = initialDate || today.toISOString().split("T")[0];
-  const startD = new Date(startDate + "T12:00:00");
-
-  const [currentDate, setCurrentDate] = useState(new Date(startD.getFullYear(), startD.getMonth(), 1));
-  const [selectedDate, setSelectedDate] = useState<string>(startDate);
-
-  // Sync selected date to URL (replace, no history push)
-  const syncDateToUrl = useCallback((date: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("date", date);
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-  }, [router, pathname, searchParams]);
-
-  // When games change (season switch) and no initialDate, jump to relevant date
-  useEffect(() => {
-    if (games.length === 0) return;
-    if (initialDate) return; // Already positioned via URL
-    const todayStr = today.toISOString().split("T")[0];
+  // Find the best initial date for the current set of games
+  const bestDate = useMemo(() => {
+    if (games.length === 0) return todayStr;
     const dates = games.map((g) => g.game_date).sort();
     const firstDate = dates[0];
     const lastDate = dates[dates.length - 1];
-
-    if (todayStr >= firstDate && todayStr <= lastDate) return;
-
-    const target = lastDate;
-    const d = new Date(target + "T12:00:00");
-    setCurrentDate(new Date(d.getFullYear(), d.getMonth(), 1));
-    setSelectedDate(target);
-    syncDateToUrl(target);
+    // If today is within the season, use today
+    if (todayStr >= firstDate && todayStr <= lastDate) return todayStr;
+    // Otherwise use the last game (most relevant for past seasons)
+    return lastDate;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [games]);
+
+  const bestD = new Date(bestDate + "T12:00:00");
+  const [currentDate, setCurrentDate] = useState(new Date(bestD.getFullYear(), bestD.getMonth(), 1));
+  const [selectedDate, setSelectedDate] = useState<string>(bestDate);
+
+  // When games change (season switch), reposition the calendar
+  useEffect(() => {
+    const d = new Date(bestDate + "T12:00:00");
+    setCurrentDate(new Date(d.getFullYear(), d.getMonth(), 1));
+    setSelectedDate(bestDate);
+  }, [bestDate]);
   const gamesListRef = useRef<HTMLDivElement>(null);
   const { isTeamFavorite } = useFavorites();
 
@@ -210,7 +199,6 @@ export default function CalendarView({ games, initialDate }: { games: Game[]; in
 
   function selectDate(dateKey: string) {
     setSelectedDate(dateKey);
-    syncDateToUrl(dateKey);
     gamesListRef.current?.scrollTo({ top: 0 });
   }
 

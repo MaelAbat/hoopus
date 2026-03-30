@@ -7,8 +7,8 @@ import SeasonSelector from "@/components/SeasonSelector";
 
 export const revalidate = 3600;
 
-export default async function Calendrier({ searchParams }: { searchParams: Promise<{ season?: string; date?: string }> }) {
-  const { season: seasonParam, date: dateParam } = await searchParams;
+export default async function Calendrier({ searchParams }: { searchParams: Promise<{ season?: string }> }) {
+  const { season: seasonParam } = await searchParams;
   const season = seasonParam || getCurrentSeason();
   const supabase = await createClient();
 
@@ -41,7 +41,7 @@ export default async function Calendrier({ searchParams }: { searchParams: Promi
         extra={<SeasonSelector current={season} available={availableSeasons} />}
       />
       <ScrollReveal variant="up" delay={100}>
-        <CalendarView games={games || []} initialDate={dateParam} />
+        <CalendarView games={games || []} />
       </ScrollReveal>
     </div>
   );
