@@ -566,33 +566,36 @@ function PlayInConference({ teams, label, games }: { teams: Standing[]; label: s
 
 /* ─── Main component ─── */
 export default function PlayoffBracket({ east, west, series, playinGames }: { east: Standing[]; west: Standing[]; series: PlayoffSeries[]; playinGames: PlayInGame[] }) {
+  const hasPlayIn = playinGames.length > 0;
   const [view, setView] = useState<"playin" | "playoffs">("playoffs");
 
   const views: { key: "playin" | "playoffs"; label: string }[] = [
     { key: "playoffs", label: "Playoffs" },
-    { key: "playin", label: "Play-In" },
+    ...(hasPlayIn ? [{ key: "playin" as const, label: "Play-In" }] : []),
   ];
 
   const hasData = east.length > 0 && west.length > 0;
 
   return (
     <div className="space-y-6">
-      {/* Toggle */}
-      <div className="flex gap-2">
-        {views.map(({ key, label }) => (
-          <button
-            key={key}
-            onClick={() => setView(key)}
-            className={`rounded-xl px-4 py-2 text-sm font-medium transition-all duration-200 ${
-              view === key
-                ? "bg-accent text-white"
-                : "bg-input text-text-muted hover:bg-card-hover hover:text-text-primary"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      {/* Toggle — only show if Play-In exists */}
+      {views.length > 1 && (
+        <div className="flex gap-2">
+          {views.map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => setView(key)}
+              className={`rounded-xl px-4 py-2 text-sm font-medium transition-all duration-200 ${
+                view === key
+                  ? "bg-accent text-white"
+                  : "bg-input text-text-muted hover:bg-card-hover hover:text-text-primary"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {!hasData ? (
         <div className="rounded-2xl bg-card border border-border-t px-6 py-12 text-center text-sm text-text-muted">

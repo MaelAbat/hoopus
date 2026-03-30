@@ -13,7 +13,7 @@ export default async function Equipes({ searchParams }: { searchParams: Promise<
   const supabase = await createClient();
 
   const { data: seasonRows } = await supabase
-    .from("rosters")
+    .from("standings")
     .select("season")
     .order("season", { ascending: false })
     .limit(1000);

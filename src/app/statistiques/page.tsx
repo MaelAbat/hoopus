@@ -48,7 +48,7 @@ export default async function Statistiques({ searchParams }: { searchParams: Pro
   const supabase = await createClient();
 
   const { data: seasonRows } = await supabase
-    .from("stat_leaders")
+    .from("standings")
     .select("season")
     .order("season", { ascending: false })
     .limit(1000);
