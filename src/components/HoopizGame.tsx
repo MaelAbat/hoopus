@@ -35,14 +35,14 @@ function levenshtein(a: string, b: string): number {
 /** Exact match only (for auto-validate on keystroke) */
 function exactMatch(input: string, answers: string[]): boolean {
   const norm = normalize(input);
-  if (norm.length < 3) return false;
+  if (norm.length < 4) return false;
   return answers.some((a) => normalize(a) === norm);
 }
 
 /** Fuzzy match with typo tolerance (for Enter key validation) */
 function fuzzyMatch(input: string, answers: string[]): boolean {
   const norm = normalize(input);
-  if (norm.length < 3) return false;
+  if (norm.length < 4) return false;
   for (const answer of answers) {
     const normA = normalize(answer);
     if (norm === normA) return true;
