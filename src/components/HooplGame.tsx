@@ -113,6 +113,91 @@ function ClueIcon({ status }: { status: ClueStatus }) {
   return null;
 }
 
+/* ─── Confetti explosion ─── */
+
+function Confetti() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const colors = ["#f97316", "#10b981", "#3b82f6", "#eab308", "#ef4444", "#8b5cf6", "#ec4899", "#06b6d4"];
+    const particles: { x: number; y: number; vx: number; vy: number; w: number; h: number; color: string; rot: number; vr: number; life: number }[] = [];
+
+    // Create particles from multiple burst points
+    const burstPoints = [
+      { x: canvas.width * 0.3, y: canvas.height * 0.3 },
+      { x: canvas.width * 0.7, y: canvas.height * 0.3 },
+      { x: canvas.width * 0.5, y: canvas.height * 0.2 },
+    ];
+
+    for (const bp of burstPoints) {
+      for (let i = 0; i < 50; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 3 + Math.random() * 8;
+        particles.push({
+          x: bp.x,
+          y: bp.y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed - 4,
+          w: 4 + Math.random() * 6,
+          h: 6 + Math.random() * 10,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          rot: Math.random() * Math.PI * 2,
+          vr: (Math.random() - 0.5) * 0.3,
+          life: 1,
+        });
+      }
+    }
+
+    let frame: number;
+    function animate() {
+      ctx!.clearRect(0, 0, canvas!.width, canvas!.height);
+      let alive = false;
+
+      for (const p of particles) {
+        if (p.life <= 0) continue;
+        alive = true;
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.15; // gravity
+        p.vx *= 0.99;
+        p.rot += p.vr;
+        p.life -= 0.008;
+
+        ctx!.save();
+        ctx!.translate(p.x, p.y);
+        ctx!.rotate(p.rot);
+        ctx!.globalAlpha = Math.min(p.life * 2, 1);
+        ctx!.fillStyle = p.color;
+        ctx!.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        ctx!.restore();
+      }
+
+      if (alive) {
+        frame = requestAnimationFrame(animate);
+      }
+    }
+
+    frame = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="fixed inset-0 z-50 pointer-events-none"
+      style={{ width: "100vw", height: "100vh" }}
+    />
+  );
+}
+
 interface LeaderboardEntry {
   display_name: string;
   guesses: number;
@@ -135,6 +220,7 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
   const [startTime, setStartTime] = useState<number>(0);
   const [elapsed, setElapsed] = useState(0);
   const [submitted, setSubmitted] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -317,6 +403,7 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
     setShowDropdown(false);
     if (player.id === target.id) {
       setWon(true);
+      setShowConfetti(true);
       submitScore(newGuesses.length, true);
     } else if (newGuesses.length >= MAX_GUESSES) {
       submitScore(newGuesses.length, false);
@@ -357,6 +444,8 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 px-3 sm:px-0 pb-8">
+      {showConfetti && <Confetti />}
+
       {/* Header */}
       <div className="pt-4 space-y-4">
         <Link
