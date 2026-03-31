@@ -50,36 +50,88 @@ function formatTime(seconds: number): string {
 
 function PixelatedImage({ src, pixelSize, size }: { src: string; pixelSize: number; size: number }) {
   // pixelSize: 40 = very pixelated, 1 = clear
-  const radius = pixelSize <= 1.5 ? 0 : pixelSize * 0.4;
-  const blockW = pixelSize <= 1.5 ? 1 : pixelSize * 0.8;
+  // progress: 0 = fully pixelated, 1 = fully clear
+  const progress = Math.max(0, Math.min(1, 1 - (pixelSize - 1) / 39));
 
-  // Snap to 0.2 increments for smooth but not excessive DOM updates
-  const rSnap = Math.round(radius * 5) / 5;
-  const bSnap = Math.round(blockW * 5) / 5;
+  // Heavy pixelation layer (static, always max pixelated)
+  // Medium pixelation layer
+  // Clear layer
+  // We crossfade between them using opacity for perfect CSS smoothness
 
   return (
     <div
       className="overflow-hidden rounded-2xl bg-input"
-      style={{ width: size, height: size }}
+      style={{ width: size, height: size, position: "relative" }}
     >
       <svg width="0" height="0" className="absolute">
-        <filter id="pxl">
+        <filter id="pxl-heavy">
           <feFlood x="4" y="4" height="2" width="2" />
-          <feComposite width={bSnap} height={bSnap} />
+          <feComposite width="16" height="16" />
           <feTile result="a" />
           <feComposite in="SourceGraphic" in2="a" operator="in" />
-          <feMorphology operator="dilate" radius={rSnap} />
+          <feMorphology operator="dilate" radius="8" />
+        </filter>
+        <filter id="pxl-medium">
+          <feFlood x="4" y="4" height="2" width="2" />
+          <feComposite width="6" height="6" />
+          <feTile result="a" />
+          <feComposite in="SourceGraphic" in2="a" operator="in" />
+          <feMorphology operator="dilate" radius="3" />
+        </filter>
+        <filter id="pxl-light">
+          <feFlood x="4" y="4" height="2" width="2" />
+          <feComposite width="3" height="3" />
+          <feTile result="a" />
+          <feComposite in="SourceGraphic" in2="a" operator="in" />
+          <feMorphology operator="dilate" radius="1.5" />
         </filter>
       </svg>
+
+      {/* Layer 1: Heavy pixelation — fades out from 0% to 40% progress */}
       <img
         src={src}
         alt=""
         style={{
-          display: "block",
-          width: size,
-          height: size,
-          objectFit: "cover",
-          filter: rSnap > 0 ? "url(#pxl)" : "none",
+          position: "absolute", top: 0, left: 0,
+          width: size, height: size, objectFit: "cover",
+          filter: "url(#pxl-heavy)",
+          opacity: progress < 0.4 ? 1 : Math.max(0, 1 - (progress - 0.4) / 0.15),
+          transition: "opacity 2s ease",
+        }}
+      />
+      {/* Layer 2: Medium pixelation — appears at 25%, fades out at 70% */}
+      <img
+        src={src}
+        alt=""
+        style={{
+          position: "absolute", top: 0, left: 0,
+          width: size, height: size, objectFit: "cover",
+          filter: "url(#pxl-medium)",
+          opacity: progress < 0.25 ? 0 : progress < 0.7 ? Math.min(1, (progress - 0.25) / 0.15) : Math.max(0, 1 - (progress - 0.7) / 0.15),
+          transition: "opacity 2s ease",
+        }}
+      />
+      {/* Layer 3: Light pixelation — appears at 55%, fades out at 90% */}
+      <img
+        src={src}
+        alt=""
+        style={{
+          position: "absolute", top: 0, left: 0,
+          width: size, height: size, objectFit: "cover",
+          filter: "url(#pxl-light)",
+          opacity: progress < 0.55 ? 0 : progress < 0.9 ? Math.min(1, (progress - 0.55) / 0.15) : Math.max(0, 1 - (progress - 0.9) / 0.1),
+          transition: "opacity 2s ease",
+        }}
+      />
+      {/* Layer 4: Clear image — appears at 75% */}
+      <img
+        src={src}
+        alt=""
+        style={{
+          position: "absolute", top: 0, left: 0,
+          width: size, height: size, objectFit: "cover",
+          opacity: progress < 0.75 ? 0 : Math.min(1, (progress - 0.75) / 0.25),
+          transition: "opacity 2s ease",
         }}
         onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
       />
