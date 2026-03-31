@@ -1,7 +1,7 @@
 import PageBanner from "@/components/PageBanner";
 import ScrollReveal from "@/components/ScrollReveal";
 import Link from "next/link";
-import { Target, Image, Sparkles, Trophy, Clock, ArrowRight } from "lucide-react";
+import { Target, Image, Brain, Sparkles, Trophy, Clock, ArrowRight } from "lucide-react";
 
 const games = [
   {
@@ -19,6 +19,14 @@ const games = [
     icon: <Image size={24} />,
     color: "#8b5cf6",
     tags: ["Visuel", "5 essais"],
+  },
+  {
+    href: "/mini-jeux/hoopiz",
+    title: "Hoopiz",
+    description: "Quiz de culture générale NBA. Remplis le tableau le plus vite possible avec tes connaissances. Chrono et classement !",
+    icon: <Brain size={24} />,
+    color: "#10b981",
+    tags: ["Quiz", "Culture gé"],
   },
 ];
 
