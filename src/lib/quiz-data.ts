@@ -80,7 +80,6 @@ export const QUIZZES: Quiz[] = [
       { answers: ["warriors", "golden state warriors", "gsw"], hints: { year: "2022", finals: "vs. Celtics (4-2)", mvp: "Stephen Curry" } },
       { answers: ["nuggets", "denver nuggets"], hints: { year: "2023", finals: "vs. Heat (4-1)", mvp: "Nikola Jokic" } },
       { answers: ["celtics", "boston celtics"], hints: { year: "2024", finals: "vs. Mavericks (4-1)", mvp: "Jaylen Brown" } },
-      { answers: ["thunder", "oklahoma city thunder", "okc"], hints: { year: "2025", finals: "vs. Pacers (4-1)", mvp: "Shai Gilgeous-Alexander" } },
     ],
   },
 ];
