@@ -82,7 +82,7 @@ export async function GET(request: NextRequest) {
 
   for (let i = 0; i < activePlayers.length; ) {
     // Collect next batch of quick players (up to BATCH_SIZE)
-    const batch: typeof activePlayers = [];
+    const batch: { player_id: number; first_name: string; last_name: string }[] = [];
     while (batch.length < BATCH_SIZE && i < activePlayers.length) {
       if (hasCareerSet.has(activePlayers[i].player_id)) {
         batch.push(activePlayers[i]);

@@ -14,6 +14,7 @@ import {
   UserRound,
   Trophy,
   Users,
+  Gamepad2,
   LogIn,
   LogOut,
   Shield,
@@ -46,6 +47,7 @@ const navItems: NavItem[] = [
   { href: "/equipes", label: "Équipes", icon: <Users size={20} /> },
   { href: "/joueurs", label: "Joueurs", icon: <UserRound size={20} /> },
   { href: "/playoffs", label: "Playoffs", icon: <Trophy size={20} /> },
+  { href: "/mini-jeux", label: "Mini-jeux", icon: <Gamepad2 size={20} /> },
   { href: "/profil", label: "Profil", icon: <User size={20} /> },
 ];
 
