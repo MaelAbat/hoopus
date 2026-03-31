@@ -46,30 +46,37 @@ function formatTime(seconds: number): string {
   return m > 0 ? `${m}m${s.toString().padStart(2, "0")}s` : `${s}s`;
 }
 
-/* ─── Pixelated image (CSS scale + image-rendering: pixelated) ─── */
+/* ─── Pixelated image via SVG filter ─── */
 
 function PixelatedImage({ src, pixelSize, size }: { src: string; pixelSize: number; size: number }) {
-  // pixelSize: 40 = extremely pixelated (3px), 1 = fully clear
-  // Render the image at a tiny size then scale up with pixelated rendering
-  const renderSize = pixelSize <= 1 ? size : Math.max(3, Math.round((size / 40) * (41 - pixelSize)));
-  const scale = renderSize < size ? size / renderSize : 1;
+  // pixelSize: 40 = very pixelated, 1 = clear
+  // Map to a mosaic block radius (smaller = more detailed)
+  const radius = pixelSize <= 1 ? 0 : Math.max(1, Math.round(pixelSize * 0.4));
+  const blockW = pixelSize <= 1 ? 1 : Math.max(2, Math.round(pixelSize * 0.8));
 
   return (
     <div
       className="overflow-hidden rounded-2xl bg-input"
       style={{ width: size, height: size }}
     >
+      <svg width="0" height="0" className="absolute">
+        <filter id="pxl">
+          <feFlood x="4" y="4" height="2" width="2" />
+          <feComposite width={blockW} height={blockW} />
+          <feTile result="a" />
+          <feComposite in="SourceGraphic" in2="a" operator="in" />
+          <feMorphology operator="dilate" radius={radius} />
+        </filter>
+      </svg>
       <img
         src={src}
         alt=""
         style={{
           display: "block",
-          width: renderSize,
-          height: renderSize,
+          width: size,
+          height: size,
           objectFit: "cover",
-          transformOrigin: "top left",
-          transform: scale > 1 ? `scale(${scale})` : undefined,
-          imageRendering: scale > 1 ? "pixelated" : undefined,
+          filter: radius > 0 ? "url(#pxl)" : "none",
         }}
         onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
       />
