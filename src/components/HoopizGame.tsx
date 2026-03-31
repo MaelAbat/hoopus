@@ -35,16 +35,13 @@ function levenshtein(a: string, b: string): number {
 /** Check if input fuzzy-matches any of the accepted answers */
 function fuzzyMatch(input: string, answers: string[]): boolean {
   const norm = normalize(input);
-  if (norm.length < 2) return false;
+  if (norm.length < 4) return false; // minimum 4 chars to avoid false positives
   for (const answer of answers) {
     const normA = normalize(answer);
     // Exact match
     if (norm === normA) return true;
-    // Allow 1 typo for short words, 2 for longer
-    const maxDist = normA.length <= 5 ? 1 : 2;
-    if (levenshtein(norm, normA) <= maxDist) return true;
-    // Input is contained in answer or vice versa (handles plurals, partial)
-    if (normA.length >= 4 && (normA.includes(norm) || norm.includes(normA))) return true;
+    // Allow 1 typo only, and input must be at least 80% of answer length
+    if (norm.length >= normA.length * 0.8 && levenshtein(norm, normA) <= 1) return true;
   }
   return false;
 }
@@ -94,13 +91,11 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
     }
   }, [won, finished]);
 
-  // Scroll to last found entry
+  // Flash last found entry
   useEffect(() => {
-    if (lastFound === null || !tableRef.current) return;
-    const row = tableRef.current.querySelector(`[data-row="${lastFound}"]`);
-    if (row) {
-      row.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
+    if (lastFound === null) return;
+    const timer = setTimeout(() => setLastFound(null), 1500);
+    return () => clearTimeout(timer);
   }, [lastFound]);
 
   // Try to match input against all unfound entries — fills ALL matching rows at once
@@ -252,67 +247,38 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
         )}
       </div>
 
-      {/* Table */}
-      <div ref={tableRef} className="rounded-2xl bg-card border border-border-t overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border-t bg-card">
-                {quiz.columns.map((col) => (
-                  <th
-                    key={col.key}
-                    className="px-3 sm:px-4 py-3 text-left text-xs font-bold text-text-muted uppercase tracking-wider"
-                    style={{ width: col.width }}
-                  >
-                    {col.label}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {quiz.entries.map((entry, i) => {
-                const isFound = found.has(i);
-                const isLast = lastFound === i;
-                const isRevealed = isFound || finished;
+      {/* Grid layout — entries flow top-to-bottom in columns */}
+      <div ref={tableRef} className="rounded-2xl bg-card border border-border-t p-3 sm:p-4">
+        <div className="columns-2 sm:columns-3 lg:columns-4 xl:columns-5 gap-1.5 space-y-1.5">
+          {quiz.entries.map((entry, i) => {
+            const isFound = found.has(i);
+            const isLast = lastFound === i;
+            const isRevealed = isFound || finished;
 
-                return (
-                  <tr
-                    key={i}
-                    data-row={i}
-                    className={`border-b border-border-t/30 transition-all duration-500 ${
-                      isLast ? "bg-emerald-500/10" : ""
-                    }`}
-                  >
-                    {quiz.columns.map((col) => {
-                      if (col.key === quiz.answerColumn) {
-                        // Answer column
-                        return (
-                          <td key={col.key} className="px-3 sm:px-4 py-2.5">
-                            {isRevealed ? (
-                              <span className={`inline-flex items-center gap-1.5 font-bold transition-all duration-300 ${
-                                isFound ? "text-emerald-400" : "text-red-400"
-                              }`}>
-                                {isFound ? <CheckCircle size={14} /> : <XCircle size={14} />}
-                                {displayAnswer(entry)}
-                              </span>
-                            ) : (
-                              <span className="inline-block h-6 w-24 sm:w-32 rounded bg-input/80" />
-                            )}
-                          </td>
-                        );
-                      }
-                      // Hint columns
-                      return (
-                        <td key={col.key} className="px-3 sm:px-4 py-2.5 text-text-secondary whitespace-nowrap">
-                          {entry.hints[col.key] || ""}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+            return (
+              <div
+                key={i}
+                data-row={i}
+                className={`rounded-lg border px-2.5 py-2 text-xs transition-all duration-300 break-inside-avoid ${
+                  isFound
+                    ? "bg-emerald-500/10 border-emerald-500/30"
+                    : isRevealed
+                      ? "bg-red-500/8 border-red-500/20"
+                      : "bg-input/50 border-border-t/50"
+                } ${isLast ? "ring-2 ring-emerald-500/40" : ""}`}
+              >
+                <span className="text-text-faint text-[10px]">{entry.hints.year}</span>
+                {isRevealed ? (
+                  <p className={`font-bold truncate ${isFound ? "text-emerald-400" : "text-red-400"}`}>
+                    {displayAnswer(entry)}
+                  </p>
+                ) : (
+                  <div className="h-4 w-full rounded bg-input/80 mt-0.5" />
+                )}
+                <p className="text-[10px] text-text-faint truncate mt-0.5">{entry.hints.finals}</p>
+              </div>
+            );
+          })}
         </div>
       </div>
 
