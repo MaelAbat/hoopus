@@ -84,7 +84,6 @@ export default async function HoopizPage() {
                     {admin && (
                       <Link
                         href={`/mini-jeux/hoopiz/${quiz.id}/edit`}
-                        onClick={(e) => e.stopPropagation()}
                         className="rounded-lg p-1.5 text-text-faint hover:text-accent-text hover:bg-accent/10 transition-colors z-10"
                       >
                         <Pencil size={13} />
