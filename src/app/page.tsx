@@ -7,6 +7,7 @@ import {
   Users,
   UserRound,
   Trophy,
+  Gamepad2,
   ArrowRight,
   Flame,
   Sparkles,
@@ -101,6 +102,14 @@ const categories = [
     icon: <Trophy size={20} />,
     color: "#06b6d4",
     image: "https://images.unsplash.com/photo-1579487685737-e435a87b2518?w=600&q=80",
+  },
+  {
+    href: "/mini-jeux",
+    title: "Mini-jeux",
+    description: "Teste tes connaissances NBA avec nos jeux quotidiens",
+    icon: <Gamepad2 size={20} />,
+    color: "#f43f5e",
+    image: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=600&q=80",
   },
 ];
 
