@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { RotateCcw, Trophy, Search, Clock, LogIn, Check, Eye } from "lucide-react";
 import { playerPhotoUrl, teamLogoUrl } from "@/lib/nba-teams";
 import { createClient } from "@/lib/supabase/client";
+import Image from "next/image";
 import Link from "next/link";
 
 export interface HoopixlPlayer {
@@ -22,7 +23,7 @@ interface LeaderboardEntry {
 }
 
 const MAX_GUESSES = 5;
-const REVEAL_DURATION = 60; // seconds to go from full pixel to clear
+const REVEAL_DURATION = 120; // seconds to go from full pixel to clear
 
 function getDailyPlayerIndex(playerCount: number): number {
   const now = new Date();
@@ -46,28 +47,35 @@ function formatTime(seconds: number): string {
   return m > 0 ? `${m}m${s.toString().padStart(2, "0")}s` : `${s}s`;
 }
 
-/* ─── Pixelated image component (CSS-based, no CORS issues) ─── */
+/* ─── Pixelated image component ─── */
+/* Uses next/image with tiny width param to get a genuinely low-res image
+   from the Next.js image optimizer, then scales it up with image-rendering: pixelated
+   for a true mosaic pixel effect. */
 
 function PixelatedImage({ src, pixelSize, size }: { src: string; pixelSize: number; size: number }) {
-  // pixelSize 40 = max blur, 1 = fully clear
-  // Map pixelSize to blur: 40 → 30px blur, 1 → 0px blur
-  const blur = pixelSize <= 1 ? 0 : Math.round((pixelSize / 40) * 30);
-  const contrast = pixelSize <= 1 ? 1 : 1 + (pixelSize / 40) * 0.3;
-  const saturate = pixelSize <= 1 ? 1 : 1 - (pixelSize / 40) * 0.5;
+  // pixelSize: 40 = very pixelated, 1 = fully clear
+  // Map to image width requested from Next.js optimizer
+  const imgWidth = pixelSize <= 1 ? size : Math.max(8, Math.round(size / (pixelSize * 0.8)));
+  const isPixelated = imgWidth < size;
 
   return (
     <div
-      className="overflow-hidden rounded-2xl bg-input"
+      className="overflow-hidden rounded-2xl bg-input relative"
       style={{ width: size, height: size }}
     >
-      <img
+      <Image
         src={src}
         alt=""
-        className="h-full w-full object-cover transition-[filter] duration-500"
+        width={imgWidth}
+        height={imgWidth}
+        unoptimized={!isPixelated}
+        className="absolute top-0 left-0"
         style={{
-          filter: `blur(${blur}px) contrast(${contrast}) saturate(${saturate})`,
+          width: size,
+          height: size,
+          objectFit: "cover",
+          imageRendering: isPixelated ? "pixelated" : "auto",
         }}
-        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
       />
     </div>
   );

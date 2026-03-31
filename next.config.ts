@@ -2,6 +2,11 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   serverExternalPackages: [],
+  images: {
+    remotePatterns: [
+      { protocol: "https", hostname: "cdn.nba.com" },
+    ],
+  },
   experimental: {
     proxyTimeout: 600_000, // 10 minutes
   },
