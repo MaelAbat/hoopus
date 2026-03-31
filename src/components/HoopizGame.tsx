@@ -247,10 +247,9 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
         )}
       </div>
 
-      {/* Grid by decade */}
-      <div ref={tableRef} className="space-y-4">
+      {/* Decades as columns */}
+      <div ref={tableRef} className="rounded-2xl bg-card border border-border-t p-3 sm:p-4 overflow-x-auto">
         {(() => {
-          // Group entries by decade
           const decades = new Map<string, { entry: typeof quiz.entries[0]; index: number }[]>();
           quiz.entries.forEach((entry, i) => {
             const year = parseInt(entry.hints.year);
@@ -259,53 +258,57 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
             list.push({ entry, index: i });
             decades.set(decade, list);
           });
+          const decadeList = Array.from(decades.entries());
 
-          return Array.from(decades.entries()).map(([decade, items]) => (
-            <div key={decade} className="rounded-2xl bg-card border border-border-t overflow-hidden">
-              {/* Decade header */}
-              <div className="px-4 py-2 border-b border-border-t bg-input/30">
-                <h3 className="text-xs font-bold text-text-muted uppercase tracking-wider">{decade}</h3>
-              </div>
-              {/* Entries */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-px bg-border-t/20">
-                {items.map(({ entry, index }) => {
-                  const isFound = found.has(index);
-                  const isLast = lastFound === index;
-                  const isRevealed = isFound || finished;
+          return (
+            <div className="flex gap-2" style={{ minWidth: decadeList.length * 140 }}>
+              {decadeList.map(([decade, items]) => (
+                <div key={decade} className="flex-1 min-w-[120px]">
+                  {/* Decade header */}
+                  <div className="rounded-lg bg-accent/10 px-3 py-1.5 mb-2 text-center">
+                    <span className="text-xs font-bold text-accent-text">{decade}</span>
+                  </div>
+                  {/* Entries stacked vertically */}
+                  <div className="space-y-1.5">
+                    {items.map(({ entry, index }) => {
+                      const isFound = found.has(index);
+                      const isLast = lastFound === index;
+                      const isRevealed = isFound || finished;
 
-                  return (
-                    <div
-                      key={index}
-                      data-row={index}
-                      className={`p-2.5 transition-all duration-300 ${
-                        isFound
-                          ? "bg-emerald-500/10"
-                          : isRevealed
-                            ? "bg-red-500/8"
-                            : "bg-card"
-                      } ${isLast ? "ring-2 ring-inset ring-emerald-500/50" : ""}`}
-                    >
-                      <div className="flex items-baseline justify-between mb-1">
-                        <span className="text-xs font-bold text-text-secondary">{entry.hints.year}</span>
-                        {isFound && <CheckCircle size={12} className="text-emerald-400" />}
-                        {isRevealed && !isFound && <XCircle size={12} className="text-red-400" />}
-                      </div>
-                      {isRevealed ? (
-                        <p className={`text-sm font-bold truncate ${isFound ? "text-emerald-400" : "text-red-400"}`}>
-                          {displayAnswer(entry)}
-                        </p>
-                      ) : (
-                        <div className="h-5 w-full rounded-md bg-input border border-border-t/50 flex items-center justify-center">
-                          <span className="text-[10px] text-text-faint">?</span>
+                      return (
+                        <div
+                          key={index}
+                          data-row={index}
+                          className={`rounded-lg border p-2 transition-all duration-300 ${
+                            isFound
+                              ? "bg-emerald-500/10 border-emerald-500/30"
+                              : isRevealed
+                                ? "bg-red-500/8 border-red-500/20"
+                                : "bg-sidebar border-border-t"
+                          } ${isLast ? "ring-2 ring-emerald-500/40" : ""}`}
+                        >
+                          <div className="flex items-center justify-between mb-0.5">
+                            <span className="text-[11px] font-bold text-text-secondary">{entry.hints.year}</span>
+                            {isFound && <CheckCircle size={11} className="text-emerald-400" />}
+                            {isRevealed && !isFound && <XCircle size={11} className="text-red-400" />}
+                          </div>
+                          {isRevealed ? (
+                            <p className={`text-xs font-bold truncate ${isFound ? "text-emerald-400" : "text-red-400"}`}>
+                              {displayAnswer(entry)}
+                            </p>
+                          ) : (
+                            <div className="h-[18px] w-full rounded bg-input border border-dashed border-border-t flex items-center justify-center">
+                              <span className="text-[10px] text-text-faint select-none">?</span>
+                            </div>
+                          )}
                         </div>
-                      )}
-                      <p className="text-[10px] text-text-faint truncate mt-1">{entry.hints.finals}</p>
-                    </div>
-                  );
-                })}
-              </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
-          ));
+          );
         })()}
       </div>
 
