@@ -151,12 +151,16 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
     return `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
   }, []);
 
-  // Check auth state
+  // Check auth state + listen for login
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data }) => {
       setUserId(data.user?.id || null);
     });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserId(session?.user?.id || null);
+    });
+    return () => subscription.unsubscribe();
   }, []);
 
   // Load saved state from localStorage
@@ -196,6 +200,15 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
     }, 1000);
     return () => clearInterval(interval);
   }, [loaded, won, guessIds.length, startTime]);
+
+  // Submit score when user logs in after finishing the game
+  useEffect(() => {
+    if (!userId || submitted || !loaded) return;
+    const gameOver = won || guessIds.length >= 10;
+    if (!gameOver) return;
+    submitScore(guessIds.length, won);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, loaded]);
 
   // Fetch leaderboard
   const fetchLeaderboard = useCallback(async () => {
