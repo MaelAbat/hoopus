@@ -469,9 +469,9 @@ export default function AdvancedStatsTable({ players }: { players: PlayerRow[] }
                 return (
                   <tr
                     key={`${player.name}-${player.team}`}
-                    className="border-b border-border-t/20 transition-all duration-150 hover:bg-card-hover/60 cursor-pointer group"
+                    className="border-b border-border-t/20 transition-all duration-150 hover:bg-card-hover cursor-pointer group"
                   >
-                    <td className="sm:sticky sm:left-0 sm:z-10 bg-card pl-4 pr-2 py-3 group-hover:bg-card-hover/60">
+                    <td className="sm:sticky sm:left-0 sm:z-10 bg-card pl-4 pr-2 py-3 group-hover:bg-card-hover">
                       <span className={`inline-flex h-6 w-6 items-center justify-center rounded-md text-[11px] font-bold ${
                         rank === 1
                           ? "bg-accent/15 text-accent"
@@ -482,7 +482,7 @@ export default function AdvancedStatsTable({ players }: { players: PlayerRow[] }
                         {rank}
                       </span>
                     </td>
-                    <td className="sm:sticky sm:left-10 sm:z-10 bg-card px-3 py-3 group-hover:bg-card-hover/60 sm:after:absolute sm:after:right-0 sm:after:top-0 sm:after:bottom-0 sm:after:w-px sm:after:bg-border-t/40">
+                    <td className="sm:sticky sm:left-10 sm:z-10 bg-card px-3 py-3 group-hover:bg-card-hover sm:after:absolute sm:after:right-0 sm:after:top-0 sm:after:bottom-0 sm:after:w-px sm:after:bg-border-t/40">
                       <Link href={`/joueurs/${player.playerId}`} className="flex items-center gap-3">
                         <div className="relative h-9 w-9 shrink-0">
                           <img
