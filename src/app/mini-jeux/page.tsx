@@ -24,7 +24,7 @@ export default function MiniJeux() {
               <h2 className="text-lg font-bold text-text-primary group-hover:text-accent-text transition-colors">Hoopl</h2>
             </div>
             <p className="text-sm text-text-muted">
-              Devine le joueur NBA du jour a partir de ses statistiques. A chaque essai, decouvre si tes indices sont trop hauts, trop bas ou corrects.
+              Devine le joueur NBA du jour à partir de ses statistiques. À chaque essai, découvre si tes indices sont trop hauts, trop bas ou corrects.
             </p>
           </Link>
         </div>

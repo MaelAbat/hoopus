@@ -42,7 +42,7 @@ interface GuessResult {
 }
 
 const COLUMNS = [
-  { key: "team", label: "Equipe" },
+  { key: "team", label: "Équipe" },
   { key: "conference", label: "Conf." },
   { key: "division", label: "Div." },
   { key: "position", label: "Pos" },
@@ -350,13 +350,13 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
   if (!target) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-16 text-center text-text-muted">
-        Aucun joueur disponible. Synchronisez les donnees.
+        Aucun joueur disponible. Synchronisez les données.
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6 px-3 sm:px-0">
+    <div className="mx-auto max-w-4xl space-y-6 px-3 sm:px-0 pb-8">
       {/* Header */}
       <div className="pt-4 space-y-4">
         <Link
@@ -366,18 +366,83 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
           <RotateCcw size={12} />
           Tous les mini-jeux
         </Link>
-        <div className="text-center space-y-1">
-          <h1 className="text-3xl font-bold text-text-primary tracking-tight">Hoopl</h1>
-          <p className="text-sm text-text-muted">Devine le joueur NBA du jour</p>
-          {!won && !lost && loaded && (
-            <div className="flex items-center justify-center gap-1.5 text-xs text-text-faint">
-              <Clock size={12} />
-              {formatTime(elapsed)}
+
+        {/* Game banner */}
+        <div className="relative overflow-hidden rounded-2xl border border-border-t bg-gradient-to-br from-accent/10 via-card to-card">
+          <div className="absolute top-0 right-0 w-32 h-32 sm:w-48 sm:h-48 opacity-[0.07]">
+            <svg viewBox="0 0 100 100" className="w-full h-full text-accent">
+              <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="3" />
+              <circle cx="50" cy="50" r="20" fill="none" stroke="currentColor" strokeWidth="2" />
+              <line x1="50" y1="5" x2="50" y2="95" stroke="currentColor" strokeWidth="2" />
+              <line x1="5" y1="50" x2="95" y2="50" stroke="currentColor" strokeWidth="2" />
+            </svg>
+          </div>
+
+          <div className="relative px-5 py-6 sm:px-8 sm:py-8">
+            <div className="flex items-center gap-4 sm:gap-6">
+              {/* Mystery silhouette */}
+              <div className="relative shrink-0">
+                <div className={`h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-gradient-to-br from-accent/30 to-accent/10 border-2 border-accent/40 flex items-center justify-center ${won ? "" : "animate-pulse"}`}>
+                  {won || lost ? (
+                    <img src={playerPhotoUrl(target.id)} alt="" className="h-full w-full rounded-full object-cover" />
+                  ) : (
+                    <span className="text-2xl sm:text-3xl font-black text-accent/60">?</span>
+                  )}
+                </div>
+                {won && (
+                  <div className="absolute -top-1 -right-1 h-6 w-6 rounded-full bg-emerald-500 flex items-center justify-center">
+                    <Check size={14} className="text-white" />
+                  </div>
+                )}
+              </div>
+
+              <div className="flex-1 min-w-0">
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-text-primary tracking-tight">
+                  Hoop<span className="text-accent">l</span>
+                </h1>
+                <p className="text-xs sm:text-sm text-text-muted mt-0.5">
+                  {won ? `Trouvé en ${guessIds.length} essai${guessIds.length > 1 ? "s" : ""} !`
+                    : lost ? "Partie terminée"
+                    : "Devine le joueur NBA du jour"}
+                </p>
+
+                {/* Progress bar */}
+                {!won && !lost && loaded && (
+                  <div className="mt-3 space-y-1">
+                    <div className="flex items-center justify-between text-[10px]">
+                      <span className="text-text-faint">{guessIds.length}/{MAX_GUESSES} essais</span>
+                      <span className="flex items-center gap-1 text-text-faint">
+                        <Clock size={10} />
+                        {formatTime(elapsed)}
+                      </span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-input overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-accent to-accent-hover transition-all duration-500"
+                        style={{ width: `${(guessIds.length / MAX_GUESSES) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Win stats */}
+                {won && (
+                  <div className="flex items-center gap-3 mt-2">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[11px] font-bold text-emerald-400">
+                      <Trophy size={11} /> {guessIds.length} essai{guessIds.length > 1 ? "s" : ""}
+                    </span>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-accent/15 px-2.5 py-0.5 text-[11px] font-bold text-accent-text">
+                      <Clock size={11} /> {formatTime(elapsed)}
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
-          )}
+          </div>
         </div>
+
         {!userId && (
-          <div className="rounded-lg bg-input border border-border-t px-4 py-2.5 text-center text-xs text-text-muted">
+          <div className="rounded-xl bg-input/50 border border-border-t px-4 py-2.5 text-center text-xs text-text-muted">
             <LogIn size={12} className="inline mr-1.5 -mt-0.5" />
             <Link href="/auth/login" className="text-accent-text hover:underline">Connecte-toi</Link> pour enregistrer ton score au classement
           </div>
@@ -386,7 +451,7 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
 
       {/* Hint after 5 guesses */}
       {!won && !lost && guessIds.length >= 5 && (
-        <div className="rounded-xl bg-accent/10 border border-accent/30 px-4 py-3 text-center text-sm">
+        <div className="rounded-xl bg-accent/10 border border-accent/30 px-4 py-3 text-center text-sm animate-[fadeIn_0.5s_ease-out]">
           <span className="text-text-muted">Indice : il joue pour les </span>
           <span className="font-bold text-accent-text">{target.teamName}</span>
           <img src={teamLogoUrl(target.team)} alt="" className="inline h-5 w-5 ml-1.5 -mt-0.5 object-contain" />
@@ -439,50 +504,48 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
         </div>
       )}
 
-      {/* Win state */}
+      {/* Win reveal */}
       {won && (
-        <div className="rounded-2xl bg-emerald-500/10 border border-emerald-500/30 p-6 text-center space-y-3">
-          <Trophy size={32} className="text-emerald-400 mx-auto" />
-          <div>
-            <p className="text-lg font-bold text-emerald-400">Bravo !</p>
-            <p className="text-sm text-text-muted">
-              Tu as trouve <strong className="text-text-primary">{target.name}</strong> en {guessIds.length} essai{guessIds.length > 1 ? "s" : ""} ({formatTime(elapsed)})
-            </p>
-          </div>
-          <div className="flex items-center justify-center gap-3">
-            <img src={playerPhotoUrl(target.id)} alt="" className="h-16 w-16 rounded-full object-cover bg-input" />
-            <div className="text-left">
-              <p className="font-bold text-text-primary">{target.name}</p>
-              <p className="text-xs text-text-muted">{target.teamName} - {target.position}</p>
-              <p className="text-xs text-text-faint">{target.pts.toFixed(1)} PTS / {target.reb.toFixed(1)} REB / {target.ast.toFixed(1)} AST</p>
+        <div className="rounded-2xl overflow-hidden border border-emerald-500/30 bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-card p-5 sm:p-6">
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <img src={playerPhotoUrl(target.id)} alt="" className="h-20 w-20 sm:h-24 sm:w-24 rounded-2xl object-cover bg-input shadow-lg" />
+              <img src={teamLogoUrl(target.team)} alt="" className="absolute -bottom-1 -right-1 h-7 w-7 object-contain bg-card rounded-full p-0.5" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-emerald-400 uppercase tracking-wider">Bravo !</p>
+              <p className="text-xl sm:text-2xl font-extrabold text-text-primary mt-0.5">{target.name}</p>
+              <p className="text-sm text-text-muted">{target.teamName} -- {target.position}</p>
+              <div className="flex items-center gap-4 mt-2 text-xs text-text-faint">
+                <span className="font-bold text-text-secondary">{target.pts.toFixed(1)} <span className="font-normal">PTS</span></span>
+                <span className="font-bold text-text-secondary">{target.reb.toFixed(1)} <span className="font-normal">REB</span></span>
+                <span className="font-bold text-text-secondary">{target.ast.toFixed(1)} <span className="font-normal">AST</span></span>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Lost state */}
+      {/* Lost reveal */}
       {lost && (
-        <div className="rounded-2xl bg-red-500/10 border border-red-500/30 p-6 text-center space-y-3">
-          <p className="text-lg font-bold text-red-400">Perdu !</p>
-          <p className="text-sm text-text-muted">
-            Le joueur etait <strong className="text-text-primary">{target.name}</strong>
-          </p>
-          <div className="flex items-center justify-center gap-3">
-            <img src={playerPhotoUrl(target.id)} alt="" className="h-16 w-16 rounded-full object-cover bg-input" />
-            <div className="text-left">
-              <p className="font-bold text-text-primary">{target.name}</p>
-              <p className="text-xs text-text-muted">{target.teamName} - {target.position}</p>
-              <p className="text-xs text-text-faint">{target.pts.toFixed(1)} PTS / {target.reb.toFixed(1)} REB / {target.ast.toFixed(1)} AST</p>
+        <div className="rounded-2xl overflow-hidden border border-red-500/30 bg-gradient-to-r from-red-500/10 via-red-500/5 to-card p-5 sm:p-6">
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <img src={playerPhotoUrl(target.id)} alt="" className="h-20 w-20 sm:h-24 sm:w-24 rounded-2xl object-cover bg-input shadow-lg" />
+              <img src={teamLogoUrl(target.team)} alt="" className="absolute -bottom-1 -right-1 h-7 w-7 object-contain bg-card rounded-full p-0.5" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-red-400 uppercase tracking-wider">Perdu !</p>
+              <p className="text-xl sm:text-2xl font-extrabold text-text-primary mt-0.5">{target.name}</p>
+              <p className="text-sm text-text-muted">{target.teamName} -- {target.position}</p>
+              <div className="flex items-center gap-4 mt-2 text-xs text-text-faint">
+                <span className="font-bold text-text-secondary">{target.pts.toFixed(1)} <span className="font-normal">PTS</span></span>
+                <span className="font-bold text-text-secondary">{target.reb.toFixed(1)} <span className="font-normal">REB</span></span>
+                <span className="font-bold text-text-secondary">{target.ast.toFixed(1)} <span className="font-normal">AST</span></span>
+              </div>
             </div>
           </div>
         </div>
-      )}
-
-      {/* Guess count */}
-      {guessIds.length > 0 && !won && !lost && (
-        <p className="text-center text-xs text-text-faint">
-          {guessIds.length}/{MAX_GUESSES} essai{guessIds.length > 1 ? "s" : ""}
-        </p>
       )}
 
       {/* Results — cards on mobile, table on desktop */}
