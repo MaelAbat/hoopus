@@ -437,7 +437,7 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
       ? `Trouvé en ${guessIds.length} essai${guessIds.length > 1 ? "s" : ""} (${formatTime(elapsed)})`
       : `Pas trouvé en ${MAX_GUESSES} essais`;
 
-    return `Hoopl \u{1F3C0} ${dateStr}\n\n${grid}\n\n${result}\n\nhttps://hoopus.vercel.app/mini-jeux/hoopl`;
+    return `Hoopl \u{1F3C0} ${dateStr}\n\n${grid}\n\n${result}\n\nhttps://www.hoopus.fr/mini-jeux/hoopl`;
   }
 
   function handleShare() {
