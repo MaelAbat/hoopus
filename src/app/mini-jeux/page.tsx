@@ -7,7 +7,7 @@ const games = [
   {
     href: "/mini-jeux/hoopl",
     title: "Hoopl",
-    description: "Devine le joueur NBA du jour a partir de ses statistiques. Equipe, conference, division, stats... chaque essai te rapproche de la reponse.",
+    description: "Devine le joueur NBA du jour à partir de ses statistiques. Équipe, conférence, division, stats... chaque essai te rapproche de la réponse.",
     icon: <Target size={24} />,
     color: "#f97316",
     tags: ["Stats", "10 essais"],
@@ -15,7 +15,7 @@ const games = [
   {
     href: "/mini-jeux/hoopixl",
     title: "Hoopixl",
-    description: "Une photo pixelisee se revele lentement. Reconnais le joueur avant que l'image ne devienne nette. Le temps joue contre toi !",
+    description: "Une photo pixélisée se révèle lentement. Reconnais le joueur avant que l'image ne devienne nette. Le temps joue contre toi !",
     icon: <Image size={24} />,
     color: "#8b5cf6",
     tags: ["Visuel", "5 essais"],
@@ -46,15 +46,15 @@ export default function MiniJeux() {
               <Sparkles size={26} className="text-accent-text" />
             </div>
             <div className="flex-1">
-              <h2 className="text-lg font-bold text-text-primary">Defi quotidien</h2>
+              <h2 className="text-lg font-bold text-text-primary">Défi quotidien</h2>
               <p className="text-sm text-text-muted mt-0.5">
-                Chaque jour a minuit, de nouveaux joueurs mysteres t'attendent. Joue, compare ton score et defie tes amis !
+                Chaque jour à minuit, de nouveaux joueurs mystères t'attendent. Joue, compare ton score et défie tes amis !
               </p>
             </div>
             <div className="flex items-center gap-4 text-xs text-text-faint">
               <div className="flex items-center gap-1.5">
                 <Clock size={14} className="text-accent-text" />
-                <span>Reset a minuit</span>
+                <span>Reset à minuit</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <Trophy size={14} className="text-accent-text" />
@@ -121,7 +121,7 @@ export default function MiniJeux() {
       {/* Coming soon teaser */}
       <ScrollReveal variant="blur">
         <div className="rounded-2xl border border-dashed border-border-t bg-card/50 px-6 py-10 text-center">
-          <p className="text-sm font-medium text-text-faint">D'autres mini-jeux arrivent bientot...</p>
+          <p className="text-sm font-medium text-text-faint">D'autres mini-jeux arrivent bientôt...</p>
         </div>
       </ScrollReveal>
     </div>
