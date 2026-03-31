@@ -46,70 +46,31 @@ function formatTime(seconds: number): string {
   return m > 0 ? `${m}m${s.toString().padStart(2, "0")}s` : `${s}s`;
 }
 
-/* ─── Pixelated image component ─── */
+/* ─── Pixelated image component (CSS-based, no CORS issues) ─── */
 
 function PixelatedImage({ src, pixelSize, size }: { src: string; pixelSize: number; size: number }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const imgRef = useRef<HTMLImageElement | null>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d", { willReadFrequently: true });
-    if (!ctx) return;
-
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => {
-      imgRef.current = img;
-      drawPixelated(ctx, img, canvas.width, canvas.height, pixelSize);
-    };
-    img.onerror = () => {
-      // Fallback: draw a placeholder
-      ctx.fillStyle = "#1e293b";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = "#475569";
-      ctx.font = "bold 40px sans-serif";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText("?", canvas.width / 2, canvas.height / 2);
-    };
-    img.src = src;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [src]);
-
-  // Redraw when pixelSize changes
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || !imgRef.current) return;
-    const ctx = canvas.getContext("2d", { willReadFrequently: true });
-    if (!ctx) return;
-    drawPixelated(ctx, imgRef.current, canvas.width, canvas.height, pixelSize);
-  }, [pixelSize]);
+  // pixelSize 40 = max blur, 1 = fully clear
+  // Map pixelSize to blur: 40 → 30px blur, 1 → 0px blur
+  const blur = pixelSize <= 1 ? 0 : Math.round((pixelSize / 40) * 30);
+  const contrast = pixelSize <= 1 ? 1 : 1 + (pixelSize / 40) * 0.3;
+  const saturate = pixelSize <= 1 ? 1 : 1 - (pixelSize / 40) * 0.5;
 
   return (
-    <canvas
-      ref={canvasRef}
-      width={size}
-      height={size}
-      className="rounded-2xl bg-input"
-      style={{ width: size, height: size, imageRendering: "pixelated" }}
-    />
+    <div
+      className="overflow-hidden rounded-2xl bg-input"
+      style={{ width: size, height: size }}
+    >
+      <img
+        src={src}
+        alt=""
+        className="h-full w-full object-cover transition-[filter] duration-500"
+        style={{
+          filter: `blur(${blur}px) contrast(${contrast}) saturate(${saturate})`,
+        }}
+        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+      />
+    </div>
   );
-}
-
-function drawPixelated(ctx: CanvasRenderingContext2D, img: HTMLImageElement, w: number, h: number, blockSize: number) {
-  if (blockSize <= 1) {
-    ctx.drawImage(img, 0, 0, w, h);
-    return;
-  }
-  // Draw small then scale up for pixelation
-  const sw = Math.max(1, Math.ceil(w / blockSize));
-  const sh = Math.max(1, Math.ceil(h / blockSize));
-  ctx.imageSmoothingEnabled = true;
-  ctx.drawImage(img, 0, 0, sw, sh);
-  ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(ctx.canvas, 0, 0, sw, sh, 0, 0, w, h);
 }
 
 /* ─── Confetti ─── */
