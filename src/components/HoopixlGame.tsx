@@ -244,7 +244,7 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
     const { data: profile } = await supabase.from("profiles").select("display_name").eq("id", userId).single();
     await supabase.from("hoopixl_scores").upsert({
       user_id: userId, display_name: profile?.display_name || "Anonyme",
-      game_date: gameDate, guesses: guessCount, time_seconds: elapsed, won: didWin,
+      game_date: gameDate, guesses: guessCount, time_seconds: Math.floor(elapsed), won: didWin,
     }, { onConflict: "user_id,game_date" });
     setSubmitted(true);
     fetchLeaderboard();
@@ -301,7 +301,7 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
     const today = new Date();
     const dateStr = today.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
     const result = won
-      ? `Trouv\u00e9 en ${guessIds.length} essai${guessIds.length > 1 ? "s" : ""} (${formatTime(elapsed)})`
+      ? `Trouv\u00e9 en ${guessIds.length} essai${guessIds.length > 1 ? "s" : ""} (${formatTime(Math.floor(elapsed))})`
       : `Pas trouv\u00e9 en ${MAX_GUESSES} essais`;
     const clarity = won ? Math.round((1 - Math.pow(Math.max(0, 1 - elapsed / REVEAL_DURATION), 2)) * 100) : 100;
     return `Hoopixl \u{1F5BC}\u{FE0F} ${dateStr}\n\n\u{1F50D} Clart\u00e9 : ${clarity}%\n${result}\n\nhttps://www.hoopus.fr/mini-jeux/hoopixl`;
@@ -317,7 +317,14 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
 
   const [imgSize, setImgSize] = useState(280);
   useEffect(() => {
-    setImgSize(window.innerWidth < 640 ? 200 : 280);
+    function updateSize() {
+      const w = window.innerWidth;
+      // Use most of the screen width on mobile, capped at 280 on desktop
+      setImgSize(w < 400 ? Math.min(w - 40, 240) : w < 640 ? 240 : 280);
+    }
+    updateSize();
+    window.addEventListener("resize", updateSize);
+    return () => window.removeEventListener("resize", updateSize);
   }, []);
 
   return (
@@ -349,7 +356,7 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
             Hoop<span className="text-accent">ixl</span>
           </h1>
           <p className="text-xs sm:text-sm text-text-muted">
-            {gameOver ? (won ? `Trouv\u00e9 en ${formatTime(elapsed)} !` : "Partie termin\u00e9e") : "Qui se cache derri\u00e8re les pixels ?"}
+            {gameOver ? (won ? `Trouv\u00e9 en ${formatTime(Math.floor(elapsed))} !` : "Partie termin\u00e9e") : "Qui se cache derri\u00e8re les pixels ?"}
           </p>
         </div>
 
@@ -373,7 +380,7 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
           {!gameOver && (
             <div className="absolute bottom-2 right-2 flex items-center gap-1 rounded-lg bg-black/60 backdrop-blur-sm px-2 py-1 text-[10px] font-bold text-white">
               <Eye size={10} />
-              {Math.round((1 - Math.pow(Math.max(0, 1 - elapsed / REVEAL_DURATION), 2)) * 100)}%
+              {Math.round((1 - Math.pow(Math.max(0, 1 - elapsed / REVEAL_DURATION), 4)) * 100)}%
             </div>
           )}
         </div>
@@ -381,7 +388,7 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
         {/* Timer + guess count */}
         {!gameOver && loaded && (
           <div className="flex items-center gap-4 text-xs text-text-faint">
-            <span className="flex items-center gap-1"><Clock size={12} />{formatTime(elapsed)}</span>
+            <span className="flex items-center gap-1"><Clock size={12} />{formatTime(Math.floor(elapsed))}</span>
             <span>{guessIds.length}/{MAX_GUESSES} essais</span>
           </div>
         )}
@@ -453,7 +460,7 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
                   <Trophy size={11} /> {guessIds.length} essai{guessIds.length > 1 ? "s" : ""}
                 </span>
                 <span className="inline-flex items-center gap-1 rounded-full bg-accent/15 px-2.5 py-0.5 text-[11px] font-bold text-accent-text">
-                  <Clock size={11} /> {formatTime(elapsed)}
+                  <Clock size={11} /> {formatTime(Math.floor(elapsed))}
                 </span>
               </div>
             </div>
