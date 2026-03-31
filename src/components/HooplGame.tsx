@@ -418,6 +418,39 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
     setSearch("");
   }
 
+  function buildShareText(): string {
+    const today = new Date();
+    const dateStr = today.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+
+    const emojiMap: Record<ClueStatus, string> = {
+      correct: "\u{1F7E9}",  // green
+      higher: "\u{1F7E7}",   // orange
+      lower: "\u{1F7E7}",    // orange
+      wrong: "\u{1F7E5}",    // red
+    };
+
+    const grid = guessResults.map((r) =>
+      COLUMNS.map((col) => emojiMap[r.clues[col.key as keyof typeof r.clues]]).join("")
+    ).join("\n");
+
+    const result = won
+      ? `Trouvé en ${guessIds.length} essai${guessIds.length > 1 ? "s" : ""} (${formatTime(elapsed)})`
+      : `Pas trouvé en ${MAX_GUESSES} essais`;
+
+    return `Hoopl \u{1F3C0} ${dateStr}\n\n${grid}\n\n${result}\n\nhttps://hoopus.vercel.app/mini-jeux/hoopl`;
+  }
+
+  function handleShare() {
+    const text = buildShareText();
+    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+    window.open(url, "_blank", "width=550,height=420");
+  }
+
+  function handleCopyResult() {
+    const text = buildShareText();
+    navigator.clipboard.writeText(text);
+  }
+
   function renderClueValue(result: GuessResult, key: string): string {
     const p = result.player;
     switch (key) {
@@ -634,6 +667,25 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Share buttons */}
+      {(won || lost) && (
+        <div className="flex items-center justify-center gap-2">
+          <button
+            onClick={handleShare}
+            className="inline-flex items-center gap-2 rounded-xl bg-[#1DA1F2] px-5 py-2.5 text-sm font-bold text-white transition-all hover:bg-[#1a8cd8] hover:scale-[1.03] active:scale-[0.98]"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+            Partager
+          </button>
+          <button
+            onClick={handleCopyResult}
+            className="inline-flex items-center gap-2 rounded-xl bg-input border border-border-t px-5 py-2.5 text-sm font-bold text-text-primary transition-all hover:bg-card-hover hover:scale-[1.03] active:scale-[0.98]"
+          >
+            Copier
+          </button>
         </div>
       )}
 
