@@ -77,28 +77,58 @@ export async function GET(request: NextRequest) {
   let synced = 0;
   let failed = 0;
 
-  for (let i = 0; i < activePlayers.length; i++) {
-    const pid = activePlayers[i].player_id;
-    const name = `${activePlayers[i].first_name} ${activePlayers[i].last_name}`.trim() || pid;
-    const hasCareer = hasCareerSet.has(pid);
-    const mode = hasCareer ? "quick" : "full";
+  // Process in parallel batches of 5 for quick, 1 at a time for full
+  const BATCH_SIZE = 5;
 
-    try {
-      if (hasCareer) {
-        await syncPlayerCareerQuick(pid, CURRENT_SEASON);
+  for (let i = 0; i < activePlayers.length; ) {
+    // Collect next batch of quick players (up to BATCH_SIZE)
+    const batch: typeof activePlayers = [];
+    while (batch.length < BATCH_SIZE && i < activePlayers.length) {
+      if (hasCareerSet.has(activePlayers[i].player_id)) {
+        batch.push(activePlayers[i]);
+        i++;
       } else {
-        await syncPlayerCareer(pid);
+        // Full sync player — process alone
+        break;
       }
-      console.log(`[SYNC-CAREER] [${i + 1}/${activePlayers.length}] ${name} — OK (${mode})`);
-      synced++;
-    } catch (err) {
-      console.log(`[SYNC-CAREER] [${i + 1}/${activePlayers.length}] ${name} — ERREUR: ${(err as Error).message} (${mode})`);
-      failed++;
     }
 
-    // Rate limiting: 300ms for quick (1 call), 1.5s for full (new players only)
-    if (i < activePlayers.length - 1) {
-      await sleep(hasCareer ? 300 : 1500);
+    if (batch.length > 0) {
+      // Process quick batch in parallel
+      const results = await Promise.allSettled(
+        batch.map((p) => syncPlayerCareerQuick(p.player_id, CURRENT_SEASON))
+      );
+      results.forEach((r, j) => {
+        const p = batch[j];
+        const name = `${p.first_name} ${p.last_name}`.trim();
+        if (r.status === "fulfilled") {
+          console.log(`[SYNC-CAREER] ${name} — OK (quick)`);
+          synced++;
+        } else {
+          console.log(`[SYNC-CAREER] ${name} — ERREUR (quick)`);
+          failed++;
+        }
+      });
+      await sleep(500);
+    } else if (i < activePlayers.length) {
+      // Full sync — one at a time
+      const p = activePlayers[i];
+      const name = `${p.first_name} ${p.last_name}`.trim();
+      try {
+        await syncPlayerCareer(p.player_id);
+        console.log(`[SYNC-CAREER] ${name} — OK (full)`);
+        synced++;
+      } catch {
+        console.log(`[SYNC-CAREER] ${name} — ERREUR (full)`);
+        failed++;
+      }
+      i++;
+      await sleep(1500);
+    }
+
+    // Log progress
+    if (i % 50 === 0 || i === activePlayers.length) {
+      console.log(`[SYNC-CAREER] Progress: ${i}/${activePlayers.length} (synced: ${synced}, failed: ${failed})`);
     }
   }
 
