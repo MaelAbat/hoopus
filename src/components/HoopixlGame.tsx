@@ -68,6 +68,8 @@ function PixelatedImage({ src, pixelSize, size }: { src: string; pixelSize: numb
         alt=""
         width={imgWidth}
         height={imgWidth}
+        loading="eager"
+        priority
         unoptimized={!isPixelated}
         className="absolute top-0 left-0"
         style={{
