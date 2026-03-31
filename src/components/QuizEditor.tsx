@@ -9,23 +9,42 @@ import Link from "next/link";
 interface EntryDraft {
   id: string;
   label: string;
-  answers: string; // comma-separated, edited as text
+  answers: string;
+}
+
+interface ExistingQuiz {
+  id: string;
+  title: string;
+  description: string;
+  mode: string;
+  time_limit: number;
+  entries: { label: string; answers: string[] }[];
+  published: boolean;
 }
 
 function generateId() {
   return Math.random().toString(36).slice(2, 10);
 }
 
-export default function QuizEditor() {
+export default function QuizEditor({ existing }: { existing?: ExistingQuiz }) {
   const router = useRouter();
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [mode, setMode] = useState<"unordered" | "ordered">("unordered");
-  const [timeLimit, setTimeLimit] = useState(5); // minutes
-  const [entries, setEntries] = useState<EntryDraft[]>([
-    { id: generateId(), label: "", answers: "" },
-  ]);
+  const isEdit = !!existing;
+
+  const [title, setTitle] = useState(existing?.title || "");
+  const [description, setDescription] = useState(existing?.description || "");
+  const [mode, setMode] = useState<"unordered" | "ordered">(
+    (existing?.mode as "unordered" | "ordered") || "unordered"
+  );
+  const [timeLimit, setTimeLimit] = useState(existing ? Math.round(existing.time_limit / 60) : 5);
+  const [entries, setEntries] = useState<EntryDraft[]>(
+    existing?.entries.map((e) => ({
+      id: generateId(),
+      label: e.label || "",
+      answers: e.answers.join(", "),
+    })) || [{ id: generateId(), label: "", answers: "" }]
+  );
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
 
   function addEntry() {
@@ -57,7 +76,8 @@ export default function QuizEditor() {
       return;
     }
 
-    const validEntries = entries.filter((e) => e.label.trim() && e.answers.trim());
+    // Only answers are required, label is optional
+    const validEntries = entries.filter((e) => e.answers.trim());
     if (validEntries.length < 2) {
       setError("Il faut au moins 2 réponses.");
       return;
@@ -73,15 +93,22 @@ export default function QuizEditor() {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
-    const { error: dbError } = await supabase.from("quizzes").insert({
+    const payload = {
       title: title.trim(),
       description: description.trim(),
       mode,
       time_limit: timeLimit * 60,
       entries: formattedEntries,
       published: publish,
-      created_by: user?.id,
-    });
+      updated_at: new Date().toISOString(),
+    };
+
+    let dbError;
+    if (isEdit) {
+      ({ error: dbError } = await supabase.from("quizzes").update(payload).eq("id", existing.id));
+    } else {
+      ({ error: dbError } = await supabase.from("quizzes").insert({ ...payload, created_by: user?.id }));
+    }
 
     setSaving(false);
 
@@ -90,6 +117,15 @@ export default function QuizEditor() {
       return;
     }
 
+    router.push("/mini-jeux/hoopiz");
+    router.refresh();
+  }
+
+  async function handleDelete() {
+    if (!existing || !confirm("Supprimer ce quiz définitivement ?")) return;
+    setDeleting(true);
+    const supabase = createClient();
+    await supabase.from("quizzes").delete().eq("id", existing.id);
     router.push("/mini-jeux/hoopiz");
     router.refresh();
   }
@@ -104,7 +140,7 @@ export default function QuizEditor() {
         >
           <ArrowLeft size={12} /> Retour
         </Link>
-        <h1 className="text-xl font-bold text-text-primary">Nouveau quiz</h1>
+        <h1 className="text-xl font-bold text-text-primary">{isEdit ? "Modifier le quiz" : "Nouveau quiz"}</h1>
       </div>
 
       {/* Basic info */}
@@ -204,14 +240,14 @@ export default function QuizEditor() {
                   type="text"
                   value={entry.label}
                   onChange={(e) => updateEntry(entry.id, "label", e.target.value)}
-                  placeholder="Indice affiché (ex: 1980 - vs. 76ers)"
+                  placeholder="Indice affiché (optionnel)"
                   className="w-full rounded-lg bg-sidebar border border-border-t px-3 py-2 text-xs text-text-primary placeholder:text-text-faint outline-none focus:border-accent"
                 />
                 <input
                   type="text"
                   value={entry.answers}
                   onChange={(e) => updateEntry(entry.id, "answers", e.target.value)}
-                  placeholder="Réponses acceptées, séparées par des virgules (ex: lakers, los angeles lakers, los angeles)"
+                  placeholder="Réponses acceptées, séparées par des virgules"
                   className="w-full rounded-lg bg-sidebar border border-border-t px-3 py-2 text-xs text-text-primary placeholder:text-text-faint outline-none focus:border-accent"
                 />
               </div>
@@ -236,21 +272,32 @@ export default function QuizEditor() {
       )}
 
       {/* Actions */}
-      <div className="flex items-center gap-3">
-        <button
-          onClick={() => handleSave(true)}
-          disabled={saving}
-          className="inline-flex items-center gap-2 rounded-xl bg-accent px-5 py-2.5 text-sm font-bold text-white hover:bg-accent-hover transition-colors disabled:opacity-50"
-        >
-          <Save size={14} /> {saving ? "Enregistrement..." : "Publier"}
-        </button>
-        <button
-          onClick={() => handleSave(false)}
-          disabled={saving}
-          className="inline-flex items-center gap-2 rounded-xl bg-input border border-border-t px-5 py-2.5 text-sm font-bold text-text-primary hover:bg-card-hover transition-colors disabled:opacity-50"
-        >
-          Enregistrer en brouillon
-        </button>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => handleSave(true)}
+            disabled={saving}
+            className="inline-flex items-center gap-2 rounded-xl bg-accent px-5 py-2.5 text-sm font-bold text-white hover:bg-accent-hover transition-colors disabled:opacity-50"
+          >
+            <Save size={14} /> {saving ? "Enregistrement..." : "Publier"}
+          </button>
+          <button
+            onClick={() => handleSave(false)}
+            disabled={saving}
+            className="inline-flex items-center gap-2 rounded-xl bg-input border border-border-t px-5 py-2.5 text-sm font-bold text-text-primary hover:bg-card-hover transition-colors disabled:opacity-50"
+          >
+            Brouillon
+          </button>
+        </div>
+        {isEdit && (
+          <button
+            onClick={handleDelete}
+            disabled={deleting}
+            className="inline-flex items-center gap-2 rounded-xl bg-red-500/10 border border-red-500/30 px-5 py-2.5 text-sm font-bold text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
+          >
+            <Trash2 size={14} /> {deleting ? "Suppression..." : "Supprimer"}
+          </button>
+        )}
       </div>
     </div>
   );

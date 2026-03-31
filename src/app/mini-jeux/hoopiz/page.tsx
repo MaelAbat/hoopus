@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
-import { RotateCcw, Clock, List, ListOrdered, Plus } from "lucide-react";
+import { RotateCcw, Clock, List, ListOrdered, Plus, Pencil } from "lucide-react";
 import ScrollReveal from "@/components/ScrollReveal";
 import { isAdmin } from "@/lib/actions/auth";
 
@@ -69,16 +69,27 @@ export default async function HoopizPage() {
                     )}
                   </div>
                   <p className="text-sm text-text-muted flex-1">{quiz.description}</p>
-                  <div className="flex items-center gap-3 mt-3 text-[11px] text-text-faint">
-                    <span className="flex items-center gap-1">
-                      {quiz.mode === "ordered" ? <ListOrdered size={12} /> : <List size={12} />}
-                      {quiz.mode === "ordered" ? "Dans l'ordre" : "Désordre"}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Clock size={12} />
-                      {Math.floor(quiz.time_limit / 60)} min
-                    </span>
-                    <span>{entryCount} réponse{entryCount > 1 ? "s" : ""}</span>
+                  <div className="flex items-center justify-between mt-3">
+                    <div className="flex items-center gap-3 text-[11px] text-text-faint">
+                      <span className="flex items-center gap-1">
+                        {quiz.mode === "ordered" ? <ListOrdered size={12} /> : <List size={12} />}
+                        {quiz.mode === "ordered" ? "Dans l'ordre" : "Désordre"}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Clock size={12} />
+                        {Math.floor(quiz.time_limit / 60)} min
+                      </span>
+                      <span>{entryCount} réponse{entryCount > 1 ? "s" : ""}</span>
+                    </div>
+                    {admin && (
+                      <Link
+                        href={`/mini-jeux/hoopiz/${quiz.id}/edit`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="rounded-lg p-1.5 text-text-faint hover:text-accent-text hover:bg-accent/10 transition-colors z-10"
+                      >
+                        <Pencil size={13} />
+                      </Link>
+                    )}
                   </div>
                 </Link>
               </ScrollReveal>
