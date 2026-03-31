@@ -114,6 +114,7 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
   const [search, setSearch] = useState("");
   const [won, setWon] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -135,14 +136,15 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
         setWon(data.won || false);
       }
     } catch { /* ignore */ }
+    setLoaded(true);
   }, [target]);
 
-  // Save state to localStorage
+  // Save state to localStorage (only after initial load)
   useEffect(() => {
-    if (!target) return;
+    if (!target || !loaded) return;
     const key = getStorageKey();
-    localStorage.setItem(key, JSON.stringify({ guesses: guessIds, won, lost: !won && guessIds.length >= MAX_GUESSES }));
-  }, [guessIds, won, target]);
+    localStorage.setItem(key, JSON.stringify({ guesses: guessIds, won }));
+  }, [guessIds, won, target, loaded]);
 
   // Close dropdown on outside click
   useEffect(() => {
