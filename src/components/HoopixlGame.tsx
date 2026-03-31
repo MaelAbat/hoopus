@@ -133,6 +133,7 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
   const [submitted, setSubmitted] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -163,10 +164,17 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
     return Math.max(1, 40 * Math.pow(1 - progress, 4));
   }, [elapsed, guessIds.length, gameOver]);
 
-  // Auth
+  // Auth + admin check
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id || null));
+    supabase.auth.getUser().then(async ({ data }) => {
+      const uid = data.user?.id || null;
+      setUserId(uid);
+      if (uid) {
+        const { data: profile } = await supabase.from("profiles").select("is_admin").eq("id", uid).single();
+        setIsAdmin(profile?.is_admin === true);
+      }
+    });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUserId(session?.user?.id || null);
     });
@@ -337,7 +345,7 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
           <Link href="/mini-jeux" className="inline-flex items-center gap-1.5 rounded-lg bg-input px-3 py-1.5 text-xs font-medium text-text-muted hover:text-text-primary hover:bg-card-hover transition-colors">
             <RotateCcw size={12} /> Tous les mini-jeux
           </Link>
-          {gameOver && (
+          {gameOver && isAdmin && (
             <button
               onClick={() => {
                 const key = getStorageKey();
