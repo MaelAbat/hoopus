@@ -35,13 +35,13 @@ function levenshtein(a: string, b: string): number {
 /** Check if input fuzzy-matches any of the accepted answers */
 function fuzzyMatch(input: string, answers: string[]): boolean {
   const norm = normalize(input);
-  if (norm.length < 4) return false; // minimum 4 chars to avoid false positives
+  if (norm.length < 3) return false;
   for (const answer of answers) {
     const normA = normalize(answer);
-    // Exact match
+    // Exact match (works for 3-letter tricodes like bos, chi, etc.)
     if (norm === normA) return true;
-    // Allow 1 typo only, and input must be at least 80% of answer length
-    if (norm.length >= normA.length * 0.8 && levenshtein(norm, normA) <= 1) return true;
+    // Allow 1 typo only for 4+ chars, input must be at least 80% of answer length
+    if (norm.length >= 4 && norm.length >= normA.length * 0.8 && levenshtein(norm, normA) <= 1) return true;
   }
   return false;
 }
@@ -123,15 +123,13 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
     return false;
   }
 
-  // Check on each keystroke (auto-validate)
+  // Only update input, no auto-validate
   function handleInput(value: string) {
     setInput(value);
-    if (!value.trim()) return;
-    handleStart();
-    tryMatch(value);
+    if (value.trim()) handleStart();
   }
 
-  // Shake on enter if wrong
+  // Validate on Enter only
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Enter" && input.trim()) {
       if (!tryMatch(input)) {
