@@ -4,7 +4,6 @@ import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { RotateCcw, Trophy, Search, Clock, LogIn, Check, Eye } from "lucide-react";
 import { playerPhotoUrl, teamLogoUrl } from "@/lib/nba-teams";
 import { createClient } from "@/lib/supabase/client";
-import Image from "next/image";
 import Link from "next/link";
 
 export interface HoopixlPlayer {
@@ -47,37 +46,43 @@ function formatTime(seconds: number): string {
   return m > 0 ? `${m}m${s.toString().padStart(2, "0")}s` : `${s}s`;
 }
 
-/* ─── Pixelated image component ─── */
-/* Uses next/image with tiny width param to get a genuinely low-res image
-   from the Next.js image optimizer, then scales it up with image-rendering: pixelated
-   for a true mosaic pixel effect. */
+/* ─── Pixelated image via SVG filter ─── */
+/* Uses an SVG feConvolveMatrix-based mosaic effect applied as a CSS filter.
+   The filter downsamples then upsamples, creating a true pixel mosaic.
+   No CORS issues since it's a CSS filter, not canvas. */
 
 function PixelatedImage({ src, pixelSize, size }: { src: string; pixelSize: number; size: number }) {
   // pixelSize: 40 = very pixelated, 1 = fully clear
-  // Map to image width requested from Next.js optimizer
-  const imgWidth = pixelSize <= 1 ? size : Math.max(8, Math.round(size / (pixelSize * 0.8)));
-  const isPixelated = imgWidth < size;
+  // Map to a blur radius for the mosaic effect
+  const filterId = "hoopixl-mosaic";
 
   return (
     <div
       className="overflow-hidden rounded-2xl bg-input relative"
       style={{ width: size, height: size }}
     >
-      <Image
+      {/* SVG filter for pixelation effect */}
+      <svg width="0" height="0" className="absolute">
+        <filter id={filterId}>
+          <feFlood x="4" y="4" height="2" width="2" />
+          <feComposite width={pixelSize * 2} height={pixelSize * 2} />
+          <feTile result="a" />
+          <feComposite in="SourceGraphic" in2="a" operator="in" />
+          <feMorphology operator="dilate" radius={pixelSize} />
+        </filter>
+      </svg>
+      <img
         src={src}
         alt=""
-        width={imgWidth}
-        height={imgWidth}
-        loading="eager"
-        priority
-        unoptimized={!isPixelated}
         className="absolute top-0 left-0"
         style={{
           width: size,
           height: size,
           objectFit: "cover",
-          imageRendering: isPixelated ? "pixelated" : "auto",
+          filter: pixelSize <= 1 ? "none" : `url(#${filterId})`,
+          transition: "filter 0.5s ease",
         }}
+        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
       />
     </div>
   );
