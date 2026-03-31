@@ -304,7 +304,10 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
     return <div className="mx-auto max-w-4xl px-4 py-16 text-center text-text-muted">Aucun joueur disponible.</div>;
   }
 
-  const imgSize = typeof window !== "undefined" && window.innerWidth < 640 ? 200 : 280;
+  const [imgSize, setImgSize] = useState(280);
+  useEffect(() => {
+    setImgSize(window.innerWidth < 640 ? 200 : 280);
+  }, []);
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 px-3 sm:px-0 pb-8">
