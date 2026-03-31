@@ -96,9 +96,9 @@ export async function GET(request: NextRequest) {
       failed++;
     }
 
-    // Rate limiting: 700ms for quick (1 call), 1.5s for full (new players only)
+    // Rate limiting: 300ms for quick (1 call), 1.5s for full (new players only)
     if (i < activePlayers.length - 1) {
-      await sleep(hasCareer ? 700 : 1500);
+      await sleep(hasCareer ? 300 : 1500);
     }
   }
 
