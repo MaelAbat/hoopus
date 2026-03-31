@@ -258,6 +258,15 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
         </div>
       </div>
 
+      {/* Hint after 5 guesses */}
+      {!won && !lost && guessIds.length >= 5 && (
+        <div className="rounded-xl bg-accent/10 border border-accent/30 px-4 py-3 text-center text-sm">
+          <span className="text-text-muted">Indice : il joue pour les </span>
+          <span className="font-bold text-accent-text">{target.teamName}</span>
+          <img src={teamLogoUrl(target.team)} alt="" className="inline h-5 w-5 ml-1.5 -mt-0.5 object-contain" />
+        </div>
+      )}
+
       {/* Search input */}
       {!won && !lost && (
         <div className="relative">
