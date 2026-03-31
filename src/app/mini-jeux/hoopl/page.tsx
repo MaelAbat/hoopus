@@ -27,13 +27,24 @@ export default async function HooplPage() {
     conferenceMap[s.team_tricode] = s.conference;
   }
 
-  // Build player list with conference
+  // NBA divisions (stable, rarely change)
+  const DIVISION_MAP: Record<string, string> = {
+    BOS: "Atlantic", BKN: "Atlantic", NYK: "Atlantic", PHI: "Atlantic", TOR: "Atlantic",
+    CHI: "Central", CLE: "Central", DET: "Central", IND: "Central", MIL: "Central",
+    ATL: "Southeast", CHA: "Southeast", MIA: "Southeast", ORL: "Southeast", WAS: "Southeast",
+    DAL: "Southwest", HOU: "Southwest", MEM: "Southwest", NOP: "Southwest", SAS: "Southwest",
+    DEN: "Northwest", MIN: "Northwest", OKC: "Northwest", POR: "Northwest", UTA: "Northwest",
+    GSW: "Pacific", LAC: "Pacific", LAL: "Pacific", PHX: "Pacific", SAC: "Pacific",
+  };
+
+  // Build player list with conference + division
   const hooplPlayers = (players || []).map((p) => ({
     id: p.player_id,
     name: `${p.first_name} ${p.last_name}`,
     team: p.team_tricode,
     teamName: p.team_name,
     conference: conferenceMap[p.team_tricode] || "",
+    division: DIVISION_MAP[p.team_tricode] || "",
     position: p.position || "",
     age: p.age || 0,
     height: p.height || "",

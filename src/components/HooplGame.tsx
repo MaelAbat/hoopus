@@ -11,6 +11,7 @@ export interface HooplPlayer {
   team: string;
   teamName: string;
   conference: string;
+  division: string;
   position: string;
   age: number;
   height: string;
@@ -29,6 +30,7 @@ interface GuessResult {
   clues: {
     team: ClueStatus;
     conference: ClueStatus;
+    division: ClueStatus;
     position: ClueStatus;
     age: ClueStatus;
     height: ClueStatus;
@@ -41,6 +43,7 @@ interface GuessResult {
 const COLUMNS = [
   { key: "team", label: "Equipe" },
   { key: "conference", label: "Conf." },
+  { key: "division", label: "Div." },
   { key: "position", label: "Pos" },
   { key: "age", label: "Age" },
   { key: "height", label: "Taille" },
@@ -172,6 +175,7 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
         clues: {
           team: compareExact(player.team, target.team),
           conference: compareExact(player.conference, target.conference),
+          division: compareExact(player.division, target.division),
           position: comparePosition(player.position, target.position),
           age: compareNumeric(player.age, target.age),
           height: compareNumeric(guessInches, targetInches),
@@ -191,7 +195,7 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
       .slice(0, 8);
   }, [search, players, guessIds]);
 
-  const MAX_GUESSES = 5;
+  const MAX_GUESSES = 10;
   const lost = !won && guessIds.length >= MAX_GUESSES;
 
   function handleGuess(player: HooplPlayer) {
@@ -218,6 +222,7 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
     switch (key) {
       case "team": return p.team;
       case "conference": return p.conference;
+      case "division": return p.division;
       case "position": return p.position;
       case "age": return String(p.age);
       case "height": return p.height;
