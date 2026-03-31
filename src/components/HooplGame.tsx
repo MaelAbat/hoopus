@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
-import { ArrowUp, ArrowDown, Check, RotateCcw, Trophy, Search } from "lucide-react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { ArrowUp, ArrowDown, Check, RotateCcw, Trophy, Search, Clock, LogIn } from "lucide-react";
 import { teamLogoUrl, playerPhotoUrl } from "@/lib/nba-teams";
+import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 
 export interface HooplPlayer {
@@ -112,12 +113,30 @@ function ClueIcon({ status }: { status: ClueStatus }) {
   return null;
 }
 
+interface LeaderboardEntry {
+  display_name: string;
+  guesses: number;
+  time_seconds: number;
+  won: boolean;
+}
+
+function formatTime(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return m > 0 ? `${m}m${s.toString().padStart(2, "0")}s` : `${s}s`;
+}
+
 export default function HooplGame({ players }: { players: HooplPlayer[] }) {
   const [guessIds, setGuessIds] = useState<number[]>([]);
   const [search, setSearch] = useState("");
   const [won, setWon] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [startTime, setStartTime] = useState<number>(0);
+  const [elapsed, setElapsed] = useState(0);
+  const [submitted, setSubmitted] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -126,6 +145,19 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
     const idx = getDailyPlayerIndex(players.length);
     return players[idx];
   }, [players]);
+
+  const gameDate = useMemo(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
+  }, []);
+
+  // Check auth state
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      setUserId(data.user?.id || null);
+    });
+  }, []);
 
   // Load saved state from localStorage
   useEffect(() => {
@@ -137,8 +169,15 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
         const data = JSON.parse(saved);
         setGuessIds(data.guesses || []);
         setWon(data.won || false);
+        setElapsed(data.elapsed || 0);
+        setSubmitted(data.submitted || false);
+        setStartTime(data.startTime || Date.now());
+      } else {
+        setStartTime(Date.now());
       }
-    } catch { /* ignore */ }
+    } catch {
+      setStartTime(Date.now());
+    }
     setLoaded(true);
   }, [target]);
 
@@ -146,8 +185,64 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
   useEffect(() => {
     if (!target || !loaded) return;
     const key = getStorageKey();
-    localStorage.setItem(key, JSON.stringify({ guesses: guessIds, won }));
-  }, [guessIds, won, target, loaded]);
+    localStorage.setItem(key, JSON.stringify({ guesses: guessIds, won, elapsed, submitted, startTime }));
+  }, [guessIds, won, target, loaded, elapsed, submitted, startTime]);
+
+  // Timer tick
+  useEffect(() => {
+    if (!loaded || won || (guessIds.length >= 10) || !startTime) return;
+    const interval = setInterval(() => {
+      setElapsed(Math.floor((Date.now() - startTime) / 1000));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [loaded, won, guessIds.length, startTime]);
+
+  // Fetch leaderboard
+  const fetchLeaderboard = useCallback(async () => {
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("hoopl_scores")
+      .select("display_name, guesses, time_seconds, won")
+      .eq("game_date", gameDate)
+      .eq("won", true)
+      .order("guesses", { ascending: true })
+      .order("time_seconds", { ascending: true })
+      .limit(20);
+    setLeaderboard(data || []);
+  }, [gameDate]);
+
+  useEffect(() => {
+    fetchLeaderboard();
+  }, [fetchLeaderboard]);
+
+  // Submit score
+  const submitScore = useCallback(async (guessCount: number, didWin: boolean) => {
+    if (submitted || !userId) return;
+    const supabase = createClient();
+    const finalTime = Math.floor((Date.now() - startTime) / 1000);
+    setElapsed(finalTime);
+
+    // Get display name from profile
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("display_name")
+      .eq("id", userId)
+      .single();
+
+    const displayName = profile?.display_name || "Anonyme";
+
+    await supabase.from("hoopl_scores").upsert({
+      user_id: userId,
+      display_name: displayName,
+      game_date: gameDate,
+      guesses: guessCount,
+      time_seconds: finalTime,
+      won: didWin,
+    }, { onConflict: "user_id,game_date" });
+
+    setSubmitted(true);
+    fetchLeaderboard();
+  }, [submitted, userId, startTime, gameDate, fetchLeaderboard]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -209,6 +304,9 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
     setShowDropdown(false);
     if (player.id === target.id) {
       setWon(true);
+      submitScore(newGuesses.length, true);
+    } else if (newGuesses.length >= MAX_GUESSES) {
+      submitScore(newGuesses.length, false);
     }
   }
 
@@ -258,7 +356,19 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
         <div className="text-center space-y-1">
           <h1 className="text-3xl font-bold text-text-primary tracking-tight">Hoopl</h1>
           <p className="text-sm text-text-muted">Devine le joueur NBA du jour</p>
+          {!won && !lost && loaded && (
+            <div className="flex items-center justify-center gap-1.5 text-xs text-text-faint">
+              <Clock size={12} />
+              {formatTime(elapsed)}
+            </div>
+          )}
         </div>
+        {!userId && !won && !lost && (
+          <div className="rounded-lg bg-input border border-border-t px-4 py-2.5 text-center text-xs text-text-muted">
+            <LogIn size={12} className="inline mr-1.5 -mt-0.5" />
+            <Link href="/auth/login" className="text-accent-text hover:underline">Connecte-toi</Link> pour enregistrer ton score au classement
+          </div>
+        )}
       </div>
 
       {/* Hint after 5 guesses */}
@@ -323,7 +433,7 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
           <div>
             <p className="text-lg font-bold text-emerald-400">Bravo !</p>
             <p className="text-sm text-text-muted">
-              Tu as trouve <strong className="text-text-primary">{target.name}</strong> en {guessIds.length} essai{guessIds.length > 1 ? "s" : ""}
+              Tu as trouve <strong className="text-text-primary">{target.name}</strong> en {guessIds.length} essai{guessIds.length > 1 ? "s" : ""} ({formatTime(elapsed)})
             </p>
           </div>
           <div className="flex items-center justify-center gap-3">
@@ -417,8 +527,36 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
         </div>
       )}
 
+      {/* Leaderboard */}
+      {leaderboard.length > 0 && (
+        <div className="rounded-2xl bg-card border border-border-t overflow-hidden">
+          <div className="px-4 py-3 border-b border-border-t">
+            <h2 className="text-sm font-bold text-text-primary flex items-center gap-2">
+              <Trophy size={16} className="text-accent-text" />
+              Classement du jour
+            </h2>
+          </div>
+          <div className="divide-y divide-border-t/30">
+            {leaderboard.map((entry, i) => (
+              <div key={`${entry.display_name}-${i}`} className="flex items-center gap-3 px-4 py-2.5">
+                <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[11px] font-bold ${
+                  i === 0 ? "bg-accent/20 text-accent-text"
+                  : i <= 2 ? "bg-input text-text-primary"
+                  : "text-text-faint"
+                }`}>
+                  {i + 1}
+                </span>
+                <span className="flex-1 text-sm font-medium text-text-primary truncate">{entry.display_name}</span>
+                <span className="text-xs text-text-muted tabular-nums">{entry.guesses} essai{entry.guesses > 1 ? "s" : ""}</span>
+                <span className="text-xs text-text-faint tabular-nums w-12 text-right">{formatTime(entry.time_seconds)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Legend */}
-      <div className="flex flex-wrap items-center justify-center gap-4 text-[11px] text-text-faint">
+      <div className="flex flex-wrap items-center justify-center gap-4 text-[11px] text-text-faint pb-4">
         <div className="flex items-center gap-1.5">
           <div className="h-3 w-3 rounded bg-emerald-500/30" />
           Correct
