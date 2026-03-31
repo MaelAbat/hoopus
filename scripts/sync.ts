@@ -10,23 +10,23 @@
 
 const BASE_URL = "http://localhost:3002";
 
-// Endpoints rapides — passent par Next.js
-const FAST_ENDPOINTS = [
+// Endpoints rapides (CDN/ESPN, pas de rate limit) — peuvent tourner en parallele
+const PARALLEL_ENDPOINTS = [
   { key: "games", label: "Matchs" },
   { key: "standings", label: "Classement" },
   { key: "playoffs", label: "Playoffs" },
-  { key: "rosters", label: "Effectifs" },
 ];
 
-// Endpoints lents — passent aussi par Next.js mais avec un timeout très long
-const SLOW_ENDPOINTS = [
+// Endpoints lents (stats.nba.com, rate limited) — doivent tourner sequentiellement
+const SEQUENTIAL_ENDPOINTS = [
   { key: "players", label: "Joueurs" },
+  { key: "rosters", label: "Effectifs" },
   { key: "stats", label: "Statistiques" },
-  { key: "team-stats", label: "Stats équipes" },
-  { key: "career", label: "Carrières" },
+  { key: "team-stats", label: "Stats equipes" },
+  { key: "career", label: "Carrieres" },
 ];
 
-const ALL_ENDPOINTS = [...FAST_ENDPOINTS, ...SLOW_ENDPOINTS];
+const ALL_ENDPOINTS = [...PARALLEL_ENDPOINTS, ...SEQUENTIAL_ENDPOINTS];
 
 async function main() {
   const { config } = await import("dotenv");
@@ -39,48 +39,74 @@ async function main() {
   }
 
   const args = process.argv.slice(2);
-  const endpoints = args.length > 0
+  const isSubset = args.length > 0;
+  const selectedEndpoints = isSubset
     ? ALL_ENDPOINTS.filter((e) => args.includes(e.key))
     : ALL_ENDPOINTS;
 
-  if (endpoints.length === 0) {
+  if (selectedEndpoints.length === 0) {
     console.error("No matching endpoints. Available:", ALL_ENDPOINTS.map((e) => e.key).join(", "));
     process.exit(1);
   }
 
-  console.log(`\n  Sync locale — ${endpoints.length} endpoint(s)\n`);
+  console.log(`\n  Sync saison en cours — ${selectedEndpoints.length} endpoint(s)\n`);
   console.log("  Assure-toi que le serveur dev tourne: npm run dev\n");
 
   const authParam = `cron_secret=${encodeURIComponent(cronSecret)}`;
-  let succeeded = 0;
-  let failed = 0;
+  const results: { label: string; ok: boolean; duration: string; detail?: string }[] = [];
+  const totalStart = Date.now();
 
-  for (const endpoint of endpoints) {
+  async function runEndpoint(endpoint: { key: string; label: string }) {
     const start = Date.now();
     process.stdout.write(`  ${endpoint.label}...`);
-
     try {
-      // Use node http directly to avoid fetch timeout
       const url = `${BASE_URL}/api/sync-${endpoint.key}?${authParam}`;
       const data = await httpGet(url);
       const duration = ((Date.now() - start) / 1000).toFixed(1);
-
       if (data.ok) {
         console.log(` OK (${duration}s)`);
-        succeeded++;
+        results.push({ label: endpoint.label, ok: true, duration });
       } else {
         console.log(` FAIL ${data.error || "unknown"} (${duration}s)`);
-        failed++;
+        results.push({ label: endpoint.label, ok: false, duration, detail: String(data.error || "unknown") });
       }
     } catch (err) {
       const duration = ((Date.now() - start) / 1000).toFixed(1);
       console.log(` FAIL ${(err as Error).message} (${duration}s)`);
-      failed++;
+      results.push({ label: endpoint.label, ok: false, duration, detail: (err as Error).message });
     }
   }
 
-  console.log(`\n  Resultat: ${succeeded} OK, ${failed} echec(s)\n`);
-  process.exit(failed > 0 ? 1 : 0);
+  // Phase 1: endpoints rapides en parallele (CDN/ESPN)
+  const parallelToRun = selectedEndpoints.filter((e) => PARALLEL_ENDPOINTS.some((p) => p.key === e.key));
+  const sequentialToRun = selectedEndpoints.filter((e) => SEQUENTIAL_ENDPOINTS.some((s) => s.key === e.key));
+
+  if (parallelToRun.length > 0) {
+    console.log("  --- Rapides (parallele) ---");
+    await Promise.all(parallelToRun.map(runEndpoint));
+    console.log("");
+  }
+
+  // Phase 2: endpoints lents sequentiellement (NBA API)
+  if (sequentialToRun.length > 0) {
+    console.log("  --- NBA API (sequentiel) ---");
+    for (const endpoint of sequentialToRun) {
+      await runEndpoint(endpoint);
+    }
+  }
+
+  // Recap
+  const succeeded = results.filter((r) => r.ok).length;
+  const failedCount = results.filter((r) => !r.ok).length;
+  const totalDuration = ((Date.now() - totalStart) / 1000).toFixed(1);
+
+  console.log(`\n  ─── Recap ───`);
+  for (const r of results) {
+    console.log(`  ${r.ok ? "OK" : "FAIL"}  ${r.label} (${r.duration}s)${r.detail ? ` — ${r.detail}` : ""}`);
+  }
+  console.log(`\n  ${succeeded} OK, ${failedCount} echec(s) — total ${totalDuration}s\n`);
+
+  process.exit(failedCount > 0 ? 1 : 0);
 }
 
 // Use node:http directly — no timeout at all
