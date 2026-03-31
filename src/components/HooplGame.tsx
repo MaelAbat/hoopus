@@ -239,12 +239,18 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
   return (
     <div className="mx-auto max-w-4xl space-y-6 px-3 sm:px-0">
       {/* Header */}
-      <div className="text-center space-y-2 pt-4">
-        <Link href="/mini-jeux" className="text-xs text-text-faint hover:text-text-muted transition-colors">
-          Mini-jeux
+      <div className="pt-4 space-y-4">
+        <Link
+          href="/mini-jeux"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-input px-3 py-1.5 text-xs font-medium text-text-muted hover:text-text-primary hover:bg-card-hover transition-colors"
+        >
+          <RotateCcw size={12} />
+          Tous les mini-jeux
         </Link>
-        <h1 className="text-3xl font-bold text-text-primary tracking-tight">Hoopl</h1>
-        <p className="text-sm text-text-muted">Devine le joueur NBA du jour</p>
+        <div className="text-center space-y-1">
+          <h1 className="text-3xl font-bold text-text-primary tracking-tight">Hoopl</h1>
+          <p className="text-sm text-text-muted">Devine le joueur NBA du jour</p>
+        </div>
       </div>
 
       {/* Search input */}
