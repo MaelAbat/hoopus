@@ -247,39 +247,66 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
         )}
       </div>
 
-      {/* Grid layout — entries flow top-to-bottom in columns */}
-      <div ref={tableRef} className="rounded-2xl bg-card border border-border-t p-3 sm:p-4">
-        <div className="columns-2 sm:columns-3 lg:columns-4 xl:columns-5 gap-1.5 space-y-1.5">
-          {quiz.entries.map((entry, i) => {
-            const isFound = found.has(i);
-            const isLast = lastFound === i;
-            const isRevealed = isFound || finished;
+      {/* Grid by decade */}
+      <div ref={tableRef} className="space-y-4">
+        {(() => {
+          // Group entries by decade
+          const decades = new Map<string, { entry: typeof quiz.entries[0]; index: number }[]>();
+          quiz.entries.forEach((entry, i) => {
+            const year = parseInt(entry.hints.year);
+            const decade = `${Math.floor(year / 10) * 10}s`;
+            const list = decades.get(decade) || [];
+            list.push({ entry, index: i });
+            decades.set(decade, list);
+          });
 
-            return (
-              <div
-                key={i}
-                data-row={i}
-                className={`rounded-lg border px-2.5 py-2 text-xs transition-all duration-300 break-inside-avoid ${
-                  isFound
-                    ? "bg-emerald-500/10 border-emerald-500/30"
-                    : isRevealed
-                      ? "bg-red-500/8 border-red-500/20"
-                      : "bg-input/50 border-border-t/50"
-                } ${isLast ? "ring-2 ring-emerald-500/40" : ""}`}
-              >
-                <span className="text-text-faint text-[10px]">{entry.hints.year}</span>
-                {isRevealed ? (
-                  <p className={`font-bold truncate ${isFound ? "text-emerald-400" : "text-red-400"}`}>
-                    {displayAnswer(entry)}
-                  </p>
-                ) : (
-                  <div className="h-4 w-full rounded bg-input/80 mt-0.5" />
-                )}
-                <p className="text-[10px] text-text-faint truncate mt-0.5">{entry.hints.finals}</p>
+          return Array.from(decades.entries()).map(([decade, items]) => (
+            <div key={decade} className="rounded-2xl bg-card border border-border-t overflow-hidden">
+              {/* Decade header */}
+              <div className="px-4 py-2 border-b border-border-t bg-input/30">
+                <h3 className="text-xs font-bold text-text-muted uppercase tracking-wider">{decade}</h3>
               </div>
-            );
-          })}
-        </div>
+              {/* Entries */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-px bg-border-t/20">
+                {items.map(({ entry, index }) => {
+                  const isFound = found.has(index);
+                  const isLast = lastFound === index;
+                  const isRevealed = isFound || finished;
+
+                  return (
+                    <div
+                      key={index}
+                      data-row={index}
+                      className={`p-2.5 transition-all duration-300 ${
+                        isFound
+                          ? "bg-emerald-500/10"
+                          : isRevealed
+                            ? "bg-red-500/8"
+                            : "bg-card"
+                      } ${isLast ? "ring-2 ring-inset ring-emerald-500/50" : ""}`}
+                    >
+                      <div className="flex items-baseline justify-between mb-1">
+                        <span className="text-xs font-bold text-text-secondary">{entry.hints.year}</span>
+                        {isFound && <CheckCircle size={12} className="text-emerald-400" />}
+                        {isRevealed && !isFound && <XCircle size={12} className="text-red-400" />}
+                      </div>
+                      {isRevealed ? (
+                        <p className={`text-sm font-bold truncate ${isFound ? "text-emerald-400" : "text-red-400"}`}>
+                          {displayAnswer(entry)}
+                        </p>
+                      ) : (
+                        <div className="h-5 w-full rounded-md bg-input border border-border-t/50 flex items-center justify-center">
+                          <span className="text-[10px] text-text-faint">?</span>
+                        </div>
+                      )}
+                      <p className="text-[10px] text-text-faint truncate mt-1">{entry.hints.finals}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ));
+        })()}
       </div>
 
       {/* Shake animation */}
