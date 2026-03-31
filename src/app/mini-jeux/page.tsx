@@ -1,7 +1,7 @@
 import PageBanner from "@/components/PageBanner";
 import ScrollReveal from "@/components/ScrollReveal";
 import Link from "next/link";
-import { Target } from "lucide-react";
+import { Target, Image } from "lucide-react";
 
 export default function MiniJeux() {
   return (
@@ -25,6 +25,20 @@ export default function MiniJeux() {
             </div>
             <p className="text-sm text-text-muted">
               Devine le joueur NBA du jour à partir de ses statistiques. À chaque essai, découvre si tes indices sont trop hauts, trop bas ou corrects.
+            </p>
+          </Link>
+          <Link
+            href="/mini-jeux/hoopixl"
+            className="group rounded-2xl bg-card border border-border-t p-6 transition-all duration-200 hover:border-accent/50 hover:shadow-lg hover:-translate-y-1"
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/15 text-accent-text">
+                <Image size={22} />
+              </div>
+              <h2 className="text-lg font-bold text-text-primary group-hover:text-accent-text transition-colors">Hoopixl</h2>
+            </div>
+            <p className="text-sm text-text-muted">
+              Une photo pixelis&#233;e se r&#233;v&#232;le lentement. Trouve le joueur avant que l&#39;image ne devienne nette !
             </p>
           </Link>
         </div>
