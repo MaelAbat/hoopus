@@ -207,7 +207,7 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
       .eq("won", true)
       .order("guesses", { ascending: true })
       .order("time_seconds", { ascending: true })
-      .limit(20);
+      .limit(15);
     setLeaderboard(data || []);
   }, [gameDate]);
 
