@@ -126,7 +126,7 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
   const [search, setSearch] = useState("");
   const [won, setWon] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  const [startTime, setStartTime] = useState<number>(0);
+  const [startTime, setStartTime] = useState<number>(() => Date.now());
   const [elapsed, setElapsed] = useState(0);
   const [submitted, setSubmitted] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
@@ -203,10 +203,12 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
 
   // Timer
   useEffect(() => {
-    if (!loaded || gameOver || !startTime) return;
+    if (!loaded || gameOver || startTime <= 0) return;
+    // Set initial elapsed immediately
+    setElapsed(Math.floor((Date.now() - startTime) / 1000));
     const interval = setInterval(() => {
       setElapsed(Math.floor((Date.now() - startTime) / 1000));
-    }, 200); // faster tick for smooth pixelation
+    }, 200);
     return () => clearInterval(interval);
   }, [loaded, gameOver, startTime]);
 
