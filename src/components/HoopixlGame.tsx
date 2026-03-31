@@ -47,37 +47,29 @@ function formatTime(seconds: number): string {
 }
 
 /* ─── Pixelated image (CSS scale + image-rendering: pixelated) ─── */
-/* Renders the image at a tiny CSS size then scales it up.
-   image-rendering: pixelated creates a true mosaic effect.
-   No canvas, no CORS, smooth transitions. */
 
 function PixelatedImage({ src, pixelSize, size }: { src: string; pixelSize: number; size: number }) {
-  // pixelSize: 40 = very pixelated, 1 = fully clear
-  // Map to a small render size: 40 → 10px, 20 → 20px, 1 → full size
-  const renderSize = pixelSize <= 1 ? size : Math.max(10, Math.round(size / pixelSize * 1.2));
-  const scale = size / renderSize;
-  const isPixelated = renderSize < size;
+  // pixelSize: 40 = extremely pixelated (3px), 1 = fully clear
+  // Render the image at a tiny size then scale up with pixelated rendering
+  const renderSize = pixelSize <= 1 ? size : Math.max(3, Math.round((size / 40) * (41 - pixelSize)));
+  const scale = renderSize < size ? size / renderSize : 1;
 
   return (
     <div
-      className="overflow-hidden rounded-2xl bg-input relative"
+      className="overflow-hidden rounded-2xl bg-input"
       style={{ width: size, height: size }}
     >
       <img
         src={src}
         alt=""
         style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
+          display: "block",
           width: renderSize,
           height: renderSize,
           objectFit: "cover",
           transformOrigin: "top left",
-          transform: isPixelated ? `scale(${scale})` : "none",
-          imageRendering: isPixelated ? "pixelated" : "auto",
-          transition: "width 1s ease, height 1s ease, transform 1s ease",
-          ...(isPixelated ? {} : { width: size, height: size }),
+          transform: scale > 1 ? `scale(${scale})` : undefined,
+          imageRendering: scale > 1 ? "pixelated" : undefined,
         }}
         onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
       />
