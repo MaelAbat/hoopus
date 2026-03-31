@@ -77,8 +77,8 @@ export async function GET(request: NextRequest) {
   let synced = 0;
   let failed = 0;
 
-  // Process in parallel batches of 5 for quick, 1 at a time for full
-  const BATCH_SIZE = 5;
+  // Process in parallel batches of 3 for quick, 1 at a time for full
+  const BATCH_SIZE = 3;
 
   for (let i = 0; i < activePlayers.length; ) {
     // Collect next batch of quick players (up to BATCH_SIZE)
@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
           failed++;
         }
       });
-      await sleep(500);
+      await sleep(1000);
     } else if (i < activePlayers.length) {
       // Full sync — one at a time
       const p = activePlayers[i];
