@@ -56,13 +56,19 @@ export async function GET(request: NextRequest) {
 
   // Find players who already have career stats in DB
   // These only need a quick base-stats update for current season (1 API call)
-  const { data: playersWithCareer } = await supabase
-    .from("player_career_stats")
-    .select("player_id");
-
-  const hasCareerSet = new Set(
-    (playersWithCareer || []).map((r) => r.player_id)
-  );
+  // Paginate since table can have tens of thousands of rows
+  const hasCareerSet = new Set<number>();
+  let from = 0;
+  while (true) {
+    const { data } = await supabase
+      .from("player_career_stats")
+      .select("player_id")
+      .range(from, from + 999);
+    if (!data || data.length === 0) break;
+    for (const r of data) hasCareerSet.add(r.player_id);
+    if (data.length < 1000) break;
+    from += 1000;
+  }
 
   const fullSyncCount = activePlayers.filter((p) => !hasCareerSet.has(p.player_id)).length;
   const quickSyncCount = activePlayers.length - fullSyncCount;
