@@ -485,59 +485,99 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
         </p>
       )}
 
-      {/* Results grid */}
+      {/* Results — cards on mobile, table on desktop */}
       {guessResults.length > 0 && (
-        <div className="rounded-2xl bg-card border border-border-t overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border-t text-text-faint">
-                  <th className="sticky left-0 z-10 bg-card px-3 py-2 text-left text-xs font-medium">Joueur</th>
-                  {COLUMNS.map((col) => (
-                    <th key={col.key} className="px-2 py-2 text-center text-xs font-medium whitespace-nowrap">
-                      {col.label}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {guessResults.map((result, i) => (
-                  <tr key={result.player.id} className="border-b border-border-t/30">
-                    <td className="sticky left-0 z-10 bg-card px-3 py-2">
-                      <div className="flex items-center gap-2">
-                        <img
-                          src={playerPhotoUrl(result.player.id)}
-                          alt=""
-                          className="h-7 w-7 rounded-full object-cover bg-input"
-                          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                        />
-                        <span className="text-xs font-medium text-text-primary whitespace-nowrap">{result.player.name}</span>
+        <>
+          {/* Mobile: card layout */}
+          <div className="space-y-3 sm:hidden">
+            {guessResults.map((result) => (
+              <div key={result.player.id} className="rounded-xl bg-card border border-border-t p-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <img
+                    src={playerPhotoUrl(result.player.id)}
+                    alt=""
+                    className="h-8 w-8 rounded-full object-cover bg-input"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                  />
+                  <span className="text-sm font-bold text-text-primary">{result.player.name}</span>
+                </div>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {COLUMNS.map((col) => {
+                    const status = result.clues[col.key as keyof typeof result.clues];
+                    return (
+                      <div
+                        key={col.key}
+                        className={`flex flex-col items-center rounded-lg border px-1.5 py-1.5 ${clueClass(status)}`}
+                      >
+                        <span className="text-[9px] font-medium opacity-70">{col.label}</span>
+                        <div className="flex items-center gap-0.5 text-xs font-bold">
+                          {col.key === "team" ? (
+                            <img src={teamLogoUrl(result.player.team)} alt="" className="h-3.5 w-3.5 object-contain" />
+                          ) : (
+                            <ClueIcon status={status} />
+                          )}
+                          <span>{renderClueValue(result, col.key)}</span>
+                        </div>
                       </div>
-                    </td>
-                    {COLUMNS.map((col) => {
-                      const status = result.clues[col.key as keyof typeof result.clues];
-                      return (
-                        <td key={col.key} className="px-1.5 py-2">
-                          <div
-                            className={`flex items-center justify-center gap-1 rounded-lg border px-2 py-1.5 text-xs font-medium whitespace-nowrap ${clueClass(status)}`}
-                            style={{ animationDelay: `${i * 50}ms` }}
-                          >
-                            {col.key === "team" ? (
-                              <img src={teamLogoUrl(result.player.team)} alt="" className="h-4 w-4 object-contain" />
-                            ) : (
-                              <ClueIcon status={status} />
-                            )}
-                            <span>{renderClueValue(result, col.key)}</span>
-                          </div>
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
+
+          {/* Desktop: table layout */}
+          <div className="hidden sm:block rounded-2xl bg-card border border-border-t overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border-t text-text-faint">
+                    <th className="sticky left-0 z-10 bg-card px-3 py-2 text-left text-xs font-medium">Joueur</th>
+                    {COLUMNS.map((col) => (
+                      <th key={col.key} className="px-2 py-2 text-center text-xs font-medium whitespace-nowrap">
+                        {col.label}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {guessResults.map((result, i) => (
+                    <tr key={result.player.id} className="border-b border-border-t/30">
+                      <td className="sticky left-0 z-10 bg-card px-3 py-2">
+                        <div className="flex items-center gap-2">
+                          <img
+                            src={playerPhotoUrl(result.player.id)}
+                            alt=""
+                            className="h-7 w-7 rounded-full object-cover bg-input"
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                          />
+                          <span className="text-xs font-medium text-text-primary whitespace-nowrap">{result.player.name}</span>
+                        </div>
+                      </td>
+                      {COLUMNS.map((col) => {
+                        const status = result.clues[col.key as keyof typeof result.clues];
+                        return (
+                          <td key={col.key} className="px-1.5 py-2">
+                            <div
+                              className={`flex items-center justify-center gap-1 rounded-lg border px-2 py-1.5 text-xs font-medium whitespace-nowrap ${clueClass(status)}`}
+                            >
+                              {col.key === "team" ? (
+                                <img src={teamLogoUrl(result.player.team)} alt="" className="h-4 w-4 object-contain" />
+                              ) : (
+                                <ClueIcon status={status} />
+                              )}
+                              <span>{renderClueValue(result, col.key)}</span>
+                            </div>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
       )}
 
       {/* Leaderboard */}
