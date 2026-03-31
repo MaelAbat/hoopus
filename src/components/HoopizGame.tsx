@@ -32,15 +32,20 @@ function levenshtein(a: string, b: string): number {
   return dp[m][n];
 }
 
-/** Check if input fuzzy-matches any of the accepted answers */
+/** Exact match only (for auto-validate on keystroke) */
+function exactMatch(input: string, answers: string[]): boolean {
+  const norm = normalize(input);
+  if (norm.length < 3) return false;
+  return answers.some((a) => normalize(a) === norm);
+}
+
+/** Fuzzy match with typo tolerance (for Enter key validation) */
 function fuzzyMatch(input: string, answers: string[]): boolean {
   const norm = normalize(input);
   if (norm.length < 3) return false;
   for (const answer of answers) {
     const normA = normalize(answer);
-    // Exact match (works for 3-letter tricodes like bos, chi, etc.)
     if (norm === normA) return true;
-    // Allow 1 typo only for 4+ chars, input must be at least 80% of answer length
     if (norm.length >= 4 && norm.length >= normA.length * 0.8 && levenshtein(norm, normA) <= 1) return true;
   }
   return false;
@@ -98,16 +103,16 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
     return () => clearTimeout(timer);
   }, [lastFound]);
 
-  // Try to match input against all unfound entries — fills ALL matching rows at once
-  function tryMatch(value: string): boolean {
+  // Match helper — fills ALL matching rows at once
+  function tryMatch(value: string, strict: boolean): boolean {
     const trimmed = value.trim();
     if (!trimmed) return false;
 
-    // Find ALL unfound entries that match
+    const matcher = strict ? exactMatch : fuzzyMatch;
     const matched: number[] = [];
     for (let i = 0; i < quiz.entries.length; i++) {
       if (found.has(i)) continue;
-      if (fuzzyMatch(trimmed, quiz.entries[i].answers)) {
+      if (matcher(trimmed, quiz.entries[i].answers)) {
         matched.push(i);
       }
     }
@@ -123,18 +128,18 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
     return false;
   }
 
-  // Auto-validate on each keystroke
+  // Auto-validate on keystroke (exact match only — no typo tolerance)
   function handleInput(value: string) {
     setInput(value);
     if (!value.trim()) return;
     handleStart();
-    if (tryMatch(value)) return;
+    tryMatch(value, true);
   }
 
-  // Validate on Enter only
+  // Fuzzy match on Enter (tolerates 1 typo)
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Enter" && input.trim()) {
-      if (!tryMatch(input)) {
+      if (!tryMatch(input, false)) {
         setShake(true);
         setTimeout(() => setShake(false), 500);
       }
