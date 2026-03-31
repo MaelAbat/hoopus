@@ -187,11 +187,14 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
     }).filter(Boolean) as GuessResult[];
   }, [guessIds, players, target]);
 
+  const normalize = (s: string) =>
+    s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
   const filteredPlayers = useMemo(() => {
     if (!search.trim()) return [];
-    const q = search.toLowerCase();
+    const q = normalize(search);
     return players
-      .filter((p) => p.name.toLowerCase().includes(q) && !guessIds.includes(p.id))
+      .filter((p) => normalize(p.name).includes(q) && !guessIds.includes(p.id))
       .slice(0, 8);
   }, [search, players, guessIds]);
 
