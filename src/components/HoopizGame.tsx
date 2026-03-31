@@ -35,7 +35,7 @@ function levenshtein(a: string, b: string): number {
 /** Exact match only (for auto-validate on keystroke) */
 function exactMatch(input: string, answers: string[]): boolean {
   const norm = normalize(input);
-  if (norm.length < 4) return false;
+  if (norm.length < 4) return false; // "heat" = 4, "mavs" = 4, "cavs" = 4
   return answers.some((a) => normalize(a) === norm);
 }
 
