@@ -126,8 +126,8 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
   const [search, setSearch] = useState("");
   const [won, setWon] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  const [startTime, setStartTime] = useState<number>(() => Date.now());
   const [elapsed, setElapsed] = useState(0);
+  const [timerActive, setTimerActive] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
@@ -180,31 +180,17 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
       const saved = localStorage.getItem(key);
       if (saved) {
         const data = JSON.parse(saved);
-        const savedGuesses = data.guesses || [];
-        const savedWon = data.won || false;
-        const savedGameOver = savedWon || savedGuesses.length >= MAX_GUESSES;
-        setGuessIds(savedGuesses);
-        setWon(savedWon);
+        setGuessIds(data.guesses || []);
+        setWon(data.won || false);
+        setElapsed(data.elapsed || 0);
         setSubmitted(data.submitted || false);
-        if (savedGameOver) {
-          // Game already finished: show final elapsed, don't restart timer
-          setElapsed(data.elapsed || 0);
-          setStartTime(0);
-        } else {
-          // Game in progress: restore startTime for timer
-          const st = data.startTime || Date.now();
-          setStartTime(st);
-          setElapsed(Math.floor((Date.now() - st) / 1000));
-        }
+        const savedGameOver = (data.won || false) || (data.guesses || []).length >= MAX_GUESSES;
+        setTimerActive(!savedGameOver);
       } else {
-        // Fresh game
-        const now = Date.now();
-        setStartTime(now);
-        setElapsed(0);
+        setTimerActive(true);
       }
     } catch {
-      setStartTime(Date.now());
-      setElapsed(0);
+      setTimerActive(true);
     }
     setLoaded(true);
   }, [target]);
@@ -213,17 +199,17 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
   useEffect(() => {
     if (!target || !loaded) return;
     const key = getStorageKey();
-    localStorage.setItem(key, JSON.stringify({ guesses: guessIds, won, elapsed, submitted, startTime }));
-  }, [guessIds, won, target, loaded, elapsed, submitted, startTime]);
+    localStorage.setItem(key, JSON.stringify({ guesses: guessIds, won, elapsed, submitted }));
+  }, [guessIds, won, target, loaded, elapsed, submitted]);
 
-  // Timer — only runs when game is active and startTime > 0
+  // Timer — simple incrementing counter, 1 tick per second
   useEffect(() => {
-    if (!loaded || gameOver || startTime <= 0) return;
+    if (!loaded || !timerActive) return;
     const interval = setInterval(() => {
-      setElapsed(Math.floor((Date.now() - startTime) / 1000));
-    }, 200);
+      setElapsed((prev) => prev + 1);
+    }, 1000);
     return () => clearInterval(interval);
-  }, [loaded, gameOver, startTime]);
+  }, [loaded, timerActive]);
 
   // Leaderboard
   const fetchLeaderboard = useCallback(async () => {
@@ -245,16 +231,14 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
   const submitScore = useCallback(async (guessCount: number, didWin: boolean) => {
     if (submitted || !userId) return;
     const supabase = createClient();
-    const finalTime = Math.floor((Date.now() - startTime) / 1000);
-    setElapsed(finalTime);
     const { data: profile } = await supabase.from("profiles").select("display_name").eq("id", userId).single();
     await supabase.from("hoopixl_scores").upsert({
       user_id: userId, display_name: profile?.display_name || "Anonyme",
-      game_date: gameDate, guesses: guessCount, time_seconds: finalTime, won: didWin,
+      game_date: gameDate, guesses: guessCount, time_seconds: elapsed, won: didWin,
     }, { onConflict: "user_id,game_date" });
     setSubmitted(true);
     fetchLeaderboard();
-  }, [submitted, userId, startTime, gameDate, fetchLeaderboard]);
+  }, [submitted, userId, elapsed, gameDate, fetchLeaderboard]);
 
   // Auto-submit on login
   useEffect(() => {
@@ -294,9 +278,11 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
     setShowDropdown(false);
     if (player.id === target.id) {
       setWon(true);
+      setTimerActive(false);
       setShowConfetti(true);
       submitScore(newGuesses.length, true);
     } else if (newGuesses.length >= MAX_GUESSES) {
+      setTimerActive(false);
       submitScore(newGuesses.length, false);
     }
   }
