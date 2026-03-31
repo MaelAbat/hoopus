@@ -363,7 +363,7 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
             </div>
           )}
         </div>
-        {!userId && !won && !lost && (
+        {!userId && (
           <div className="rounded-lg bg-input border border-border-t px-4 py-2.5 text-center text-xs text-text-muted">
             <LogIn size={12} className="inline mr-1.5 -mt-0.5" />
             <Link href="/auth/login" className="text-accent-text hover:underline">Connecte-toi</Link> pour enregistrer ton score au classement
