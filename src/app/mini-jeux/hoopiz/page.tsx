@@ -54,23 +54,23 @@ export default async function HoopizPage() {
             const entryCount = Array.isArray(quiz.entries) ? quiz.entries.length : 0;
             return (
               <ScrollReveal key={quiz.id} delay={i * 80} variant="up">
-                <Link
-                  href={`/mini-jeux/hoopiz/${quiz.id}`}
-                  className="group flex flex-col rounded-2xl bg-card border border-border-t p-5 transition-all duration-200 hover:border-accent/50 hover:shadow-lg hover:-translate-y-1"
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <h2 className="text-lg font-bold text-text-primary group-hover:text-accent-text transition-colors">
-                      {quiz.title}
-                    </h2>
-                    {!quiz.published && (
-                      <span className="shrink-0 rounded-full bg-orange-500/15 px-2 py-0.5 text-[10px] font-bold text-orange-400">
-                        Brouillon
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-sm text-text-muted flex-1">{quiz.description}</p>
-                  <div className="flex items-center justify-between mt-3">
-                    <div className="flex items-center gap-3 text-[11px] text-text-faint">
+                <div className="relative">
+                  <Link
+                    href={`/mini-jeux/hoopiz/${quiz.id}`}
+                    className="group flex flex-col rounded-2xl bg-card border border-border-t p-5 transition-all duration-200 hover:border-accent/50 hover:shadow-lg hover:-translate-y-1"
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <h2 className="text-lg font-bold text-text-primary group-hover:text-accent-text transition-colors">
+                        {quiz.title}
+                      </h2>
+                      {!quiz.published && (
+                        <span className="shrink-0 rounded-full bg-orange-500/15 px-2 py-0.5 text-[10px] font-bold text-orange-400">
+                          Brouillon
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-text-muted flex-1">{quiz.description}</p>
+                    <div className="flex items-center gap-3 mt-3 text-[11px] text-text-faint">
                       <span className="flex items-center gap-1">
                         {quiz.mode === "ordered" ? <ListOrdered size={12} /> : <List size={12} />}
                         {quiz.mode === "ordered" ? "Dans l'ordre" : "Désordre"}
@@ -81,16 +81,16 @@ export default async function HoopizPage() {
                       </span>
                       <span>{entryCount} réponse{entryCount > 1 ? "s" : ""}</span>
                     </div>
-                    {admin && (
-                      <Link
-                        href={`/mini-jeux/hoopiz/${quiz.id}/edit`}
-                        className="rounded-lg p-1.5 text-text-faint hover:text-accent-text hover:bg-accent/10 transition-colors z-10"
-                      >
-                        <Pencil size={13} />
-                      </Link>
-                    )}
-                  </div>
-                </Link>
+                  </Link>
+                  {admin && (
+                    <Link
+                      href={`/mini-jeux/hoopiz/${quiz.id}/edit`}
+                      className="absolute top-3 right-3 rounded-lg p-1.5 text-text-faint hover:text-accent-text hover:bg-accent/10 transition-colors z-10"
+                    >
+                      <Pencil size={13} />
+                    </Link>
+                  )}
+                </div>
               </ScrollReveal>
             );
           })}
