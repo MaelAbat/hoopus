@@ -14,6 +14,41 @@ function normalize(s: string): string {
   return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 }
 
+/** Levenshtein distance between two strings */
+function levenshtein(a: string, b: string): number {
+  const m = a.length, n = b.length;
+  if (m === 0) return n;
+  if (n === 0) return m;
+  const dp: number[][] = Array.from({ length: m + 1 }, (_, i) =>
+    Array.from({ length: n + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0))
+  );
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = a[i - 1] === b[j - 1]
+        ? dp[i - 1][j - 1]
+        : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+    }
+  }
+  return dp[m][n];
+}
+
+/** Check if input fuzzy-matches any of the accepted answers */
+function fuzzyMatch(input: string, answers: string[]): boolean {
+  const norm = normalize(input);
+  if (norm.length < 2) return false;
+  for (const answer of answers) {
+    const normA = normalize(answer);
+    // Exact match
+    if (norm === normA) return true;
+    // Allow 1 typo for short words, 2 for longer
+    const maxDist = normA.length <= 5 ? 1 : 2;
+    if (levenshtein(norm, normA) <= maxDist) return true;
+    // Input is contained in answer or vice versa (handles plurals, partial)
+    if (normA.length >= 4 && (normA.includes(norm) || norm.includes(normA))) return true;
+  }
+  return false;
+}
+
 export default function HoopizGame({ quiz }: { quiz: Quiz }) {
   const [found, setFound] = useState<Set<number>>(new Set());
   const [timeLeft, setTimeLeft] = useState(quiz.timeLimit);
@@ -68,38 +103,43 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
     }
   }, [lastFound]);
 
-  // Check answer
+  // Try to match input against all unfound entries — fills ALL matching rows at once
+  function tryMatch(value: string): boolean {
+    const trimmed = value.trim();
+    if (!trimmed) return false;
+
+    // Find ALL unfound entries that match
+    const matched: number[] = [];
+    for (let i = 0; i < quiz.entries.length; i++) {
+      if (found.has(i)) continue;
+      if (fuzzyMatch(trimmed, quiz.entries[i].answers)) {
+        matched.push(i);
+      }
+    }
+
+    if (matched.length > 0) {
+      const newFound = new Set(found);
+      for (const idx of matched) newFound.add(idx);
+      setFound(newFound);
+      setLastFound(matched[matched.length - 1]);
+      setInput("");
+      return true;
+    }
+    return false;
+  }
+
+  // Check on each keystroke (auto-validate)
   function handleInput(value: string) {
     setInput(value);
     if (!value.trim()) return;
     handleStart();
-
-    const normalized = normalize(value);
-    if (!normalized) return;
-
-    // Check against all unfound entries
-    for (let i = 0; i < quiz.entries.length; i++) {
-      if (found.has(i)) continue;
-      const entry = quiz.entries[i];
-      if (entry.answers.some((a) => normalize(a) === normalized)) {
-        const newFound = new Set(found);
-        newFound.add(i);
-        setFound(newFound);
-        setLastFound(i);
-        setInput("");
-        return;
-      }
-    }
+    tryMatch(value);
   }
 
-  // Submit on enter (shake if wrong)
+  // Shake on enter if wrong
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Enter" && input.trim()) {
-      const normalized = normalize(input);
-      const isCorrect = quiz.entries.some(
-        (entry, i) => !found.has(i) && entry.answers.some((a) => normalize(a) === normalized)
-      );
-      if (!isCorrect) {
+      if (!tryMatch(input)) {
         setShake(true);
         setTimeout(() => setShake(false), 500);
       }
