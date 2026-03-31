@@ -50,9 +50,12 @@ function formatTime(seconds: number): string {
 
 function PixelatedImage({ src, pixelSize, size }: { src: string; pixelSize: number; size: number }) {
   // pixelSize: 40 = very pixelated, 1 = clear
-  // Map to a mosaic block radius (smaller = more detailed)
-  const radius = pixelSize <= 1 ? 0 : Math.max(1, Math.round(pixelSize * 0.4));
-  const blockW = pixelSize <= 1 ? 1 : Math.max(2, Math.round(pixelSize * 0.8));
+  const radius = pixelSize <= 1.5 ? 0 : pixelSize * 0.4;
+  const blockW = pixelSize <= 1.5 ? 1 : pixelSize * 0.8;
+
+  // Snap to 0.2 increments for smooth but not excessive DOM updates
+  const rSnap = Math.round(radius * 5) / 5;
+  const bSnap = Math.round(blockW * 5) / 5;
 
   return (
     <div
@@ -62,10 +65,10 @@ function PixelatedImage({ src, pixelSize, size }: { src: string; pixelSize: numb
       <svg width="0" height="0" className="absolute">
         <filter id="pxl">
           <feFlood x="4" y="4" height="2" width="2" />
-          <feComposite width={blockW} height={blockW} />
+          <feComposite width={bSnap} height={bSnap} />
           <feTile result="a" />
           <feComposite in="SourceGraphic" in2="a" operator="in" />
-          <feMorphology operator="dilate" radius={radius} />
+          <feMorphology operator="dilate" radius={rSnap} />
         </filter>
       </svg>
       <img
@@ -76,7 +79,7 @@ function PixelatedImage({ src, pixelSize, size }: { src: string; pixelSize: numb
           width: size,
           height: size,
           objectFit: "cover",
-          filter: radius > 0 ? "url(#pxl)" : "none",
+          filter: rSnap > 0 ? "url(#pxl)" : "none",
         }}
         onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
       />
@@ -161,8 +164,7 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
     const guessProgress = guessIds.length / MAX_GUESSES;
     const progress = Math.max(timeProgress, guessProgress * 0.8);
     // Exponential curve: starts very pixelated, gets clearer faster at the end
-    const size = Math.max(1, Math.round(40 * Math.pow(1 - progress, 2)));
-    return size;
+    return Math.max(1, 40 * Math.pow(1 - progress, 2));
   }, [elapsed, guessIds.length, gameOver]);
 
   // Auth
