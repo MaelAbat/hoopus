@@ -194,9 +194,18 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
         const savedGameOver = (data.won || false) || (data.guesses || []).length >= MAX_GUESSES;
         setTimerActive(!savedGameOver);
       } else {
+        // Fresh game — ensure everything is zeroed
+        setGuessIds([]);
+        setWon(false);
+        setElapsed(0);
+        setSubmitted(false);
         setTimerActive(true);
       }
     } catch {
+      setGuessIds([]);
+      setWon(false);
+      setElapsed(0);
+      setSubmitted(false);
       setTimerActive(true);
     }
     setLoaded(true);
@@ -323,9 +332,23 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
 
       {/* Header */}
       <div className="pt-4 space-y-4">
-        <Link href="/mini-jeux" className="inline-flex items-center gap-1.5 rounded-lg bg-input px-3 py-1.5 text-xs font-medium text-text-muted hover:text-text-primary hover:bg-card-hover transition-colors">
-          <RotateCcw size={12} /> Tous les mini-jeux
-        </Link>
+        <div className="flex items-center justify-between">
+          <Link href="/mini-jeux" className="inline-flex items-center gap-1.5 rounded-lg bg-input px-3 py-1.5 text-xs font-medium text-text-muted hover:text-text-primary hover:bg-card-hover transition-colors">
+            <RotateCcw size={12} /> Tous les mini-jeux
+          </Link>
+          {gameOver && (
+            <button
+              onClick={() => {
+                const key = getStorageKey();
+                localStorage.removeItem(key);
+                window.location.reload();
+              }}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-input px-3 py-1.5 text-xs font-medium text-text-muted hover:text-text-primary hover:bg-card-hover transition-colors"
+            >
+              <RotateCcw size={12} /> Rejouer (debug)
+            </button>
+          )}
+        </div>
 
         <div className="text-center space-y-1">
           <h1 className="text-2xl sm:text-3xl font-extrabold text-text-primary tracking-tight">
