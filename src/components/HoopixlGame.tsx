@@ -46,12 +46,17 @@ function formatTime(seconds: number): string {
   return m > 0 ? `${m}m${s.toString().padStart(2, "0")}s` : `${s}s`;
 }
 
-/* ─── Blurred image component (CSS-based, smooth reveal) ─── */
+/* ─── Pixelated image (CSS scale + image-rendering: pixelated) ─── */
+/* Renders the image at a tiny CSS size then scales it up.
+   image-rendering: pixelated creates a true mosaic effect.
+   No canvas, no CORS, smooth transitions. */
 
 function PixelatedImage({ src, pixelSize, size }: { src: string; pixelSize: number; size: number }) {
-  // pixelSize: 40 = max blur, 1 = fully clear
-  const blur = pixelSize <= 1 ? 0 : Math.round((pixelSize / 40) * 25);
-  const brightness = pixelSize <= 1 ? 1 : 0.7 + (1 - pixelSize / 40) * 0.3;
+  // pixelSize: 40 = very pixelated, 1 = fully clear
+  // Map to a small render size: 40 → 10px, 20 → 20px, 1 → full size
+  const renderSize = pixelSize <= 1 ? size : Math.max(10, Math.round(size / pixelSize * 1.2));
+  const scale = size / renderSize;
+  const isPixelated = renderSize < size;
 
   return (
     <div
@@ -61,12 +66,18 @@ function PixelatedImage({ src, pixelSize, size }: { src: string; pixelSize: numb
       <img
         src={src}
         alt=""
-        className="absolute top-0 left-0 transition-[filter] duration-1000"
         style={{
-          width: size,
-          height: size,
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: renderSize,
+          height: renderSize,
           objectFit: "cover",
-          filter: `blur(${blur}px) brightness(${brightness})`,
+          transformOrigin: "top left",
+          transform: isPixelated ? `scale(${scale})` : "none",
+          imageRendering: isPixelated ? "pixelated" : "auto",
+          transition: "width 1s ease, height 1s ease, transform 1s ease",
+          ...(isPixelated ? {} : { width: size, height: size }),
         }}
         onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
       />
