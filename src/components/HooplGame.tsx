@@ -141,7 +141,7 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
   useEffect(() => {
     if (!target) return;
     const key = getStorageKey();
-    localStorage.setItem(key, JSON.stringify({ guesses: guessIds, won }));
+    localStorage.setItem(key, JSON.stringify({ guesses: guessIds, won, lost: !won && guessIds.length >= MAX_GUESSES }));
   }, [guessIds, won, target]);
 
   // Close dropdown on outside click
@@ -189,8 +189,11 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
       .slice(0, 8);
   }, [search, players, guessIds]);
 
+  const MAX_GUESSES = 5;
+  const lost = !won && guessIds.length >= MAX_GUESSES;
+
   function handleGuess(player: HooplPlayer) {
-    if (won || !target || guessIds.includes(player.id)) return;
+    if (won || lost || !target || guessIds.includes(player.id)) return;
     const newGuesses = [...guessIds, player.id];
     setGuessIds(newGuesses);
     setSearch("");
@@ -243,7 +246,7 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
       </div>
 
       {/* Search input */}
-      {!won && (
+      {!won && !lost && (
         <div className="relative">
           <div className="relative">
             <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-faint" />
@@ -309,10 +312,28 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
         </div>
       )}
 
+      {/* Lost state */}
+      {lost && (
+        <div className="rounded-2xl bg-red-500/10 border border-red-500/30 p-6 text-center space-y-3">
+          <p className="text-lg font-bold text-red-400">Perdu !</p>
+          <p className="text-sm text-text-muted">
+            Le joueur etait <strong className="text-text-primary">{target.name}</strong>
+          </p>
+          <div className="flex items-center justify-center gap-3">
+            <img src={playerPhotoUrl(target.id)} alt="" className="h-16 w-16 rounded-full object-cover bg-input" />
+            <div className="text-left">
+              <p className="font-bold text-text-primary">{target.name}</p>
+              <p className="text-xs text-text-muted">{target.teamName} - {target.position}</p>
+              <p className="text-xs text-text-faint">{target.pts.toFixed(1)} PTS / {target.reb.toFixed(1)} REB / {target.ast.toFixed(1)} AST</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Guess count */}
-      {guessIds.length > 0 && !won && (
+      {guessIds.length > 0 && !won && !lost && (
         <p className="text-center text-xs text-text-faint">
-          {guessIds.length} essai{guessIds.length > 1 ? "s" : ""}
+          {guessIds.length}/{MAX_GUESSES} essai{guessIds.length > 1 ? "s" : ""}
         </p>
       )}
 
