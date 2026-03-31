@@ -200,9 +200,16 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
     <div className="space-y-5">
       {/* Header */}
       <div className="text-center space-y-2">
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-text-primary tracking-tight">
-          Hoop<span className="text-accent">iz</span>
-        </h1>
+        <div className="flex items-center justify-center gap-2">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-text-primary tracking-tight">
+            Hoop<span className="text-accent">iz</span>
+          </h1>
+          {quiz.mode === "ordered" && (
+            <span className="rounded-full bg-orange-500/15 px-2.5 py-0.5 text-[10px] font-bold text-orange-400 uppercase tracking-wider">
+              Dans l'ordre
+            </span>
+          )}
+        </div>
         <p className="text-sm text-text-muted">{quiz.description}</p>
       </div>
 
@@ -309,15 +316,14 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
                             : isRevealed
                               ? "bg-red-500/8 border-red-500/20"
                               : isNext
-                                ? "bg-accent/5 border-accent/30"
+                                ? "bg-accent/15 border-accent/50 shadow-[0_0_12px_rgba(var(--accent-rgb,249,115,22),0.15)] scale-[1.02]"
                                 : "bg-sidebar border-border-t"
                         } ${isLast ? "ring-2 ring-emerald-500/40" : ""}`}
                       >
                         <div className="flex items-center justify-between mb-0.5">
-                          <span className="text-[11px] font-bold text-text-secondary">{label}</span>
+                          <span className={`text-[11px] font-bold ${isNext ? "text-accent-text" : "text-text-secondary"}`}>{label}</span>
                           {isFound && <CheckCircle size={11} className="text-emerald-400" />}
                           {isRevealed && !isFound && <XCircle size={11} className="text-red-400" />}
-                          {isNext && !isRevealed && <span className="text-[9px] font-bold text-accent-text">SUIVANT</span>}
                         </div>
                         {isRevealed ? (
                           <p className={`text-xs font-bold truncate ${isFound ? "text-emerald-400" : "text-red-400"}`}>
