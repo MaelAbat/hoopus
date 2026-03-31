@@ -87,7 +87,7 @@ function PixelatedImage({ src, pixelSize, size }: { src: string; pixelSize: numb
         </filter>
       </svg>
 
-      {/* Layer 1: Heavy pixelation — fades out from 0% to 40% progress */}
+      {/* Layer 1: Heavy pixelation — visible 0-35%, fades out 15-35% */}
       <img
         src={src}
         alt=""
@@ -95,11 +95,11 @@ function PixelatedImage({ src, pixelSize, size }: { src: string; pixelSize: numb
           position: "absolute", top: 0, left: 0,
           width: size, height: size, objectFit: "cover",
           filter: "url(#pxl-heavy)",
-          opacity: progress < 0.4 ? 1 : Math.max(0, 1 - (progress - 0.4) / 0.15),
-          transition: "opacity 2s ease",
+          opacity: progress < 0.15 ? 1 : Math.max(0, 1 - (progress - 0.15) / 0.2),
+          transition: "opacity 3s linear",
         }}
       />
-      {/* Layer 2: Medium pixelation — appears at 25%, fades out at 70% */}
+      {/* Layer 2: Medium pixelation — fades in 10-25%, fades out 35-55% */}
       <img
         src={src}
         alt=""
@@ -107,11 +107,11 @@ function PixelatedImage({ src, pixelSize, size }: { src: string; pixelSize: numb
           position: "absolute", top: 0, left: 0,
           width: size, height: size, objectFit: "cover",
           filter: "url(#pxl-medium)",
-          opacity: progress < 0.25 ? 0 : progress < 0.7 ? Math.min(1, (progress - 0.25) / 0.15) : Math.max(0, 1 - (progress - 0.7) / 0.15),
-          transition: "opacity 2s ease",
+          opacity: progress < 0.1 ? 0 : progress < 0.35 ? Math.min(1, (progress - 0.1) / 0.15) : Math.max(0, 1 - (progress - 0.35) / 0.2),
+          transition: "opacity 3s linear",
         }}
       />
-      {/* Layer 3: Light pixelation — appears at 55%, fades out at 90% */}
+      {/* Layer 3: Light pixelation — fades in 30-45%, fades out 60-80% */}
       <img
         src={src}
         alt=""
@@ -119,19 +119,19 @@ function PixelatedImage({ src, pixelSize, size }: { src: string; pixelSize: numb
           position: "absolute", top: 0, left: 0,
           width: size, height: size, objectFit: "cover",
           filter: "url(#pxl-light)",
-          opacity: progress < 0.55 ? 0 : progress < 0.9 ? Math.min(1, (progress - 0.55) / 0.15) : Math.max(0, 1 - (progress - 0.9) / 0.1),
-          transition: "opacity 2s ease",
+          opacity: progress < 0.3 ? 0 : progress < 0.6 ? Math.min(1, (progress - 0.3) / 0.15) : Math.max(0, 1 - (progress - 0.6) / 0.2),
+          transition: "opacity 3s linear",
         }}
       />
-      {/* Layer 4: Clear image — appears at 75% */}
+      {/* Layer 4: Clear image — fades in from 55% */}
       <img
         src={src}
         alt=""
         style={{
           position: "absolute", top: 0, left: 0,
           width: size, height: size, objectFit: "cover",
-          opacity: progress < 0.75 ? 0 : Math.min(1, (progress - 0.75) / 0.25),
-          transition: "opacity 2s ease",
+          opacity: progress < 0.55 ? 0 : Math.min(1, (progress - 0.55) / 0.3),
+          transition: "opacity 3s linear",
         }}
         onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
       />
