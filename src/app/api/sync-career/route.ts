@@ -54,18 +54,17 @@ export async function GET(request: NextRequest) {
   }
   console.log(`[SYNC-CAREER] Found ${activePlayers.length} active players to sync`);
 
-  // Find players who already have advanced stats (off_rating > 0 for any row)
+  // Find players who already have career stats in DB
   // These only need a quick base-stats update for current season (1 API call)
-  const { data: playersWithAdvanced } = await supabase
+  const { data: playersWithCareer } = await supabase
     .from("player_career_stats")
-    .select("player_id")
-    .gt("off_rating", 0);
+    .select("player_id");
 
-  const hasAdvancedSet = new Set(
-    (playersWithAdvanced || []).map((r) => r.player_id)
+  const hasCareerSet = new Set(
+    (playersWithCareer || []).map((r) => r.player_id)
   );
 
-  const fullSyncCount = activePlayers.filter((p) => !hasAdvancedSet.has(p.player_id)).length;
+  const fullSyncCount = activePlayers.filter((p) => !hasCareerSet.has(p.player_id)).length;
   const quickSyncCount = activePlayers.length - fullSyncCount;
   console.log(`[SYNC-CAREER] ${quickSyncCount} players: quick update (1 API call), ${fullSyncCount} players: full sync (2 API calls)`);
 
@@ -75,11 +74,11 @@ export async function GET(request: NextRequest) {
   for (let i = 0; i < activePlayers.length; i++) {
     const pid = activePlayers[i].player_id;
     const name = `${activePlayers[i].first_name} ${activePlayers[i].last_name}`.trim() || pid;
-    const hasAdvanced = hasAdvancedSet.has(pid);
-    const mode = hasAdvanced ? "quick" : "full";
+    const hasCareer = hasCareerSet.has(pid);
+    const mode = hasCareer ? "quick" : "full";
 
     try {
-      if (hasAdvanced) {
+      if (hasCareer) {
         await syncPlayerCareerQuick(pid, CURRENT_SEASON);
       } else {
         await syncPlayerCareer(pid);
@@ -93,7 +92,7 @@ export async function GET(request: NextRequest) {
 
     // Rate limiting: 700ms for quick (1 call), 1.5s for full (new players only)
     if (i < activePlayers.length - 1) {
-      await sleep(hasAdvanced ? 700 : 1500);
+      await sleep(hasCareer ? 700 : 1500);
     }
   }
 

@@ -101,15 +101,20 @@ async function main() {
 
   console.log(`  ${rs.rowSet.length} joueurs totaux, ${inactivePlayers.length} inactifs\n`);
 
-  // 2. Find which players already have advanced stats (skip them)
-  const { data: alreadySynced } = await supabase
-    .from("player_career_stats")
-    .select("player_id")
-    .gt("off_rating", 0);
-
-  const alreadySyncedSet = new Set(
-    (alreadySynced || []).map((r) => r.player_id)
-  );
+  // 2. Find which players already have career stats (skip them)
+  // Query in pages since there could be many rows
+  const alreadySyncedSet = new Set<number>();
+  let from = 0;
+  while (true) {
+    const { data } = await supabase
+      .from("player_career_stats")
+      .select("player_id")
+      .range(from, from + 999);
+    if (!data || data.length === 0) break;
+    for (const r of data) alreadySyncedSet.add(r.player_id);
+    if (data.length < 1000) break;
+    from += 1000;
+  }
 
   const toSync = inactivePlayers.filter(
     (row) => !alreadySyncedSet.has(Number(row[personIdIdx]))
