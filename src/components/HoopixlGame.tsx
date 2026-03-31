@@ -180,16 +180,31 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
       const saved = localStorage.getItem(key);
       if (saved) {
         const data = JSON.parse(saved);
-        setGuessIds(data.guesses || []);
-        setWon(data.won || false);
-        setElapsed(data.elapsed || 0);
+        const savedGuesses = data.guesses || [];
+        const savedWon = data.won || false;
+        const savedGameOver = savedWon || savedGuesses.length >= MAX_GUESSES;
+        setGuessIds(savedGuesses);
+        setWon(savedWon);
         setSubmitted(data.submitted || false);
-        setStartTime(data.startTime || Date.now());
+        if (savedGameOver) {
+          // Game already finished: show final elapsed, don't restart timer
+          setElapsed(data.elapsed || 0);
+          setStartTime(0);
+        } else {
+          // Game in progress: restore startTime for timer
+          const st = data.startTime || Date.now();
+          setStartTime(st);
+          setElapsed(Math.floor((Date.now() - st) / 1000));
+        }
       } else {
-        setStartTime(Date.now());
+        // Fresh game
+        const now = Date.now();
+        setStartTime(now);
+        setElapsed(0);
       }
     } catch {
       setStartTime(Date.now());
+      setElapsed(0);
     }
     setLoaded(true);
   }, [target]);
@@ -201,11 +216,9 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
     localStorage.setItem(key, JSON.stringify({ guesses: guessIds, won, elapsed, submitted, startTime }));
   }, [guessIds, won, target, loaded, elapsed, submitted, startTime]);
 
-  // Timer
+  // Timer — only runs when game is active and startTime > 0
   useEffect(() => {
     if (!loaded || gameOver || startTime <= 0) return;
-    // Set initial elapsed immediately
-    setElapsed(Math.floor((Date.now() - startTime) / 1000));
     const interval = setInterval(() => {
       setElapsed(Math.floor((Date.now() - startTime) / 1000));
     }, 200);
