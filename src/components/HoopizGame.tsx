@@ -123,10 +123,12 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
     return false;
   }
 
-  // Only update input, no auto-validate
+  // Auto-validate on each keystroke
   function handleInput(value: string) {
     setInput(value);
-    if (value.trim()) handleStart();
+    if (!value.trim()) return;
+    handleStart();
+    if (tryMatch(value)) return;
   }
 
   // Validate on Enter only
