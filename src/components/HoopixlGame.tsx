@@ -49,89 +49,33 @@ function formatTime(seconds: number): string {
 /* ─── Pixelated image via SVG filter ─── */
 
 function PixelatedImage({ src, pixelSize, size }: { src: string; pixelSize: number; size: number }) {
-  // pixelSize: 40 = very pixelated, 1 = clear
-  // progress: 0 = fully pixelated, 1 = fully clear
-  const progress = Math.max(0, Math.min(1, 1 - (pixelSize - 1) / 39));
-
-  // Heavy pixelation layer (static, always max pixelated)
-  // Medium pixelation layer
-  // Clear layer
-  // We crossfade between them using opacity for perfect CSS smoothness
+  // pixelSize: 40 = very pixelated, ~1 = clear
+  const radius = pixelSize <= 1.2 ? 0 : pixelSize * 0.35;
+  const blockW = pixelSize <= 1.2 ? 1 : pixelSize * 0.7;
 
   return (
     <div
       className="overflow-hidden rounded-2xl bg-input"
-      style={{ width: size, height: size, position: "relative" }}
+      style={{ width: size, height: size }}
     >
       <svg width="0" height="0" className="absolute">
-        <filter id="pxl-heavy">
+        <filter id="pxl">
           <feFlood x="4" y="4" height="2" width="2" />
-          <feComposite width="16" height="16" />
+          <feComposite width={blockW} height={blockW} />
           <feTile result="a" />
           <feComposite in="SourceGraphic" in2="a" operator="in" />
-          <feMorphology operator="dilate" radius="8" />
-        </filter>
-        <filter id="pxl-medium">
-          <feFlood x="4" y="4" height="2" width="2" />
-          <feComposite width="6" height="6" />
-          <feTile result="a" />
-          <feComposite in="SourceGraphic" in2="a" operator="in" />
-          <feMorphology operator="dilate" radius="3" />
-        </filter>
-        <filter id="pxl-light">
-          <feFlood x="4" y="4" height="2" width="2" />
-          <feComposite width="3" height="3" />
-          <feTile result="a" />
-          <feComposite in="SourceGraphic" in2="a" operator="in" />
-          <feMorphology operator="dilate" radius="1.5" />
+          <feMorphology operator="dilate" radius={radius} />
         </filter>
       </svg>
-
-      {/* Layer 1: Heavy pixelation — visible 0-35%, fades out 15-35% */}
       <img
         src={src}
         alt=""
         style={{
-          position: "absolute", top: 0, left: 0,
-          width: size, height: size, objectFit: "cover",
-          filter: "url(#pxl-heavy)",
-          opacity: progress < 0.15 ? 1 : Math.max(0, 1 - (progress - 0.15) / 0.2),
-          transition: "opacity 3s linear",
-        }}
-      />
-      {/* Layer 2: Medium pixelation — fades in 10-25%, fades out 35-55% */}
-      <img
-        src={src}
-        alt=""
-        style={{
-          position: "absolute", top: 0, left: 0,
-          width: size, height: size, objectFit: "cover",
-          filter: "url(#pxl-medium)",
-          opacity: progress < 0.1 ? 0 : progress < 0.35 ? Math.min(1, (progress - 0.1) / 0.15) : Math.max(0, 1 - (progress - 0.35) / 0.2),
-          transition: "opacity 3s linear",
-        }}
-      />
-      {/* Layer 3: Light pixelation — fades in 30-45%, fades out 60-80% */}
-      <img
-        src={src}
-        alt=""
-        style={{
-          position: "absolute", top: 0, left: 0,
-          width: size, height: size, objectFit: "cover",
-          filter: "url(#pxl-light)",
-          opacity: progress < 0.3 ? 0 : progress < 0.6 ? Math.min(1, (progress - 0.3) / 0.15) : Math.max(0, 1 - (progress - 0.6) / 0.2),
-          transition: "opacity 3s linear",
-        }}
-      />
-      {/* Layer 4: Clear image — fades in from 55% */}
-      <img
-        src={src}
-        alt=""
-        style={{
-          position: "absolute", top: 0, left: 0,
-          width: size, height: size, objectFit: "cover",
-          opacity: progress < 0.55 ? 0 : Math.min(1, (progress - 0.55) / 0.3),
-          transition: "opacity 3s linear",
+          display: "block",
+          width: size,
+          height: size,
+          objectFit: "cover",
+          filter: radius > 0 ? "url(#pxl)" : "none",
         }}
         onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
       />
@@ -215,8 +159,8 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
     const timeProgress = Math.min(elapsed / REVEAL_DURATION, 1);
     const guessProgress = guessIds.length / MAX_GUESSES;
     const progress = Math.max(timeProgress, guessProgress * 0.8);
-    // Exponential curve: starts very pixelated, gets clearer faster at the end
-    return Math.max(1, 40 * Math.pow(1 - progress, 2));
+    // Steep curve: stays very pixelated for 75% of the time, then reveals quickly
+    return Math.max(1, 40 * Math.pow(1 - progress, 4));
   }, [elapsed, guessIds.length, gameOver]);
 
   // Auth
@@ -268,12 +212,12 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
     localStorage.setItem(key, JSON.stringify({ guesses: guessIds, won, elapsed, submitted }));
   }, [guessIds, won, target, loaded, elapsed, submitted]);
 
-  // Timer — simple incrementing counter, 1 tick per second
+  // Timer — 4 ticks per second for smooth pixelation updates
   useEffect(() => {
     if (!loaded || !timerActive) return;
     const interval = setInterval(() => {
-      setElapsed((prev) => prev + 1);
-    }, 1000);
+      setElapsed((prev) => prev + 0.25);
+    }, 250);
     return () => clearInterval(interval);
   }, [loaded, timerActive]);
 
