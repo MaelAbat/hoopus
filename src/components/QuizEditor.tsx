@@ -39,6 +39,7 @@ interface ExistingQuiz {
   entries: { label: string; answers: string[] }[];
   published: boolean;
   image_url?: string | null;
+  image_position?: string;
 }
 
 function generateId() {
@@ -130,6 +131,7 @@ export default function QuizEditor({ existing }: { existing?: ExistingQuiz }) {
   );
   const [timeLimit, setTimeLimit] = useState(existing ? Math.round(existing.time_limit / 60) : 5);
   const [imageUrl, setImageUrl] = useState(existing?.image_url || "");
+  const [imagePosition, setImagePosition] = useState(existing?.image_position || "center");
   const [entries, setEntries] = useState<EntryDraft[]>(
     existing?.entries.map((e) => ({
       id: generateId(),
@@ -200,6 +202,7 @@ export default function QuizEditor({ existing }: { existing?: ExistingQuiz }) {
       time_limit: timeLimit * 60,
       entries: formattedEntries,
       image_url: imageUrl.trim() || null,
+      image_position: imagePosition,
       published: publish,
       updated_at: new Date().toISOString(),
     };
@@ -266,7 +269,34 @@ export default function QuizEditor({ existing }: { existing?: ExistingQuiz }) {
             className="w-full rounded-lg bg-sidebar border border-border-t px-3 py-2.5 text-sm text-text-primary placeholder:text-text-faint outline-none focus:border-accent"
           />
         </div>
-        <ImageUpload defaultValue={imageUrl} onChange={(url) => setImageUrl(url)} />
+        <ImageUpload defaultValue={imageUrl} onChange={(url) => setImageUrl(url)} hidePreview={!!imageUrl} />
+        {imageUrl && (
+          <div className="space-y-2">
+            <label className="block text-xs font-bold text-text-muted uppercase tracking-wider">Cadrage de l'image</label>
+            <div className="h-32 w-full overflow-hidden rounded-xl border border-border-t">
+              <img
+                src={imageUrl}
+                alt="Apercu cadrage"
+                className="h-full w-full object-cover"
+                style={{ objectPosition: `center ${imagePosition}` }}
+              />
+            </div>
+            <div className="flex rounded-lg bg-input p-0.5">
+              {Array.from({ length: 10 }, (_, i) => `${i * 10 + 10}%`).map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setImagePosition(value)}
+                  className={`flex-1 rounded-md py-1.5 text-[10px] font-medium transition-all ${
+                    imagePosition === value ? "bg-card text-text-primary shadow-sm" : "text-text-muted"
+                  }`}
+                >
+                  {value}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         <div className="flex flex-wrap gap-4">
           <div>
             <label className="block text-xs font-bold text-text-muted uppercase tracking-wider mb-1.5">Mode</label>

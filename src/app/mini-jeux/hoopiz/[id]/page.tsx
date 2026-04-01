@@ -42,6 +42,7 @@ export default async function QuizPage({ params }: { params: Promise<{ id: strin
     answerColumn: "answer",
     entries,
     imageUrl: quiz.image_url || undefined,
+    imagePosition: quiz.image_position || "center",
   };
 
   return (

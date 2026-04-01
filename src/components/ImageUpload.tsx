@@ -8,9 +8,10 @@ interface ImageUploadProps {
   name?: string;
   defaultValue?: string | null;
   onChange?: (url: string) => void;
+  hidePreview?: boolean;
 }
 
-export default function ImageUpload({ name, defaultValue, onChange }: ImageUploadProps) {
+export default function ImageUpload({ name, defaultValue, onChange, hidePreview }: ImageUploadProps) {
   const [mode, setMode] = useState<"url" | "file">(defaultValue ? "url" : "url");
   const [imageUrl, setImageUrl] = useState(defaultValue ?? "");
   const [uploading, setUploading] = useState(false);
@@ -141,7 +142,7 @@ export default function ImageUpload({ name, defaultValue, onChange }: ImageUploa
       )}
 
       {/* Preview */}
-      {imageUrl && (
+      {imageUrl && !hidePreview && (
         <div className="mt-2 relative group">
           <img
             src={imageUrl}

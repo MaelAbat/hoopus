@@ -15,6 +15,7 @@ export interface Quiz {
   answerColumn: string;
   entries: { answers: string[]; hints: Record<string, string> }[];
   imageUrl?: string;
+  imagePosition?: string;
 }
 
 interface LeaderboardEntry {
@@ -381,7 +382,7 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
       <div className="text-center space-y-3">
         {quiz.imageUrl && (
           <div className="mx-auto h-36 sm:h-44 w-full max-w-md overflow-hidden rounded-2xl border border-border-t">
-            <img src={quiz.imageUrl} alt={quiz.title} className="h-full w-full object-cover" />
+            <img src={quiz.imageUrl} alt={quiz.title} className="h-full w-full object-cover" style={{ objectPosition: `center ${quiz.imagePosition || "center"}` }} />
           </div>
         )}
         <div className="flex items-center justify-center gap-2">
