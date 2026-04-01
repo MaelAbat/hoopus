@@ -2,9 +2,26 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, GripVertical, Save, ArrowLeft, List, ListOrdered } from "lucide-react";
+import { Plus, Trash2, GripVertical, Save, ArrowLeft, List, ListOrdered, ArrowDownUp } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface EntryDraft {
   id: string;
@@ -24,6 +41,80 @@ interface ExistingQuiz {
 
 function generateId() {
   return Math.random().toString(36).slice(2, 10);
+}
+
+function SortableEntry({
+  entry,
+  index,
+  onUpdate,
+  onRemove,
+  canRemove,
+}: {
+  entry: EntryDraft;
+  index: number;
+  onUpdate: (id: string, field: keyof EntryDraft, value: string) => void;
+  onRemove: (id: string) => void;
+  canRemove: boolean;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: entry.id,
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : undefined,
+    position: isDragging ? "relative" as const : undefined,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`flex items-start gap-2 px-4 py-3 ${isDragging ? "bg-card-hover shadow-lg rounded-lg opacity-90" : ""}`}
+    >
+      {/* Drag handle */}
+      <button
+        {...attributes}
+        {...listeners}
+        className="shrink-0 mt-2 cursor-grab active:cursor-grabbing text-text-faint hover:text-text-primary transition-colors touch-none"
+      >
+        <GripVertical size={14} />
+      </button>
+
+      {/* Number */}
+      <span className="shrink-0 flex h-7 w-7 items-center justify-center rounded-md bg-input text-[11px] font-bold text-text-faint mt-1.5">
+        {index + 1}
+      </span>
+
+      {/* Fields */}
+      <div className="flex-1 space-y-1.5">
+        <input
+          type="text"
+          value={entry.label}
+          onChange={(e) => onUpdate(entry.id, "label", e.target.value)}
+          placeholder="Indice affiché (optionnel)"
+          className="w-full rounded-lg bg-sidebar border border-border-t px-3 py-2 text-xs text-text-primary placeholder:text-text-faint outline-none focus:border-accent"
+        />
+        <input
+          type="text"
+          value={entry.answers}
+          onChange={(e) => onUpdate(entry.id, "answers", e.target.value)}
+          placeholder="Réponses acceptées, séparées par des virgules"
+          className="w-full rounded-lg bg-sidebar border border-border-t px-3 py-2 text-xs text-text-primary placeholder:text-text-faint outline-none focus:border-accent"
+        />
+      </div>
+
+      {/* Delete */}
+      <button
+        onClick={() => onRemove(entry.id)}
+        disabled={!canRemove}
+        className="shrink-0 mt-1.5 p-1.5 rounded-lg text-text-faint hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-20"
+      >
+        <Trash2 size={14} />
+      </button>
+    </div>
+  );
 }
 
 export default function QuizEditor({ existing }: { existing?: ExistingQuiz }) {
@@ -60,12 +151,18 @@ export default function QuizEditor({ existing }: { existing?: ExistingQuiz }) {
     setEntries(entries.map((e) => (e.id === id ? { ...e, [field]: value } : e)));
   }
 
-  function moveEntry(index: number, direction: -1 | 1) {
-    const newIndex = index + direction;
-    if (newIndex < 0 || newIndex >= entries.length) return;
-    const newEntries = [...entries];
-    [newEntries[index], newEntries[newIndex]] = [newEntries[newIndex], newEntries[index]];
-    setEntries(newEntries);
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIndex = entries.findIndex((e) => e.id === active.id);
+      const newIndex = entries.findIndex((e) => e.id === over.id);
+      setEntries(arrayMove(entries, oldIndex, newIndex));
+    }
   }
 
   async function handleSave(publish: boolean) {
@@ -207,61 +304,38 @@ export default function QuizEditor({ existing }: { existing?: ExistingQuiz }) {
           <h2 className="text-sm font-bold text-text-primary">
             Réponses ({entries.length})
           </h2>
-          <button
-            onClick={addEntry}
-            className="inline-flex items-center gap-1 rounded-lg bg-accent px-3 py-1.5 text-xs font-bold text-white hover:bg-accent-hover transition-colors"
-          >
-            <Plus size={12} /> Ajouter
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setEntries([...entries].reverse())}
+              className="inline-flex items-center gap-1 rounded-lg bg-input border border-border-t px-3 py-1.5 text-xs font-medium text-text-muted hover:text-text-primary hover:bg-card-hover transition-colors"
+            >
+              <ArrowDownUp size={12} /> Inverser
+            </button>
+            <button
+              onClick={addEntry}
+              className="inline-flex items-center gap-1 rounded-lg bg-accent px-3 py-1.5 text-xs font-bold text-white hover:bg-accent-hover transition-colors"
+            >
+              <Plus size={12} /> Ajouter
+            </button>
+          </div>
         </div>
 
-        <div className="divide-y divide-border-t/30">
-          {entries.map((entry, i) => (
-            <div key={entry.id} className="flex items-start gap-2 px-4 py-3">
-              {/* Reorder */}
-              <div className="flex flex-col gap-0.5 pt-2">
-                <button
-                  onClick={() => moveEntry(i, -1)}
-                  disabled={i === 0}
-                  className="text-text-faint hover:text-text-primary disabled:opacity-20 transition-colors"
-                >
-                  <GripVertical size={14} />
-                </button>
-              </div>
-
-              {/* Number */}
-              <span className="shrink-0 flex h-7 w-7 items-center justify-center rounded-md bg-input text-[11px] font-bold text-text-faint mt-1.5">
-                {i + 1}
-              </span>
-
-              {/* Fields */}
-              <div className="flex-1 space-y-1.5">
-                <input
-                  type="text"
-                  value={entry.label}
-                  onChange={(e) => updateEntry(entry.id, "label", e.target.value)}
-                  placeholder="Indice affiché (optionnel)"
-                  className="w-full rounded-lg bg-sidebar border border-border-t px-3 py-2 text-xs text-text-primary placeholder:text-text-faint outline-none focus:border-accent"
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={entries.map((e) => e.id)} strategy={verticalListSortingStrategy}>
+            <div className="divide-y divide-border-t/30">
+              {entries.map((entry, i) => (
+                <SortableEntry
+                  key={entry.id}
+                  entry={entry}
+                  index={i}
+                  onUpdate={updateEntry}
+                  onRemove={removeEntry}
+                  canRemove={entries.length > 1}
                 />
-                <input
-                  type="text"
-                  value={entry.answers}
-                  onChange={(e) => updateEntry(entry.id, "answers", e.target.value)}
-                  placeholder="Réponses acceptées, séparées par des virgules"
-                  className="w-full rounded-lg bg-sidebar border border-border-t px-3 py-2 text-xs text-text-primary placeholder:text-text-faint outline-none focus:border-accent"
-                />
-              </div>
-
-              {/* Delete */}
-              <button
-                onClick={() => removeEntry(entry.id)}
-                className="shrink-0 mt-1.5 p-1.5 rounded-lg text-text-faint hover:text-red-400 hover:bg-red-500/10 transition-colors"
-              >
-                <Trash2 size={14} />
-              </button>
+              ))}
             </div>
-          ))}
-        </div>
+          </SortableContext>
+        </DndContext>
       </div>
 
       {/* Error */}
