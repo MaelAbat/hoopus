@@ -131,6 +131,7 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
   const [elapsed, setElapsed] = useState(0);
   const [timerActive, setTimerActive] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -500,8 +501,8 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
             Partager
           </button>
-          <button onClick={() => navigator.clipboard.writeText(buildShareText())} className="inline-flex items-center gap-2 rounded-xl bg-input border border-border-t px-5 py-2.5 text-sm font-bold text-text-primary transition-all hover:bg-card-hover hover:scale-[1.03] active:scale-[0.98]">
-            Copier
+          <button onClick={() => { navigator.clipboard.writeText(buildShareText()); setCopied(true); setTimeout(() => setCopied(false), 2000); }} className="inline-flex items-center gap-2 rounded-xl bg-input border border-border-t px-5 py-2.5 text-sm font-bold text-text-primary transition-all hover:bg-card-hover hover:scale-[1.03] active:scale-[0.98]">
+            {copied ? <><Check size={14} className="text-emerald-400" /> Copié !</> : "Copier"}
           </button>
         </div>
       )}

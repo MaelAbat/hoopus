@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Clock, Trophy, CheckCircle, XCircle, RotateCcw, Flag, List, ListOrdered } from "lucide-react";
+import { Clock, Trophy, CheckCircle, XCircle, RotateCcw, Flag, List, ListOrdered, Copy, Check } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 
@@ -352,6 +352,28 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
 
   const resultColor = won ? "text-emerald-400" : "text-red-400";
   const ResultIcon = won ? Trophy : XCircle;
+  const [copied, setCopied] = useState(false);
+
+  function buildShareText() {
+    const timeTaken = quiz.timeLimit - timeLeft;
+    const modeLabel = activeMode === "ordered" ? "Dans l'ordre" : "Désordre";
+    const result = won
+      ? `${found.size}/${total} en ${formatTimeShort(timeTaken)}`
+      : `${found.size}/${total}`;
+    return `Hoopiz - ${quiz.title} (${modeLabel})\n\n${result}\n\nhttps://www.hoopus.fr/mini-jeux/hoopiz/${quiz.id}`;
+  }
+
+  function handleShare() {
+    const text = buildShareText();
+    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+    window.open(url, "_blank", "width=550,height=420");
+  }
+
+  function handleCopy() {
+    navigator.clipboard.writeText(buildShareText());
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
 
   return (
     <div className="space-y-5">
@@ -473,6 +495,25 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
           </div>
         )}
       </div>
+
+      {/* Share buttons */}
+      {finished && (
+        <div className="flex items-center justify-center gap-2">
+          <button
+            onClick={handleShare}
+            className="inline-flex items-center gap-2 rounded-xl bg-[#1DA1F2] px-5 py-2.5 text-sm font-bold text-white transition-all hover:bg-[#1a8cd8] hover:scale-[1.03] active:scale-[0.98]"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+            Partager
+          </button>
+          <button
+            onClick={handleCopy}
+            className="inline-flex items-center gap-2 rounded-xl bg-input border border-border-t px-5 py-2.5 text-sm font-bold text-text-primary transition-all hover:bg-card-hover hover:scale-[1.03] active:scale-[0.98]"
+          >
+            {copied ? <><Check size={14} className="text-emerald-400" /> Copié !</> : <><Copy size={14} /> Copier</>}
+          </button>
+        </div>
+      )}
 
       {/* Entries in columns */}
       <div ref={tableRef} className="rounded-2xl bg-card border border-border-t p-3 sm:p-4 overflow-x-auto">

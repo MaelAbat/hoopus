@@ -221,6 +221,7 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
   const [elapsed, setElapsed] = useState(0);
   const [submitted, setSubmitted] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -449,6 +450,8 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
   function handleCopyResult() {
     const text = buildShareText();
     navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   }
 
   function renderClueValue(result: GuessResult, key: string): string {
@@ -684,7 +687,7 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
             onClick={handleCopyResult}
             className="inline-flex items-center gap-2 rounded-xl bg-input border border-border-t px-5 py-2.5 text-sm font-bold text-text-primary transition-all hover:bg-card-hover hover:scale-[1.03] active:scale-[0.98]"
           >
-            Copier
+            {copied ? <><Check size={14} className="text-emerald-400" /> Copié !</> : "Copier"}
           </button>
         </div>
       )}
