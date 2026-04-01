@@ -531,7 +531,7 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
             Classements
           </h2>
         </div>
-        <div className="p-4 space-y-5">
+        <div className="p-4 grid grid-cols-2 gap-4">
           <LeaderboardSection quizId={quiz.id} mode="unordered" label="Désordre" />
           <LeaderboardSection quizId={quiz.id} mode="ordered" label="Dans l'ordre" />
         </div>
