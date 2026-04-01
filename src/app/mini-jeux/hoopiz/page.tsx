@@ -12,7 +12,7 @@ export default async function HoopizPage() {
 
   const { data: quizzes } = await supabase
     .from("quizzes")
-    .select("id, title, description, mode, time_limit, entries, published")
+    .select("id, title, description, mode, time_limit, entries, published, image_url")
     .order("created_at", { ascending: false });
 
   // Show published quizzes to everyone, all quizzes to admin
@@ -57,8 +57,18 @@ export default async function HoopizPage() {
                 <div className="relative">
                   <Link
                     href={`/mini-jeux/hoopiz/${quiz.id}`}
-                    className="group flex flex-col rounded-2xl bg-card border border-border-t p-5 transition-all duration-200 hover:border-accent/50 hover:shadow-lg hover:-translate-y-1"
+                    className="group flex flex-col rounded-2xl bg-card border border-border-t overflow-hidden transition-all duration-200 hover:border-accent/50 hover:shadow-lg hover:-translate-y-1"
                   >
+                    {quiz.image_url && (
+                      <div className="h-32 w-full overflow-hidden">
+                        <img
+                          src={quiz.image_url}
+                          alt={quiz.title}
+                          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                      </div>
+                    )}
+                    <div className="p-5 flex flex-col flex-1">
                     <div className="flex items-start justify-between mb-2">
                       <h2 className="text-lg font-bold text-text-primary group-hover:text-accent-text transition-colors">
                         {quiz.title}
@@ -80,6 +90,7 @@ export default async function HoopizPage() {
                         {Math.floor(quiz.time_limit / 60)} min
                       </span>
                       <span>{entryCount} réponse{entryCount > 1 ? "s" : ""}</span>
+                    </div>
                     </div>
                   </Link>
                   {admin && (

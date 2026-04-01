@@ -5,11 +5,12 @@ import { Upload, Link as LinkIcon, X, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 interface ImageUploadProps {
-  name: string;
+  name?: string;
   defaultValue?: string | null;
+  onChange?: (url: string) => void;
 }
 
-export default function ImageUpload({ name, defaultValue }: ImageUploadProps) {
+export default function ImageUpload({ name, defaultValue, onChange }: ImageUploadProps) {
   const [mode, setMode] = useState<"url" | "file">(defaultValue ? "url" : "url");
   const [imageUrl, setImageUrl] = useState(defaultValue ?? "");
   const [uploading, setUploading] = useState(false);
@@ -50,6 +51,7 @@ export default function ImageUpload({ name, defaultValue }: ImageUploadProps) {
         .getPublicUrl(filePath);
 
       setImageUrl(publicUrl);
+      onChange?.(publicUrl);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur lors de l'upload");
     } finally {
@@ -60,6 +62,7 @@ export default function ImageUpload({ name, defaultValue }: ImageUploadProps) {
   function clearImage() {
     setImageUrl("");
     setError("");
+    onChange?.("");
     if (fileRef.current) fileRef.current.value = "";
   }
 
@@ -102,7 +105,7 @@ export default function ImageUpload({ name, defaultValue }: ImageUploadProps) {
         <input
           type="text"
           value={imageUrl}
-          onChange={(e) => setImageUrl(e.target.value)}
+          onChange={(e) => { setImageUrl(e.target.value); onChange?.(e.target.value); }}
           className="w-full rounded-xl bg-input border border-border-t px-4 py-2.5 text-text-primary placeholder-text-faint focus:border-accent/50 focus:outline-none transition-colors"
           placeholder="https://exemple.com/image.jpg"
         />

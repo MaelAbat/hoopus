@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { Clock, Trophy, CheckCircle, XCircle, RotateCcw, Flag } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Clock, Trophy, CheckCircle, XCircle, RotateCcw, Flag, List, ListOrdered } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 
@@ -14,6 +14,7 @@ export interface Quiz {
   columns: { key: string; label: string; width?: string }[];
   answerColumn: string;
   entries: { answers: string[]; hints: Record<string, string> }[];
+  imageUrl?: string;
 }
 
 interface LeaderboardEntry {
@@ -40,7 +41,6 @@ function normalize(s: string): string {
   return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 }
 
-/** Levenshtein distance between two strings */
 function levenshtein(a: string, b: string): number {
   const m = a.length, n = b.length;
   if (m === 0) return n;
@@ -58,27 +58,78 @@ function levenshtein(a: string, b: string): number {
   return dp[m][n];
 }
 
-/** Exact match only (for auto-validate on keystroke) */
 function exactMatch(input: string, answers: string[]): boolean {
   const norm = normalize(input);
   if (norm.length < 2) return false;
   return answers.some((a) => normalize(a) === norm);
 }
 
-/** Fuzzy match with typo tolerance (for Enter key validation) */
 function fuzzyMatch(input: string, answers: string[]): boolean {
   const norm = normalize(input);
   if (norm.length < 2) return false;
   for (const answer of answers) {
     const normA = normalize(answer);
     if (norm === normA) return true;
-    // Only allow typo tolerance for longer answers (4+ chars)
     if (norm.length >= 4 && norm.length >= normA.length * 0.8 && levenshtein(norm, normA) <= 1) return true;
   }
   return false;
 }
 
+function LeaderboardSection({ quizId, mode, label }: { quizId: string; mode: string; label: string }) {
+  const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
+
+  const fetch = useCallback(async () => {
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("quiz_scores")
+      .select("display_name, found_count, total_count, time_seconds, won")
+      .eq("quiz_id", quizId)
+      .eq("mode", mode)
+      .order("found_count", { ascending: false })
+      .order("time_seconds", { ascending: true })
+      .limit(10);
+    setEntries(data || []);
+  }, [quizId, mode]);
+
+  useEffect(() => { fetch(); }, [fetch]);
+
+  // Expose refetch via custom event
+  useEffect(() => {
+    const handler = () => fetch();
+    window.addEventListener(`leaderboard-refresh-${quizId}-${mode}`, handler);
+    return () => window.removeEventListener(`leaderboard-refresh-${quizId}-${mode}`, handler);
+  }, [fetch, quizId, mode]);
+
+  if (entries.length === 0) return null;
+
+  return (
+    <div>
+      <h3 className="text-xs font-bold text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1.5">
+        {mode === "ordered" ? <ListOrdered size={12} /> : <List size={12} />}
+        {label}
+      </h3>
+      <div className="divide-y divide-border-t/30">
+        {entries.map((entry, i) => (
+          <div key={`${entry.display_name}-${i}`} className="flex items-center gap-3 px-1 py-2">
+            <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[11px] font-bold ${
+              i === 0 ? "bg-accent/20 text-accent-text"
+              : i <= 2 ? "bg-input text-text-primary"
+              : "text-text-faint"
+            }`}>
+              {i + 1}
+            </span>
+            <span className="flex-1 text-sm font-medium text-text-primary truncate">{entry.display_name}</span>
+            <span className="text-xs text-text-muted tabular-nums">{entry.found_count}/{entry.total_count}</span>
+            <span className="text-xs text-text-faint tabular-nums w-14 text-right">{formatTimeShort(entry.time_seconds)}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function HoopizGame({ quiz }: { quiz: Quiz }) {
+  const [activeMode, setActiveMode] = useState<"unordered" | "ordered">(quiz.mode);
   const [found, setFound] = useState<Set<number>>(new Set());
   const [timeLeft, setTimeLeft] = useState(quiz.timeLimit);
   const [started, setStarted] = useState(false);
@@ -89,7 +140,6 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
   const [shake, setShake] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const tableRef = useRef<HTMLDivElement>(null);
 
@@ -97,7 +147,6 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
   const won = found.size === total;
   const MAX_PER_COL = 10;
 
-  // Start game on first input
   const handleStart = useCallback(() => {
     if (!started) setStarted(true);
   }, [started]);
@@ -135,51 +184,32 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
 
   // Win check
   useEffect(() => {
-    if (won && !finished) {
-      setFinished(true);
-    }
+    if (won && !finished) setFinished(true);
   }, [won, finished]);
 
-  // Flash last found entry
+  // Flash last found
   useEffect(() => {
     if (lastFound === null) return;
     const timer = setTimeout(() => setLastFound(null), 1500);
     return () => clearTimeout(timer);
   }, [lastFound]);
 
-  // Auto-scroll to next entry in ordered mode
+  // Auto-scroll in ordered mode
   useEffect(() => {
-    if (quiz.mode !== "ordered" || finished || !tableRef.current) return;
+    if (activeMode !== "ordered" || finished || !tableRef.current) return;
     const nextIndex = quiz.entries.findIndex((_, i) => !found.has(i));
     if (nextIndex === -1) return;
     const el = tableRef.current.querySelector(`[data-row="${nextIndex}"]`);
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
-    }
-  }, [found, finished, quiz.mode, quiz.entries]);
-
-  // Fetch leaderboard
-  const fetchLeaderboard = useCallback(async () => {
-    const supabase = createClient();
-    const { data } = await supabase
-      .from("quiz_scores")
-      .select("display_name, found_count, total_count, time_seconds, won")
-      .eq("quiz_id", quiz.id)
-      .order("found_count", { ascending: false })
-      .order("time_seconds", { ascending: true })
-      .limit(15);
-    setLeaderboard(data || []);
-  }, [quiz.id]);
-
-  useEffect(() => {
-    fetchLeaderboard();
-  }, [fetchLeaderboard]);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+  }, [found, finished, activeMode, quiz.entries]);
 
   // Refs for stable access in submit
   const timeLeftRef = useRef(timeLeft);
   timeLeftRef.current = timeLeft;
   const foundRef = useRef(found);
   foundRef.current = found;
+  const activeModeRef = useRef(activeMode);
+  activeModeRef.current = activeMode;
 
   // Submit score
   const submitScore = useCallback(async () => {
@@ -188,6 +218,7 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
     const timeTaken = quiz.timeLimit - timeLeftRef.current;
     const foundCount = foundRef.current.size;
     const didWin = foundCount === total;
+    const mode = activeModeRef.current;
 
     const { data: profile } = await supabase
       .from("profiles")
@@ -205,13 +236,15 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
       total_count: total,
       time_seconds: timeTaken,
       won: didWin,
-    }, { onConflict: "user_id,quiz_id" });
+      mode,
+    }, { onConflict: "user_id,quiz_id,mode" });
 
     setSubmitted(true);
-    fetchLeaderboard();
-  }, [submitted, userId, quiz.id, quiz.timeLimit, total, fetchLeaderboard]);
+    // Refresh leaderboard for the played mode
+    window.dispatchEvent(new Event(`leaderboard-refresh-${quiz.id}-${mode}`));
+  }, [submitted, userId, quiz.id, quiz.timeLimit, total]);
 
-  // Auto-submit when game ends (including give up)
+  // Auto-submit when game ends
   useEffect(() => {
     if (!finished || submitted || !userId) return;
     submitScore();
@@ -224,7 +257,7 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
 
     const matcher = strict ? exactMatch : fuzzyMatch;
 
-    if (quiz.mode === "ordered") {
+    if (activeMode === "ordered") {
       const nextIndex = quiz.entries.findIndex((_, i) => !found.has(i));
       if (nextIndex === -1) return false;
       if (!matcher(trimmed, quiz.entries[nextIndex].answers)) return false;
@@ -236,13 +269,10 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
       return true;
     }
 
-    // Unordered mode: fills ALL matching rows at once
     const matched: number[] = [];
     for (let i = 0; i < quiz.entries.length; i++) {
       if (found.has(i)) continue;
-      if (matcher(trimmed, quiz.entries[i].answers)) {
-        matched.push(i);
-      }
+      if (matcher(trimmed, quiz.entries[i].answers)) matched.push(i);
     }
 
     if (matched.length > 0) {
@@ -256,7 +286,6 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
     return false;
   }
 
-  // Auto-validate on keystroke (exact match only)
   function handleInput(value: string) {
     setInput(value);
     if (!value.trim()) return;
@@ -264,7 +293,6 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
     tryMatch(value, true);
   }
 
-  // Fuzzy match on Enter
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Enter" && input.trim()) {
       if (!tryMatch(input, false)) {
@@ -274,14 +302,12 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
     }
   }
 
-  // Give up
   function handleGiveUp() {
     if (!started || finished) return;
     setGaveUp(true);
     setFinished(true);
   }
 
-  // Restart
   function handleRestart() {
     setFound(new Set());
     setTimeLeft(quiz.timeLimit);
@@ -294,20 +320,20 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
     inputRef.current?.focus();
   }
 
-  // Timer color
+  function switchMode(mode: "unordered" | "ordered") {
+    if (started) return;
+    setActiveMode(mode);
+  }
+
   const timerColor = timeLeft <= 30 ? "text-red-400" : timeLeft <= 60 ? "text-orange-400" : "text-text-primary";
   const timerBg = timeLeft <= 30 ? "bg-red-500/15" : timeLeft <= 60 ? "bg-orange-500/10" : "bg-input";
-
-  // Progress
   const progress = total > 0 ? (found.size / total) * 100 : 0;
 
-  // Display name for found answers
   const displayAnswer = (entry: typeof quiz.entries[0]) => {
     const name = entry.answers[0];
     return name.charAt(0).toUpperCase() + name.slice(1);
   };
 
-  // Result message
   const resultMessage = won
     ? `Parfait ! ${total}/${total}`
     : gaveUp
@@ -320,24 +346,52 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="text-center space-y-2">
+      <div className="text-center space-y-3">
+        {quiz.imageUrl && (
+          <div className="mx-auto h-36 sm:h-44 w-full max-w-md overflow-hidden rounded-2xl border border-border-t">
+            <img src={quiz.imageUrl} alt={quiz.title} className="h-full w-full object-cover" />
+          </div>
+        )}
         <div className="flex items-center justify-center gap-2">
           <h1 className="text-2xl sm:text-3xl font-extrabold text-text-primary tracking-tight">
             Hoop<span className="text-accent">iz</span>
           </h1>
-          {quiz.mode === "ordered" && (
+          {activeMode === "ordered" && (
             <span className="rounded-full bg-orange-500/15 px-2.5 py-0.5 text-[10px] font-bold text-orange-400 uppercase tracking-wider">
               Dans l&apos;ordre
             </span>
           )}
         </div>
         <p className="text-sm text-text-muted">{quiz.description}</p>
+
+        {/* Mode selector */}
+        <div className="flex justify-center">
+          <div className="flex rounded-lg bg-input p-0.5">
+            <button
+              onClick={() => switchMode("unordered")}
+              disabled={started}
+              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+                activeMode === "unordered" ? "bg-card text-text-primary shadow-sm" : "text-text-muted"
+              } ${started ? "cursor-not-allowed" : ""}`}
+            >
+              <List size={13} /> Désordre
+            </button>
+            <button
+              onClick={() => switchMode("ordered")}
+              disabled={started}
+              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+                activeMode === "ordered" ? "bg-card text-text-primary shadow-sm" : "text-text-muted"
+              } ${started ? "cursor-not-allowed" : ""}`}
+            >
+              <ListOrdered size={13} /> Dans l&apos;ordre
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Score bar */}
       <div className="rounded-2xl bg-card border border-border-t p-4 space-y-3">
         <div className="flex items-center justify-between">
-          {/* Score */}
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5">
               <CheckCircle size={16} className="text-emerald-400" />
@@ -347,14 +401,12 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
             <span className="text-xs text-text-faint">({Math.round(progress)}%)</span>
           </div>
 
-          {/* Timer */}
           <div className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 ${timerBg}`}>
             <Clock size={14} className={timerColor} />
             <span className={`text-sm font-bold tabular-nums ${timerColor}`}>{formatTime(timeLeft)}</span>
           </div>
         </div>
 
-        {/* Progress bar */}
         <div className="h-2 rounded-full bg-input overflow-hidden">
           <div
             className="h-full rounded-full bg-gradient-to-r from-accent to-emerald-500 transition-all duration-500"
@@ -362,7 +414,6 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
           />
         </div>
 
-        {/* Input */}
         {!finished ? (
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
@@ -393,7 +444,6 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
         ) : (
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-3">
-              {/* Result */}
               <div className="flex items-center gap-2">
                 <ResultIcon size={20} className={resultColor} />
                 <span className={`text-sm font-bold ${resultColor}`}>{resultMessage}</span>
@@ -421,7 +471,7 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
           for (let i = 0; i < quiz.entries.length; i += MAX_PER_COL) {
             cols.push(quiz.entries.slice(i, i + MAX_PER_COL));
           }
-          const nextIndex = quiz.mode === "ordered" ? quiz.entries.findIndex((_, j) => !found.has(j)) : -1;
+          const nextIndex = activeMode === "ordered" ? quiz.entries.findIndex((_, j) => !found.has(j)) : -1;
 
           return (
             <div className="flex gap-2" style={{ minWidth: cols.length > 2 ? cols.length * 180 : undefined }}>
@@ -473,33 +523,19 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
         })()}
       </div>
 
-      {/* Leaderboard */}
-      {leaderboard.length > 0 && (
-        <div className="rounded-2xl bg-card border border-border-t overflow-hidden">
-          <div className="px-4 py-3 border-b border-border-t">
-            <h2 className="text-sm font-bold text-text-primary flex items-center gap-2">
-              <Trophy size={16} className="text-accent-text" />
-              Classement
-            </h2>
-          </div>
-          <div className="divide-y divide-border-t/30">
-            {leaderboard.map((entry, i) => (
-              <div key={`${entry.display_name}-${i}`} className="flex items-center gap-3 px-4 py-2.5">
-                <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[11px] font-bold ${
-                  i === 0 ? "bg-accent/20 text-accent-text"
-                  : i <= 2 ? "bg-input text-text-primary"
-                  : "text-text-faint"
-                }`}>
-                  {i + 1}
-                </span>
-                <span className="flex-1 text-sm font-medium text-text-primary truncate">{entry.display_name}</span>
-                <span className="text-xs text-text-muted tabular-nums">{entry.found_count}/{entry.total_count}</span>
-                <span className="text-xs text-text-faint tabular-nums w-14 text-right">{formatTimeShort(entry.time_seconds)}</span>
-              </div>
-            ))}
-          </div>
+      {/* Leaderboards */}
+      <div className="rounded-2xl bg-card border border-border-t overflow-hidden">
+        <div className="px-4 py-3 border-b border-border-t">
+          <h2 className="text-sm font-bold text-text-primary flex items-center gap-2">
+            <Trophy size={16} className="text-accent-text" />
+            Classements
+          </h2>
         </div>
-      )}
+        <div className="p-4 space-y-5">
+          <LeaderboardSection quizId={quiz.id} mode="unordered" label="Désordre" />
+          <LeaderboardSection quizId={quiz.id} mode="ordered" label="Dans l'ordre" />
+        </div>
+      </div>
 
       {/* Shake animation */}
       <style jsx>{`

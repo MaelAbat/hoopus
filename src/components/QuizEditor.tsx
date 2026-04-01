@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2, GripVertical, Save, ArrowLeft, List, ListOrdered, ArrowDownUp } from "lucide-react";
+import ImageUpload from "@/components/ImageUpload";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import {
@@ -37,6 +38,7 @@ interface ExistingQuiz {
   time_limit: number;
   entries: { label: string; answers: string[] }[];
   published: boolean;
+  image_url?: string | null;
 }
 
 function generateId() {
@@ -127,6 +129,7 @@ export default function QuizEditor({ existing }: { existing?: ExistingQuiz }) {
     (existing?.mode as "unordered" | "ordered") || "unordered"
   );
   const [timeLimit, setTimeLimit] = useState(existing ? Math.round(existing.time_limit / 60) : 5);
+  const [imageUrl, setImageUrl] = useState(existing?.image_url || "");
   const [entries, setEntries] = useState<EntryDraft[]>(
     existing?.entries.map((e) => ({
       id: generateId(),
@@ -196,6 +199,7 @@ export default function QuizEditor({ existing }: { existing?: ExistingQuiz }) {
       mode,
       time_limit: timeLimit * 60,
       entries: formattedEntries,
+      image_url: imageUrl.trim() || null,
       published: publish,
       updated_at: new Date().toISOString(),
     };
@@ -262,6 +266,7 @@ export default function QuizEditor({ existing }: { existing?: ExistingQuiz }) {
             className="w-full rounded-lg bg-sidebar border border-border-t px-3 py-2.5 text-sm text-text-primary placeholder:text-text-faint outline-none focus:border-accent"
           />
         </div>
+        <ImageUpload defaultValue={imageUrl} onChange={(url) => setImageUrl(url)} />
         <div className="flex flex-wrap gap-4">
           <div>
             <label className="block text-xs font-bold text-text-muted uppercase tracking-wider mb-1.5">Mode</label>
@@ -345,33 +350,35 @@ export default function QuizEditor({ existing }: { existing?: ExistingQuiz }) {
         </div>
       )}
 
-      {/* Actions */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => handleSave(true)}
-            disabled={saving}
-            className="inline-flex items-center gap-2 rounded-xl bg-accent px-5 py-2.5 text-sm font-bold text-white hover:bg-accent-hover transition-colors disabled:opacity-50"
-          >
-            <Save size={14} /> {saving ? "Enregistrement..." : "Publier"}
-          </button>
-          <button
-            onClick={() => handleSave(false)}
-            disabled={saving}
-            className="inline-flex items-center gap-2 rounded-xl bg-input border border-border-t px-5 py-2.5 text-sm font-bold text-text-primary hover:bg-card-hover transition-colors disabled:opacity-50"
-          >
-            Brouillon
-          </button>
+      {/* Actions — sticky bottom */}
+      <div className="sticky bottom-0 z-40 -mx-3 sm:-mx-0 border-t border-border-t bg-card/95 backdrop-blur-sm rounded-t-2xl">
+        <div className="flex items-center justify-between px-5 py-3">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => handleSave(true)}
+              disabled={saving}
+              className="inline-flex items-center gap-2 rounded-xl bg-accent px-5 py-2.5 text-sm font-bold text-white hover:bg-accent-hover transition-colors disabled:opacity-50"
+            >
+              <Save size={14} /> {saving ? "Enregistrement..." : "Publier"}
+            </button>
+            <button
+              onClick={() => handleSave(false)}
+              disabled={saving}
+              className="inline-flex items-center gap-2 rounded-xl bg-input border border-border-t px-5 py-2.5 text-sm font-bold text-text-primary hover:bg-card-hover transition-colors disabled:opacity-50"
+            >
+              Brouillon
+            </button>
+          </div>
+          {isEdit && (
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              className="inline-flex items-center gap-2 rounded-xl bg-red-500/10 border border-red-500/30 px-5 py-2.5 text-sm font-bold text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
+            >
+              <Trash2 size={14} /> {deleting ? "Suppression..." : "Supprimer"}
+            </button>
+          )}
         </div>
-        {isEdit && (
-          <button
-            onClick={handleDelete}
-            disabled={deleting}
-            className="inline-flex items-center gap-2 rounded-xl bg-red-500/10 border border-red-500/30 px-5 py-2.5 text-sm font-bold text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
-          >
-            <Trash2 size={14} /> {deleting ? "Suppression..." : "Supprimer"}
-          </button>
-        )}
       </div>
     </div>
   );
