@@ -321,8 +321,18 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
   }
 
   function switchMode(mode: "unordered" | "ordered") {
-    if (started) return;
+    if (mode === activeMode) return;
+    if (started && !finished) return;
+    // Reset game when switching mode
     setActiveMode(mode);
+    setFound(new Set());
+    setTimeLeft(quiz.timeLimit);
+    setStarted(false);
+    setFinished(false);
+    setGaveUp(false);
+    setInput("");
+    setLastFound(null);
+    setSubmitted(false);
   }
 
   const timerColor = timeLeft <= 30 ? "text-red-400" : timeLeft <= 60 ? "text-orange-400" : "text-text-primary";
@@ -369,19 +379,19 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
           <div className="flex rounded-lg bg-input p-0.5">
             <button
               onClick={() => switchMode("unordered")}
-              disabled={started}
+              disabled={started && !finished}
               className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
                 activeMode === "unordered" ? "bg-card text-text-primary shadow-sm" : "text-text-muted"
-              } ${started ? "cursor-not-allowed" : ""}`}
+              } ${started && !finished ? "cursor-not-allowed" : ""}`}
             >
               <List size={13} /> Désordre
             </button>
             <button
               onClick={() => switchMode("ordered")}
-              disabled={started}
+              disabled={started && !finished}
               className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
                 activeMode === "ordered" ? "bg-card text-text-primary shadow-sm" : "text-text-muted"
-              } ${started ? "cursor-not-allowed" : ""}`}
+              } ${started && !finished ? "cursor-not-allowed" : ""}`}
             >
               <ListOrdered size={13} /> Dans l&apos;ordre
             </button>
