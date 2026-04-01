@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2, GripVertical, Save, ArrowLeft, List, ListOrdered, ArrowDownUp } from "lucide-react";
 import ImageUpload from "@/components/ImageUpload";
@@ -42,8 +42,9 @@ interface ExistingQuiz {
   image_position?: string;
 }
 
+let idCounter = 0;
 function generateId() {
-  return Math.random().toString(36).slice(2, 10);
+  return `entry-${++idCounter}`;
 }
 
 function SortableEntry({
@@ -74,6 +75,7 @@ function SortableEntry({
     <div
       ref={setNodeRef}
       style={style}
+      data-entry-id={entry.id}
       className={`flex items-start gap-2 px-4 py-3 ${isDragging ? "bg-card-hover shadow-lg rounded-lg opacity-90" : ""}`}
     >
       {/* Drag handle */}
@@ -142,9 +144,24 @@ export default function QuizEditor({ existing }: { existing?: ExistingQuiz }) {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
+  const [lastAddedId, setLastAddedId] = useState<string | null>(null);
+  const entriesEndRef = useRef<HTMLDivElement>(null);
+
+  // Focus on newly added entry
+  useEffect(() => {
+    if (!lastAddedId) return;
+    const el = document.querySelector(`[data-entry-id="${lastAddedId}"] input`) as HTMLInputElement;
+    if (el) {
+      el.focus();
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+    setLastAddedId(null);
+  }, [lastAddedId]);
 
   function addEntry() {
-    setEntries([...entries, { id: generateId(), label: "", answers: "" }]);
+    const id = generateId();
+    setEntries([...entries, { id, label: "", answers: "" }]);
+    setLastAddedId(id);
   }
 
   function removeEntry(id: string) {
@@ -385,9 +402,15 @@ export default function QuizEditor({ existing }: { existing?: ExistingQuiz }) {
         <div className="flex items-center justify-between px-5 py-3">
           <div className="flex items-center gap-3">
             <button
+              onClick={addEntry}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2.5 text-sm font-bold text-white hover:bg-accent-hover transition-colors"
+            >
+              <Plus size={14} /> Ajouter
+            </button>
+            <button
               onClick={() => handleSave(true)}
               disabled={saving}
-              className="inline-flex items-center gap-2 rounded-xl bg-accent px-5 py-2.5 text-sm font-bold text-white hover:bg-accent-hover transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-emerald-700 transition-colors disabled:opacity-50"
             >
               <Save size={14} /> {saving ? "Enregistrement..." : "Publier"}
             </button>
