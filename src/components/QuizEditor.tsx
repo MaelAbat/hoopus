@@ -134,13 +134,16 @@ export default function QuizEditor({ existing }: { existing?: ExistingQuiz }) {
   const [timeLimit, setTimeLimit] = useState(existing ? Math.round(existing.time_limit / 60) : 5);
   const [imageUrl, setImageUrl] = useState(existing?.image_url || "");
   const [imagePosition, setImagePosition] = useState(existing?.image_position || "center");
-  const [entries, setEntries] = useState<EntryDraft[]>(
-    existing?.entries.map((e) => ({
-      id: generateId(),
+  const [entries, setEntries] = useState<EntryDraft[]>(() => {
+    // Use index-based IDs for deterministic SSR/client hydration
+    const initial = existing?.entries.map((e, i) => ({
+      id: `entry-${i + 1}`,
       label: e.label || "",
       answers: e.answers.join(", "),
-    })) || [{ id: generateId(), label: "", answers: "" }]
-  );
+    })) || [{ id: "entry-1", label: "", answers: "" }];
+    idCounter = initial.length; // Sync counter so new entries get unique IDs
+    return initial;
+  });
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
