@@ -1,9 +1,10 @@
 "use client";
 
-import { useRef, useState, useMemo, useEffect } from "react";
-import { ChevronLeft, ChevronRight, MapPin, Star } from "lucide-react";
+import { useRef, useState, useMemo, useEffect, useCallback } from "react";
+import { ChevronLeft, ChevronRight, MapPin, Star, Loader2 } from "lucide-react";
 import { teamLogoUrl } from "@/lib/nba-teams";
 import { useFavorites } from "@/context/FavoritesContext";
+import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 
 interface Game {
@@ -23,11 +24,18 @@ interface Game {
 }
 
 const MONTHS_FR = [
-  "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
-  "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre",
+  "Janvier", "F\u00E9vrier", "Mars", "Avril", "Mai", "Juin",
+  "Juillet", "Ao\u00FBt", "Septembre", "Octobre", "Novembre", "D\u00E9cembre",
 ];
 
 const DAYS_FR = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
+
+/** Derive the NBA season for a given month/year (Oct+ = new season). */
+function seasonForMonth(year: number, month: number): string {
+  const startYear = month >= 9 ? year : year - 1; // month is 0-indexed, 9 = October
+  const endYear = (startYear + 1) % 100;
+  return `${startYear}-${endYear.toString().padStart(2, "0")}`;
+}
 
 function toParisTime(gameDate: string, gameTime: string): string {
   if (!gameTime) return "";
@@ -105,7 +113,7 @@ function GameCard({ game }: { game: Game }) {
             LIVE
           </span>
         ) : isFinal ? (
-          <span className="text-xs font-medium text-text-muted">Terminé</span>
+          <span className="text-xs font-medium text-text-muted">Termin\u00E9</span>
         ) : (
           <span className="text-xs font-medium text-text-muted">
             {toParisTime(game.game_date, game.game_time) || game.status_text}
@@ -163,22 +171,37 @@ function GameCard({ game }: { game: Game }) {
   return card;
 }
 
-export default function CalendarView({ games }: { games: Game[] }) {
+export default function CalendarView({ games: initialGames, initialSeason }: { games: Game[]; initialSeason?: string }) {
   const today = new Date();
   const todayStr = today.toISOString().split("T")[0];
 
+  // All loaded games merged from all fetched seasons
+  const [allGames, setAllGames] = useState<Game[]>(initialGames);
+  const [loadedSeasons, setLoadedSeasons] = useState<Set<string>>(() => {
+    const s = new Set<string>();
+    if (initialSeason) s.add(initialSeason);
+    return s;
+  });
+  const [loading, setLoading] = useState(false);
+
+  // Sync when initialGames/initialSeason change (season dropdown switch)
+  useEffect(() => {
+    setAllGames(initialGames);
+    const s = new Set<string>();
+    if (initialSeason) s.add(initialSeason);
+    setLoadedSeasons(s);
+  }, [initialGames, initialSeason]);
+
   // Find the best initial date for the current set of games
   const bestDate = useMemo(() => {
-    if (games.length === 0) return todayStr;
-    const dates = games.map((g) => g.game_date).sort();
+    if (initialGames.length === 0) return todayStr;
+    const dates = initialGames.map((g) => g.game_date).sort();
     const firstDate = dates[0];
     const lastDate = dates[dates.length - 1];
-    // If today is within the season, use today
     if (todayStr >= firstDate && todayStr <= lastDate) return todayStr;
-    // Otherwise use the last game (most relevant for past seasons)
     return lastDate;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [games]);
+  }, [initialGames]);
 
   const bestD = new Date(bestDate + "T12:00:00");
   const [currentDate, setCurrentDate] = useState(new Date(bestD.getFullYear(), bestD.getMonth(), 1));
@@ -190,20 +213,47 @@ export default function CalendarView({ games }: { games: Game[] }) {
     setCurrentDate(new Date(d.getFullYear(), d.getMonth(), 1));
     setSelectedDate(bestDate);
   }, [bestDate]);
+
   const gamesListRef = useRef<HTMLDivElement>(null);
   const { isTeamFavorite } = useFavorites();
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
+  // Fetch games for a season dynamically
+  const fetchSeason = useCallback(async (season: string) => {
+    if (loadedSeasons.has(season)) return;
+    setLoading(true);
+    try {
+      const supabase = createClient();
+      const [{ data: p1 }, { data: p2 }] = await Promise.all([
+        supabase.from("games").select("*").eq("season", season).order("game_date", { ascending: true }).range(0, 999),
+        supabase.from("games").select("*").eq("season", season).order("game_date", { ascending: true }).range(1000, 1999),
+      ]);
+      const newGames = [...(p1 || []), ...(p2 || [])] as Game[];
+      setAllGames((prev) => [...prev, ...newGames]);
+      setLoadedSeasons((prev) => new Set(prev).add(season));
+    } finally {
+      setLoading(false);
+    }
+  }, [loadedSeasons]);
+
+  // When month changes, check if we need to fetch a new season
+  useEffect(() => {
+    const neededSeason = seasonForMonth(year, month);
+    if (!loadedSeasons.has(neededSeason)) {
+      fetchSeason(neededSeason);
+    }
+  }, [year, month, loadedSeasons, fetchSeason]);
+
   const gamesByDate = useMemo(() => {
     const map: Record<string, Game[]> = {};
-    games.forEach((g) => {
+    allGames.forEach((g) => {
       if (!map[g.game_date]) map[g.game_date] = [];
       map[g.game_date].push(g);
     });
     return map;
-  }, [games]);
+  }, [allGames]);
 
   const calendarDays = useMemo(() => {
     const firstDay = new Date(year, month, 1);
@@ -254,8 +304,9 @@ export default function CalendarView({ games }: { games: Game[] }) {
           <button onClick={prevMonth} className="rounded-lg p-2 text-text-muted hover:bg-input hover:text-text-primary transition-colors">
             <ChevronLeft size={20} />
           </button>
-          <h2 className="text-lg font-bold text-text-primary">
+          <h2 className="text-lg font-bold text-text-primary flex items-center gap-2">
             {MONTHS_FR[month]} {year}
+            {loading && <Loader2 size={14} className="animate-spin text-text-faint" />}
           </h2>
           <button onClick={nextMonth} className="rounded-lg p-2 text-text-muted hover:bg-input hover:text-text-primary transition-colors">
             <ChevronRight size={20} />

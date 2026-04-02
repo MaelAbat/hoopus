@@ -64,7 +64,7 @@ export default async function Calendrier({ searchParams }: { searchParams: Promi
         />
         <SeasonContent>
           <ScrollReveal variant="up" delay={100}>
-            <CalendarView games={games || []} />
+            <CalendarView games={games || []} initialSeason={season} />
           </ScrollReveal>
         </SeasonContent>
       </div>
