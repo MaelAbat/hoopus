@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useMemo, useEffect, useCallback } from "react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { ChevronLeft, ChevronRight, MapPin, Star, Loader2 } from "lucide-react";
 import { teamLogoUrl } from "@/lib/nba-teams";
 import { useFavorites } from "@/context/FavoritesContext";
@@ -172,6 +173,9 @@ function GameCard({ game }: { game: Game }) {
 }
 
 export default function CalendarView({ games: initialGames, initialSeason }: { games: Game[]; initialSeason?: string }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const today = new Date();
   const todayStr = today.toISOString().split("T")[0];
 
@@ -238,13 +242,21 @@ export default function CalendarView({ games: initialGames, initialSeason }: { g
     }
   }, [loadedSeasons]);
 
-  // When month changes, check if we need to fetch a new season
+  // When month changes, check if we need to fetch a new season + sync URL
   useEffect(() => {
     const neededSeason = seasonForMonth(year, month);
     if (!loadedSeasons.has(neededSeason)) {
       fetchSeason(neededSeason);
     }
-  }, [year, month, loadedSeasons, fetchSeason]);
+    // Sync the season dropdown via URL
+    const currentUrlSeason = searchParams.get("season") || initialSeason;
+    if (neededSeason !== currentUrlSeason) {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("season", neededSeason);
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [year, month]);
 
   const gamesByDate = useMemo(() => {
     const map: Record<string, Game[]> = {};
