@@ -63,6 +63,19 @@ function toParisTime(gameDate: string, gameTime: string): string {
   }).format(realUtc);
 }
 
+function getGameLabel(gameId: string): string | null {
+  if (gameId.startsWith("005")) return "Play-in";
+  if (gameId.startsWith("004")) {
+    const round = gameId.substring(6, 8);
+    if (round === "01") return "1er tour";
+    if (round === "02") return "Demi-finale de conf\u00E9rence";
+    if (round === "03") return "Finale de conf\u00E9rence";
+    if (round === "04") return "Finales NBA";
+    return "Playoffs";
+  }
+  return null;
+}
+
 function GameCard({ game }: { game: Game }) {
   const isFinal = game.status === 3;
   const isLive = game.status === 2;
@@ -75,6 +88,15 @@ function GameCard({ game }: { game: Game }) {
 
   const card = (
     <div className={`rounded-xl bg-sidebar border p-3 transition-all duration-200 hover:border-border-hover ${canLink ? "cursor-pointer hover:shadow-lg hover:-translate-y-0.5" : ""} ${isFav ? "border-accent/60 ring-2 ring-accent/20 shadow-[0_0_12px_rgba(var(--accent-rgb,249,115,22),0.15)]" : "border-border-t"}`}>
+      {/* Playoff label */}
+      {getGameLabel(game.game_id) && (
+        <div className="mb-1.5">
+          <span className="inline-block rounded-md bg-accent/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-accent-text">
+            {getGameLabel(game.game_id)}
+          </span>
+        </div>
+      )}
+
       {/* Status */}
       <div className="flex items-center justify-between mb-2">
         {isLive ? (
