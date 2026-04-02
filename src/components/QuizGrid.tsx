@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { Clock, List, ListOrdered, Pencil, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { Clock, List, ListOrdered, Pencil, Search, ChevronLeft, ChevronRight, Trophy } from "lucide-react";
 import ScrollReveal from "@/components/ScrollReveal";
 
 interface Quiz {
@@ -19,7 +19,12 @@ interface Quiz {
 
 const PER_PAGE = 12;
 
-export default function QuizGrid({ quizzes, admin }: { quizzes: Quiz[]; admin: boolean }) {
+interface UserScore {
+  found_count: number;
+  total_count: number;
+}
+
+export default function QuizGrid({ quizzes, admin, userScores = {} }: { quizzes: Quiz[]; admin: boolean; userScores?: Record<string, UserScore> }) {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
 
@@ -129,6 +134,14 @@ export default function QuizGrid({ quizzes, admin }: { quizzes: Quiz[]; admin: b
                         )}
                       </div>
                       <p className="text-sm text-text-muted flex-1">{quiz.description}</p>
+                      {userScores[quiz.id] && (
+                        <div className="flex items-center gap-1.5 mt-2">
+                          <Trophy size={12} className={userScores[quiz.id].found_count === userScores[quiz.id].total_count ? "text-emerald-400" : "text-accent-text"} />
+                          <span className={`text-xs font-bold ${userScores[quiz.id].found_count === userScores[quiz.id].total_count ? "text-emerald-400" : "text-accent-text"}`}>
+                            {userScores[quiz.id].found_count}/{userScores[quiz.id].total_count}
+                          </span>
+                        </div>
+                      )}
                       <div className="flex items-center gap-3 mt-3 text-[11px] text-text-faint">
                         <span className="flex items-center gap-1">
                           {quiz.mode === "ordered" ? <ListOrdered size={12} /> : <List size={12} />}

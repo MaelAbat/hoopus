@@ -10,10 +10,30 @@ export default async function HoopizPage() {
   const supabase = await createClient();
   const admin = await isAdmin();
 
-  const { data: quizzes } = await supabase
-    .from("quizzes")
-    .select("id, title, description, mode, time_limit, entries, published, image_url, image_position")
-    .order("created_at", { ascending: false });
+  const [{ data: quizzes }, { data: { user } }] = await Promise.all([
+    supabase
+      .from("quizzes")
+      .select("id, title, description, mode, time_limit, entries, published, image_url, image_position")
+      .order("created_at", { ascending: false }),
+    supabase.auth.getUser(),
+  ]);
+
+  // Fetch user's best scores if logged in
+  let userScores: Record<string, { found_count: number; total_count: number }> = {};
+  if (user) {
+    const { data: scores } = await supabase
+      .from("quiz_scores")
+      .select("quiz_id, found_count, total_count")
+      .eq("user_id", user.id);
+    if (scores) {
+      for (const s of scores) {
+        const existing = userScores[s.quiz_id];
+        if (!existing || s.found_count > existing.found_count) {
+          userScores[s.quiz_id] = { found_count: s.found_count, total_count: s.total_count };
+        }
+      }
+    }
+  }
 
   // Show published quizzes to everyone, all quizzes to admin
   const visibleQuizzes = (quizzes || []).filter((q) => q.published || admin);
@@ -44,7 +64,7 @@ export default async function HoopizPage() {
         <p className="text-sm text-text-muted">Quiz de culture générale NBA</p>
       </div>
 
-      <QuizGrid quizzes={visibleQuizzes} admin={admin} />
+      <QuizGrid quizzes={visibleQuizzes} admin={admin} userScores={userScores} />
     </div>
   );
 }

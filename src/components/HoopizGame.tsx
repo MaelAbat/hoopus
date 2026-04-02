@@ -152,17 +152,32 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
     if (!started) setStarted(true);
   }, [started]);
 
-  // Auth state
+  const [bestScore, setBestScore] = useState<number | null>(null);
+
+  // Auth state + fetch best score
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      setUserId(data.user?.id || null);
+    supabase.auth.getUser().then(async ({ data }) => {
+      const uid = data.user?.id || null;
+      setUserId(uid);
+      if (uid) {
+        const { data: scores } = await supabase
+          .from("quiz_scores")
+          .select("found_count")
+          .eq("user_id", uid)
+          .eq("quiz_id", quiz.id)
+          .order("found_count", { ascending: false })
+          .limit(1);
+        if (scores && scores.length > 0) {
+          setBestScore(scores[0].found_count);
+        }
+      }
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUserId(session?.user?.id || null);
     });
     return () => subscription.unsubscribe();
-  }, []);
+  }, [quiz.id]);
 
   // Timer
   useEffect(() => {
@@ -396,6 +411,12 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
           )}
         </div>
         <p className="text-sm text-text-muted">{quiz.description}</p>
+        {bestScore !== null && !started && (
+          <p className="text-xs font-bold text-accent-text">
+            <Trophy size={12} className="inline -mt-0.5 mr-1" />
+            Record a battre : {bestScore}/{total}
+          </p>
+        )}
 
         {/* Mode selector */}
         <div className="flex justify-center">
