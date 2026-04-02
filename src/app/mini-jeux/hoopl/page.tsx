@@ -14,7 +14,8 @@ export default async function HooplPage() {
     .select("player_id, first_name, last_name, team_tricode, team_name, position, age, height, weight, college, country, draft_year, draft_round, draft_number, jersey_number, pts, reb, ast")
     .eq("season", season)
     .not("pts", "is", null)
-    .gt("pts", 0);
+    .gt("pts", 0)
+    .order("player_id", { ascending: true });
 
   // Fetch conference mapping from standings
   const { data: standings } = await supabase

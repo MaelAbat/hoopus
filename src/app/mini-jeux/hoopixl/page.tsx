@@ -13,7 +13,8 @@ export default async function HoopixlPage() {
     .select("player_id, first_name, last_name, team_tricode, team_name, position")
     .eq("season", season)
     .not("pts", "is", null)
-    .gt("pts", 5); // Only recognizable players (5+ PPG)
+    .gt("pts", 5) // Only recognizable players (5+ PPG)
+    .order("player_id", { ascending: true });
 
   const hoopixlPlayers = (players || []).map((p) => ({
     id: p.player_id,
