@@ -375,7 +375,7 @@ export default function QuizEditor({ existing }: { existing?: ExistingQuiz }) {
           </div>
         </div>
 
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <DndContext id="quiz-editor-dnd" sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={entries.map((e) => e.id)} strategy={verticalListSortingStrategy}>
             <div className="divide-y divide-border-t/30">
               {entries.map((entry, i) => (
