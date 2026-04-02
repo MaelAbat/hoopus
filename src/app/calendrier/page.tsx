@@ -12,8 +12,23 @@ export default async function Calendrier({ searchParams }: { searchParams: Promi
   const season = seasonParam || getCurrentSeason();
   const supabase = await createClient();
 
-  const [{ data: seasonRows }, { data: page1 }, { data: page2 }] = await Promise.all([
-    supabase.from("standings").select("season").order("season", { ascending: false }).limit(1000),
+  // Fetch one game per potential season to discover available seasons
+  const potentialSeasons: string[] = [];
+  const currentYear = new Date().getFullYear();
+  for (let y = currentYear; y >= 2015; y--) {
+    potentialSeasons.push(`${y}-${String(y + 1).slice(-2)}`);
+  }
+
+  const [seasonChecks, { data: page1 }, { data: page2 }, { data: page3 }] = await Promise.all([
+    Promise.all(
+      potentialSeasons.map(async (s) => {
+        const { count } = await supabase
+          .from("games")
+          .select("game_id", { count: "exact", head: true })
+          .eq("season", s);
+        return count && count > 0 ? s : null;
+      })
+    ),
     supabase
       .from("games")
       .select("*")
@@ -26,11 +41,17 @@ export default async function Calendrier({ searchParams }: { searchParams: Promi
       .eq("season", season)
       .order("game_date", { ascending: true })
       .range(1000, 1999),
+    supabase
+      .from("games")
+      .select("*")
+      .eq("season", season)
+      .order("game_date", { ascending: true })
+      .range(2000, 2999),
   ]);
-  const availableSeasons = [...new Set((seasonRows || []).map((r: { season: string }) => r.season))];
+  const availableSeasons = seasonChecks.filter((s): s is string => s !== null);
   if (!availableSeasons.includes(season)) availableSeasons.unshift(season);
 
-  const games = [...(page1 || []), ...(page2 || [])];
+  const games = [...(page1 || []), ...(page2 || []), ...(page3 || [])];
 
   return (
     <SeasonTransitionProvider>

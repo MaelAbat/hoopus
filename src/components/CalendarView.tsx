@@ -101,9 +101,13 @@ function GameCard({ game }: { game: Game }) {
       <div className="space-y-1.5">
         <div className={`flex items-center justify-between ${awayWon ? "text-text-primary" : isFinal ? "text-text-muted" : "text-text-secondary"}`}>
           <div className="flex items-center gap-2">
-            <img src={teamLogoUrl(game.away_team)} alt={game.away_team} className="h-5 w-5 shrink-0 object-contain" />
-            <span className="text-xs font-bold">{game.away_team}</span>
-            <span className="text-xs hidden sm:inline">{game.away_team_name}</span>
+            {game.away_team === "TBD" ? (
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-input text-[8px] font-bold text-text-faint">?</span>
+            ) : (
+              <img src={teamLogoUrl(game.away_team)} alt={game.away_team} className="h-5 w-5 shrink-0 object-contain" />
+            )}
+            <span className={`text-xs font-bold ${game.away_team === "TBD" ? "text-text-faint italic" : ""}`}>{game.away_team === "TBD" ? "\u00C0 d\u00E9terminer" : game.away_team}</span>
+            {game.away_team !== "TBD" && <span className="text-xs hidden sm:inline">{game.away_team_name}</span>}
           </div>
           {(isFinal || isLive) && (
             <span className={`text-sm font-bold ${awayWon ? "text-accent-text" : ""}`}>
@@ -113,9 +117,13 @@ function GameCard({ game }: { game: Game }) {
         </div>
         <div className={`flex items-center justify-between ${homeWon ? "text-text-primary" : isFinal ? "text-text-muted" : "text-text-secondary"}`}>
           <div className="flex items-center gap-2">
-            <img src={teamLogoUrl(game.home_team)} alt={game.home_team} className="h-5 w-5 shrink-0 object-contain" />
-            <span className="text-xs font-bold">{game.home_team}</span>
-            <span className="text-xs hidden sm:inline">{game.home_team_name}</span>
+            {game.home_team === "TBD" ? (
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-input text-[8px] font-bold text-text-faint">?</span>
+            ) : (
+              <img src={teamLogoUrl(game.home_team)} alt={game.home_team} className="h-5 w-5 shrink-0 object-contain" />
+            )}
+            <span className={`text-xs font-bold ${game.home_team === "TBD" ? "text-text-faint italic" : ""}`}>{game.home_team === "TBD" ? "\u00C0 d\u00E9terminer" : game.home_team}</span>
+            {game.home_team !== "TBD" && <span className="text-xs hidden sm:inline">{game.home_team_name}</span>}
           </div>
           {(isFinal || isLive) && (
             <span className={`text-sm font-bold ${homeWon ? "text-accent-text" : ""}`}>

@@ -111,8 +111,8 @@ export async function GET(request: NextRequest) {
 
     for (const dateEntry of gameDates) {
       for (const game of dateEntry.games) {
-        // Only include regular season games (gameId starts with 002)
-        if (!game.gameId.startsWith("002")) continue;
+        // Include regular season (002), play-in (003), and playoff (004) games
+        if (!game.gameId.startsWith("002") && !game.gameId.startsWith("003") && !game.gameId.startsWith("004")) continue;
 
         const gameDate = game.gameDateEst.split("T")[0];
 
@@ -122,12 +122,12 @@ export async function GET(request: NextRequest) {
           game_time: game.gameTimeEst,
           status: game.gameStatus,
           status_text: game.gameStatusText?.trim() || "",
-          home_team: game.homeTeam.teamTricode,
-          home_team_name: game.homeTeam.teamName,
-          home_score: game.homeTeam.score || 0,
-          away_team: game.awayTeam.teamTricode,
-          away_team_name: game.awayTeam.teamName,
-          away_score: game.awayTeam.score || 0,
+          home_team: game.homeTeam?.teamTricode || "TBD",
+          home_team_name: game.homeTeam?.teamName || "TBD",
+          home_score: game.homeTeam?.score || 0,
+          away_team: game.awayTeam?.teamTricode || "TBD",
+          away_team_name: game.awayTeam?.teamName || "TBD",
+          away_score: game.awayTeam?.score || 0,
           arena: game.arenaName || "",
           arena_city: game.arenaCity || "",
           season: SEASON,
