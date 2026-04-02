@@ -58,6 +58,39 @@ export default function QuizGrid({ quizzes, admin }: { quizzes: Quiz[]; admin: b
         />
       </div>
 
+      {/* Pagination top */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-1.5">
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-card-hover transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            <ChevronLeft size={16} />
+          </button>
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+            <button
+              key={p}
+              onClick={() => setPage(p)}
+              className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold transition-colors ${
+                p === currentPage
+                  ? "bg-accent text-white"
+                  : "text-text-muted hover:text-text-primary hover:bg-card-hover"
+              }`}
+            >
+              {p}
+            </button>
+          ))}
+          <button
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-card-hover transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            <ChevronRight size={16} />
+          </button>
+        </div>
+      )}
+
       {/* Grid */}
       {paginated.length === 0 ? (
         <div className="rounded-2xl bg-card border border-border-t px-6 py-12 text-center text-sm text-text-muted">
