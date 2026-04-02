@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
-import { RotateCcw, Trophy, Search, Clock, LogIn, Check, Eye } from "lucide-react";
+import { RotateCcw, Trophy, Search, Clock, LogIn, Check, Eye, Flag } from "lucide-react";
 import { playerPhotoUrl, teamLogoUrl } from "@/lib/nba-teams";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
@@ -137,6 +137,7 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [gaveUp, setGaveUp] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -151,7 +152,7 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
     return `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
   }, []);
 
-  const lost = !won && guessIds.length >= MAX_GUESSES;
+  const lost = !won && (guessIds.length >= MAX_GUESSES || gaveUp);
   const gameOver = won || lost;
 
   // Pixel size: starts at 40, decreases to 1 over REVEAL_DURATION seconds
@@ -159,11 +160,9 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
   const pixelSize = useMemo(() => {
     if (gameOver) return 1; // fully revealed
     const timeProgress = Math.min(elapsed / REVEAL_DURATION, 1);
-    const guessProgress = guessIds.length / MAX_GUESSES;
-    const progress = Math.max(timeProgress, guessProgress * 0.8);
     // Steep curve: stays very pixelated for 75% of the time, then reveals quickly
-    return Math.max(1, 40 * Math.pow(1 - progress, 4));
-  }, [elapsed, guessIds.length, gameOver]);
+    return Math.max(1, 40 * Math.pow(1 - timeProgress, 4));
+  }, [elapsed, gameOver]);
 
   // Auth + admin check
   useEffect(() => {
@@ -194,7 +193,8 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
         setWon(data.won || false);
         setElapsed(data.elapsed || 0);
         setSubmitted(data.submitted || false);
-        const savedGameOver = (data.won || false) || (data.guesses || []).length >= MAX_GUESSES;
+        setGaveUp(data.gaveUp || false);
+        const savedGameOver = (data.won || false) || (data.guesses || []).length >= MAX_GUESSES || (data.gaveUp || false);
         setTimerActive(!savedGameOver);
       } else {
         // Fresh game — ensure everything is zeroed
@@ -202,6 +202,7 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
         setWon(false);
         setElapsed(0);
         setSubmitted(false);
+        setGaveUp(false);
         setTimerActive(true);
       }
     } catch {
@@ -209,6 +210,7 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
       setWon(false);
       setElapsed(0);
       setSubmitted(false);
+      setGaveUp(false);
       setTimerActive(true);
     }
     setLoaded(true);
@@ -218,8 +220,8 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
   useEffect(() => {
     if (!target || !loaded) return;
     const key = getStorageKey();
-    localStorage.setItem(key, JSON.stringify({ guesses: guessIds, won, elapsed, submitted }));
-  }, [guessIds, won, target, loaded, elapsed, submitted]);
+    localStorage.setItem(key, JSON.stringify({ guesses: guessIds, won, elapsed, submitted, gaveUp }));
+  }, [guessIds, won, target, loaded, elapsed, submitted, gaveUp]);
 
   // Timer — 4 ticks per second for smooth pixelation updates
   useEffect(() => {
@@ -306,12 +308,19 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
     }
   }
 
+  function handleGiveUp() {
+    if (gameOver || !target) return;
+    setGaveUp(true);
+    setTimerActive(false);
+    submitScore(guessIds.length, false);
+  }
+
   function buildShareText(): string {
     const today = new Date();
     const dateStr = today.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
     const result = won
       ? `Trouv\u00e9 en ${guessIds.length} essai${guessIds.length > 1 ? "s" : ""} (${formatTime(Math.floor(elapsed))})`
-      : `Pas trouv\u00e9 en ${MAX_GUESSES} essais`;
+      : gaveUp ? "Abandonn\u00e9" : `Pas trouv\u00e9 en ${MAX_GUESSES} essais`;
     const clarity = won ? Math.round((1 - Math.pow(Math.max(0, 1 - elapsed / REVEAL_DURATION), 2)) * 100) : 100;
     return `Hoopixl \u{1F5BC}\u{FE0F} ${dateStr}\n\n\u{1F50D} Clart\u00e9 : ${clarity}%\n${result}\n\nhttps://www.hoopus.fr/mini-jeux/hoopixl`;
   }
@@ -365,7 +374,7 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
             Hoop<span className="text-accent">ixl</span>
           </h1>
           <p className="text-xs sm:text-sm text-text-muted">
-            {gameOver ? (won ? `Trouv\u00e9 en ${formatTime(Math.floor(elapsed))} !` : "Partie termin\u00e9e") : "Qui se cache derri\u00e8re les pixels ?"}
+            {gameOver ? (won ? `Trouv\u00e9 en ${formatTime(Math.floor(elapsed))} !` : gaveUp ? "Abandonn\u00e9" : "Partie termin\u00e9e") : "Qui se cache derri\u00e8re les pixels ?"}
           </p>
         </div>
 
@@ -433,6 +442,19 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
         </div>
       )}
 
+      {/* Give up button */}
+      {!gameOver && loaded && (
+        <div className="flex justify-center">
+          <button
+            onClick={handleGiveUp}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-input border border-border-t px-3 py-1.5 text-xs font-medium text-text-faint hover:text-red-400 hover:border-red-500/30 transition-colors"
+          >
+            <Flag size={12} />
+            Abandonner
+          </button>
+        </div>
+      )}
+
       {/* Wrong guesses */}
       {guessIds.length > 0 && (
         <div className="flex flex-wrap gap-2 justify-center">
@@ -486,7 +508,7 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
               <img src={teamLogoUrl(target.team)} alt="" className="absolute -bottom-1 -right-1 h-7 w-7 object-contain bg-card rounded-full p-0.5" />
             </div>
             <div>
-              <p className="text-xs font-bold text-red-400 uppercase tracking-wider">Perdu !</p>
+              <p className="text-xs font-bold text-red-400 uppercase tracking-wider">{gaveUp ? "Abandonn\u00e9" : "Perdu !"}</p>
               <p className="text-xl sm:text-2xl font-extrabold text-text-primary mt-0.5">{target.name}</p>
               <p className="text-sm text-text-muted">{target.teamName} -- {target.position}</p>
             </div>
