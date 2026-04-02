@@ -24,7 +24,7 @@ export interface HooplPlayer {
   ast: number;
 }
 
-type ClueStatus = "correct" | "higher" | "lower" | "wrong";
+type ClueStatus = "correct" | "higher" | "lower" | "partial" | "wrong";
 
 interface GuessResult {
   player: HooplPlayer;
@@ -89,7 +89,7 @@ function comparePosition(guess: string, target: string): ClueStatus {
   // Partial match: both contain G, both contain F, etc.
   const gParts = guess.split("-");
   const tParts = target.split("-");
-  if (gParts.some((p) => tParts.includes(p))) return "higher"; // partial = orange
+  if (gParts.some((p) => tParts.includes(p))) return "partial";
   return "wrong";
 }
 
@@ -98,9 +98,10 @@ function clueClass(status: ClueStatus): string {
     case "correct":
       return "bg-emerald-500/20 text-emerald-400 border-emerald-500/30";
     case "higher":
-      return "bg-orange-500/15 text-orange-400 border-orange-500/30";
     case "lower":
       return "bg-orange-500/15 text-orange-400 border-orange-500/30";
+    case "partial":
+      return "bg-amber-500/15 text-amber-400 border-amber-500/30";
     case "wrong":
       return "bg-red-500/15 text-red-400 border-red-500/30";
   }
@@ -110,6 +111,7 @@ function ClueIcon({ status }: { status: ClueStatus }) {
   if (status === "correct") return <Check size={14} className="text-emerald-400" />;
   if (status === "higher") return <ArrowUp size={14} />;
   if (status === "lower") return <ArrowDown size={14} />;
+  if (status === "partial") return <span className="text-xs font-bold">~</span>;
   return null;
 }
 
@@ -427,6 +429,7 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
       correct: "\u{1F7E9}",  // green
       higher: "\u{1F7E7}",   // orange
       lower: "\u{1F7E7}",    // orange
+      partial: "\u{1F7E8}",  // yellow
       wrong: "\u{1F7E5}",    // red
     };
 
@@ -824,6 +827,10 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
         <div className="flex items-center gap-1.5">
           <div className="h-3 w-3 rounded bg-orange-500/30" />
           <ArrowUp size={10} /> Plus haut / <ArrowDown size={10} /> Plus bas
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="h-3 w-3 rounded bg-amber-500/30" />
+          <span className="font-bold">~</span> Poste proche
         </div>
         <div className="flex items-center gap-1.5">
           <div className="h-3 w-3 rounded bg-red-500/30" />
