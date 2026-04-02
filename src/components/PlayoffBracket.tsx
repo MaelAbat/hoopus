@@ -566,12 +566,11 @@ function PlayInConference({ teams, label, games }: { teams: Standing[]; label: s
 
 /* ─── Main component ─── */
 export default function PlayoffBracket({ east, west, series, playinGames }: { east: Standing[]; west: Standing[]; series: PlayoffSeries[]; playinGames: PlayInGame[] }) {
-  const hasPlayIn = playinGames.length > 0;
   const [view, setView] = useState<"playin" | "playoffs">("playoffs");
 
   const views: { key: "playin" | "playoffs"; label: string }[] = [
     { key: "playoffs", label: "Playoffs" },
-    ...(hasPlayIn ? [{ key: "playin" as const, label: "Play-In" }] : []),
+    { key: "playin", label: "Play-In" },
   ];
 
   const hasData = east.length > 0 && west.length > 0;
