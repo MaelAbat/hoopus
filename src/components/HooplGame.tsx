@@ -62,7 +62,6 @@ function heightToInches(h: string): number {
 function getDailyPlayerIndex(playerCount: number): number {
   const now = new Date();
   const seed = now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate();
-  // Simple hash
   let hash = seed;
   hash = ((hash >> 16) ^ hash) * 0x45d9f3b;
   hash = ((hash >> 16) ^ hash) * 0x45d9f3b;
