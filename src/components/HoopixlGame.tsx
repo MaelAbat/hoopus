@@ -24,15 +24,29 @@ interface LeaderboardEntry {
 const MAX_GUESSES = 5;
 const REVEAL_DURATION = 120; // seconds to go from full pixel to clear
 
-function getDailyPlayerIndex(playerCount: number): number {
+function hashTwo(a: number, b: number): number {
+  let h = a * 0x9e3779b9 + b;
+  h = ((h >> 16) ^ h) * 0x45d9f3b;
+  h = ((h >> 16) ^ h) * 0x45d9f3b;
+  h = (h >> 16) ^ h;
+  return Math.abs(h);
+}
+
+function getDailyPlayer<T extends { id: number }>(players: T[]): T | null {
+  if (players.length === 0) return null;
   const now = new Date();
   // Different seed than Hoopl (offset by 7777)
-  const seed = now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate() + 7777;
-  let hash = seed;
-  hash = ((hash >> 16) ^ hash) * 0x45d9f3b;
-  hash = ((hash >> 16) ^ hash) * 0x45d9f3b;
-  hash = (hash >> 16) ^ hash;
-  return Math.abs(hash) % playerCount;
+  const daySeed = now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate() + 7777;
+  let best = players[0];
+  let bestScore = -1;
+  for (const p of players) {
+    const score = hashTwo(daySeed, p.id);
+    if (score > bestScore) {
+      bestScore = score;
+      best = p;
+    }
+  }
+  return best;
 }
 
 function getStorageKey(): string {
@@ -143,8 +157,7 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
 
   const target = useMemo(() => {
     if (players.length === 0) return null;
-    const idx = getDailyPlayerIndex(players.length);
-    return players[idx];
+    return getDailyPlayer(players);
   }, [players]);
 
   const gameDate = useMemo(() => {

@@ -59,14 +59,32 @@ function heightToInches(h: string): number {
   return parseInt(match[1]) * 12 + parseInt(match[2]);
 }
 
-function getDailyPlayerIndex(playerCount: number): number {
+function hashTwo(a: number, b: number): number {
+  let h = a * 0x9e3779b9 + b;
+  h = ((h >> 16) ^ h) * 0x45d9f3b;
+  h = ((h >> 16) ^ h) * 0x45d9f3b;
+  h = (h >> 16) ^ h;
+  return Math.abs(h);
+}
+
+/** Pick a stable daily player using rendezvous hashing.
+ *  Each player gets a deterministic score for the day.
+ *  Adding/removing a player only changes the pick if that
+ *  specific player was the winner (~1/N chance). */
+function getDailyPlayer<T extends { id: number }>(players: T[]): T | null {
+  if (players.length === 0) return null;
   const now = new Date();
-  const seed = now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate();
-  let hash = seed;
-  hash = ((hash >> 16) ^ hash) * 0x45d9f3b;
-  hash = ((hash >> 16) ^ hash) * 0x45d9f3b;
-  hash = (hash >> 16) ^ hash;
-  return Math.abs(hash) % playerCount;
+  const daySeed = now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate();
+  let best = players[0];
+  let bestScore = -1;
+  for (const p of players) {
+    const score = hashTwo(daySeed, p.id);
+    if (score > bestScore) {
+      bestScore = score;
+      best = p;
+    }
+  }
+  return best;
 }
 
 function getStorageKey(): string {
@@ -228,11 +246,7 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const target = useMemo(() => {
-    if (players.length === 0) return null;
-    const idx = getDailyPlayerIndex(players.length);
-    return players[idx];
-  }, [players]);
+  const target = useMemo(() => getDailyPlayer(players), [players]);
 
   const gameDate = useMemo(() => {
     const now = new Date();
