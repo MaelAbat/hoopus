@@ -111,8 +111,8 @@ export async function GET(request: NextRequest) {
 
     for (const dateEntry of gameDates) {
       for (const game of dateEntry.games) {
-        // Include regular season (002), play-in (003), and playoff (004) games
-        if (!game.gameId.startsWith("002") && !game.gameId.startsWith("003") && !game.gameId.startsWith("004")) continue;
+        // Include regular season (002), play-in (005), and playoff (004) games
+        if (!game.gameId.startsWith("002") && !game.gameId.startsWith("005") && !game.gameId.startsWith("004")) continue;
 
         const gameDate = game.gameDateEst.split("T")[0];
 
