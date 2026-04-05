@@ -294,7 +294,7 @@ export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
     return null;
   }, [allNames, debugSeed, debugGridSize]);
 
-  const actualGridSize = puzzle?.gridSize ?? gridSize;
+  const actualGridSize = puzzle?.gridSize ?? DEFAULT_GRID_SIZE;
   const grid = puzzle?.grid;
   const words = puzzle?.words || [];
   const mystery = puzzle?.mystery;
