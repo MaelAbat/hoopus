@@ -121,6 +121,14 @@ const LEAGUE_AVG: Record<string, LeagueAvg> = {
   "2025-26": { fg: .472, fg2: .495, fg3: .365, efg: .507, ft: .781, ts: .578 },
 };
 
+/**
+ * Override LEAGUE_AVG for a given season with live values from the league_averages table.
+ * Called by sync-career route after sync-stats has persisted fresh league averages.
+ */
+export function overrideLeagueAvg(season: string, avg: LeagueAvg): void {
+  LEAGUE_AVG[season] = avg;
+}
+
 /** Compute Adjusted Shooting (+ stats) from raw player stats and league averages. */
 function computeAdjustedShooting(row: {
   season: string;

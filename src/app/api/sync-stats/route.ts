@@ -199,6 +199,25 @@ export async function GET(request: NextRequest) {
     const leagueFG2A = leagueFGA - leagueFG3A;
     const leagueFG2 = leagueFG2A > 0 ? (leagueFG2M / leagueFG2A) * 100 : 0;
 
+    // ── Persist live league averages for sync-career ──
+    const liveAvg = {
+      season: SEASON,
+      fg: +(leagueFG / 100).toFixed(4),
+      fg2: +(leagueFG2 / 100).toFixed(4),
+      fg3: +(leagueFG3 / 100).toFixed(4),
+      efg: +(leagueEFG / 100).toFixed(4),
+      ft: +(leagueFT / 100).toFixed(4),
+      ts: +(leagueTS / 100).toFixed(4),
+      updated_at: new Date().toISOString(),
+    };
+    console.log(`[SYNC-STATS] League averages ${SEASON}: FG=${liveAvg.fg} FG2=${liveAvg.fg2} FG3=${liveAvg.fg3} eFG=${liveAvg.efg} FT=${liveAvg.ft} TS=${liveAvg.ts}`);
+    const { error: avgError } = await supabase.from("league_averages").upsert(liveAvg, { onConflict: "season" });
+    if (avgError) {
+      console.error(`[SYNC-STATS] Failed to persist league averages:`, avgError.message);
+    } else {
+      console.log(`[SYNC-STATS] League averages persisted to DB for ${SEASON}`);
+    }
+
     // ── Helpers ──
     const perGame = (row: (string | number)[], totalIdx: number) => {
       const gp = Number(row[gpIdx]);

@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
-import { syncPlayerCareer, syncPlayerCareerQuick } from "@/lib/sync-career";
+import { syncPlayerCareer, syncPlayerCareerQuick, overrideLeagueAvg } from "@/lib/sync-career";
 import { getCurrentSeason } from "@/lib/season";
 
 function sleep(ms: number) {
@@ -41,6 +41,28 @@ export async function GET(request: NextRequest) {
   }
 
   const CURRENT_SEASON = getCurrentSeason();
+
+  // Load live league averages from DB (written by sync-stats) to override hardcoded values
+  const { data: liveAvg } = await supabase
+    .from("league_averages")
+    .select("fg, fg2, fg3, efg, ft, ts")
+    .eq("season", CURRENT_SEASON)
+    .single();
+
+  if (liveAvg) {
+    const avg = {
+      fg: Number(liveAvg.fg),
+      fg2: Number(liveAvg.fg2),
+      fg3: Number(liveAvg.fg3),
+      efg: Number(liveAvg.efg),
+      ft: Number(liveAvg.ft),
+      ts: Number(liveAvg.ts),
+    };
+    overrideLeagueAvg(CURRENT_SEASON, avg);
+    console.log(`[SYNC-CAREER] Live league averages for ${CURRENT_SEASON}: FG=${avg.fg} FG2=${avg.fg2} FG3=${avg.fg3} eFG=${avg.efg} FT=${avg.ft} TS=${avg.ts}`);
+  } else {
+    console.log(`[SYNC-CAREER] No live league averages found for ${CURRENT_SEASON}, using hardcoded values`);
+  }
 
   // Bulk: sync all active players
   const { data: activePlayers } = await supabase
