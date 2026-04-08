@@ -1,7 +1,7 @@
 import PageBanner from "@/components/PageBanner";
 import ScrollReveal from "@/components/ScrollReveal";
 import Link from "next/link";
-import { Target, Image, Brain, Sparkles, Trophy, Clock, ArrowRight } from "lucide-react";
+import { Target, Image, Brain, Grid3X3, Sparkles, Trophy, Clock, ArrowRight } from "lucide-react";
 
 const games = [
   {
@@ -27,6 +27,14 @@ const games = [
     icon: <Brain size={24} />,
     color: "#10b981",
     tags: ["Quiz", "Culture gé"],
+  },
+  {
+    href: "/mini-jeux/hoopgrid",
+    title: "HoopGrid",
+    description: "Mots mêlés NBA ! Barre les noms cachés dans la grille pour révéler le joueur mystère. Les lettres restantes forment son nom !",
+    icon: <Grid3X3 size={24} />,
+    color: "#0ea5e9",
+    tags: ["Mots mêlés", "Joueur mystère"],
   },
 ];
 

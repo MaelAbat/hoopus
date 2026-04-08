@@ -609,7 +609,11 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
               type="text"
               value={search}
               onChange={(e) => { setSearch(e.target.value); setShowDropdown(true); }}
-              onFocus={() => setShowDropdown(true)}
+              onFocus={(e) => {
+                setShowDropdown(true);
+                // On mobile, scroll input into view above the virtual keyboard
+                setTimeout(() => e.target.scrollIntoView({ behavior: "smooth", block: "center" }), 300);
+              }}
               placeholder="Tape le nom d'un joueur..."
               className="w-full rounded-xl bg-card border border-border-t pl-10 pr-4 py-3 text-sm text-text-primary placeholder:text-text-faint outline-none focus:border-accent transition-colors"
             />

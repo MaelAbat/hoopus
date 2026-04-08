@@ -22,7 +22,7 @@ interface LeaderboardEntry {
 }
 
 const MAX_GUESSES = 5;
-const REVEAL_DURATION = 120; // seconds to go from full pixel to clear
+const REVEAL_DURATION = 80; // seconds to go from full pixel to clear
 
 function hashTwo(a: number, b: number): number {
   let h = a * 0x9e3779b9 + b;
@@ -63,35 +63,73 @@ function formatTime(seconds: number): string {
 /* ─── Pixelated image via SVG filter ─── */
 
 function PixelatedImage({ src, pixelSize, size }: { src: string; pixelSize: number; size: number }) {
-  // pixelSize: 40 = very pixelated, ~1 = clear
-  const radius = pixelSize <= 1.2 ? 0 : pixelSize * 0.35;
-  const blockW = pixelSize <= 1.2 ? 1 : pixelSize * 0.7;
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const imgRef = useRef<HTMLImageElement | null>(null);
+  const offRef = useRef<HTMLCanvasElement | null>(null);
+  const [imgLoaded, setImgLoaded] = useState(false);
+
+  // Load source image once and cache full-res draw
+  useEffect(() => {
+    const img = new Image();
+    img.onload = () => {
+      imgRef.current = img;
+      // Pre-render at full resolution
+      const off = document.createElement("canvas");
+      off.width = size;
+      off.height = size;
+      const ctx = off.getContext("2d")!;
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(img, 0, 0, size, size);
+      offRef.current = off;
+      setImgLoaded(true);
+    };
+    img.src = src;
+  }, [src, size]);
+
+  // Redraw pixelated on every pixelSize change using fractional block size
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const full = offRef.current;
+    if (!canvas || !full || !imgLoaded) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    canvas.width = size;
+    canvas.height = size;
+
+    if (pixelSize <= 1.2) {
+      ctx.drawImage(full, 0, 0);
+      return;
+    }
+
+    // Fractional block size for smooth, continuous pixelation
+    const blockSize = pixelSize;
+    const cols = Math.ceil(size / blockSize);
+    const rows = Math.ceil(size / blockSize);
+
+    // Sample 1×1 pixel from the full-res canvas center of each block
+    // Uses drawImage (no getImageData) so cross-origin images work fine
+    ctx.imageSmoothingEnabled = false;
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        const x = col * blockSize;
+        const y = row * blockSize;
+        const sx = Math.min(Math.floor(x + blockSize / 2), size - 1);
+        const sy = Math.min(Math.floor(y + blockSize / 2), size - 1);
+        ctx.drawImage(full, sx, sy, 1, 1, x, y, Math.ceil(blockSize), Math.ceil(blockSize));
+      }
+    }
+  }, [pixelSize, size, imgLoaded]);
 
   return (
     <div
       className="overflow-hidden rounded-2xl bg-input"
       style={{ width: size, height: size }}
     >
-      <svg width="0" height="0" className="absolute">
-        <filter id="pxl">
-          <feFlood x="4" y="4" height="2" width="2" />
-          <feComposite width={blockW} height={blockW} />
-          <feTile result="a" />
-          <feComposite in="SourceGraphic" in2="a" operator="in" />
-          <feMorphology operator="dilate" radius={radius} />
-        </filter>
-      </svg>
-      <img
-        src={src}
-        alt=""
-        style={{
-          display: "block",
-          width: size,
-          height: size,
-          objectFit: "cover",
-          filter: radius > 0 ? "url(#pxl)" : "none",
-        }}
-        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+      <canvas
+        ref={canvasRef}
+        style={{ display: "block", width: size, height: size }}
       />
     </div>
   );
@@ -168,13 +206,12 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
   const lost = !won && (guessIds.length >= MAX_GUESSES || gaveUp);
   const gameOver = won || lost;
 
-  // Pixel size: starts at 40, decreases to 1 over REVEAL_DURATION seconds
-  // Each wrong guess also reveals more
+  // Pixel size: starts at 16, decreases to 1 over REVEAL_DURATION seconds
   const pixelSize = useMemo(() => {
     if (gameOver) return 1; // fully revealed
     const timeProgress = Math.min(elapsed / REVEAL_DURATION, 1);
-    // Steep curve: stays very pixelated for 75% of the time, then reveals quickly
-    return Math.max(1, 40 * Math.pow(1 - timeProgress, 4));
+    // Quadratic curve: reveals progressively, recognizable around 40-50%
+    return Math.max(1, 16 * Math.pow(1 - timeProgress, 2));
   }, [elapsed, gameOver]);
 
   // Auth + admin check
@@ -411,7 +448,7 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
           {!gameOver && (
             <div className="absolute bottom-2 right-2 flex items-center gap-1 rounded-lg bg-black/60 backdrop-blur-sm px-2 py-1 text-[10px] font-bold text-white">
               <Eye size={10} />
-              {Math.round((1 - Math.pow(Math.max(0, 1 - elapsed / REVEAL_DURATION), 4)) * 100)}%
+              {Math.round((1 - Math.pow(Math.max(0, 1 - elapsed / REVEAL_DURATION), 2)) * 100)}%
             </div>
           )}
         </div>
