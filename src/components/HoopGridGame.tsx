@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
-import { RotateCcw, Trophy, Clock, LogIn, Check, Search } from "lucide-react";
+import { RotateCcw, Trophy, Clock, LogIn, Check, Search, Flag } from "lucide-react";
 import { teamLogoUrl } from "@/lib/nba-teams";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 interface NameEntry {
   name: string;
@@ -256,6 +257,7 @@ function Confetti() {
 /* ─── Main component ─── */
 
 export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
+  const pathname = usePathname();
   const [foundWords, setFoundWords] = useState<number[]>([]);
   const [selecting, setSelecting] = useState<{ row: number; col: number }[]>([]);
   const [mysteryGuess, setMysteryGuess] = useState("");
@@ -265,6 +267,7 @@ export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
   const [startTime, setStartTime] = useState(0);
   const [elapsed, setElapsed] = useState(0);
   const [submitted, setSubmitted] = useState(false);
+  const [gaveUp, setGaveUp] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [copied, setCopied] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
@@ -300,7 +303,7 @@ export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
   const mystery = puzzle?.mystery;
   const allWordsFound = foundWords.length === words.length && words.length > 0;
   const won = allWordsFound && mysteryFound;
-  const gameOver = won;
+  const gameOver = won || gaveUp;
 
   function handleDebugNewGrid() {
     setDebugSeed((s) => s + 1000);
@@ -308,6 +311,7 @@ export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
     setMysteryGuess("");
     setMysteryFound(false);
     setMysteryWrong(false);
+    setGaveUp(false);
     setSubmitted(false);
     setStartTime(Date.now());
     setElapsed(0);
@@ -342,6 +346,7 @@ export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
         const data = JSON.parse(saved);
         setFoundWords(data.foundWords || []);
         setMysteryFound(data.mysteryFound || false);
+        setGaveUp(data.gaveUp || false);
         setElapsed(data.elapsed || 0);
         setSubmitted(data.submitted || false);
         setStartTime(data.startTime || Date.now());
@@ -358,8 +363,8 @@ export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
   useEffect(() => {
     if (!loaded || !grid) return;
     const key = getStorageKey();
-    localStorage.setItem(key, JSON.stringify({ foundWords, mysteryFound, elapsed, submitted, startTime }));
-  }, [foundWords, mysteryFound, elapsed, submitted, startTime, loaded, grid]);
+    localStorage.setItem(key, JSON.stringify({ foundWords, mysteryFound, gaveUp, elapsed, submitted, startTime }));
+  }, [foundWords, mysteryFound, gaveUp, elapsed, submitted, startTime, loaded, grid]);
 
   // Timer
   useEffect(() => {
@@ -553,6 +558,14 @@ export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
     }
   }
 
+  // Give up
+  function handleGiveUp() {
+    if (gameOver) return;
+    setGaveUp(true);
+    setFoundWords(words.map((_, i) => i));
+    submitScore(foundWords.length, false);
+  }
+
   // Share
   function buildShareText(): string {
     const today = new Date();
@@ -605,11 +618,13 @@ export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
             Hoop<span className="text-accent">Grid</span>
           </h1>
           <p className="text-xs sm:text-sm text-text-muted">
-            {gameOver
-              ? `Joueur myst\u00e8re trouv\u00e9 en ${formatTime(elapsed)} !`
-              : allWordsFound
-                ? "Devine le joueur myst\u00e8re !"
-                : "Barre les noms pour r\u00e9v\u00e9ler le joueur myst\u00e8re"
+            {gaveUp
+              ? "Partie abandonn\u00e9e"
+              : won
+                ? `Joueur myst\u00e8re trouv\u00e9 en ${formatTime(elapsed)} !`
+                : allWordsFound
+                  ? "Devine le joueur myst\u00e8re !"
+                  : "Barre les noms pour r\u00e9v\u00e9ler le joueur myst\u00e8re"
             }
           </p>
         </div>
@@ -617,7 +632,7 @@ export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
         {!userId && (
           <div className="rounded-lg bg-input/50 border border-border-t px-4 py-2.5 text-center text-xs text-text-muted">
             <LogIn size={12} className="inline mr-1.5 -mt-0.5" />
-            <Link href="/auth/login" className="text-accent-text hover:underline">Connecte-toi</Link> pour enregistrer ton score au classement
+            <Link href={`/auth/login?redirect=${encodeURIComponent(pathname)}`} className="text-accent-text hover:underline">Connecte-toi</Link> pour enregistrer ton score au classement
           </div>
         )}
 
@@ -626,14 +641,25 @@ export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
           <div className="space-y-1.5">
             <div className="flex items-center justify-between text-[10px]">
               <span className="text-text-faint">{foundWords.length}/{words.length} mots</span>
-              <span className="flex items-center gap-1 text-text-faint">
-                <Clock size={10} />
-                {formatTime(elapsed)}
-              </span>
+              <div className="flex items-center gap-2">
+                {!gameOver && (
+                  <button
+                    onClick={handleGiveUp}
+                    className="flex items-center gap-1 text-text-faint hover:text-red-400 transition-colors"
+                  >
+                    <Flag size={10} />
+                    Abandonner
+                  </button>
+                )}
+                <span className="flex items-center gap-1 text-text-faint">
+                  <Clock size={10} />
+                  {formatTime(elapsed)}
+                </span>
+              </div>
             </div>
             <div className="h-1.5 rounded-full bg-input overflow-hidden">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-accent to-accent-hover transition-all duration-500"
+                className={`h-full rounded-full transition-all duration-500 ${gaveUp ? "bg-red-500/60" : "bg-gradient-to-r from-accent to-accent-hover"}`}
                 style={{ width: `${(foundWords.length / words.length) * 100}%` }}
               />
             </div>
@@ -778,7 +804,7 @@ export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
       </div>
 
       {/* Mystery hint */}
-      {mystery && !mysteryFound && !allWordsFound && (
+      {mystery && !mysteryFound && !allWordsFound && !gaveUp && (
         <div className="rounded-xl bg-accent/10 border border-accent/20 px-4 py-3 text-center">
           <p className="text-xs text-text-muted">
             Joueur myst&egrave;re : <span className="font-bold text-accent-text">{mystery.name.length} lettres</span>
@@ -788,7 +814,7 @@ export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
       )}
 
       {/* Mystery guess input — appears when all words are found */}
-      {allWordsFound && !mysteryFound && mystery && (
+      {allWordsFound && !mysteryFound && !gaveUp && mystery && (
         <div className="rounded-2xl bg-accent/10 border border-accent/30 p-5 space-y-3">
           <p className="text-center text-sm font-bold text-accent-text">
             Devine le joueur myst&egrave;re !
@@ -829,10 +855,16 @@ export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
         </div>
       )}
 
-      {/* Win — reveal mystery player */}
-      {won && mystery && (
-        <div className="rounded-2xl overflow-hidden border border-accent/30 bg-gradient-to-r from-accent/10 via-accent/5 to-card p-5 sm:p-6 text-center space-y-3">
-          <p className="text-xs font-bold text-accent-text uppercase tracking-wider">Joueur myst&egrave;re</p>
+      {/* Reveal mystery player — win or give up */}
+      {gameOver && mystery && (
+        <div className={`rounded-2xl overflow-hidden border p-5 sm:p-6 text-center space-y-3 ${
+          gaveUp
+            ? "border-red-500/30 bg-gradient-to-r from-red-500/10 via-red-500/5 to-card"
+            : "border-accent/30 bg-gradient-to-r from-accent/10 via-accent/5 to-card"
+        }`}>
+          <p className={`text-xs font-bold uppercase tracking-wider ${gaveUp ? "text-red-400" : "text-accent-text"}`}>
+            {gaveUp ? "Joueur myst\u00e8re" : "Joueur myst\u00e8re"}
+          </p>
           <div className="flex items-center justify-center gap-3">
             <img src={teamLogoUrl(mystery.team)} alt="" className="h-8 w-8 object-contain" />
             <p className="text-2xl sm:text-3xl font-extrabold text-text-primary tracking-wide">
@@ -840,8 +872,10 @@ export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
             </p>
           </div>
           <div className="flex items-center justify-center gap-3 mt-2">
-            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[11px] font-bold text-emerald-400">
-              <Trophy size={11} /> {words.length} mots
+            <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
+              gaveUp ? "bg-red-500/15 text-red-400" : "bg-emerald-500/15 text-emerald-400"
+            }`}>
+              {gaveUp ? <><Flag size={11} /> Abandonn&eacute;</> : <><Trophy size={11} /> {words.length} mots</>}
             </span>
             <span className="inline-flex items-center gap-1 rounded-full bg-accent/15 px-2.5 py-0.5 text-[11px] font-bold text-accent-text">
               <Clock size={11} /> {formatTime(elapsed)}
