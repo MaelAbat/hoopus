@@ -15,6 +15,7 @@ const PARALLEL_ENDPOINTS = [
   { key: "games", label: "Matchs" },
   { key: "standings", label: "Classement" },
   { key: "playoffs", label: "Playoffs" },
+  { key: "injuries", label: "Blessures" },
 ];
 
 // Endpoints lents (stats.nba.com, rate limited) — doivent tourner sequentiellement

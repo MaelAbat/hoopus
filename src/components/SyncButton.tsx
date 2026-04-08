@@ -8,6 +8,7 @@ const SYNC_ENDPOINTS = [
   { key: "games", label: "Matchs" },
   { key: "standings", label: "Classement" },
   { key: "playoffs", label: "Playoffs" },
+  { key: "injuries", label: "Blessures" },
   { key: "players", label: "Joueurs" },
   { key: "stats", label: "Statistiques" },
   { key: "team-stats", label: "Stats équipes" },

@@ -21,6 +21,7 @@ import {
   Menu,
   X,
   Palette,
+  HeartPulse,
 } from "lucide-react";
 import SyncButton from "./SyncButton";
 import { useTheme } from "./ThemeProvider";
@@ -46,6 +47,7 @@ const navItems: NavItem[] = [
   ) },
   { href: "/equipes", label: "Équipes", icon: <Users size={20} /> },
   { href: "/joueurs", label: "Joueurs", icon: <UserRound size={20} /> },
+  { href: "/blessures", label: "Infirmerie", icon: <HeartPulse size={20} /> },
   { href: "/playoffs", label: "Playoffs", icon: <Trophy size={20} /> },
   { href: "/mini-jeux", label: "Mini-jeux", icon: <Gamepad2 size={20} /> },
   { href: "/profil", label: "Profil", icon: <User size={20} /> },

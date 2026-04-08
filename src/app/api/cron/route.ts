@@ -19,10 +19,11 @@ export async function GET(request: NextRequest) {
   const authParam = `cron_secret=${encodeURIComponent(cronSecret)}`;
 
   // Sync non-NBA-stats sources in parallel (CDN/ESPN — no rate limit)
-  const [gamesRes, standingsRes, playoffsRes] = await Promise.all([
+  const [gamesRes, standingsRes, playoffsRes, injuriesRes] = await Promise.all([
     fetch(`${baseUrl}/api/sync-games?${authParam}`),
     fetch(`${baseUrl}/api/sync-standings?${authParam}`),
     fetch(`${baseUrl}/api/sync-playoffs?${authParam}`),
+    fetch(`${baseUrl}/api/sync-injuries?${authParam}`),
   ]);
 
   // Sync stats.nba.com sources sequentially to avoid rate limiting
@@ -30,10 +31,11 @@ export async function GET(request: NextRequest) {
   const teamStatsRes = await fetch(`${baseUrl}/api/sync-team-stats?${authParam}`);
   const rostersRes = await fetch(`${baseUrl}/api/sync-rosters?${authParam}`);
 
-  const [gamesData, standingsData, playoffsData, statsData, teamStatsData, rostersData] = await Promise.all([
+  const [gamesData, standingsData, playoffsData, injuriesData, statsData, teamStatsData, rostersData] = await Promise.all([
     gamesRes.json(),
     standingsRes.json(),
     playoffsRes.json(),
+    injuriesRes.json(),
     statsRes.json(),
     teamStatsRes.json(),
     rostersRes.json(),
@@ -45,12 +47,14 @@ export async function GET(request: NextRequest) {
   revalidatePath("/statistiques");
   revalidatePath("/playoffs");
   revalidatePath("/equipes");
+  revalidatePath("/blessures");
 
   const results = {
     ok: true,
     stats: statsData,
     games: gamesData,
     standings: standingsData,
+    injuries: injuriesData,
     teamStats: teamStatsData,
     playoffs: playoffsData,
     rosters: rostersData,
@@ -62,6 +66,7 @@ export async function GET(request: NextRequest) {
     stats: statsData.ok ?? statsData.error,
     games: gamesData.ok ?? gamesData.error,
     standings: standingsData.ok ?? standingsData.error,
+    injuries: injuriesData.ok ?? injuriesData.error,
     teamStats: teamStatsData.ok ?? teamStatsData.error,
     playoffs: playoffsData.ok ?? playoffsData.error,
     rosters: rostersData.ok ?? rostersData.error,
