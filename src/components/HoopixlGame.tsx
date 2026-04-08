@@ -5,6 +5,7 @@ import { RotateCcw, Trophy, Search, Clock, LogIn, Check, Eye, Flag } from "lucid
 import { playerPhotoUrl, teamLogoUrl } from "@/lib/nba-teams";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export interface HoopixlPlayer {
   id: number;
@@ -176,6 +177,7 @@ function Confetti() {
 /* ─── Main component ─── */
 
 export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
+  const pathname = usePathname();
   const [guessIds, setGuessIds] = useState<number[]>([]);
   const [search, setSearch] = useState("");
   const [won, setWon] = useState(false);
@@ -431,7 +433,7 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
         {!userId && (
           <div className="rounded-lg bg-input/50 border border-border-t px-4 py-2.5 text-center text-xs text-text-muted">
             <LogIn size={12} className="inline mr-1.5 -mt-0.5" />
-            <Link href="/auth/login" className="text-accent-text hover:underline">Connecte-toi</Link> pour enregistrer ton score au classement
+            <Link href={`/auth/login?redirect=${encodeURIComponent(pathname)}`} className="text-accent-text hover:underline">Connecte-toi</Link> pour enregistrer ton score au classement
           </div>
         )}
       </div>

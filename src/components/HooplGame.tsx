@@ -5,6 +5,7 @@ import { ArrowUp, ArrowDown, Check, RotateCcw, Trophy, Search, Clock, LogIn } fr
 import { teamLogoUrl, playerPhotoUrl } from "@/lib/nba-teams";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export interface HooplPlayer {
   id: number;
@@ -231,6 +232,7 @@ function formatTime(seconds: number): string {
 }
 
 export default function HooplGame({ players }: { players: HooplPlayer[] }) {
+  const pathname = usePathname();
   const [guessIds, setGuessIds] = useState<number[]>([]);
   const [search, setSearch] = useState("");
   const [won, setWon] = useState(false);
@@ -585,7 +587,7 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
         {!userId && (
           <div className="rounded-xl bg-input/50 border border-border-t px-4 py-2.5 text-center text-xs text-text-muted">
             <LogIn size={12} className="inline mr-1.5 -mt-0.5" />
-            <Link href="/auth/login" className="text-accent-text hover:underline">Connecte-toi</Link> pour enregistrer ton score au classement
+            <Link href={`/auth/login?redirect=${encodeURIComponent(pathname)}`} className="text-accent-text hover:underline">Connecte-toi</Link> pour enregistrer ton score au classement
           </div>
         )}
       </div>

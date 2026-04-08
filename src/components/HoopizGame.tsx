@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Clock, Trophy, CheckCircle, XCircle, RotateCcw, Flag, List, ListOrdered, Copy, Check } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export interface Quiz {
   id: string;
@@ -130,6 +131,7 @@ function LeaderboardSection({ quizId, mode, label }: { quizId: string; mode: str
 }
 
 export default function HoopizGame({ quiz }: { quiz: Quiz }) {
+  const pathname = usePathname();
   const [activeMode, setActiveMode] = useState<"unordered" | "ordered">(quiz.mode);
   const [found, setFound] = useState<Set<number>>(new Set());
   const [timeLeft, setTimeLeft] = useState(quiz.timeLimit);
@@ -511,7 +513,7 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
             </div>
             {!userId && (
               <p className="text-xs text-text-faint">
-                <Link href="/auth/login" className="text-accent-text hover:underline">Connecte-toi</Link> pour enregistrer ton score au classement
+                <Link href={`/auth/login?redirect=${encodeURIComponent(pathname)}`} className="text-accent-text hover:underline">Connecte-toi</Link> pour enregistrer ton score au classement
               </p>
             )}
           </div>

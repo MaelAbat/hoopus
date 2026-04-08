@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { signup } from "@/lib/actions/auth";
 import Link from "next/link";
 import { Trophy, UserPlus } from "lucide-react";
@@ -8,10 +9,13 @@ import { Trophy, UserPlus } from "lucide-react";
 export default function SignupPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirect") || "";
 
   async function handleSubmit(formData: FormData) {
     setLoading(true);
     setError(null);
+    if (redirectTo) formData.set("redirectTo", redirectTo);
     const result = await signup(formData);
     if (result?.error) {
       setError(result.error);
@@ -95,7 +99,7 @@ export default function SignupPage() {
 
         <p className="text-center text-sm text-text-muted">
           Deja un compte ?{" "}
-          <Link href="/auth/login" className="font-medium text-accent hover:text-accent-hover transition-colors">
+          <Link href={`/auth/login${redirectTo ? `?redirect=${encodeURIComponent(redirectTo)}` : ""}`} className="font-medium text-accent hover:text-accent-hover transition-colors">
             Se connecter
           </Link>
         </p>
