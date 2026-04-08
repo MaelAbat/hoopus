@@ -270,6 +270,29 @@ export default function StatsCarousel({ boards }: { boards: Board[] }) {
           )}
         </div>
 
+        {/* Pagination top */}
+        {mode === "full" && totalPages > 1 && (
+          <div className="flex items-center justify-center gap-3 py-2 border-b border-border-t/50">
+            <button
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+              disabled={page === 0}
+              className="rounded-md px-2 py-1 text-xs font-medium text-text-muted hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <span className="text-xs text-text-muted tabular-nums">
+              {page * PAGE_SIZE + 1}--{Math.min((page + 1) * PAGE_SIZE, filteredFull.length)} sur {filteredFull.length}
+            </span>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+              disabled={page >= totalPages - 1}
+              className="rounded-md px-2 py-1 text-xs font-medium text-text-muted hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        )}
+
         {/* Header row */}
         <div className="flex items-center justify-between px-3 sm:px-6 py-3 border-b border-border-t/50">
           <span className="text-xs font-medium text-text-muted uppercase tracking-wider">Joueur</span>

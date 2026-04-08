@@ -128,6 +128,29 @@ export default function PlayersView({ players }: { players: Player[] }) {
         {filter === "active" ? " en activité" : filter === "retired" ? " retraités" : ""}
       </p>
 
+      {/* Pagination top */}
+      {pageCount > 1 && (
+        <div className="flex items-center justify-center gap-2">
+          <button
+            onClick={() => setPage(Math.max(0, page - 1))}
+            disabled={page === 0}
+            className="rounded-lg px-3 py-1.5 text-xs font-medium bg-input text-text-muted hover:bg-card-hover disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          >
+            Précédent
+          </button>
+          <span className="text-xs text-text-muted">
+            {page + 1} / {pageCount}
+          </span>
+          <button
+            onClick={() => setPage(Math.min(pageCount - 1, page + 1))}
+            disabled={page >= pageCount - 1}
+            className="rounded-lg px-3 py-1.5 text-xs font-medium bg-input text-text-muted hover:bg-card-hover disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          >
+            Suivant
+          </button>
+        </div>
+      )}
+
       {/* Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
         {visible.map((p) => (

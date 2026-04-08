@@ -404,6 +404,29 @@ export default function AdvancedStatsTable({ players }: { players: PlayerRow[] }
         </div>
       )}
 
+      {/* ── Pagination top ── */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-3 py-2 border-b border-border-t/50">
+          <button
+            onClick={() => setPage((p) => Math.max(0, p - 1))}
+            disabled={page === 0}
+            className="rounded-md px-2 py-1 text-xs font-medium text-text-muted hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            <ChevronLeft size={16} />
+          </button>
+          <span className="text-xs text-text-muted tabular-nums">
+            {page * PAGE_SIZE + 1} -- {Math.min((page + 1) * PAGE_SIZE, sorted.length)} sur {sorted.length}
+          </span>
+          <button
+            onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+            disabled={page >= totalPages - 1}
+            className="rounded-md px-2 py-1 text-xs font-medium text-text-muted hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            <ChevronRight size={16} />
+          </button>
+        </div>
+      )}
+
       {/* ── Table ── */}
       <div className="flex-1 overflow-x-auto sm:overflow-auto min-h-0 scrollbar-visible">
         <table className="w-full text-sm border-collapse">
