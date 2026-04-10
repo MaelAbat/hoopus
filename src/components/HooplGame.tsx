@@ -336,8 +336,9 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
   const submitScore = useCallback(async (guessCount: number, didWin: boolean) => {
     if (submitted || !userId) return;
     const supabase = createClient();
-    const finalTime = Math.floor((Date.now() - startTime) / 1000);
-    setElapsed(finalTime);
+    const isOver = won || guessIds.length >= 10;
+    const finalTime = isOver ? elapsed : Math.floor((Date.now() - startTime) / 1000);
+    if (!isOver) setElapsed(finalTime);
 
     // Get display name from profile
     const { data: profile } = await supabase
@@ -359,7 +360,7 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
 
     setSubmitted(true);
     fetchLeaderboard();
-  }, [submitted, userId, startTime, gameDate, fetchLeaderboard]);
+  }, [submitted, userId, startTime, elapsed, won, guessIds.length, gameDate, fetchLeaderboard]);
 
   // Close dropdown on outside click
   useEffect(() => {

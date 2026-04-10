@@ -394,8 +394,8 @@ export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
   const submitScore = useCallback(async (wordsFound: number, didWin: boolean) => {
     if (submitted || !userId) return;
     const supabase = createClient();
-    const finalTime = Math.floor((Date.now() - startTime) / 1000);
-    setElapsed(finalTime);
+    const finalTime = gameOver ? elapsed : Math.floor((Date.now() - startTime) / 1000);
+    if (!gameOver) setElapsed(finalTime);
     const { data: profile } = await supabase.from("profiles").select("display_name").eq("id", userId).single();
     await supabase.from("hoopgrid_scores").upsert({
       user_id: userId,
@@ -408,7 +408,7 @@ export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
     }, { onConflict: "user_id,game_date" });
     setSubmitted(true);
     fetchLeaderboard();
-  }, [submitted, userId, startTime, gameDate, words.length, fetchLeaderboard]);
+  }, [submitted, userId, startTime, elapsed, gameOver, gameDate, words.length, fetchLeaderboard]);
 
   // Auto-submit on login
   useEffect(() => {

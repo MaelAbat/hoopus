@@ -322,8 +322,9 @@ export default function HoopRankGame({ players }: { players: HoopRankPlayer[] })
   const submitScore = useCallback(async (finalScore: number) => {
     if (submitted || !userId) return;
     const supabase = createClient();
-    const finalTime = Math.floor((Date.now() - startTime) / 1000);
-    setElapsed(finalTime);
+    const isOver = phase === "gameover";
+    const finalTime = isOver ? elapsed : Math.floor((Date.now() - startTime) / 1000);
+    if (!isOver) setElapsed(finalTime);
 
     const { data: profile } = await supabase.from("profiles").select("display_name").eq("id", userId).single();
     const displayName = profile?.display_name || "Anonyme";
@@ -338,7 +339,7 @@ export default function HoopRankGame({ players }: { players: HoopRankPlayer[] })
 
     setSubmitted(true);
     fetchLeaderboard();
-  }, [submitted, userId, startTime, gameDate, fetchLeaderboard]);
+  }, [submitted, userId, startTime, elapsed, phase, gameDate, fetchLeaderboard]);
 
   // Auto-submit on login
   useEffect(() => {

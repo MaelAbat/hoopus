@@ -10,13 +10,22 @@ export default async function HoopizPage() {
   const supabase = await createClient();
   const admin = await isAdmin();
 
-  const [{ data: quizzes }, { data: { user } }] = await Promise.all([
+  const [{ data: quizzes }, { data: { user } }, { data: allScores }] = await Promise.all([
     supabase
       .from("quizzes")
       .select("id, title, description, mode, time_limit, entries, published, image_url, image_position")
       .order("created_at", { ascending: false }),
     supabase.auth.getUser(),
+    supabase.from("quiz_scores").select("quiz_id"),
   ]);
+
+  // Count distinct plays per quiz
+  const playCountMap: Record<string, number> = {};
+  if (allScores) {
+    for (const s of allScores) {
+      playCountMap[s.quiz_id] = (playCountMap[s.quiz_id] || 0) + 1;
+    }
+  }
 
   // Fetch user's best scores if logged in
   let userScores: Record<string, { found_count: number; total_count: number }> = {};
@@ -36,7 +45,10 @@ export default async function HoopizPage() {
   }
 
   // Show published quizzes to everyone, all quizzes to admin
-  const visibleQuizzes = (quizzes || []).filter((q) => q.published || admin);
+  // Sort by play count (most played first), then by creation date
+  const visibleQuizzes = (quizzes || [])
+    .filter((q) => q.published || admin)
+    .sort((a, b) => (playCountMap[b.id] || 0) - (playCountMap[a.id] || 0));
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 px-3 sm:px-0 pb-8">

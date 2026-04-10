@@ -296,8 +296,8 @@ export default function HoopMoreGame({ players }: { players: HoopMorePlayer[] })
   const submitScore = useCallback(async (finalStreak: number) => {
     if (mode !== "daily" || submitted || !userId) return;
     const supabase = createClient();
-    const finalTime = Math.floor((Date.now() - startTime) / 1000);
-    setElapsed(finalTime);
+    const finalTime = gameOver ? elapsed : Math.floor((Date.now() - startTime) / 1000);
+    if (!gameOver) setElapsed(finalTime);
 
     const { data: profile } = await supabase.from("profiles").select("display_name").eq("id", userId).single();
     const displayName = profile?.display_name || "Anonyme";
@@ -313,7 +313,7 @@ export default function HoopMoreGame({ players }: { players: HoopMorePlayer[] })
 
     setSubmitted(true);
     fetchLeaderboard();
-  }, [mode, submitted, userId, startTime, gameDate, category.key, fetchLeaderboard]);
+  }, [mode, submitted, userId, startTime, elapsed, gameOver, gameDate, category.key, fetchLeaderboard]);
 
   // Auto-submit on login (daily)
   useEffect(() => {

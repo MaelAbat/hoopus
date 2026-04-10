@@ -370,8 +370,8 @@ export default function HoopLinkGame({ players, playerTeams, adjacencyList }: Pr
   const submitScore = useCallback(async (chainLen: number, didWin: boolean) => {
     if (submitted || !userId) return;
     const supabase = createClient();
-    const finalTime = Math.floor((Date.now() - startTime) / 1000);
-    setElapsed(finalTime);
+    const finalTime = gameOver ? elapsed : Math.floor((Date.now() - startTime) / 1000);
+    if (!gameOver) setElapsed(finalTime);
 
     const { data: profile } = await supabase.from("profiles").select("display_name").eq("id", userId).single();
     const displayName = profile?.display_name || "Anonyme";
@@ -387,7 +387,7 @@ export default function HoopLinkGame({ players, playerTeams, adjacencyList }: Pr
 
     setSubmitted(true);
     fetchLeaderboard();
-  }, [submitted, userId, startTime, gameDate, fetchLeaderboard]);
+  }, [submitted, userId, startTime, elapsed, gameOver, gameDate, fetchLeaderboard]);
 
   // Auto-submit on login
   useEffect(() => {

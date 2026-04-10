@@ -138,14 +138,16 @@ export default function QuizGrid({ quizzes, admin, userScores = {} }: { quizzes:
                         )}
                       </div>
                       <p className="text-sm text-text-muted overflow-hidden" style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", textOverflow: "clip", minHeight: "2lh" }}>{quiz.description}</p>
-                      {userScores[quiz.id] && (
-                        <div className="flex items-center gap-1.5 mt-2">
-                          <Trophy size={12} className={userScores[quiz.id].found_count === userScores[quiz.id].total_count ? "text-emerald-400" : "text-accent-text"} />
-                          <span className={`text-xs font-bold ${userScores[quiz.id].found_count === userScores[quiz.id].total_count ? "text-emerald-400" : "text-accent-text"}`}>
-                            {userScores[quiz.id].found_count}/{userScores[quiz.id].total_count}
-                          </span>
-                        </div>
-                      )}
+                      <div className="flex items-center gap-1.5 mt-2 h-4">
+                        {userScores[quiz.id] && (
+                          <>
+                            <Trophy size={12} className={userScores[quiz.id].found_count === userScores[quiz.id].total_count ? "text-emerald-400" : "text-accent-text"} />
+                            <span className={`text-xs font-bold ${userScores[quiz.id].found_count === userScores[quiz.id].total_count ? "text-emerald-400" : "text-accent-text"}`}>
+                              {userScores[quiz.id].found_count}/{userScores[quiz.id].total_count}
+                            </span>
+                          </>
+                        )}
+                      </div>
                       <div className="flex items-center gap-3 mt-3 text-[11px] text-text-faint">
                         <span className="flex items-center gap-1">
                           {quiz.mode === "ordered" ? <ListOrdered size={12} /> : <List size={12} />}
