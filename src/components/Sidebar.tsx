@@ -215,7 +215,7 @@ export default function Sidebar() {
           </div>
         ) : (
           <Link
-            href="/auth/login"
+            href={`/auth/login?redirect=${encodeURIComponent(pathname)}`}
             className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-text-muted transition-colors hover:bg-input hover:text-text-primary"
           >
             <LogIn size={16} />
