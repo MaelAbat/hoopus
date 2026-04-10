@@ -1,8 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import HoopizGame from "@/components/HoopizGame";
-import Link from "next/link";
-import { RotateCcw } from "lucide-react";
 
 export const revalidate = 3600;
 
@@ -47,14 +45,6 @@ export default async function QuizPage({ params }: { params: Promise<{ id: strin
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 px-3 sm:px-0 pb-8">
-      <div className="pt-4">
-        <Link
-          href="/mini-jeux/hoopiz"
-          className="inline-flex items-center gap-1.5 rounded-lg bg-input px-3 py-1.5 text-xs font-medium text-text-muted hover:text-text-primary hover:bg-card-hover transition-colors"
-        >
-          <RotateCcw size={12} /> Tous les quiz
-        </Link>
-      </div>
       <HoopizGame quiz={gameQuiz} />
     </div>
   );

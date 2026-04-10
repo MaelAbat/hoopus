@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Clock, Trophy, CheckCircle, XCircle, RotateCcw, Flag, List, ListOrdered, Copy, Check } from "lucide-react";
+import { Clock, Trophy, CheckCircle, XCircle, RotateCcw, Flag, List, ListOrdered, Copy, Check, ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 export interface Quiz {
   id: string;
@@ -132,6 +132,8 @@ function LeaderboardSection({ quizId, mode, label }: { quizId: string; mode: str
 
 export default function HoopizGame({ quiz }: { quiz: Quiz }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [activeMode, setActiveMode] = useState<"unordered" | "ordered">(quiz.mode);
   const [found, setFound] = useState<Set<number>>(new Set());
   const [timeLeft, setTimeLeft] = useState(quiz.timeLimit);
@@ -393,8 +395,50 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
     setTimeout(() => setCopied(false), 2000);
   }
 
+  const inProgress = started && !finished && !gaveUp;
+
+  function handleBack() {
+    if (inProgress) {
+      setShowLeaveModal(true);
+    } else {
+      router.push("/mini-jeux/hoopiz");
+    }
+  }
+
   return (
     <div className="space-y-5">
+      {/* Back button */}
+      <button
+        onClick={handleBack}
+        className="inline-flex items-center gap-1.5 rounded-lg bg-input px-3 py-1.5 text-xs font-medium text-text-muted hover:text-text-primary hover:bg-card-hover transition-colors"
+      >
+        <ArrowLeft size={12} /> Tous les quiz
+      </button>
+
+      {/* Leave confirmation modal */}
+      {showLeaveModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowLeaveModal(false)}>
+          <div className="mx-4 w-full max-w-sm rounded-2xl bg-card border border-border-t p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-text-primary">Quitter le quiz ?</h3>
+            <p className="text-sm text-text-muted">Ta progression sera perdue si tu quittes maintenant.</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowLeaveModal(false)}
+                className="flex-1 rounded-xl bg-input border border-border-t px-4 py-2.5 text-sm font-semibold text-text-primary hover:bg-card-hover transition-colors"
+              >
+                Continuer
+              </button>
+              <button
+                onClick={() => router.push("/mini-jeux/hoopiz")}
+                className="flex-1 rounded-xl bg-red-500/15 border border-red-500/30 px-4 py-2.5 text-sm font-semibold text-red-400 hover:bg-red-500/25 transition-colors"
+              >
+                Abandonner
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="text-center space-y-3">
         {quiz.imageUrl && (
