@@ -110,21 +110,25 @@ export default function QuizGrid({ quizzes, admin, userScores = {} }: { quizzes:
                 <div className="relative">
                   <Link
                     href={`/mini-jeux/hoopiz/${quiz.id}`}
-                    className="group flex flex-col rounded-2xl bg-card border border-border-t overflow-hidden transition-all duration-200 hover:border-accent/50 hover:shadow-lg hover:-translate-y-1"
+                    className="group flex flex-col rounded-2xl bg-card border border-border-t overflow-hidden transition-all duration-200 hover:border-accent/50 hover:shadow-lg hover:-translate-y-1 h-full"
                   >
-                    {quiz.image_url && (
-                      <div className="h-32 w-full overflow-hidden">
+                    <div className="h-32 w-full overflow-hidden bg-input">
+                      {quiz.image_url ? (
                         <img
                           src={quiz.image_url}
                           alt={quiz.title}
                           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                           style={{ objectPosition: `center ${quiz.image_position || "center"}` }}
                         />
-                      </div>
-                    )}
+                      ) : (
+                        <div className="h-full w-full flex items-center justify-center text-text-faint/30">
+                          <List size={32} />
+                        </div>
+                      )}
+                    </div>
                     <div className="p-5 flex flex-col flex-1">
-                      <div className="flex items-start justify-between mb-2">
-                        <h2 className="text-lg font-bold text-text-primary group-hover:text-accent-text transition-colors">
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <h2 className="text-lg font-bold leading-snug text-text-primary group-hover:text-accent-text transition-colors overflow-hidden" style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", textOverflow: "clip", minHeight: "2lh" }}>
                           {quiz.title}
                         </h2>
                         {!quiz.published && (
@@ -133,7 +137,7 @@ export default function QuizGrid({ quizzes, admin, userScores = {} }: { quizzes:
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-text-muted flex-1">{quiz.description}</p>
+                      <p className="text-sm text-text-muted overflow-hidden" style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", textOverflow: "clip", minHeight: "2lh" }}>{quiz.description}</p>
                       {userScores[quiz.id] && (
                         <div className="flex items-center gap-1.5 mt-2">
                           <Trophy size={12} className={userScores[quiz.id].found_count === userScores[quiz.id].total_count ? "text-emerald-400" : "text-accent-text"} />
