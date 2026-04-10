@@ -76,25 +76,30 @@ export async function GET(request: NextRequest) {
   }
   console.log(`[SYNC-CAREER] Found ${activePlayers.length} active players to sync`);
 
+  // force_full=true forces a full career sync for ALL players (needed for HoopLink game)
+  const forceFull = request.nextUrl.searchParams.get("force_full") === "true";
+
   // Find players who already have career stats in DB
   // These only need a quick base-stats update for current season (1 API call)
-  // Paginate since table can have tens of thousands of rows
+  // Unless force_full is set, then everyone gets a full sync
   const hasCareerSet = new Set<number>();
-  let from = 0;
-  while (true) {
-    const { data } = await supabase
-      .from("player_career_stats")
-      .select("player_id")
-      .range(from, from + 999);
-    if (!data || data.length === 0) break;
-    for (const r of data) hasCareerSet.add(r.player_id);
-    if (data.length < 1000) break;
-    from += 1000;
+  if (!forceFull) {
+    let from = 0;
+    while (true) {
+      const { data } = await supabase
+        .from("player_career_stats")
+        .select("player_id")
+        .range(from, from + 999);
+      if (!data || data.length === 0) break;
+      for (const r of data) hasCareerSet.add(r.player_id);
+      if (data.length < 1000) break;
+      from += 1000;
+    }
   }
 
   const fullSyncCount = activePlayers.filter((p) => !hasCareerSet.has(p.player_id)).length;
   const quickSyncCount = activePlayers.length - fullSyncCount;
-  console.log(`[SYNC-CAREER] ${quickSyncCount} players: quick update (1 API call), ${fullSyncCount} players: full sync (2 API calls)`);
+  console.log(`[SYNC-CAREER] ${forceFull ? "FORCE FULL MODE - " : ""}${quickSyncCount} players: quick update (1 API call), ${fullSyncCount} players: full sync (2 API calls)`);
 
   let synced = 0;
   let failed = 0;
