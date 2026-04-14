@@ -184,22 +184,22 @@ function DesktopUpcoming({ game, isFav }: { game: Game; isFav: boolean }) {
   return (
     <Link
       href={`/match/${game.game_id}`}
-      className={`flex items-center gap-3 rounded-lg bg-card border px-3 py-2 shrink-0 min-w-[180px] transition-all duration-200 hover:border-border-hover hover:shadow-lg hover:-translate-y-0.5 ${
+      className={`grid grid-cols-[1fr_auto_1fr] items-center gap-3 rounded-lg bg-card border px-3 py-2 shrink-0 min-w-[180px] transition-all duration-200 hover:border-border-hover hover:shadow-lg hover:-translate-y-0.5 ${
         isFav ? "border-accent/60 ring-2 ring-accent/20 shadow-[0_0_12px_rgba(var(--accent-rgb,249,115,22),0.15)]" : "border-border-t"
       }`}
     >
-      <div className="flex flex-col items-center gap-0.5 w-10">
+      <div className="flex flex-col items-center gap-0.5 justify-self-end">
         <img src={teamLogoUrl(game.away_team)} alt={game.away_team} className="h-5 w-5 object-contain" />
         <span className="text-[10px] font-bold text-text-primary">{game.away_team}</span>
       </div>
-      <div className="flex flex-col items-center">
+      <div className="flex flex-col items-center justify-center">
         {time ? (
           <span className="text-xs font-semibold text-accent">{time}</span>
         ) : (
           <span className="text-[10px] text-text-muted">{game.status_text}</span>
         )}
       </div>
-      <div className="flex flex-col items-center gap-0.5 w-10">
+      <div className="flex flex-col items-center gap-0.5 justify-self-start">
         <img src={teamLogoUrl(game.home_team)} alt={game.home_team} className="h-5 w-5 object-contain" />
         <span className="text-[10px] font-bold text-text-primary">{game.home_team}</span>
       </div>
