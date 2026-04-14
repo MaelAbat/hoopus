@@ -17,6 +17,35 @@ interface Game {
   away_team: string;
   away_team_name: string;
   away_score: number;
+  game_time?: string;
+}
+
+function toParisTime(gameDate: string, gameTime: string): string {
+  if (!gameTime) return "";
+  const timePart = gameTime.includes("T") ? gameTime.split("T")[1] : gameTime;
+  const match = timePart.match(/^(\d{2}):(\d{2})/);
+  if (!match) return "";
+  const etHours = parseInt(match[1]);
+  const etMinutes = parseInt(match[2]);
+  const fakeUtc = new Date(Date.UTC(
+    parseInt(gameDate.slice(0, 4)),
+    parseInt(gameDate.slice(5, 7)) - 1,
+    parseInt(gameDate.slice(8, 10)),
+    etHours, etMinutes
+  ));
+  const etFormatted = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    hour: "numeric",
+    hour12: false,
+  }).format(fakeUtc);
+  const etHourCheck = parseInt(etFormatted);
+  const etOffset = etHourCheck - etHours;
+  const realUtc = new Date(fakeUtc.getTime() - etOffset * 3600000);
+  return new Intl.DateTimeFormat("fr-FR", {
+    timeZone: "Europe/Paris",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(realUtc);
 }
 
 function MobileScore({ game, isFav }: { game: Game; isFav: boolean }) {
@@ -79,6 +108,35 @@ function MobileScore({ game, isFav }: { game: Game; isFav: boolean }) {
   );
 }
 
+function MobileUpcoming({ game, isFav }: { game: Game; isFav: boolean }) {
+  const time = game.game_time ? toParisTime(game.game_date, game.game_time) : "";
+
+  return (
+    <Link
+      href={`/match/${game.game_id}`}
+      className={`grid grid-cols-[1fr_auto_1fr] items-center rounded-xl bg-card border px-3 py-3 shrink-0 min-w-[220px] gap-3 transition-all duration-200 hover:border-border-hover hover:shadow-lg hover:-translate-y-0.5 ${
+        isFav ? "border-accent/60 ring-2 ring-accent/20 shadow-[0_0_12px_rgba(var(--accent-rgb,249,115,22),0.15)]" : "border-border-t"
+      }`}
+    >
+      <div className="flex items-center gap-2">
+        <img src={teamLogoUrl(game.away_team)} alt={game.away_team} className="h-7 w-7 object-contain shrink-0" />
+        <span className="text-xs font-bold text-text-primary">{game.away_team}</span>
+      </div>
+      <div className="flex flex-col items-center justify-center">
+        {time ? (
+          <span className="text-xs font-semibold text-accent">{time}</span>
+        ) : (
+          <span className="text-[10px] text-text-muted">{game.status_text}</span>
+        )}
+      </div>
+      <div className="flex items-center gap-2 justify-end">
+        <span className="text-xs font-bold text-text-primary">{game.home_team}</span>
+        <img src={teamLogoUrl(game.home_team)} alt={game.home_team} className="h-7 w-7 object-contain shrink-0" />
+      </div>
+    </Link>
+  );
+}
+
 function DesktopScore({ game, isFav }: { game: Game; isFav: boolean }) {
   const isFinal = game.status === 3;
   const isLive = game.status === 2;
@@ -120,11 +178,41 @@ function DesktopScore({ game, isFav }: { game: Game; isFav: boolean }) {
   );
 }
 
-export default function ScoresTicker({ games }: { games: Game[] }) {
+function DesktopUpcoming({ game, isFav }: { game: Game; isFav: boolean }) {
+  const time = game.game_time ? toParisTime(game.game_date, game.game_time) : "";
+
+  return (
+    <Link
+      href={`/match/${game.game_id}`}
+      className={`flex items-center gap-3 rounded-lg bg-card border px-3 py-2 shrink-0 min-w-[180px] transition-all duration-200 hover:border-border-hover hover:shadow-lg hover:-translate-y-0.5 ${
+        isFav ? "border-accent/60 ring-2 ring-accent/20 shadow-[0_0_12px_rgba(var(--accent-rgb,249,115,22),0.15)]" : "border-border-t"
+      }`}
+    >
+      <div className="flex flex-col items-center gap-0.5 w-10">
+        <img src={teamLogoUrl(game.away_team)} alt={game.away_team} className="h-5 w-5 object-contain" />
+        <span className="text-[10px] font-bold text-text-primary">{game.away_team}</span>
+      </div>
+      <div className="flex flex-col items-center">
+        {time ? (
+          <span className="text-xs font-semibold text-accent">{time}</span>
+        ) : (
+          <span className="text-[10px] text-text-muted">{game.status_text}</span>
+        )}
+      </div>
+      <div className="flex flex-col items-center gap-0.5 w-10">
+        <img src={teamLogoUrl(game.home_team)} alt={game.home_team} className="h-5 w-5 object-contain" />
+        <span className="text-[10px] font-bold text-text-primary">{game.home_team}</span>
+      </div>
+    </Link>
+  );
+}
+
+export default function ScoresTicker({ games, mode = "results" }: { games: Game[]; mode?: "results" | "upcoming" }) {
   const [visible, setVisible] = useState(true);
   const [hydrated, setHydrated] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { isTeamFavorite } = useFavorites();
+  const isUpcoming = mode === "upcoming";
 
   const sortedGames = useMemo(() => {
     return [...games].sort((a, b) => {
@@ -161,25 +249,40 @@ export default function ScoresTicker({ games }: { games: Game[] }) {
           className="flex items-center gap-1.5 rounded-lg bg-card border border-border-t px-3 py-1.5 text-xs font-medium text-text-muted hover:text-text-primary hover:border-border-hover transition-colors"
         >
           <Trophy size={12} />
-          Scores de la nuit
+          {isUpcoming ? "Matchs à venir" : "Scores de la nuit"}
           <ChevronRight size={12} />
         </button>
       </div>
     );
   }
 
-  const dateStr = games[0]?.game_date;
-  const dateLabel = dateStr
-    ? new Date(dateStr + "T12:00:00").toLocaleDateString("fr-FR", {
+  // Build header label
+  let headerLabel: string;
+  if (isUpcoming) {
+    const dates = [...new Set(games.map(g => g.game_date))].sort();
+    if (dates.length === 1) {
+      headerLabel = new Date(dates[0] + "T12:00:00").toLocaleDateString("fr-FR", {
         weekday: "long",
         day: "numeric",
         month: "long",
-      })
-    : "Derniers scores";
+      });
+    } else {
+      headerLabel = "Matchs à venir";
+    }
+  } else {
+    const dateStr = games[0]?.game_date;
+    headerLabel = dateStr
+      ? new Date(dateStr + "T12:00:00").toLocaleDateString("fr-FR", {
+          weekday: "long",
+          day: "numeric",
+          month: "long",
+        })
+      : "Derniers scores";
+  }
 
   const liveCount = games.filter(g => g.status === 2).length;
   const finalCount = games.filter(g => g.status === 3).length;
-  const upcomingCount = games.length - finalCount - liveCount;
+  const upcomingCount = isUpcoming ? games.length : games.length - finalCount - liveCount;
 
   return (
     <div className="mb-4 rounded-xl bg-card border border-border-t overflow-hidden">
@@ -187,7 +290,7 @@ export default function ScoresTicker({ games }: { games: Game[] }) {
       <div className="flex items-center justify-between px-3 sm:px-4 py-2 border-b border-border-t/50">
         <div className="flex items-center gap-2 min-w-0">
           <Trophy size={13} className="text-accent shrink-0" />
-          <span className="text-xs font-semibold text-text-primary capitalize truncate">{dateLabel}</span>
+          <span className="text-xs font-semibold text-text-primary capitalize truncate">{headerLabel}</span>
           <div className="flex items-center gap-1.5 shrink-0">
             {liveCount > 0 && (
               <span className="inline-flex items-center gap-1 rounded-full bg-red-500/20 px-1.5 py-0.5 text-[9px] font-bold text-red-400">
@@ -199,7 +302,7 @@ export default function ScoresTicker({ games }: { games: Game[] }) {
               <span className="text-[10px] text-text-faint">{finalCount} terminé{finalCount > 1 ? "s" : ""}</span>
             )}
             {upcomingCount > 0 && (
-              <span className="text-[10px] text-text-faint hidden sm:inline">{upcomingCount} à venir</span>
+              <span className="text-[10px] text-text-faint hidden sm:inline">{upcomingCount} match{upcomingCount > 1 ? "s" : ""} à venir</span>
             )}
           </div>
         </div>
@@ -210,13 +313,13 @@ export default function ScoresTicker({ games }: { games: Game[] }) {
           <button onClick={() => scroll(1)} className="rounded-md p-1 text-text-muted hover:text-text-primary hover:bg-input transition-colors">
             <ChevronRight size={14} />
           </button>
-          <button onClick={toggle} className="rounded-md p-1 ml-0.5 text-text-faint hover:text-text-primary hover:bg-input transition-colors" title="Masquer les scores">
+          <button onClick={toggle} className="rounded-md p-1 ml-0.5 text-text-faint hover:text-text-primary hover:bg-input transition-colors" title={isUpcoming ? "Masquer" : "Masquer les scores"}>
             <X size={14} />
           </button>
         </div>
       </div>
 
-      {/* Scores - mobile: bigger vertical cards, desktop: compact horizontal */}
+      {/* Games */}
       <div
         ref={scrollRef}
         className="flex gap-2 px-3 sm:px-4 py-3 overflow-x-auto no-scrollbar touch-pan-x"
@@ -225,8 +328,17 @@ export default function ScoresTicker({ games }: { games: Game[] }) {
           const fav = isTeamFavorite(game.home_team) || isTeamFavorite(game.away_team);
           return (
             <span key={game.game_id} className="contents">
-              <span className="sm:hidden"><MobileScore game={game} isFav={fav} /></span>
-              <span className="hidden sm:inline"><DesktopScore game={game} isFav={fav} /></span>
+              {isUpcoming ? (
+                <>
+                  <span className="sm:hidden"><MobileUpcoming game={game} isFav={fav} /></span>
+                  <span className="hidden sm:inline"><DesktopUpcoming game={game} isFav={fav} /></span>
+                </>
+              ) : (
+                <>
+                  <span className="sm:hidden"><MobileScore game={game} isFav={fav} /></span>
+                  <span className="hidden sm:inline"><DesktopScore game={game} isFav={fav} /></span>
+                </>
+              )}
             </span>
           );
         })}

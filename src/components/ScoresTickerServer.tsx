@@ -18,7 +18,7 @@ export default async function ScoresTickerServer() {
   // Fetch yesterday's and today's finished/live games
   const { data } = await supabase
     .from("games")
-    .select("game_id, game_date, status, status_text, home_team, home_team_name, home_score, away_team, away_team_name, away_score")
+    .select("game_id, game_date, status, status_text, home_team, home_team_name, home_score, away_team, away_team_name, away_score, game_time")
     .in("game_date", [dateStr, todayStr])
     .in("status", [2, 3]) // Live or Final only
     .order("game_date", { ascending: false })
@@ -26,7 +26,27 @@ export default async function ScoresTickerServer() {
 
   const games = data || [];
 
-  if (games.length === 0) return null;
+  if (games.length > 0) {
+    return <ScoresTicker games={games} mode="results" />;
+  }
 
-  return <ScoresTicker games={games} />;
+  // No results — fetch the next day that has scheduled games
+  const { data: upcomingRaw } = await supabase
+    .from("games")
+    .select("game_id, game_date, status, status_text, home_team, home_team_name, home_score, away_team, away_team_name, away_score, game_time")
+    .gte("game_date", todayStr)
+    .eq("status", 1) // Scheduled only
+    .order("game_date", { ascending: true })
+    .order("game_time", { ascending: true })
+    .limit(50);
+
+  // Keep only the first date that has games
+  const firstDate = upcomingRaw?.[0]?.game_date;
+  const upcomingGames = firstDate
+    ? upcomingRaw!.filter(g => g.game_date === firstDate)
+    : [];
+
+  if (upcomingGames.length === 0) return null;
+
+  return <ScoresTicker games={upcomingGames} mode="upcoming" />;
 }
