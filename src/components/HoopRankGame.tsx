@@ -4,6 +4,8 @@ import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { RotateCcw, Trophy, Clock, LogIn, Check, ChevronUp, ChevronDown, ArrowRight, GripVertical } from "lucide-react";
 import { teamLogoUrl, playerPhotoUrl } from "@/lib/nba-teams";
 import { createClient } from "@/lib/supabase/client";
+import { ensureAuth, getDisplayName, isAnonymousName } from "@/lib/anonymous-auth";
+import { computeVisibleLeaderboard } from "@/lib/leaderboard-utils";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -207,6 +209,7 @@ function scoreColor(pts: number): string {
 /* ─── Main ─── */
 
 interface LeaderboardEntry {
+  user_id: string;
   display_name: string;
   score: number;
   time_seconds: number;
@@ -308,11 +311,11 @@ export default function HoopRankGame({ players }: { players: HoopRankPlayer[] })
     const supabase = createClient();
     const { data } = await supabase
       .from("hooprank_scores")
-      .select("display_name, score, time_seconds")
+      .select("user_id, display_name, score, time_seconds")
       .eq("game_date", gameDate)
       .order("score", { ascending: false })
       .order("time_seconds", { ascending: true })
-      .limit(15);
+      .limit(500);
     setLeaderboard(data || []);
   }, [gameDate]);
 
@@ -320,17 +323,19 @@ export default function HoopRankGame({ players }: { players: HoopRankPlayer[] })
 
   // Submit
   const submitScore = useCallback(async (finalScore: number) => {
-    if (submitted || !userId) return;
+    if (submitted) return;
     const supabase = createClient();
+    const uid = userId || await ensureAuth(supabase);
+    if (!uid) return;
+
     const isOver = phase === "gameover";
     const finalTime = isOver ? elapsed : Math.floor((Date.now() - startTime) / 1000);
     if (!isOver) setElapsed(finalTime);
 
-    const { data: profile } = await supabase.from("profiles").select("display_name").eq("id", userId).single();
-    const displayName = profile?.display_name || "Anonyme";
+    const displayName = await getDisplayName(supabase, uid);
 
     await supabase.from("hooprank_scores").upsert({
-      user_id: userId,
+      user_id: uid,
       display_name: displayName,
       game_date: gameDate,
       score: finalScore,
@@ -615,12 +620,6 @@ export default function HoopRankGame({ players }: { players: HoopRankPlayer[] })
           </div>
         )}
 
-        {!userId && (
-          <div className="rounded-xl bg-input/50 border border-border-t px-4 py-2.5 text-center text-xs text-text-muted">
-            <LogIn size={12} className="inline mr-1.5 -mt-0.5" />
-            <Link href={`/auth/login?redirect=${encodeURIComponent(pathname)}`} className="text-accent-text hover:underline">Connecte-toi</Link> pour enregistrer ton score au classement
-          </div>
-        )}
       </div>
 
       {/* Game area */}
@@ -824,30 +823,43 @@ export default function HoopRankGame({ players }: { players: HoopRankPlayer[] })
       )}
 
       {/* Leaderboard */}
-      {leaderboard.length > 0 && (
-        <div className="rounded-2xl bg-card border border-border-t overflow-hidden">
-          <div className="px-4 py-3 border-b border-border-t">
-            <h2 className="text-sm font-bold text-text-primary flex items-center gap-2">
-              <Trophy size={16} className="text-accent-text" />
-              Classement du jour
-            </h2>
+      {leaderboard.length > 0 && (() => {
+        const rows = computeVisibleLeaderboard(leaderboard, userId);
+        return (
+          <div className="rounded-2xl bg-card border border-border-t overflow-hidden">
+            <div className="px-4 py-3 border-b border-border-t">
+              <h2 className="text-sm font-bold text-text-primary flex items-center gap-2">
+                <Trophy size={16} className="text-accent-text" />
+                Classement du jour
+              </h2>
+            </div>
+            <div className="divide-y divide-border-t/30">
+              {rows.map((row, i) =>
+                row.type === "separator" ? (
+                  <div key="sep" className="flex items-center gap-3 px-4 py-1.5">
+                    <div className="flex-1 border-t border-dashed border-border-t" />
+                    <span className="text-[10px] text-text-faint">...</span>
+                    <div className="flex-1 border-t border-dashed border-border-t" />
+                  </div>
+                ) : (
+                  <div key={`${row.entry.display_name}-${row.rank}`} className={`flex items-center gap-3 px-4 py-2.5 ${row.isUser ? "bg-accent/10 border-l-2 border-l-accent" : ""}`}>
+                    <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[11px] font-bold ${
+                      row.rank === 1 ? "bg-accent/20 text-accent-text" : row.rank <= 3 ? "bg-input text-text-primary" : "text-text-faint"
+                    }`}>
+                      {row.rank}
+                    </span>
+                    <span className={`flex-1 text-sm truncate ${row.isUser ? "font-bold text-accent-text" : isAnonymousName(row.entry.display_name) ? "italic text-text-muted" : "font-medium text-text-primary"}`}>
+                      {row.entry.display_name}{row.isUser ? " (toi)" : ""}
+                    </span>
+                    <span className="text-xs text-text-muted tabular-nums font-bold">{row.entry.score}/500</span>
+                    <span className="text-xs text-text-faint tabular-nums w-12 text-right">{formatTime(row.entry.time_seconds)}</span>
+                  </div>
+                )
+              )}
+            </div>
           </div>
-          <div className="divide-y divide-border-t/30">
-            {leaderboard.map((entry, i) => (
-              <div key={`${entry.display_name}-${i}`} className="flex items-center gap-3 px-4 py-2.5">
-                <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[11px] font-bold ${
-                  i === 0 ? "bg-accent/20 text-accent-text" : i <= 2 ? "bg-input text-text-primary" : "text-text-faint"
-                }`}>
-                  {i + 1}
-                </span>
-                <span className="flex-1 text-sm font-medium text-text-primary truncate">{entry.display_name}</span>
-                <span className="text-xs text-text-muted tabular-nums font-bold">{entry.score}/500</span>
-                <span className="text-xs text-text-faint tabular-nums w-12 text-right">{formatTime(entry.time_seconds)}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Legend */}
       <div className="flex flex-wrap items-center justify-center gap-4 text-[11px] text-text-faint pb-4">

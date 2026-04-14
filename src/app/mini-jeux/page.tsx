@@ -1,7 +1,11 @@
+"use client";
+
+import { useEffect, useState, useCallback } from "react";
+import { createClient } from "@/lib/supabase/client";
 import PageBanner from "@/components/PageBanner";
 import ScrollReveal from "@/components/ScrollReveal";
 import Link from "next/link";
-import { Target, Image, Brain, Grid3X3, Sparkles, Trophy, Clock, ArrowRight, Flame, BarChart3, Link2 } from "lucide-react";
+import { Target, Image, Brain, Grid3X3, Sparkles, Trophy, Clock, ArrowRight, Flame, BarChart3, Link2, Check, X } from "lucide-react";
 import { ReactNode } from "react";
 
 /* ─── Miniature previews for each game ─── */
@@ -115,8 +119,102 @@ function PreviewHoopLink() {
   );
 }
 
+/* ─── Score config per daily game ─── */
+
+interface ScoreConfig {
+  table: string;
+  select: string;
+  orderBy: { column: string; ascending: boolean }[];
+  formatResult: (entry: Record<string, number | boolean>) => string;
+  hasWon: (entry: Record<string, number | boolean>) => boolean;
+}
+
+const SCORE_CONFIGS: Record<string, ScoreConfig> = {
+  hoopl: {
+    table: "hoopl_scores",
+    select: "user_id, guesses, time_seconds, won",
+    orderBy: [
+      { column: "guesses", ascending: true },
+      { column: "time_seconds", ascending: true },
+    ],
+    formatResult: (e) => e.won ? `${e.guesses} essai${(e.guesses as number) > 1 ? "s" : ""}` : "Non trouvé",
+    hasWon: (e) => !!e.won,
+  },
+  hoopixl: {
+    table: "hoopixl_scores",
+    select: "user_id, guesses, time_seconds, won",
+    orderBy: [
+      { column: "time_seconds", ascending: true },
+      { column: "guesses", ascending: true },
+    ],
+    formatResult: (e) => e.won ? `${e.guesses} essai${(e.guesses as number) > 1 ? "s" : ""}` : "Non trouvé",
+    hasWon: (e) => !!e.won,
+  },
+  hoopmore: {
+    table: "hoopmore_scores",
+    select: "user_id, streak, time_seconds",
+    orderBy: [
+      { column: "streak", ascending: false },
+      { column: "time_seconds", ascending: true },
+    ],
+    formatResult: (e) => `Série de ${e.streak}`,
+    hasWon: () => true,
+  },
+  hoopgrid: {
+    table: "hoopgrid_scores",
+    select: "user_id, words_found, total_words, time_seconds, won",
+    orderBy: [
+      { column: "time_seconds", ascending: true },
+    ],
+    formatResult: (e) => e.won ? `${formatTime(e.time_seconds as number)}` : "Non trouvé",
+    hasWon: (e) => !!e.won,
+  },
+  hooprank: {
+    table: "hooprank_scores",
+    select: "user_id, score, time_seconds",
+    orderBy: [
+      { column: "score", ascending: false },
+      { column: "time_seconds", ascending: true },
+    ],
+    formatResult: (e) => `${e.score}/500 pts`,
+    hasWon: () => true,
+  },
+  hooplink: {
+    table: "hooplink_scores",
+    select: "user_id, chain_length, time_seconds, won",
+    orderBy: [
+      { column: "chain_length", ascending: true },
+      { column: "time_seconds", ascending: true },
+    ],
+    formatResult: (e) => e.won ? `${e.chain_length} maillon${(e.chain_length as number) > 1 ? "s" : ""}` : "Non trouvé",
+    hasWon: (e) => !!e.won,
+  },
+};
+
+function formatTime(s: number) {
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return m > 0 ? `${m}m${sec.toString().padStart(2, "0")}s` : `${sec}s`;
+}
+
+function getGameDate() {
+  const now = new Date();
+  return `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
+}
+
+interface UserDailyScore {
+  rank: number;
+  total: number;
+  label: string;
+  won: boolean;
+  time: number;
+}
+
+/* ─── Game definitions ─── */
+
 interface Game {
   href: string;
+  key: string;
   title: string;
   description: string;
   icon: ReactNode;
@@ -128,6 +226,7 @@ interface Game {
 const games: Game[] = [
   {
     href: "/mini-jeux/hoopl",
+    key: "hoopl",
     title: "Hoopl",
     description: "Devine le joueur NBA du jour à partir de ses statistiques. Équipe, conférence, division, stats... chaque essai te rapproche de la réponse.",
     icon: <Target size={24} />,
@@ -137,6 +236,7 @@ const games: Game[] = [
   },
   {
     href: "/mini-jeux/hoopixl",
+    key: "hoopixl",
     title: "Hoopixl",
     description: "Une photo pixélisée se révèle lentement. Reconnais le joueur avant que l'image ne devienne nette. Le temps joue contre toi !",
     icon: <Image size={24} />,
@@ -146,6 +246,7 @@ const games: Game[] = [
   },
   {
     href: "/mini-jeux/hoopiz",
+    key: "hoopiz",
     title: "Hoopiz",
     description: "Quiz de culture générale NBA. Remplis le tableau le plus vite possible avec tes connaissances. Chrono et classement !",
     icon: <Brain size={24} />,
@@ -155,6 +256,7 @@ const games: Game[] = [
   },
   {
     href: "/mini-jeux/hoopgrid",
+    key: "hoopgrid",
     title: "HoopGrid",
     description: "Mots mêlés NBA ! Barre les noms cachés dans la grille pour révéler le joueur mystère. Les lettres restantes forment son nom !",
     icon: <Grid3X3 size={24} />,
@@ -164,6 +266,7 @@ const games: Game[] = [
   },
   {
     href: "/mini-jeux/hoopmore",
+    key: "hoopmore",
     title: "HoopMore",
     description: "Plus ou moins ? Compare les stats de deux joueurs et enchaîne la plus longue série possible. Un faux pas et c'est terminé !",
     icon: <Flame size={24} />,
@@ -173,6 +276,7 @@ const games: Game[] = [
   },
   {
     href: "/mini-jeux/hooprank",
+    key: "hooprank",
     title: "HoopRank",
     description: "Cinq joueurs, une stat : classe-les dans le bon ordre. Cinq manches pour prouver que tu connais la NBA sur le bout des doigts.",
     icon: <BarChart3 size={24} />,
@@ -182,6 +286,7 @@ const games: Game[] = [
   },
   {
     href: "/mini-jeux/hooplink",
+    key: "hooplink",
     title: "HoopLink",
     description: "Deux joueurs, un défi : trouve le chemin le plus court en nommant des coéquipiers communs. Chaque maillon doit avoir joué dans la même équipe et la même saison que le précédent.",
     icon: <Link2 size={24} />,
@@ -192,6 +297,62 @@ const games: Game[] = [
 ];
 
 export default function MiniJeux() {
+  const [dailyScores, setDailyScores] = useState<Record<string, UserDailyScore>>({});
+
+  useEffect(() => {
+    async function fetchScores() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const gameDate = getGameDate();
+      const results: Record<string, UserDailyScore> = {};
+
+      await Promise.all(
+        Object.entries(SCORE_CONFIGS).map(async ([key, config]) => {
+          let query = supabase
+            .from(config.table)
+            .select(config.select)
+            .eq("game_date", gameDate);
+
+          for (const order of config.orderBy) {
+            query = query.order(order.column, { ascending: order.ascending });
+          }
+
+          const { data } = await query.limit(500);
+          if (!data || !Array.isArray(data)) return;
+
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const rows = data as any[];
+          const userEntry = rows.find((e) => e.user_id === user.id);
+          if (!userEntry) return;
+
+          const won = config.hasWon(userEntry);
+
+          // Rank among winners for games that filter by won, all players otherwise
+          const hasWonFilter = ["hoopl", "hoopixl", "hoopgrid", "hooplink"].includes(key);
+          const rankEntries = hasWonFilter
+            ? rows.filter((e) => config.hasWon(e))
+            : rows;
+
+          const userIndex = rankEntries.findIndex((e) => e.user_id === user.id);
+
+          results[key] = {
+            rank: userIndex >= 0 ? userIndex + 1 : -1,
+            total: rankEntries.length,
+            label: config.formatResult(userEntry),
+            won,
+            time: userEntry.time_seconds as number,
+          };
+        })
+      );
+
+      setDailyScores(results);
+    }
+
+    fetchScores();
+  }, []);
+
   return (
     <div className="mx-auto max-w-6xl space-y-8">
       <PageBanner
@@ -236,62 +397,98 @@ export default function MiniJeux() {
 
       {/* Games grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-        {games.map((game, i) => (
-          <ScrollReveal key={game.href} delay={i * 100} variant="up">
-            <Link
-              href={game.href}
-              className="group relative flex flex-col overflow-hidden rounded-2xl border border-border-t bg-card transition-all duration-300 hover:shadow-xl hover:-translate-y-1.5 hover:border-border-hover active:translate-y-0 h-full"
-            >
-              {/* Preview area */}
-              <div
-                className="relative flex items-center justify-center h-28 overflow-hidden"
-                style={{ background: `linear-gradient(135deg, ${game.color}18, ${game.color}08)` }}
+        {games.map((game, i) => {
+          const score = dailyScores[game.key];
+          return (
+            <ScrollReveal key={game.href} delay={i * 100} variant="up">
+              <Link
+                href={game.href}
+                className="group relative flex flex-col overflow-hidden rounded-2xl border border-border-t bg-card transition-all duration-300 hover:shadow-xl hover:-translate-y-1.5 hover:border-border-hover active:translate-y-0 h-full"
               >
-                <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: `radial-gradient(${game.color} 1px, transparent 1px)`, backgroundSize: "12px 12px" }} />
-                <div className="relative">{game.preview}</div>
-                <div className="absolute bottom-0 left-0 right-0 h-px" style={{ background: `linear-gradient(90deg, transparent, ${game.color}30, transparent)` }} />
-              </div>
+                {/* Preview area */}
+                <div
+                  className="relative flex items-center justify-center h-28 overflow-hidden"
+                  style={{ background: `linear-gradient(135deg, ${game.color}18, ${game.color}08)` }}
+                >
+                  <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: `radial-gradient(${game.color} 1px, transparent 1px)`, backgroundSize: "12px 12px" }} />
+                  <div className="relative">{game.preview}</div>
+                  <div className="absolute bottom-0 left-0 right-0 h-px" style={{ background: `linear-gradient(90deg, transparent, ${game.color}30, transparent)` }} />
 
-              <div className="p-6 flex flex-col flex-1">
-                {/* Header */}
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="flex h-11 w-11 items-center justify-center rounded-xl text-white shadow-lg transition-transform duration-300 group-hover:scale-110"
-                      style={{ backgroundColor: game.color }}
-                    >
-                      {game.icon}
+                  {/* Score badge */}
+                  {score && (
+                    <div className={`absolute top-2.5 right-2.5 flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold backdrop-blur-sm ${score.won ? "bg-emerald-500/20 text-emerald-300" : "bg-red-500/20 text-red-300"}`}>
+                      {score.won ? <Check size={12} /> : <X size={12} />}
+                      {score.won && score.rank > 0 ? `#${score.rank}` : "Terminé"}
                     </div>
-                    <div>
-                      <h2 className="text-lg font-extrabold text-text-primary group-hover:text-accent-text transition-colors tracking-tight">{game.title}</h2>
-                      <div className="flex gap-1.5 mt-0.5">
-                        {game.tags.map((tag) => (
-                          <span key={tag} className="inline-block rounded-full bg-input px-2 py-0.5 text-[10px] font-semibold text-text-faint">
-                            {tag}
-                          </span>
-                        ))}
+                  )}
+                </div>
+
+                <div className="p-6 flex flex-col flex-1">
+                  {/* Header */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="flex h-11 w-11 items-center justify-center rounded-xl text-white shadow-lg transition-transform duration-300 group-hover:scale-110"
+                        style={{ backgroundColor: game.color }}
+                      >
+                        {game.icon}
+                      </div>
+                      <div>
+                        <h2 className="text-lg font-extrabold text-text-primary group-hover:text-accent-text transition-colors tracking-tight">{game.title}</h2>
+                        <div className="flex gap-1.5 mt-0.5">
+                          {game.tags.map((tag) => (
+                            <span key={tag} className="inline-block rounded-full bg-input px-2 py-0.5 text-[10px] font-semibold text-text-faint">
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Description */}
-                <p className="text-[13px] leading-relaxed text-text-muted flex-1 line-clamp-3">
-                  {game.description}
-                </p>
+                  {/* User score result */}
+                  {score && (
+                    <div className={`flex items-center gap-2 rounded-lg px-3 py-1.5 mb-3 text-xs ${score.won ? "bg-emerald-500/10" : "bg-red-500/10"}`}>
+                      {score.won ? (
+                        <>
+                          <Trophy size={13} className="text-amber-400 shrink-0" />
+                          {score.rank > 0 && (
+                            <span className="font-extrabold text-emerald-300">#{score.rank}<span className="font-normal text-text-faint">/{score.total}</span></span>
+                          )}
+                          <span className="text-text-faint">·</span>
+                          <span className="text-text-muted font-medium">{score.label}</span>
+                          <span className="text-text-faint">·</span>
+                          <span className="text-text-faint">{formatTime(score.time)}</span>
+                        </>
+                      ) : (
+                        <>
+                          <X size={13} className="text-red-400 shrink-0" />
+                          <span className="font-bold text-red-300">{score.label}</span>
+                          <span className="text-text-faint">·</span>
+                          <span className="text-text-faint">{formatTime(score.time)}</span>
+                        </>
+                      )}
+                    </div>
+                  )}
 
-                {/* CTA */}
-                <div
-                  className="mt-4 flex items-center gap-1.5 text-sm font-bold opacity-0 -translate-x-1 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0"
-                  style={{ color: game.color }}
-                >
-                  Jouer maintenant
-                  <ArrowRight size={14} className="transition-transform duration-300 group-hover:translate-x-1" />
+                  {/* Description */}
+                  <p className="text-[13px] leading-relaxed text-text-muted flex-1 line-clamp-3">
+                    {game.description}
+                  </p>
+
+                  {/* CTA */}
+                  <div
+                    className="mt-4 flex items-center gap-1.5 text-sm font-bold opacity-0 -translate-x-1 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0"
+                    style={{ color: game.color }}
+                  >
+                    {score ? "Voir le classement" : "Jouer maintenant"}
+                    <ArrowRight size={14} className="transition-transform duration-300 group-hover:translate-x-1" />
+                  </div>
                 </div>
-              </div>
-            </Link>
-          </ScrollReveal>
-        ))}
+              </Link>
+            </ScrollReveal>
+          );
+        })}
       </div>
 
       {/* Coming soon teaser */}

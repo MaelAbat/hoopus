@@ -88,13 +88,15 @@ export default function Sidebar() {
 
     async function loadProfile() {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
+      if (user && !user.is_anonymous) {
         const { data } = await supabase
           .from("profiles")
           .select("display_name, email, is_admin")
           .eq("id", user.id)
           .single();
         setProfile(data);
+      } else {
+        setProfile(null);
       }
       setLoading(false);
     }

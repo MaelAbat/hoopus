@@ -4,6 +4,8 @@ import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { RotateCcw, Trophy, Clock, LogIn, Check, Search, Flag } from "lucide-react";
 import { teamLogoUrl } from "@/lib/nba-teams";
 import { createClient } from "@/lib/supabase/client";
+import { ensureAuth, getDisplayName, isAnonymousName } from "@/lib/anonymous-auth";
+import { computeVisibleLeaderboard } from "@/lib/leaderboard-utils";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -13,6 +15,7 @@ interface NameEntry {
 }
 
 interface LeaderboardEntry {
+  user_id: string;
   display_name: string;
   words_found: number;
   total_words: number;
@@ -380,11 +383,11 @@ export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
     const supabase = createClient();
     const { data } = await supabase
       .from("hoopgrid_scores")
-      .select("display_name, words_found, total_words, time_seconds, won")
+      .select("user_id, display_name, words_found, total_words, time_seconds, won")
       .eq("game_date", gameDate)
       .eq("won", true)
       .order("time_seconds", { ascending: true })
-      .limit(15);
+      .limit(500);
     setLeaderboard(data || []);
   }, [gameDate]);
 
@@ -392,14 +395,17 @@ export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
 
   // Submit score
   const submitScore = useCallback(async (wordsFound: number, didWin: boolean) => {
-    if (submitted || !userId) return;
+    if (submitted) return;
     const supabase = createClient();
+    const uid = userId || await ensureAuth(supabase);
+    if (!uid) return;
+
     const finalTime = gameOver ? elapsed : Math.floor((Date.now() - startTime) / 1000);
     if (!gameOver) setElapsed(finalTime);
-    const { data: profile } = await supabase.from("profiles").select("display_name").eq("id", userId).single();
+    const displayName = await getDisplayName(supabase, uid);
     await supabase.from("hoopgrid_scores").upsert({
-      user_id: userId,
-      display_name: profile?.display_name || "Anonyme",
+      user_id: uid,
+      display_name: displayName,
       game_date: gameDate,
       words_found: wordsFound,
       total_words: words.length,
@@ -629,12 +635,6 @@ export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
           </p>
         </div>
 
-        {!userId && (
-          <div className="rounded-lg bg-input/50 border border-border-t px-4 py-2.5 text-center text-xs text-text-muted">
-            <LogIn size={12} className="inline mr-1.5 -mt-0.5" />
-            <Link href={`/auth/login?redirect=${encodeURIComponent(pathname)}`} className="text-accent-text hover:underline">Connecte-toi</Link> pour enregistrer ton score au classement
-          </div>
-        )}
 
         {/* Progress */}
         {loaded && (
@@ -898,28 +898,41 @@ export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
       )}
 
       {/* Leaderboard */}
-      {leaderboard.length > 0 && (
-        <div className="rounded-2xl bg-card border border-border-t overflow-hidden">
-          <div className="px-4 py-3 border-b border-border-t">
-            <h2 className="text-sm font-bold text-text-primary flex items-center gap-2">
-              <Trophy size={16} className="text-accent-text" />
-              Classement du jour
-            </h2>
+      {leaderboard.length > 0 && (() => {
+        const rows = computeVisibleLeaderboard(leaderboard, userId);
+        return (
+          <div className="rounded-2xl bg-card border border-border-t overflow-hidden">
+            <div className="px-4 py-3 border-b border-border-t">
+              <h2 className="text-sm font-bold text-text-primary flex items-center gap-2">
+                <Trophy size={16} className="text-accent-text" />
+                Classement du jour
+              </h2>
+            </div>
+            <div className="divide-y divide-border-t/30">
+              {rows.map((row, i) =>
+                row.type === "separator" ? (
+                  <div key="sep" className="flex items-center gap-3 px-4 py-1.5">
+                    <div className="flex-1 border-t border-dashed border-border-t" />
+                    <span className="text-[10px] text-text-faint">...</span>
+                    <div className="flex-1 border-t border-dashed border-border-t" />
+                  </div>
+                ) : (
+                  <div key={`${row.entry.display_name}-${row.rank}`} className={`flex items-center gap-3 px-4 py-2.5 ${row.isUser ? "bg-accent/10 border-l-2 border-l-accent" : ""}`}>
+                    <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[11px] font-bold ${
+                      row.rank === 1 ? "bg-accent/20 text-accent-text" : row.rank <= 3 ? "bg-input text-text-primary" : "text-text-faint"
+                    }`}>{row.rank}</span>
+                    <span className={`flex-1 text-sm truncate ${row.isUser ? "font-bold text-accent-text" : isAnonymousName(row.entry.display_name) ? "italic text-text-muted" : "font-medium text-text-primary"}`}>
+                      {row.entry.display_name}{row.isUser ? " (toi)" : ""}
+                    </span>
+                    <span className="text-xs text-text-faint tabular-nums w-12 text-right">{formatTime(row.entry.time_seconds)}</span>
+                    <span className="text-xs text-text-muted tabular-nums">{row.entry.words_found}/{row.entry.total_words}</span>
+                  </div>
+                )
+              )}
+            </div>
           </div>
-          <div className="divide-y divide-border-t/30">
-            {leaderboard.map((entry, i) => (
-              <div key={`${entry.display_name}-${i}`} className="flex items-center gap-3 px-4 py-2.5">
-                <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[11px] font-bold ${
-                  i === 0 ? "bg-accent/20 text-accent-text" : i <= 2 ? "bg-input text-text-primary" : "text-text-faint"
-                }`}>{i + 1}</span>
-                <span className="flex-1 text-sm font-medium text-text-primary truncate">{entry.display_name}</span>
-                <span className="text-xs text-text-faint tabular-nums w-12 text-right">{formatTime(entry.time_seconds)}</span>
-                <span className="text-xs text-text-muted tabular-nums">{entry.words_found}/{entry.total_words}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

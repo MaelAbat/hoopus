@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Clock, Trophy, CheckCircle, XCircle, RotateCcw, Flag, List, ListOrdered, Copy, Check, ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { ensureAuth, getDisplayName, isAnonymousName } from "@/lib/anonymous-auth";
+import { computeVisibleLeaderboard } from "@/lib/leaderboard-utils";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -20,6 +22,7 @@ export interface Quiz {
 }
 
 interface LeaderboardEntry {
+  user_id: string;
   display_name: string;
   found_count: number;
   total_count: number;
@@ -77,19 +80,19 @@ function fuzzyMatch(input: string, answers: string[]): boolean {
   return false;
 }
 
-function LeaderboardSection({ quizId, mode, label }: { quizId: string; mode: string; label: string }) {
+function LeaderboardSection({ quizId, mode, label, userId }: { quizId: string; mode: string; label: string; userId: string | null }) {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
 
   const fetch = useCallback(async () => {
     const supabase = createClient();
     const { data } = await supabase
       .from("quiz_scores")
-      .select("display_name, found_count, total_count, time_seconds, won")
+      .select("user_id, display_name, found_count, total_count, time_seconds, won")
       .eq("quiz_id", quizId)
       .eq("mode", mode)
       .order("found_count", { ascending: false })
       .order("time_seconds", { ascending: true })
-      .limit(10);
+      .limit(500);
     setEntries(data || []);
   }, [quizId, mode]);
 
@@ -102,7 +105,8 @@ function LeaderboardSection({ quizId, mode, label }: { quizId: string; mode: str
     return () => window.removeEventListener(`leaderboard-refresh-${quizId}-${mode}`, handler);
   }, [fetch, quizId, mode]);
 
-  if (entries.length === 0) return null;
+  const rows = computeVisibleLeaderboard(entries, userId);
+  if (rows.length === 0) return null;
 
   return (
     <div>
@@ -111,20 +115,30 @@ function LeaderboardSection({ quizId, mode, label }: { quizId: string; mode: str
         {label}
       </h3>
       <div className="divide-y divide-border-t/30">
-        {entries.map((entry, i) => (
-          <div key={`${entry.display_name}-${i}`} className="flex items-center gap-3 px-1 py-2">
-            <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[11px] font-bold ${
-              i === 0 ? "bg-accent/20 text-accent-text"
-              : i <= 2 ? "bg-input text-text-primary"
-              : "text-text-faint"
-            }`}>
-              {i + 1}
-            </span>
-            <span className="flex-1 text-sm font-medium text-text-primary truncate">{entry.display_name}</span>
-            <span className="text-xs text-text-muted tabular-nums">{entry.found_count}/{entry.total_count}</span>
-            <span className="text-xs text-text-faint tabular-nums w-14 text-right">{formatTimeShort(entry.time_seconds)}</span>
-          </div>
-        ))}
+        {rows.map((row, i) =>
+          row.type === "separator" ? (
+            <div key="sep" className="flex items-center gap-3 px-1 py-1.5">
+              <div className="flex-1 border-t border-dashed border-border-t" />
+              <span className="text-[10px] text-text-faint">...</span>
+              <div className="flex-1 border-t border-dashed border-border-t" />
+            </div>
+          ) : (
+            <div key={`${row.entry.display_name}-${row.rank}`} className={`flex items-center gap-3 px-1 py-2 ${row.isUser ? "bg-accent/10 border-l-2 border-l-accent" : ""}`}>
+              <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[11px] font-bold ${
+                row.rank === 1 ? "bg-accent/20 text-accent-text"
+                : row.rank <= 3 ? "bg-input text-text-primary"
+                : "text-text-faint"
+              }`}>
+                {row.rank}
+              </span>
+              <span className={`flex-1 text-sm truncate ${row.isUser ? "font-bold text-accent-text" : isAnonymousName(row.entry.display_name) ? "italic text-text-muted" : "font-medium text-text-primary"}`}>
+                {row.entry.display_name}{row.isUser ? " (toi)" : ""}
+              </span>
+              <span className="text-xs text-text-muted tabular-nums">{row.entry.found_count}/{row.entry.total_count}</span>
+              <span className="text-xs text-text-faint tabular-nums w-14 text-right">{formatTimeShort(row.entry.time_seconds)}</span>
+            </div>
+          )
+        )}
       </div>
     </div>
   );
@@ -232,23 +246,20 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
 
   // Submit score
   const submitScore = useCallback(async () => {
-    if (submitted || !userId) return;
+    if (submitted) return;
     const supabase = createClient();
+    const uid = userId || await ensureAuth(supabase);
+    if (!uid) return;
+
     const timeTaken = quiz.timeLimit - timeLeftRef.current;
     const foundCount = foundRef.current.size;
     const didWin = foundCount === total;
     const mode = activeModeRef.current;
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("display_name")
-      .eq("id", userId)
-      .single();
-
-    const displayName = profile?.display_name || "Anonyme";
+    const displayName = await getDisplayName(supabase, uid);
 
     await supabase.from("quiz_scores").upsert({
-      user_id: userId,
+      user_id: uid,
       quiz_id: quiz.id,
       display_name: displayName,
       found_count: foundCount,
@@ -555,11 +566,6 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
                 <RotateCcw size={14} /> Rejouer
               </button>
             </div>
-            {!userId && (
-              <p className="text-xs text-text-faint">
-                <Link href={`/auth/login?redirect=${encodeURIComponent(pathname)}`} className="text-accent-text hover:underline">Connecte-toi</Link> pour enregistrer ton score au classement
-              </p>
-            )}
           </div>
         )}
       </div>
@@ -651,8 +657,8 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
           </h2>
         </div>
         <div className="p-4 grid grid-cols-2 gap-4">
-          <LeaderboardSection quizId={quiz.id} mode="unordered" label="Désordre" />
-          <LeaderboardSection quizId={quiz.id} mode="ordered" label="Dans l'ordre" />
+          <LeaderboardSection quizId={quiz.id} mode="unordered" label="Désordre" userId={userId} />
+          <LeaderboardSection quizId={quiz.id} mode="ordered" label="Dans l'ordre" userId={userId} />
         </div>
       </div>
 

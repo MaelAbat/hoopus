@@ -25,17 +25,41 @@ export async function signup(formData: FormData) {
   const supabase = await createClient();
 
   const displayName = formData.get("display_name") as string;
+  const email = formData.get("email") as string;
+  const password = formData.get("password") as string;
 
-  const { error } = await supabase.auth.signUp({
-    email: formData.get("email") as string,
-    password: formData.get("password") as string,
-    options: {
+  // Check if current session is anonymous — upgrade instead of creating a new user
+  const { data: { user: currentUser } } = await supabase.auth.getUser();
+
+  if (currentUser?.is_anonymous) {
+    // Convert anonymous user to permanent by adding email + password
+    const { error } = await supabase.auth.updateUser({
+      email,
+      password,
       data: { display_name: displayName },
-    },
-  });
+    });
 
-  if (error) {
-    return { error: error.message };
+    if (error) {
+      return { error: error.message };
+    }
+
+    // Update profile with real info
+    await supabase.from("profiles").update({
+      email,
+      display_name: displayName,
+    }).eq("id", currentUser.id);
+  } else {
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { display_name: displayName },
+      },
+    });
+
+    if (error) {
+      return { error: error.message };
+    }
   }
 
   const redirectTo = formData.get("redirectTo") as string | null;
