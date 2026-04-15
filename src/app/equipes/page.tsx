@@ -45,12 +45,12 @@ export default async function Equipes({ searchParams }: { searchParams: Promise<
         <PageBanner
           title="Équipes"
           subtitle={`Effectifs ${season}`}
-          image="https://images.unsplash.com/photo-1759694705159-fad2c93938f1?w=1200&q=80"
+          variant="teams"
           extra={
             <div className="flex flex-wrap items-center gap-3">
               <SeasonSelector current={season} available={availableSeasons} />
               {hasData ? (
-                <span className="text-xs text-white/40">Mis à jour le {lastUpdate}</span>
+                <span className="text-xs text-text-faint">Mis à jour le {lastUpdate}</span>
               ) : (
                 <span className="inline-flex items-center rounded-full bg-yellow-500/20 px-2 py-0.5 text-xs text-yellow-300">
                   Synchronisation requise

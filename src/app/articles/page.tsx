@@ -12,7 +12,7 @@ export default async function Articles() {
       <PageBanner
         title="Articles"
         subtitle="Analyses, decryptages et portraits"
-        image="https://images.unsplash.com/photo-1549210194-fb0aac030c32?w=1200&q=80"
+        variant="articles"
       />
       <ScrollReveal variant="up" delay={100}>
         <ArticlesList articles={articles} isAdmin={admin} />

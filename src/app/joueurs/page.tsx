@@ -27,7 +27,7 @@ export default async function Joueurs() {
       <PageBanner
         title="Joueurs"
         subtitle={hasData ? `${players.length} joueurs référencés` : "Répertoire de tous les joueurs NBA"}
-        image="https://images.unsplash.com/photo-1515523110800-9415d13b84a8?w=1200&q=80"
+        variant="players"
         extra={!hasData ? (
           <span className="inline-flex items-center rounded-full bg-yellow-500/20 px-2 py-0.5 text-xs text-yellow-300">
             Synchronisation requise

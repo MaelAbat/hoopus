@@ -52,12 +52,12 @@ export default async function Playoffs({ searchParams }: { searchParams: Promise
         <PageBanner
           title="Playoffs"
           subtitle={`Bracket ${season}`}
-          image="https://images.unsplash.com/photo-1579487685737-e435a87b2518?w=1200&q=80"
+          variant="playoffs"
           extra={
             <div className="flex flex-wrap items-center gap-3">
               <SeasonSelector current={season} available={availableSeasons} />
               {hasData ? (
-                <span className="text-xs text-white/40">Basé sur le classement du {lastUpdate}</span>
+                <span className="text-xs text-text-faint">Basé sur le classement du {lastUpdate}</span>
               ) : (
                 <span className="inline-flex items-center rounded-full bg-yellow-500/20 px-2 py-0.5 text-xs text-yellow-300">
                   Synchronisation requise

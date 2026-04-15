@@ -59,7 +59,7 @@ export default async function Calendrier({ searchParams }: { searchParams: Promi
         <PageBanner
           title="Calendrier"
           subtitle={`${seasonLabel(season)} -- saison régulière`}
-          image="https://images.unsplash.com/photo-1693164586646-f3f877aec626?w=1200&q=80"
+          variant="calendar"
           extra={<SeasonSelector current={season} available={availableSeasons} />}
         />
         <SeasonContent>

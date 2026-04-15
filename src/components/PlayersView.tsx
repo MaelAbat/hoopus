@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Search, ChevronDown, Heart } from "lucide-react";
 import type { Player } from "@/lib/types/database";
@@ -26,6 +27,7 @@ export default function PlayersView({ players }: { players: Player[] }) {
   const [posFilter, setPosFilter] = useState("");
   const [teamFilter, setTeamFilter] = useState("");
   const [page, setPage] = useState(0);
+  const router = useRouter();
   const { isPlayerFollowed, togglePlayer } = useFavorites();
 
   // Build team list from active players for the dropdown
@@ -154,11 +156,23 @@ export default function PlayersView({ players }: { players: Player[] }) {
       {/* Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
         {visible.map((p) => (
-          <Link
+          <div
             key={p.player_id}
-            href={`/joueurs/${p.player_id}`}
-            className="group overflow-hidden rounded-2xl bg-card border border-border-t transition-all duration-200 hover:border-border-hover hover:shadow-lg hover:-translate-y-0.5"
+            className="group relative overflow-hidden rounded-2xl bg-card border border-border-t transition-all duration-200 hover:border-border-hover hover:shadow-lg hover:-translate-y-0.5 cursor-pointer"
+            onClick={() => router.push(`/joueurs/${p.player_id}`)}
           >
+            {/* Heart button — outside the navigation flow */}
+            <button
+              onClick={(e) => { e.stopPropagation(); togglePlayer(p.player_id); }}
+              className={`absolute top-2 right-2 z-10 rounded-full p-2 transition-all ${
+                isPlayerFollowed(p.player_id)
+                  ? "bg-accent/20 text-accent backdrop-blur-sm"
+                  : "bg-black/30 text-white/60 backdrop-blur-sm sm:opacity-0 sm:group-hover:opacity-100 hover:text-accent"
+              }`}
+            >
+              <Heart size={14} className={isPlayerFollowed(p.player_id) ? "fill-accent" : ""} />
+            </button>
+
             {/* Photo */}
             <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-b from-accent/10 to-transparent">
               <img
@@ -177,16 +191,6 @@ export default function PlayersView({ players }: { players: Player[] }) {
                   className="absolute bottom-2 right-2 h-6 w-6 object-contain opacity-70"
                 />
               )}
-              <button
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); togglePlayer(p.player_id); }}
-                className={`absolute top-2 right-2 rounded-full p-1.5 transition-all ${
-                  isPlayerFollowed(p.player_id)
-                    ? "bg-accent/20 text-accent backdrop-blur-sm"
-                    : "bg-black/30 text-white/60 backdrop-blur-sm opacity-0 group-hover:opacity-100 hover:text-accent"
-                }`}
-              >
-                <Heart size={14} className={isPlayerFollowed(p.player_id) ? "fill-accent" : ""} />
-              </button>
               {!p.is_active && (
                 <span className="absolute top-2 left-2 rounded bg-black/50 px-1.5 py-0.5 text-[9px] font-semibold text-white/70 backdrop-blur-sm">
                   {p.to_year || "Retiré"}
@@ -214,7 +218,7 @@ export default function PlayersView({ players }: { players: Player[] }) {
                 </div>
               )}
             </div>
-          </Link>
+          </div>
         ))}
       </div>
 

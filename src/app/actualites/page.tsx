@@ -12,7 +12,7 @@ export default async function Actualites() {
       <PageBanner
         title="Actualites"
         subtitle="Les dernieres nouvelles de la NBA"
-        image="https://images.unsplash.com/photo-1527261834078-9b37d35a4a32?w=1200&q=80"
+        variant="news"
       />
       <ScrollReveal variant="up" delay={100}>
         <NewsList news={news} isAdmin={admin} />

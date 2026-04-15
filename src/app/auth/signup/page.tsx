@@ -4,7 +4,7 @@ import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { signup } from "@/lib/actions/auth";
 import Link from "next/link";
-import { Trophy, UserPlus } from "lucide-react";
+import { UserPlus } from "lucide-react";
 
 function SignupForm() {
   const [error, setError] = useState<string | null>(null);
@@ -27,9 +27,6 @@ function SignupForm() {
     <div className="w-full max-w-md space-y-8 rounded-2xl bg-card border border-border-t p-8">
       {/* Logo */}
       <div className="flex flex-col items-center gap-3">
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-accent to-accent-hover shadow-lg shadow-accent/20">
-          <Trophy size={28} className="text-white" />
-        </div>
         <h1 className="text-2xl font-bold text-text-primary">
           Hoop<span className="text-accent">us</span>
         </h1>

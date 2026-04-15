@@ -358,7 +358,7 @@ export default function MiniJeux() {
       <PageBanner
         title="Mini-jeux"
         subtitle="Teste tes connaissances NBA"
-        image="https://images.unsplash.com/photo-1546519638-68e109498ffc?w=1200&q=80"
+        variant="games"
       />
 
       {/* Daily challenge banner */}

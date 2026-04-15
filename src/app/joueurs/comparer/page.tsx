@@ -90,7 +90,7 @@ export default async function ComparerPage({
       <PageBanner
         title="Comparateur de joueurs"
         subtitle="Comparez les statistiques de 2 ou 3 joueurs NBA côte à côte"
-        image="https://images.unsplash.com/photo-1546519638-68e109498ffc?w=1200&q=80"
+        variant="compare"
       />
 
       <ScrollReveal variant="up" delay={100}>

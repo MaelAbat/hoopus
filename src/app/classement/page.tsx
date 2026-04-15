@@ -43,12 +43,12 @@ export default async function Classement({ searchParams }: { searchParams: Promi
         <PageBanner
           title="Classement"
           subtitle={`${seasonLabel(season)} -- saison régulière`}
-          image="https://images.unsplash.com/photo-1578269174936-2709b6aeb913?w=1200&q=80"
+          variant="standings"
           extra={
             <div className="flex flex-wrap items-center gap-3">
               <SeasonSelector current={season} available={availableSeasons} />
               {hasData ? (
-                <span className="text-xs text-white/40">Mis à jour le {lastUpdate}</span>
+                <span className="text-xs text-text-faint">Mis à jour le {lastUpdate}</span>
               ) : (
                 <span className="inline-flex items-center rounded-full bg-yellow-500/20 px-2 py-0.5 text-xs text-yellow-300">
                   Synchronisation requise
