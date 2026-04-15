@@ -511,11 +511,33 @@ function PlayInMatchupBox({ game, topTeam, bottomTeam, seedTop, seedBottom }: {
 /* ─── Play-In: single conference ─── */
 function PlayInConference({ teams, label, games }: { teams: Standing[]; label: string; games: PlayInGame[] }) {
   const byRank = (rank: number) => teams.find(t => t.conference_rank === rank) || null;
+  const byTricode = (tricode: string) => teams.find(t => t.team_tricode === tricode) || null;
   const H = 180;
 
   const game78 = games.find(g => g.matchup_type === "seven_eight") || null;
   const game910 = games.find(g => g.matchup_type === "nine_ten") || null;
   const gameFinal = games.find(g => g.matchup_type === "final") || null;
+
+  // Derive known teams for the final from earlier results
+  let finalTopTeam: Standing | null = null;
+  let finalBottomTeam: Standing | null = null;
+  let finalSeedTop: number | undefined;
+  let finalSeedBottom: number | undefined;
+  if (!gameFinal) {
+    // Loser of 7v8 → plays in the final
+    if (game78?.winner) {
+      const loserTricode = game78.winner === game78.home_team ? game78.away_team : game78.home_team;
+      const loserSeed = game78.winner === game78.home_team ? game78.away_seed : game78.home_seed;
+      finalTopTeam = byTricode(loserTricode);
+      finalSeedTop = loserSeed;
+    }
+    // Winner of 9v10 → plays in the final
+    if (game910?.winner) {
+      const winnerSeed = game910.winner === game910.home_team ? game910.home_seed : game910.away_seed;
+      finalBottomTeam = byTricode(game910.winner);
+      finalSeedBottom = winnerSeed;
+    }
+  }
 
   return (
     <div className="space-y-3">
@@ -555,7 +577,7 @@ function PlayInConference({ teams, label, games }: { teams: Standing[]; label: s
           <div className="flex flex-col justify-center" style={{ height: H }}>
             <div className="text-center">
               <p className="text-[9px] text-text-faint mb-1">Perdant 7-8 vs Vainqueur 9-10</p>
-              <PlayInMatchupBox game={gameFinal} />
+              <PlayInMatchupBox game={gameFinal} topTeam={finalTopTeam} bottomTeam={finalBottomTeam} seedTop={finalSeedTop} seedBottom={finalSeedBottom} />
             </div>
           </div>
         </div>
