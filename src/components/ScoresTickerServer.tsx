@@ -24,29 +24,62 @@ export default async function ScoresTickerServer() {
     .order("game_date", { ascending: false })
     .order("status", { ascending: false }); // Live games first
 
-  const games = data || [];
+  const results = data || [];
 
-  if (games.length > 0) {
-    return <ScoresTicker games={games} mode="results" />;
-  }
+  // Also fetch upcoming games for today/tomorrow
+  const tomorrow = new Date(et);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowStr = tomorrow.toISOString().slice(0, 10);
 
-  // No results — fetch the next day that has scheduled games
   const { data: upcomingRaw } = await supabase
     .from("games")
     .select("game_id, game_date, status, status_text, home_team, home_team_name, home_score, away_team, away_team_name, away_score, game_time")
-    .gte("game_date", todayStr)
+    .in("game_date", [todayStr, tomorrowStr])
     .eq("status", 1) // Scheduled only
     .order("game_date", { ascending: true })
     .order("game_time", { ascending: true })
     .limit(50);
 
-  // Keep only the first date that has games
-  const firstDate = upcomingRaw?.[0]?.game_date;
-  const upcomingGames = firstDate
-    ? upcomingRaw!.filter(g => g.game_date === firstDate)
+  // Keep only the first date that has upcoming games
+  const firstUpcomingDate = upcomingRaw?.[0]?.game_date;
+  const upcoming = firstUpcomingDate
+    ? upcomingRaw!.filter(g => g.game_date === firstUpcomingDate)
     : [];
 
-  if (upcomingGames.length === 0) return null;
+  // Show both results and upcoming if both exist
+  if (results.length > 0 && upcoming.length > 0) {
+    return (
+      <div className="space-y-2">
+        <ScoresTicker games={results} mode="results" />
+        <ScoresTicker games={upcoming} mode="upcoming" />
+      </div>
+    );
+  }
 
-  return <ScoresTicker games={upcomingGames} mode="upcoming" />;
+  if (results.length > 0) {
+    return <ScoresTicker games={results} mode="results" />;
+  }
+
+  if (upcoming.length > 0) {
+    return <ScoresTicker games={upcoming} mode="upcoming" />;
+  }
+
+  // No results and no upcoming today — fetch the next day that has games
+  const { data: futureRaw } = await supabase
+    .from("games")
+    .select("game_id, game_date, status, status_text, home_team, home_team_name, home_score, away_team, away_team_name, away_score, game_time")
+    .gt("game_date", tomorrowStr)
+    .eq("status", 1)
+    .order("game_date", { ascending: true })
+    .order("game_time", { ascending: true })
+    .limit(50);
+
+  const firstFutureDate = futureRaw?.[0]?.game_date;
+  const futureGames = firstFutureDate
+    ? futureRaw!.filter(g => g.game_date === firstFutureDate)
+    : [];
+
+  if (futureGames.length === 0) return null;
+
+  return <ScoresTicker games={futureGames} mode="upcoming" />;
 }

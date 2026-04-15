@@ -17,6 +17,9 @@ import {
 import { getArticles } from "@/lib/actions/articles";
 import { getCurrentSeason, seasonLabel } from "@/lib/season";
 import ScrollReveal from "@/components/ScrollReveal";
+import SeasonWidget from "@/components/SeasonWidget";
+import FavoriteDashboard from "@/components/FavoriteDashboard";
+import FavoriteAlerts from "@/components/FavoriteAlerts";
 
 /* ── Fun facts ───────────────────────────── */
 const funFacts = [
@@ -32,84 +35,119 @@ const funFacts = [
   "Le premier match NBA de l'histoire s'est joué le 1er novembre 1946. Les New York Knicks ont battu les Toronto Huskies 68-66.",
 ];
 
+/*
+ * Bento grid — 4 cols desktop, 2 tablet, 1 mobile.
+ * Sizes: xl (2×2), md (2×1), sm (1×1), banner (4×1).
+ * Order = visual priority the user asked for.
+ */
 const categories = [
+  // ── Row 1-2: hero cards ──
   {
-    href: "/actualites",
-    title: "Actualités",
-    description: "Trades, drama, buzzer beaters — tout ce qui fait vibrer la ligue",
-    icon: <Newspaper size={20} />,
-    color: "#f97316",
-    image: "https://images.unsplash.com/photo-1527261834078-9b37d35a4a32?w=600&q=80",
-  },
-  {
-    href: "/articles",
-    title: "Articles",
-    description: "On décortique les matchs, les tactiques et les tendances",
-    icon: <FileText size={20} />,
-    color: "#3b82f6",
-    image: "https://images.unsplash.com/photo-1549210194-fb0aac030c32?w=600&q=80",
-  },
-  {
-    href: "/statistiques",
-    title: "Statistiques",
-    description: "PTS, AST, REB, FG% — le paradis des amoureux des chiffres",
-    icon: <BarChart3 size={20} />,
-    color: "#10b981",
-    image: "https://images.unsplash.com/photo-1705594975210-02cbcc7af5ad?w=600&fit=crop",
+    href: "/playoffs",
+    title: "Playoffs",
+    tagline: "Win or go home",
+    description: "Brackets, séries, play-in -- suivez chaque match décisif de l'après-saison.",
+    icon: <Trophy size={22} strokeWidth={1.5} />,
+    iconBg: <Trophy size={80} strokeWidth={0.7} />,
+    color: "#1e3a4a",
+    size: "xl" as const,
+    cell: "sm:col-span-2 sm:row-span-2",
   },
   {
     href: "/calendrier",
     title: "Calendrier",
-    description: "Qui joue ce soir, qui a gagné hier, qui joue demain",
-    icon: <Calendar size={20} />,
-    color: "#8b5cf6",
-    image: "https://images.unsplash.com/photo-1693164586646-f3f877aec626?w=600&q=80",
+    tagline: "Ne ratez rien",
+    description: "Tous les matchs, scores et horaires -- hier, aujourd'hui et demain.",
+    icon: <Calendar size={22} strokeWidth={1.5} />,
+    iconBg: <Calendar size={80} strokeWidth={0.7} />,
+    color: "#2a2d4a",
+    size: "xl" as const,
+    cell: "sm:col-span-2 sm:row-span-2",
   },
+  // ── Row 3: medium cards ──
   {
     href: "/classement",
     title: "Classement",
-    description: "La course aux playoffs, conférence par conférence",
+    tagline: "La course aux playoffs, conférence par conférence",
     icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <rect x="2" y="10" width="6" height="11" rx="1" />
         <rect x="9" y="4" width="6" height="17" rx="1" />
         <rect x="16" y="14" width="6" height="7" rx="1" />
       </svg>
     ),
-    color: "#eab308",
-    image: "https://images.unsplash.com/photo-1578269174936-2709b6aeb913?w=600&q=80",
-  },
-  {
-    href: "/equipes",
-    title: "Équipes",
-    description: "30 franchises, leurs rosters et leurs salary caps",
-    icon: <Users size={20} />,
-    color: "#ec4899",
-    image: "https://images.unsplash.com/photo-1759694705159-fad2c93938f1?w=600&q=80",
-  },
-  {
-    href: "/joueurs",
-    title: "Joueurs",
-    description: "Tous les joueurs NBA, actifs et retraités, avec leurs stats",
-    icon: <UserRound size={20} />,
-    color: "#a855f7",
-    image: "https://images.unsplash.com/photo-1515523110800-9415d13b84a8?w=600&q=80",
-  },
-  {
-    href: "/playoffs",
-    title: "Playoffs",
-    description: "Là où les légendes se forgent. Win or go home.",
-    icon: <Trophy size={20} />,
-    color: "#06b6d4",
-    image: "https://images.unsplash.com/photo-1579487685737-e435a87b2518?w=600&q=80",
+    iconBg: (
+      <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="0.7" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="10" width="6" height="11" rx="1" />
+        <rect x="9" y="4" width="6" height="17" rx="1" />
+        <rect x="16" y="14" width="6" height="7" rx="1" />
+      </svg>
+    ),
+    color: "#3a3225",
+    size: "md" as const,
+    cell: "sm:col-span-2",
   },
   {
     href: "/mini-jeux",
     title: "Mini-jeux",
-    description: "Teste tes connaissances NBA avec nos jeux quotidiens",
-    icon: <Gamepad2 size={20} />,
-    color: "#f43f5e",
-    image: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=600&q=80",
+    tagline: "7 jeux quotidiens pour tester vos connaissances",
+    icon: <Gamepad2 size={20} strokeWidth={1.5} />,
+    iconBg: <Gamepad2 size={56} strokeWidth={0.7} />,
+    color: "#3a2535",
+    size: "md" as const,
+    cell: "sm:col-span-2",
+  },
+  // ── Row 4: small tiles ──
+  {
+    href: "/joueurs",
+    title: "Joueurs",
+    tagline: "Profils et carrières",
+    icon: <UserRound size={18} strokeWidth={1.5} />,
+    iconBg: <UserRound size={48} strokeWidth={0.8} />,
+    color: "#2a2d4a",
+    size: "sm" as const,
+    cell: "",
+  },
+  {
+    href: "/equipes",
+    title: "Équipes",
+    tagline: "30 franchises",
+    icon: <Users size={18} strokeWidth={1.5} />,
+    iconBg: <Users size={48} strokeWidth={0.8} />,
+    color: "#1e3a4a",
+    size: "sm" as const,
+    cell: "",
+  },
+  {
+    href: "/statistiques",
+    title: "Statistiques",
+    tagline: "Les chiffres parlent",
+    icon: <BarChart3 size={18} strokeWidth={1.5} />,
+    iconBg: <BarChart3 size={48} strokeWidth={0.8} />,
+    color: "#1e3a30",
+    size: "sm" as const,
+    cell: "",
+  },
+  {
+    href: "/articles",
+    title: "Articles",
+    tagline: "Analyses",
+    icon: <FileText size={18} strokeWidth={1.5} />,
+    iconBg: <FileText size={48} strokeWidth={0.8} />,
+    color: "#3a3225",
+    size: "sm" as const,
+    cell: "",
+  },
+  // ── Row 5: full-width banner ──
+  {
+    href: "/actualites",
+    title: "Actualités",
+    tagline: "Trades, drama, buzzer beaters -- tout ce qui fait vibrer la ligue",
+    icon: <Newspaper size={18} strokeWidth={1.5} />,
+    iconBg: <Newspaper size={48} strokeWidth={0.8} />,
+    color: "#3a2535",
+    size: "banner" as const,
+    cell: "sm:col-span-4",
   },
 ];
 
@@ -134,6 +172,9 @@ export default async function Home() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 sm:space-y-14">
+      {/* ── Favorite Alerts ──────────────────── */}
+      <FavoriteAlerts />
+
       {/* ── Hero with background image ───────── */}
       <section className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-border-t">
         {/* Background photo */}
@@ -174,21 +215,26 @@ export default async function Home() {
                 href="/actualites"
                 className="group inline-flex items-center gap-2 rounded-xl bg-accent px-6 py-3 text-sm font-bold text-white transition-all duration-300 hover:bg-accent-hover hover:shadow-lg hover:shadow-accent/25 hover:scale-[1.03] active:scale-[0.98]"
               >
-                <Flame size={16} />
+                <Flame size={16} strokeWidth={1.5} />
                 Voir les actus
-                <ArrowRight size={16} className="transition-transform duration-300 group-hover:translate-x-0.5" />
+                <ArrowRight size={16} strokeWidth={1.5} className="transition-transform duration-300 group-hover:translate-x-0.5" />
               </Link>
               <Link
                 href="/statistiques"
                 className="group inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-6 py-3 text-sm font-bold text-white backdrop-blur-sm transition-all duration-300 hover:bg-white/20 hover:scale-[1.03] active:scale-[0.98]"
               >
-                <BarChart3 size={16} />
+                <BarChart3 size={16} strokeWidth={1.5} />
                 Plonger dans les stats
               </Link>
             </div>
           </div>
         </div>
       </section>
+
+      {/* ── En ce moment ────────────────────── */}
+      <ScrollReveal variant="scale">
+        <SeasonWidget />
+      </ScrollReveal>
 
       {/* ── Article à la une ─────────────────── */}
       {featured && (
@@ -200,7 +246,7 @@ export default async function Home() {
               className="group flex items-center gap-1.5 text-sm font-semibold text-accent transition-colors hover:text-accent-hover"
             >
               Tous les articles
-              <ArrowRight size={14} className="transition-transform duration-300 group-hover:translate-x-0.5" />
+              <ArrowRight size={14} strokeWidth={1.5} className="transition-transform duration-300 group-hover:translate-x-0.5" />
             </Link>
           </div>
 
@@ -242,17 +288,17 @@ export default async function Home() {
                 <div className="mt-4 sm:mt-6 flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-text-muted">
                   <span className="font-medium text-text-secondary">{featured.author}</span>
                   <span className="flex items-center gap-1">
-                    <BookOpen size={14} />
+                    <BookOpen size={14} strokeWidth={1.5} />
                     {featured.read_time}
                   </span>
                   <span className="flex items-center gap-1">
-                    <Clock size={14} />
+                    <Clock size={14} strokeWidth={1.5} />
                     {formatDate(featured.created_at)}
                   </span>
                 </div>
                 <div className="mt-5 flex items-center gap-1.5 text-sm font-semibold text-accent opacity-0 -translate-x-1 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0">
                   Lire l&apos;article
-                  <ArrowRight size={14} className="transition-transform duration-300 group-hover:translate-x-1" />
+                  <ArrowRight size={14} strokeWidth={1.5} className="transition-transform duration-300 group-hover:translate-x-1" />
                 </div>
               </div>
             </div>
@@ -260,57 +306,101 @@ export default async function Home() {
         </ScrollReveal>
       )}
 
-      {/* ── Categories Grid ──────────────────── */}
+      {/* ── Mon espace (favoris) ───────────── */}
+      <ScrollReveal variant="up">
+        <FavoriteDashboard />
+      </ScrollReveal>
+
+      {/* ── Bento Categories ────────────────────── */}
       <section>
         <ScrollReveal variant="left">
-          <div className="mb-8">
+          <div className="mb-6">
             <h2 className="text-2xl font-bold text-text-primary">Explorez la ligue</h2>
-            <p className="mt-1 text-sm text-text-muted">
-              Sept rubriques, zéro excuse pour rater quoi que ce soit.
-            </p>
           </div>
         </ScrollReveal>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {categories.map((cat, i) => (
-            <ScrollReveal key={cat.href} delay={i * 80} variant={i % 2 === 0 ? "up" : "blur"}>
-              <Link
-                href={cat.href}
-                className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border-t bg-card transition-all duration-300 hover:shadow-xl hover:-translate-y-1 active:translate-y-0"
-              >
-                {/* Photo header */}
-                <div className="relative h-36 overflow-hidden">
-                  <img
-                    src={cat.image}
-                    alt=""
-                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {categories.map((cat, i) => {
+            const isXl = cat.size === "xl";
+            const isMd = cat.size === "md";
+            const isBanner = cat.size === "banner";
+            const minH = isXl ? "min-h-[240px]" : isMd ? "min-h-[110px]" : isBanner ? "min-h-[64px]" : "min-h-[100px]";
+
+            return (
+              <ScrollReveal key={cat.href} delay={i * 50} variant="scale" className={cat.cell}>
+                <Link
+                  href={cat.href}
+                  className={`group relative flex h-full overflow-hidden rounded-2xl border border-border-t bg-card transition-all duration-300 hover:-translate-y-1 active:translate-y-0 ${minH}`}
+                  style={{
+                    // @ts-expect-error CSS custom property
+                    "--cat-color": cat.color,
+                  }}
+                >
+                  {/* Colored background */}
+                  <div
+                    className="absolute inset-0 transition-opacity duration-500 opacity-95 group-hover:opacity-100"
+                    style={{ background: `linear-gradient(160deg, ${cat.color} 0%, ${cat.color}cc 50%, ${cat.color}80 100%)` }}
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                  {/* Icon badge */}
-                  <div
-                    className="absolute bottom-3 left-4 flex h-10 w-10 items-center justify-center rounded-lg text-white shadow-lg transition-transform duration-300 group-hover:scale-110"
-                    style={{ backgroundColor: cat.color }}
-                  >
-                    {cat.icon}
-                  </div>
-                </div>
+                  {/* Dark vignette for text readability */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />
 
-                {/* Content */}
-                <div className="relative flex flex-1 flex-col px-5 pb-5 pt-4">
-                  <h3 className="text-lg font-bold text-text-primary">{cat.title}</h3>
-                  <p className="mt-1.5 text-sm leading-relaxed text-text-muted">{cat.description}</p>
-
-                  <div
-                    className="mt-auto flex items-center gap-1.5 pt-4 text-sm font-semibold opacity-0 transition-all duration-300 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0"
-                    style={{ color: cat.color }}
-                  >
-                    Consulter
-                    <ArrowRight size={14} className="transition-transform duration-300 group-hover:translate-x-1" />
+                  {/* Shine sweep on hover */}
+                  <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                    <div className="absolute inset-y-0 -left-1/2 w-1/3 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 group-hover:animate-[shine_0.7s_ease-out_forwards]" />
                   </div>
-                </div>
-              </Link>
-            </ScrollReveal>
-          ))}
+
+                  {/* Background icon watermark */}
+                  <div
+                    className={`absolute text-white/[0.08] transition-all duration-500 group-hover:text-white/[0.15] group-hover:scale-110 ${
+                      isBanner ? "right-5 top-1/2 -translate-y-1/2" : "right-4 bottom-4"
+                    }`}
+                  >
+                    {cat.iconBg}
+                  </div>
+
+                  {/* Content */}
+                  <div className={`relative flex w-full ${
+                    isBanner
+                      ? "flex-row items-center gap-4 px-5 py-3"
+                      : "flex-col justify-end p-5"
+                  } ${isXl ? "gap-3" : isMd ? "gap-1.5" : "gap-1"}`}>
+                    <div className="flex items-center gap-3">
+                      <span className="shrink-0 text-white/90 transition-transform duration-300 group-hover:scale-110">
+                        {cat.icon}
+                      </span>
+                      {isBanner && (
+                        <div className="flex-1 min-w-0">
+                          <span className="text-sm font-semibold text-white">{cat.title}</span>
+                          <span className="hidden sm:inline text-sm text-white/60 ml-2">{cat.tagline}</span>
+                        </div>
+                      )}
+                    </div>
+                    {!isBanner && (
+                      <>
+                        <h3 className={`font-bold text-white ${isXl ? "text-xl" : isMd ? "text-base" : "text-sm"}`}>
+                          {cat.title}
+                        </h3>
+                        {isXl && cat.description ? (
+                          <p className="text-sm leading-relaxed text-white/65 max-w-sm">{cat.description}</p>
+                        ) : (
+                          <p className={`text-white/50 ${isMd ? "text-sm" : "text-xs"}`}>{cat.tagline}</p>
+                        )}
+                      </>
+                    )}
+                  </div>
+
+                  {/* Arrow */}
+                  <div
+                    className={`absolute opacity-0 translate-x-1 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0 ${
+                      isBanner ? "right-5 top-1/2 -translate-y-1/2" : "top-4 right-4"
+                    }`}
+                  >
+                    <ArrowRight size={16} strokeWidth={1.5} className="text-white/80" />
+                  </div>
+                </Link>
+              </ScrollReveal>
+            );
+          })}
         </div>
       </section>
 
@@ -319,7 +409,7 @@ export default async function Home() {
         <section className="relative overflow-hidden rounded-2xl border border-accent/15 bg-gradient-to-r from-accent/8 via-card to-card p-5 sm:p-8">
           <div className="flex items-start gap-4">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-light">
-              <Sparkles size={20} className="text-accent" />
+              <Sparkles size={18} strokeWidth={1.5} className="text-accent" />
             </div>
             <div>
               <h3 className="text-sm font-bold uppercase tracking-wide text-accent-text">
@@ -357,9 +447,9 @@ export default async function Home() {
               href="/calendrier"
               className="group inline-flex shrink-0 items-center gap-2 rounded-xl bg-accent px-6 py-3 text-sm font-bold text-white transition-all duration-300 hover:bg-accent-hover hover:shadow-lg hover:shadow-accent/25 hover:scale-[1.03] active:scale-[0.98]"
             >
-              <Calendar size={16} />
+              <Calendar size={16} strokeWidth={1.5} />
               Matchs du jour
-              <ArrowRight size={14} className="transition-transform duration-300 group-hover:translate-x-0.5" />
+              <ArrowRight size={14} strokeWidth={1.5} className="transition-transform duration-300 group-hover:translate-x-0.5" />
             </Link>
           </div>
         </section>

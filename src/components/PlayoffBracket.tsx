@@ -135,13 +135,14 @@ function GamesPopover({ series }: { series: PlayoffSeries }) {
 }
 
 /* ─── Matchup box with optional series data ─── */
-function MatchupBox({ series, topTeam, bottomTeam, seedTop, seedBottom, accent }: {
+function MatchupBox({ series, topTeam, bottomTeam, seedTop, seedBottom, accent, animDelay = 0 }: {
   series?: PlayoffSeries | null;
   topTeam?: Standing | null;
   bottomTeam?: Standing | null;
   seedTop?: number;
   seedBottom?: number;
   accent?: boolean;
+  animDelay?: number;
 }) {
   const [showGames, setShowGames] = useState(false);
   const { isTeamFavorite } = useFavorites();
@@ -167,7 +168,7 @@ function MatchupBox({ series, topTeam, bottomTeam, seedTop, seedBottom, accent }
                 ? "border border-border-t/60 bg-card/80"
                 : "border border-border-t bg-card"
         }`}
-        style={{ width: BOX_W }}
+        style={{ width: BOX_W, animation: `fadeSlideUp 0.4s ease-out ${animDelay}ms both` }}
         onMouseEnter={() => hasGames && setShowGames(true)}
         onMouseLeave={() => setShowGames(false)}
       >
@@ -205,7 +206,7 @@ function MatchupBox({ series, topTeam, bottomTeam, seedTop, seedBottom, accent }
             ? "border-2 border-accent/40 bg-card"
             : "border border-border-t bg-card"
       }`}
-      style={{ width: BOX_W }}
+      style={{ width: BOX_W, animation: `fadeSlideUp 0.4s ease-out ${animDelay}ms both` }}
     >
       <TeamRow
         tricode={topTeam?.team_tricode || null}
@@ -235,7 +236,7 @@ function HalfCol({ count, children }: { count: number; children: React.ReactNode
 }
 
 /* ─── SVG connector for intra-conference transitions ─── */
-function DualConnector({ inputPerConf, outputPerConf }: { inputPerConf: number; outputPerConf: number }) {
+function DualConnector({ inputPerConf, outputPerConf, animDelay = 300 }: { inputPerConf: number; outputPerConf: number; animDelay?: number }) {
   const inSpace = HALF_H / inputPerConf;
   const outSpace = HALF_H / outputPerConf;
   const mid = CONN_W / 2;
@@ -254,14 +255,16 @@ function DualConnector({ inputPerConf, outputPerConf }: { inputPerConf: number; 
   return (
     <svg width={CONN_W} height={TOTAL_H} className="shrink-0">
       {paths.map((d, i) => (
-        <path key={i} d={d} fill="none" stroke="var(--border-t)" strokeWidth="1.5" />
+        <path key={i} d={d} fill="none" stroke="var(--border-t)" strokeWidth="1.5"
+          strokeDasharray="1000" strokeDashoffset="1000"
+          style={{ animation: `drawLine 0.8s ease-out ${animDelay}ms both` }} />
       ))}
     </svg>
   );
 }
 
 /* ─── SVG connector: 2 conf finals → 1 NBA finals ─── */
-function FinalsConnector() {
+function FinalsConnector({ animDelay = 700 }: { animDelay?: number }) {
   const eastY = HALF_H / 2;
   const westY = HALF_H + HALF_H / 2;
   const finalsY = TOTAL_H / 2;
@@ -269,8 +272,12 @@ function FinalsConnector() {
 
   return (
     <svg width={CONN_W} height={TOTAL_H} className="shrink-0">
-      <path d={`M 0 ${eastY} H ${mid} V ${finalsY} H ${CONN_W}`} fill="none" stroke="var(--border-t)" strokeWidth="1.5" />
-      <path d={`M 0 ${westY} H ${mid} V ${finalsY} H ${CONN_W}`} fill="none" stroke="var(--border-t)" strokeWidth="1.5" />
+      <path d={`M 0 ${eastY} H ${mid} V ${finalsY} H ${CONN_W}`} fill="none" stroke="var(--border-t)" strokeWidth="1.5"
+        strokeDasharray="1000" strokeDashoffset="1000"
+        style={{ animation: `drawLine 0.8s ease-out ${animDelay}ms both` }} />
+      <path d={`M 0 ${westY} H ${mid} V ${finalsY} H ${CONN_W}`} fill="none" stroke="var(--border-t)" strokeWidth="1.5"
+        strokeDasharray="1000" strokeDashoffset="1000"
+        style={{ animation: `drawLine 0.8s ease-out ${animDelay}ms both` }} />
     </svg>
   );
 }
@@ -397,50 +404,50 @@ function FullBracket({ east, west, series }: { east: Standing[]; west: Standing[
           <div className="shrink-0" style={{ width: BOX_W }}>
             <HalfCol count={4}>
               {eastR1.map((m, i) => (
-                <MatchupBox key={i} series={m.series} topTeam={m.topTeam} bottomTeam={m.bottomTeam} seedTop={m.seedTop} seedBottom={m.seedBottom} />
+                <MatchupBox key={i} series={m.series} topTeam={m.topTeam} bottomTeam={m.bottomTeam} seedTop={m.seedTop} seedBottom={m.seedBottom} animDelay={i * 80} />
               ))}
             </HalfCol>
             <HalfCol count={4}>
               {westR1.map((m, i) => (
-                <MatchupBox key={i} series={m.series} topTeam={m.topTeam} bottomTeam={m.bottomTeam} seedTop={m.seedTop} seedBottom={m.seedBottom} />
+                <MatchupBox key={i} series={m.series} topTeam={m.topTeam} bottomTeam={m.bottomTeam} seedTop={m.seedTop} seedBottom={m.seedBottom} animDelay={i * 80} />
               ))}
             </HalfCol>
           </div>
 
           {/* Connector R1 → Semis */}
-          <DualConnector inputPerConf={4} outputPerConf={2} />
+          <DualConnector inputPerConf={4} outputPerConf={2} animDelay={300} />
 
           {/* Semis: 2 matchups per conference */}
           <div className="shrink-0" style={{ width: BOX_W }}>
             <HalfCol count={2}>
-              <MatchupBox series={eastSemi0} />
-              <MatchupBox series={eastSemi1} />
+              <MatchupBox series={eastSemi0} animDelay={400} />
+              <MatchupBox series={eastSemi1} animDelay={480} />
             </HalfCol>
             <HalfCol count={2}>
-              <MatchupBox series={westSemi0} />
-              <MatchupBox series={westSemi1} />
+              <MatchupBox series={westSemi0} animDelay={400} />
+              <MatchupBox series={westSemi1} animDelay={480} />
             </HalfCol>
           </div>
 
           {/* Connector Semis → CF */}
-          <DualConnector inputPerConf={2} outputPerConf={1} />
+          <DualConnector inputPerConf={2} outputPerConf={1} animDelay={550} />
 
           {/* Conference Finals: 1 per conference */}
           <div className="shrink-0" style={{ width: BOX_W }}>
             <HalfCol count={1}>
-              <MatchupBox series={eastCF} />
+              <MatchupBox series={eastCF} animDelay={600} />
             </HalfCol>
             <HalfCol count={1}>
-              <MatchupBox series={westCF} />
+              <MatchupBox series={westCF} animDelay={600} />
             </HalfCol>
           </div>
 
           {/* Connector CF → Finals */}
-          <FinalsConnector />
+          <FinalsConnector animDelay={700} />
 
           {/* NBA Finals */}
           <div className="shrink-0 flex flex-col justify-center" style={{ width: BOX_W, height: TOTAL_H }}>
-            <MatchupBox series={finals} accent />
+            <MatchupBox series={finals} accent animDelay={800} />
           </div>
         </div>
       </div>
@@ -449,12 +456,13 @@ function FullBracket({ east, west, series }: { east: Standing[]; west: Standing[
 }
 
 /* ─── Play-In matchup box (single game, not a series) ─── */
-function PlayInMatchupBox({ game, topTeam, bottomTeam, seedTop, seedBottom }: {
+function PlayInMatchupBox({ game, topTeam, bottomTeam, seedTop, seedBottom, animDelay = 0 }: {
   game?: PlayInGame | null;
   topTeam?: Standing | null;
   bottomTeam?: Standing | null;
   seedTop?: number;
   seedBottom?: number;
+  animDelay?: number;
 }) {
   const { isTeamFavorite } = useFavorites();
 
@@ -481,7 +489,7 @@ function PlayInMatchupBox({ game, topTeam, bottomTeam, seedTop, seedBottom }: {
             ? "border-2 border-accent/60 bg-card ring-2 ring-accent/20 shadow-[0_0_12px_rgba(var(--accent-rgb,249,115,22),0.15)]"
             : finished ? "border border-border-t/60 bg-card/80" : "border border-border-t bg-card"
         }`}
-        style={{ width: BOX_W }}
+        style={{ width: BOX_W, animation: `fadeSlideUp 0.4s ease-out ${animDelay}ms both` }}
       >
         <div className={`flex items-center gap-2 px-2.5 py-1.5 ${topWon ? "bg-accent/5" : ""}`}>
           <span className="w-4 text-center text-[10px] font-bold text-text-faint">{topSeed}</span>
@@ -505,7 +513,7 @@ function PlayInMatchupBox({ game, topTeam, bottomTeam, seedTop, seedBottom }: {
   }
 
   // Fallback: use standings data
-  return <MatchupBox topTeam={topTeam} bottomTeam={bottomTeam} seedTop={seedTop} seedBottom={seedBottom} />;
+  return <MatchupBox topTeam={topTeam} bottomTeam={bottomTeam} seedTop={seedTop} seedBottom={seedBottom} animDelay={animDelay} />;
 }
 
 /* ─── Play-In: single conference ─── */
@@ -548,11 +556,11 @@ function PlayInConference({ teams, label, games }: { teams: Standing[]; label: s
           <div className="flex flex-col justify-around" style={{ height: H }}>
             <div className="text-center">
               <p className="text-[9px] text-text-faint mb-1">Vainqueur → 7e seed</p>
-              <PlayInMatchupBox game={game78} topTeam={byRank(7)} bottomTeam={byRank(8)} seedTop={7} seedBottom={8} />
+              <PlayInMatchupBox game={game78} topTeam={byRank(7)} bottomTeam={byRank(8)} seedTop={7} seedBottom={8} animDelay={0} />
             </div>
             <div className="text-center">
               <p className="text-[9px] text-text-faint mb-1">Perdant éliminé</p>
-              <PlayInMatchupBox game={game910} topTeam={byRank(9)} bottomTeam={byRank(10)} seedTop={9} seedBottom={10} />
+              <PlayInMatchupBox game={game910} topTeam={byRank(9)} bottomTeam={byRank(10)} seedTop={9} seedBottom={10} animDelay={100} />
             </div>
           </div>
         </div>
@@ -565,8 +573,12 @@ function PlayInConference({ teams, label, games }: { teams: Standing[]; label: s
             const mid = CONN_W / 2;
             return (
               <>
-                <path d={`M 0 ${inY1} H ${mid} V ${outY} H ${CONN_W}`} fill="none" stroke="var(--border-t)" strokeWidth="1.5" />
-                <path d={`M 0 ${inY2} H ${mid} V ${outY} H ${CONN_W}`} fill="none" stroke="var(--border-t)" strokeWidth="1.5" />
+                <path d={`M 0 ${inY1} H ${mid} V ${outY} H ${CONN_W}`} fill="none" stroke="var(--border-t)" strokeWidth="1.5"
+                  strokeDasharray="1000" strokeDashoffset="1000"
+                  style={{ animation: 'drawLine 0.8s ease-out 200ms both' }} />
+                <path d={`M 0 ${inY2} H ${mid} V ${outY} H ${CONN_W}`} fill="none" stroke="var(--border-t)" strokeWidth="1.5"
+                  strokeDasharray="1000" strokeDashoffset="1000"
+                  style={{ animation: 'drawLine 0.8s ease-out 200ms both' }} />
               </>
             );
           })()}
@@ -577,7 +589,7 @@ function PlayInConference({ teams, label, games }: { teams: Standing[]; label: s
           <div className="flex flex-col justify-center" style={{ height: H }}>
             <div className="text-center">
               <p className="text-[9px] text-text-faint mb-1">Perdant 7-8 vs Vainqueur 9-10</p>
-              <PlayInMatchupBox game={gameFinal} topTeam={finalTopTeam} bottomTeam={finalBottomTeam} seedTop={finalSeedTop} seedBottom={finalSeedBottom} />
+              <PlayInMatchupBox game={gameFinal} topTeam={finalTopTeam} bottomTeam={finalBottomTeam} seedTop={finalSeedTop} seedBottom={finalSeedBottom} animDelay={300} />
             </div>
           </div>
         </div>

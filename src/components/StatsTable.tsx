@@ -121,6 +121,11 @@ export default function StatsTable({ players }: { players: PlayerRow[] }) {
   const totalPages = Math.ceil(sorted.length / PAGE_SIZE);
   const paged = sorted.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
+  const pageMax = useMemo(() => {
+    if (paged.length === 0) return 1;
+    return Math.max(...paged.map((p) => p.stats[sortKey] ?? 0), 1);
+  }, [paged, sortKey]);
+
   const activeAttemptCount = Object.values(minAttempts).filter((v) => v > 0).length;
   const activeFilterCount = (minGP > 0 ? 1 : 0) + (minMPG > 0 ? 1 : 0) + (minUSG > 0 ? 1 : 0) + activeAttemptCount;
   const hasActiveFilters = activeFilterCount > 0;
@@ -341,16 +346,30 @@ export default function StatsTable({ players }: { players: PlayerRow[] }) {
                     {COLUMNS.map((col) => {
                       const val = player.stats[col.key];
                       const isInt = col.key === "GP";
+                      const isActiveSort = sortKey === col.key;
+                      const displayVal = val != null ? (isInt ? Math.round(val) : val.toFixed(2)) : "N/A";
                       return (
                         <td
                           key={col.key}
                           className={`px-2 py-2.5 text-right tabular-nums text-sm ${
-                            sortKey === col.key
+                            isActiveSort
                               ? "text-accent font-bold"
                               : "text-text-primary"
                           }`}
                         >
-                          {val != null ? (isInt ? Math.round(val) : val.toFixed(2)) : "N/A"}
+                          {isActiveSort && val != null ? (
+                            <div className="relative">
+                              <span>{displayVal}</span>
+                              <div className="absolute bottom-0 left-0 right-0 h-[3px] rounded-full bg-accent/30">
+                                <div
+                                  className="h-full rounded-full bg-accent transition-all duration-300"
+                                  style={{ width: `${(val / pageMax) * 100}%` }}
+                                />
+                              </div>
+                            </div>
+                          ) : (
+                            displayVal
+                          )}
                         </td>
                       );
                     })}

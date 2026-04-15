@@ -2,8 +2,18 @@
 
 import { Fragment, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { teamLogoUrl } from "@/lib/nba-teams";
 import { useFavorites } from "@/context/FavoritesContext";
+
+const DIVISIONS: Record<string, { name: string; conference: string; teams: string[] }> = {
+  atlantic: { name: "Atlantic", conference: "East", teams: ["BOS", "BKN", "NYK", "PHI", "TOR"] },
+  central: { name: "Central", conference: "East", teams: ["CHI", "CLE", "DET", "IND", "MIL"] },
+  southeast: { name: "Southeast", conference: "East", teams: ["ATL", "CHA", "MIA", "ORL", "WAS"] },
+  northwest: { name: "Northwest", conference: "West", teams: ["DEN", "MIN", "OKC", "POR", "UTA"] },
+  pacific: { name: "Pacific", conference: "West", teams: ["GSW", "LAC", "LAL", "PHX", "SAC"] },
+  southwest: { name: "Southwest", conference: "West", teams: ["DAL", "HOU", "MEM", "NOP", "SAS"] },
+};
 
 interface Standing {
   id: string;
@@ -21,7 +31,15 @@ interface Standing {
   conference_rank: number;
 }
 
-type View = "east" | "west" | "league";
+type View = "east" | "west" | "league" | "divisions";
+
+function getTrendIcon(last10: string) {
+  const wins = parseInt(last10.split("-")[0], 10);
+  if (isNaN(wins)) return <Minus size={12} className="text-text-faint" />;
+  if (wins >= 7) return <TrendingUp size={12} className="text-emerald-400" />;
+  if (wins <= 3) return <TrendingDown size={12} className="text-red-400" />;
+  return <Minus size={12} className="text-text-faint" />;
+}
 
 const HEADERS = [
   { key: "wins", label: "V", className: "text-center" },
@@ -52,6 +70,7 @@ function StandingsTable({ teams, showConference, scrollRef }: { teams: Standing[
         <thead className="sticky top-0 z-10 bg-card">
           <tr className="border-b border-border-t text-text-muted">
             <th className="sticky left-0 z-20 bg-card px-2 py-3 font-medium text-left w-10">#</th>
+            <th className="w-6 bg-card px-0 py-3" />
             <th className="sticky left-8 z-20 bg-card px-2 py-3 font-medium text-left min-w-[100px] sm:min-w-[180px]">Équipe</th>
             {HEADERS.map((h) => (
               <th key={h.key} className={`px-2 sm:px-3 py-3 font-medium whitespace-nowrap ${h.className}`}>
@@ -72,7 +91,7 @@ function StandingsTable({ teams, showConference, scrollRef }: { teams: Standing[
               <Fragment key={team.id}>
                 {showSeparator && (
                   <tr>
-                    <td colSpan={HEADERS.length + 2} className="p-0">
+                    <td colSpan={HEADERS.length + 3} className="p-0">
                       <div className="h-px bg-accent/30" />
                     </td>
                   </tr>
@@ -95,6 +114,9 @@ function StandingsTable({ teams, showConference, scrollRef }: { teams: Standing[
                     >
                       {rank}
                     </span>
+                  </td>
+                  <td className="w-6 px-0 py-3 text-center">
+                    {getTrendIcon(team.last_10)}
                   </td>
                   <td className="sticky left-8 z-10 bg-card px-2 py-3">
                     <div className="flex items-center gap-2">
@@ -148,6 +170,94 @@ function StandingsTable({ teams, showConference, scrollRef }: { teams: Standing[
   );
 }
 
+function DivisionsGrid({ allTeams }: { allTeams: Standing[] }) {
+  const router = useRouter();
+  const { isTeamFavorite } = useFavorites();
+
+  const divisionData = useMemo(() => {
+    return Object.entries(DIVISIONS).map(([key, div]) => {
+      const teams = div.teams
+        .map((tri) => allTeams.find((t) => t.team_tricode === tri))
+        .filter(Boolean) as Standing[];
+      teams.sort((a, b) => b.win_pct - a.win_pct || b.wins - a.wins);
+      return { key, ...div, teams };
+    });
+  }, [allTeams]);
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 p-4">
+      {divisionData.map((div) => {
+        const leader = div.teams[0];
+        return (
+          <div key={div.key} className="rounded-xl bg-card border border-border-t overflow-hidden">
+            <div className="px-3 py-2 border-b border-border-t/50 flex items-center justify-between">
+              <h3 className="text-sm font-bold text-text-primary">Division {div.name}</h3>
+              <span className="text-[10px] text-text-faint">
+                {div.conference === "East" ? "Est" : "Ouest"}
+              </span>
+            </div>
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-border-t/50 text-text-muted">
+                  <th className="px-2 py-1.5 text-left font-medium w-6">#</th>
+                  <th className="w-5 px-0 py-1.5" />
+                  <th className="px-2 py-1.5 text-left font-medium">Équipe</th>
+                  <th className="px-2 py-1.5 text-center font-medium">V</th>
+                  <th className="px-2 py-1.5 text-center font-medium">D</th>
+                  <th className="px-2 py-1.5 text-center font-medium">%</th>
+                  <th className="px-2 py-1.5 text-center font-medium">GB</th>
+                </tr>
+              </thead>
+              <tbody>
+                {div.teams.map((team, i) => {
+                  const isFav = isTeamFavorite(team.team_tricode);
+                  return (
+                    <tr
+                      key={team.id}
+                      onClick={() => router.push(`/equipes?team=${team.team_tricode}`)}
+                      className={`border-b border-border-t/30 transition-all duration-150 hover:bg-card-hover cursor-pointer ${isFav ? "bg-accent/5" : ""}`}
+                    >
+                      <td className="px-2 py-1.5">
+                        <span className={`text-xs font-bold ${i === 0 ? "text-accent-text" : "text-text-muted"}`}>
+                          {i + 1}
+                        </span>
+                      </td>
+                      <td className="w-5 px-0 py-1.5 text-center">
+                        {getTrendIcon(team.last_10)}
+                      </td>
+                      <td className="px-2 py-1.5">
+                        <div className="flex items-center gap-1.5">
+                          <img
+                            src={teamLogoUrl(team.team_tricode)}
+                            alt={team.team_tricode}
+                            className="h-4 w-4 object-contain shrink-0"
+                          />
+                          <span className={`font-medium truncate ${isFav ? "text-accent-text" : "text-text-primary"}`}>
+                            <span className="hidden sm:inline">{team.team_city} {team.team_name}</span>
+                            <span className="sm:hidden">{team.team_tricode}</span>
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-2 py-1.5 text-center font-semibold text-text-primary">{team.wins}</td>
+                      <td className="px-2 py-1.5 text-center text-text-muted">{team.losses}</td>
+                      <td className="px-2 py-1.5 text-center font-medium text-text-secondary">
+                        {(team.win_pct * 100).toFixed(1)}
+                      </td>
+                      <td className="px-2 py-1.5 text-center text-text-muted">
+                        {leader ? computeGB(leader, team) : "\u2014"}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function StandingsView({ east, west }: { east: Standing[]; west: Standing[] }) {
   const [view, setView] = useState<View>("east");
   const tableRef = useRef<HTMLDivElement>(null);
@@ -166,6 +276,7 @@ export default function StandingsView({ east, west }: { east: Standing[]; west: 
     { key: "east", label: "Est" },
     { key: "west", label: "Ouest" },
     { key: "league", label: "Ligue" },
+    { key: "divisions", label: "Divisions" },
   ];
 
   return (
@@ -189,10 +300,10 @@ export default function StandingsView({ east, west }: { east: Standing[]; west: 
       <div className="rounded-2xl bg-card border border-border-t overflow-hidden">
         <div className="border-b border-border-t px-4 sm:px-6 py-4 flex items-center justify-between">
           <h2 className="text-lg font-bold text-text-primary">
-            {view === "east" ? "Conférence Est" : view === "west" ? "Conférence Ouest" : "Classement général"}
+            {view === "east" ? "Conférence Est" : view === "west" ? "Conférence Ouest" : view === "divisions" ? "Classement par division" : "Classement général"}
           </h2>
           <span className="text-xs text-text-faint">
-            {view === "league" ? "30 équipes" : "15 équipes"}
+            {view === "league" ? "30 équipes" : view === "divisions" ? "6 divisions" : "15 équipes"}
           </span>
         </div>
 
@@ -200,6 +311,8 @@ export default function StandingsView({ east, west }: { east: Standing[]; west: 
           <div className="px-6 py-12 text-center text-sm text-text-muted">
             Aucune donnée disponible
           </div>
+        ) : view === "divisions" ? (
+          <DivisionsGrid allTeams={[...east, ...west]} />
         ) : (
           <>
             <StandingsTable

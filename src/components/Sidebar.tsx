@@ -22,9 +22,12 @@ import {
   X,
   Palette,
   HeartPulse,
+  Search,
 } from "lucide-react";
 import SyncButton from "./SyncButton";
 import { useTheme } from "./ThemeProvider";
+import { useFavorites } from "@/context/FavoritesContext";
+import { teamLogoUrl } from "@/lib/nba-teams";
 
 interface NavItem {
   href: string;
@@ -32,25 +35,28 @@ interface NavItem {
   icon: React.ReactNode;
 }
 
+const S = 18;
+const SW = 1.5;
+
 const navItems: NavItem[] = [
-  { href: "/", label: "Accueil", icon: <Home size={20} /> },
-  { href: "/actualites", label: "Actualités", icon: <Newspaper size={20} /> },
-  { href: "/articles", label: "Articles", icon: <FileText size={20} /> },
-  { href: "/statistiques", label: "Statistiques", icon: <BarChart3 size={20} /> },
-  { href: "/calendrier", label: "Calendrier", icon: <Calendar size={20} /> },
+  { href: "/", label: "Accueil", icon: <Home size={S} strokeWidth={SW} /> },
+  { href: "/actualites", label: "Actualités", icon: <Newspaper size={S} strokeWidth={SW} /> },
+  { href: "/articles", label: "Articles", icon: <FileText size={S} strokeWidth={SW} /> },
+  { href: "/statistiques", label: "Statistiques", icon: <BarChart3 size={S} strokeWidth={SW} /> },
+  { href: "/calendrier", label: "Calendrier", icon: <Calendar size={S} strokeWidth={SW} /> },
   { href: "/classement", label: "Classement", icon: (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width={S} height={S} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={SW} strokeLinecap="round" strokeLinejoin="round">
       <rect x="2" y="10" width="6" height="11" rx="1" />
       <rect x="9" y="4" width="6" height="17" rx="1" />
       <rect x="16" y="14" width="6" height="7" rx="1" />
     </svg>
   ) },
-  { href: "/equipes", label: "Équipes", icon: <Users size={20} /> },
-  { href: "/joueurs", label: "Joueurs", icon: <UserRound size={20} /> },
-  { href: "/blessures", label: "Infirmerie", icon: <HeartPulse size={20} /> },
-  { href: "/playoffs", label: "Playoffs", icon: <Trophy size={20} /> },
-  { href: "/mini-jeux", label: "Mini-jeux", icon: <Gamepad2 size={20} /> },
-  { href: "/profil", label: "Profil", icon: <User size={20} /> },
+  { href: "/equipes", label: "Équipes", icon: <Users size={S} strokeWidth={SW} /> },
+  { href: "/joueurs", label: "Joueurs", icon: <UserRound size={S} strokeWidth={SW} /> },
+  { href: "/blessures", label: "Infirmerie", icon: <HeartPulse size={S} strokeWidth={SW} /> },
+  { href: "/playoffs", label: "Playoffs", icon: <Trophy size={S} strokeWidth={SW} /> },
+  { href: "/mini-jeux", label: "Mini-jeux", icon: <Gamepad2 size={S} strokeWidth={SW} /> },
+  { href: "/profil", label: "Profil", icon: <User size={S} strokeWidth={SW} /> },
 ];
 
 interface UserProfile {
@@ -146,6 +152,21 @@ export default function Sidebar() {
           <X size={20} />
         </button>
       </div>
+
+      {/* Search button */}
+      <div className="px-3 mb-2">
+        <button
+          onClick={() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
+          className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-text-muted hover:bg-input hover:text-text-primary transition-all duration-200"
+        >
+          <Search size={S} strokeWidth={SW} className="text-text-faint" />
+          <span className="flex-1 text-left">Rechercher</span>
+          <kbd className="hidden sm:inline-flex items-center gap-0.5 rounded-md border border-border-t bg-input px-1.5 py-0.5 text-[10px] font-mono text-text-faint">{"\u2318"}K</kbd>
+        </button>
+      </div>
+
+      {/* Favorites */}
+      <FavoriteTeams />
 
       {/* Navigation */}
       <nav className="mt-4 flex flex-1 flex-col gap-1 overflow-y-auto px-3">
@@ -273,6 +294,29 @@ export default function Sidebar() {
         {sidebarContent}
       </aside>
     </>
+  );
+}
+
+function FavoriteTeams() {
+  const { favoriteTeams } = useFavorites();
+  if (favoriteTeams.length === 0) return null;
+
+  return (
+    <div className="px-3 mb-1">
+      <p className="px-4 mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-text-faint">Favoris</p>
+      <div className="flex flex-wrap gap-1 px-3">
+        {favoriteTeams.map((tricode) => (
+          <Link
+            key={tricode}
+            href={`/equipes?team=${tricode}`}
+            className="flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-200 hover:bg-input hover:scale-110"
+            title={tricode}
+          >
+            <img src={teamLogoUrl(tricode)} alt={tricode} className="h-5 w-5 object-contain" />
+          </Link>
+        ))}
+      </div>
+    </div>
   );
 }
 

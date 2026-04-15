@@ -3,8 +3,10 @@ import { getCurrentSeason } from "@/lib/season";
 import { syncPlayerCareer } from "@/lib/sync-career";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, MapPin, GraduationCap, Calendar, Ruler, Weight, Hash } from "lucide-react";
+import { ChevronLeft, MapPin, GraduationCap, Calendar, Ruler, Weight, Hash, BarChart3 } from "lucide-react";
 import PlayerCareer from "@/components/PlayerCareer";
+import CareerChart from "@/components/CareerChart";
+import ScrollReveal from "@/components/ScrollReveal";
 import FollowPlayerButton from "@/components/FollowPlayerButton";
 import { teamLogoUrl } from "@/lib/nba-teams";
 
@@ -172,8 +174,15 @@ export default async function PlayerDetail({ params }: { params: Promise<{ id: s
               </p>
             )}
 
-            <div className="mt-4">
+            <div className="mt-4 flex flex-wrap items-center gap-2">
               <FollowPlayerButton playerId={player.player_id} />
+              <Link
+                href={`/joueurs/comparer?p1=${player.player_id}`}
+                className="inline-flex items-center gap-2 rounded-xl bg-input px-4 py-2 text-sm font-medium text-text-muted transition-colors hover:bg-card-hover hover:text-text-primary"
+              >
+                <BarChart3 size={16} />
+                Comparer
+              </Link>
             </div>
           </div>
         </div>
@@ -186,6 +195,13 @@ export default async function PlayerDetail({ params }: { params: Promise<{ id: s
           <StatBox label="Rebonds" value={player.reb?.toFixed(1) ?? "N/A"} />
           <StatBox label="Passes" value={player.ast?.toFixed(1) ?? "N/A"} />
         </div>
+      )}
+
+      {/* Career evolution chart */}
+      {careerSeasons.length > 1 && (
+        <ScrollReveal variant="up" delay={80}>
+          <CareerChart seasons={careerSeasons} />
+        </ScrollReveal>
       )}
 
       {/* Bio info */}

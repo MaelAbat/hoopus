@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { syncBoxscore } from "@/lib/sync-boxscore";
 import { getHighlightVideoId } from "@/lib/youtube";
 import BoxScore from "@/components/BoxScore";
+import TeamStatsComparison from "@/components/TeamStatsComparison";
 import FloatingVideo from "@/components/FloatingVideo";
 import ScrollReveal from "@/components/ScrollReveal";
 import ScrollToTop from "@/components/ScrollToTop";
@@ -159,6 +160,16 @@ export default async function MatchPage({ params }: PageProps) {
             </div>
           </div>
         </div>
+      </ScrollReveal>
+
+      {/* Team stats comparison */}
+      <ScrollReveal variant="up" delay={80}>
+        <TeamStatsComparison
+          awayTeam={awayTeam}
+          homeTeam={homeTeam}
+          awayPlayers={awayPlayers}
+          homePlayers={homePlayers}
+        />
       </ScrollReveal>
 
       {/* Box scores */}

@@ -1,0 +1,95 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import {
+  Trophy, Medal, Award, Crown, Flame, Zap, Star,
+  Timer, Target, Gamepad2, Compass, CalendarCheck,
+} from "lucide-react";
+import type { Achievement } from "@/lib/achievements";
+
+const ICON_MAP: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
+  trophy: Trophy,
+  medal: Medal,
+  award: Award,
+  crown: Crown,
+  flame: Flame,
+  zap: Zap,
+  star: Star,
+  timer: Timer,
+  target: Target,
+  "gamepad-2": Gamepad2,
+  compass: Compass,
+  "calendar-check": CalendarCheck,
+};
+
+const CATEGORY_COLORS: Record<string, string> = {
+  games: "text-orange-400",
+  streaks: "text-violet-400",
+  mastery: "text-emerald-400",
+};
+
+interface AchievementToastProps {
+  achievement: Achievement;
+  index?: number;
+  onDismiss: () => void;
+}
+
+export default function AchievementToast({
+  achievement,
+  index = 0,
+  onDismiss,
+}: AchievementToastProps) {
+  const [visible, setVisible] = useState(false);
+  const [exiting, setExiting] = useState(false);
+
+  const Icon = ICON_MAP[achievement.icon] || Trophy;
+  const iconColor = CATEGORY_COLORS[achievement.category] || "text-accent-text";
+
+  useEffect(() => {
+    // Stagger entrance for multiple toasts
+    const enterDelay = setTimeout(() => setVisible(true), index * 300 + 100);
+
+    // Auto-dismiss after 4 seconds
+    const dismissDelay = setTimeout(() => {
+      setExiting(true);
+      setTimeout(onDismiss, 400); // Wait for exit animation
+    }, 4000 + index * 300);
+
+    return () => {
+      clearTimeout(enterDelay);
+      clearTimeout(dismissDelay);
+    };
+  }, [index, onDismiss]);
+
+  return (
+    <div
+      className={`fixed z-50 rounded-xl border border-border-t bg-card shadow-xl p-4 transition-all duration-400 ease-out ${
+        visible && !exiting
+          ? "opacity-100 translate-y-0"
+          : "opacity-0 translate-y-4"
+      }`}
+      style={{
+        bottom: `${1 + index * 5}rem`,
+        right: "1rem",
+        maxWidth: "320px",
+      }}
+    >
+      <div className="flex items-start gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/10">
+          <Icon size={20} className={iconColor} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-semibold text-text-faint uppercase tracking-wide">
+            Succès débloqué
+          </p>
+          <p className="text-sm font-bold text-text-primary mt-0.5 truncate">
+            {achievement.title}
+          </p>
+          <p className="text-xs text-text-muted mt-0.5 line-clamp-2">
+            {achievement.description}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}

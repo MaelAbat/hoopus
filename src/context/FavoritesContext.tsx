@@ -48,6 +48,10 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) {
+        // Clear stale cache when logged out
+        setTeams([]);
+        setPlayers([]);
+        localStorage.removeItem("favorites-cache");
         setLoaded(true);
         return;
       }
