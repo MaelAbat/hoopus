@@ -188,7 +188,7 @@ export async function GET(request: NextRequest) {
       for (const game of dateEntry.games) {
         if (game.gameId.startsWith("004")) {
           playoffGames.push(game);
-        } else if (game.gameId.startsWith("003")) {
+        } else if (game.gameId.startsWith("005")) {
           playinGames.push(game);
         }
       }
