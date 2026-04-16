@@ -5,6 +5,7 @@ import { ArrowUp, ArrowDown, Check, RotateCcw, Trophy, Search, Clock, LogIn } fr
 import { teamLogoUrl, playerPhotoUrl } from "@/lib/nba-teams";
 import { createClient } from "@/lib/supabase/client";
 import { ensureAuth, getDisplayName, isAnonymousName } from "@/lib/anonymous-auth";
+import { useAchievementNotifier } from "@/components/AchievementProvider";
 import { computeVisibleLeaderboard, type LeaderboardRow } from "@/lib/leaderboard-utils";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -236,6 +237,7 @@ function formatTime(seconds: number): string {
 
 export default function HooplGame({ players }: { players: HooplPlayer[] }) {
   const pathname = usePathname();
+  const { triggerCheck } = useAchievementNotifier();
   const [guessIds, setGuessIds] = useState<number[]>([]);
   const [search, setSearch] = useState("");
   const [won, setWon] = useState(false);
@@ -359,7 +361,8 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
 
     setSubmitted(true);
     fetchLeaderboard();
-  }, [submitted, userId, startTime, elapsed, won, guessIds.length, gameDate, fetchLeaderboard]);
+    triggerCheck();
+  }, [submitted, userId, startTime, elapsed, won, guessIds.length, gameDate, fetchLeaderboard, triggerCheck]);
 
   // Close dropdown on outside click
   useEffect(() => {

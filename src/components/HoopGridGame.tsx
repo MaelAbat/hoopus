@@ -5,6 +5,7 @@ import { RotateCcw, Trophy, Clock, LogIn, Check, Search, Flag } from "lucide-rea
 import { teamLogoUrl } from "@/lib/nba-teams";
 import { createClient } from "@/lib/supabase/client";
 import { ensureAuth, getDisplayName, isAnonymousName } from "@/lib/anonymous-auth";
+import { useAchievementNotifier } from "@/components/AchievementProvider";
 import { computeVisibleLeaderboard } from "@/lib/leaderboard-utils";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -261,6 +262,7 @@ function Confetti() {
 
 export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
   const pathname = usePathname();
+  const { triggerCheck } = useAchievementNotifier();
   const [foundWords, setFoundWords] = useState<number[]>([]);
   const [selecting, setSelecting] = useState<{ row: number; col: number }[]>([]);
   const [mysteryGuess, setMysteryGuess] = useState("");
@@ -414,7 +416,8 @@ export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
     }, { onConflict: "user_id,game_date" });
     setSubmitted(true);
     fetchLeaderboard();
-  }, [submitted, userId, startTime, elapsed, gameOver, gameDate, words.length, fetchLeaderboard]);
+    triggerCheck();
+  }, [submitted, userId, startTime, elapsed, gameOver, gameDate, words.length, fetchLeaderboard, triggerCheck]);
 
   // Auto-submit on login
   useEffect(() => {

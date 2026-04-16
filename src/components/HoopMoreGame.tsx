@@ -5,6 +5,7 @@ import { RotateCcw, Trophy, Clock, LogIn, Check, ArrowUp, ArrowDown, Flame, Play
 import { teamLogoUrl, playerPhotoUrl } from "@/lib/nba-teams";
 import { createClient } from "@/lib/supabase/client";
 import { ensureAuth, getDisplayName, isAnonymousName } from "@/lib/anonymous-auth";
+import { useAchievementNotifier } from "@/components/AchievementProvider";
 import { computeVisibleLeaderboard } from "@/lib/leaderboard-utils";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -136,6 +137,7 @@ interface LeaderboardEntry {
 
 export default function HoopMoreGame({ players }: { players: HoopMorePlayer[] }) {
   const pathname = usePathname();
+  const { triggerCheck } = useAchievementNotifier();
 
   // ─── Mode ───
   const [mode, setMode] = useState<"daily" | "free">("daily");
@@ -318,7 +320,8 @@ export default function HoopMoreGame({ players }: { players: HoopMorePlayer[] })
 
     setSubmitted(true);
     fetchLeaderboard();
-  }, [mode, submitted, userId, startTime, elapsed, gameOver, gameDate, category.key, fetchLeaderboard]);
+    triggerCheck();
+  }, [mode, submitted, userId, startTime, elapsed, gameOver, gameDate, category.key, fetchLeaderboard, triggerCheck]);
 
   // Auto-submit on login (daily)
   useEffect(() => {

@@ -5,6 +5,7 @@ import { RotateCcw, Trophy, Search, Clock, LogIn, Check, Eye, Flag } from "lucid
 import { playerPhotoUrl, teamLogoUrl } from "@/lib/nba-teams";
 import { createClient } from "@/lib/supabase/client";
 import { ensureAuth, getDisplayName, isAnonymousName } from "@/lib/anonymous-auth";
+import { useAchievementNotifier } from "@/components/AchievementProvider";
 import { computeVisibleLeaderboard, type LeaderboardRow } from "@/lib/leaderboard-utils";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -181,6 +182,7 @@ function Confetti() {
 
 export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
   const pathname = usePathname();
+  const { triggerCheck } = useAchievementNotifier();
   const [guessIds, setGuessIds] = useState<number[]>([]);
   const [search, setSearch] = useState("");
   const [won, setWon] = useState(false);
@@ -317,7 +319,8 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
     }, { onConflict: "user_id,game_date" });
     setSubmitted(true);
     fetchLeaderboard();
-  }, [submitted, userId, elapsed, gameDate, fetchLeaderboard]);
+    triggerCheck();
+  }, [submitted, userId, elapsed, gameDate, fetchLeaderboard, triggerCheck]);
 
   // Auto-submit on login
   useEffect(() => {

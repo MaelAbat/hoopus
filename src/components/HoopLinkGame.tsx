@@ -5,6 +5,7 @@ import { RotateCcw, Trophy, Clock, LogIn, Check, Search, Link2, Flag, ArrowRight
 import { teamLogoUrl, playerPhotoUrl } from "@/lib/nba-teams";
 import { createClient } from "@/lib/supabase/client";
 import { ensureAuth, getDisplayName, isAnonymousName } from "@/lib/anonymous-auth";
+import { useAchievementNotifier } from "@/components/AchievementProvider";
 import { computeVisibleLeaderboard } from "@/lib/leaderboard-utils";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -231,6 +232,7 @@ interface Props {
 
 export default function HoopLinkGame({ players, playerTeams, adjacencyList }: Props) {
   const pathname = usePathname();
+  const { triggerCheck } = useAchievementNotifier();
 
   const baseDaySeed = useMemo(() => getDaySeed(), []);
   const [debugSeed, setDebugSeed] = useState(0);
@@ -392,7 +394,8 @@ export default function HoopLinkGame({ players, playerTeams, adjacencyList }: Pr
 
     setSubmitted(true);
     fetchLeaderboard();
-  }, [submitted, userId, startTime, elapsed, gameOver, gameDate, fetchLeaderboard]);
+    triggerCheck();
+  }, [submitted, userId, startTime, elapsed, gameOver, gameDate, fetchLeaderboard, triggerCheck]);
 
   // Auto-submit on login
   useEffect(() => {

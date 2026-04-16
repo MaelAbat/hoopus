@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Clock, Trophy, CheckCircle, XCircle, RotateCcw, Flag, List, ListOrdered, Copy, Check, ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { ensureAuth, getDisplayName, isAnonymousName } from "@/lib/anonymous-auth";
+import { useAchievementNotifier } from "@/components/AchievementProvider";
 import { computeVisibleLeaderboard } from "@/lib/leaderboard-utils";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -146,6 +147,7 @@ function LeaderboardSection({ quizId, mode, label, userId }: { quizId: string; m
 
 export default function HoopizGame({ quiz }: { quiz: Quiz }) {
   const pathname = usePathname();
+  const { triggerCheck } = useAchievementNotifier();
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [activeMode, setActiveMode] = useState<"unordered" | "ordered">(quiz.mode);
   const [found, setFound] = useState<Set<number>>(new Set());
@@ -272,7 +274,8 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
     setSubmitted(true);
     // Refresh leaderboard for the played mode
     window.dispatchEvent(new Event(`leaderboard-refresh-${quiz.id}-${mode}`));
-  }, [submitted, userId, quiz.id, quiz.timeLimit, total]);
+    triggerCheck();
+  }, [submitted, userId, quiz.id, quiz.timeLimit, total, triggerCheck]);
 
   // Auto-submit when game ends
   useEffect(() => {

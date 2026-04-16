@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import "./globals.css";
 import ThemeProvider from "@/components/ThemeProvider";
+import AchievementProvider from "@/components/AchievementProvider";
 import LayoutShell from "@/components/LayoutShell";
 import ScoresTickerServer from "@/components/ScoresTickerServer";
 
@@ -37,15 +38,17 @@ export default function RootLayout({
       </head>
       <body className="antialiased">
         <ThemeProvider>
-          <LayoutShell
-            ticker={
-              <Suspense fallback={null}>
-                <ScoresTickerServer />
-              </Suspense>
-            }
-          >
-            {children}
-          </LayoutShell>
+          <AchievementProvider>
+            <LayoutShell
+              ticker={
+                <Suspense fallback={null}>
+                  <ScoresTickerServer />
+                </Suspense>
+              }
+            >
+              {children}
+            </LayoutShell>
+          </AchievementProvider>
         </ThemeProvider>
       </body>
     </html>
