@@ -913,7 +913,7 @@ function ConnectionLine({ sharedTeams }: { sharedTeams: { season: string; team: 
     <div className="flex flex-col items-center py-1">
       <div className="w-0.5 h-3 bg-violet-500/40" />
       <div className="flex items-center gap-1.5 rounded-full bg-violet-500/10 border border-violet-500/20 px-2.5 py-0.5">
-        <img src={teamLogoUrl(best.team)} alt="" className="h-3.5 w-3.5 object-contain" />
+        {teamLogoUrl(best.team) && <img src={teamLogoUrl(best.team)} alt="" className="h-3.5 w-3.5 object-contain" />}
         <span className="text-[10px] font-bold text-violet-400">{best.team}</span>
         <span className="text-[10px] text-text-faint">{best.season}</span>
       </div>

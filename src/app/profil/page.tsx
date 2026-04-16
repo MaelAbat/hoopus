@@ -5,6 +5,7 @@ import LogoutButton from "@/components/LogoutButton";
 import ProfileForm from "@/components/ProfileForm";
 import ThemePicker from "@/components/ThemePicker";
 import ProfileFavorites from "@/components/ProfileFavorites";
+import AchievementsGrid from "@/components/AchievementsGrid";
 
 export default async function Profil() {
   const supabase = await createClient();
@@ -64,6 +65,9 @@ export default async function Profil() {
 
       {/* Apparence */}
       <ThemePicker />
+
+      {/* Succès */}
+      <AchievementsGrid />
 
       {/* Favorites */}
       <ProfileFavorites allPlayers={activePlayers || []} />

@@ -57,8 +57,13 @@ export async function checkAchievements(userId: string): Promise<Achievement[]> 
   const playDates = new Set<string>(); // dates with any play
   const todayGames = new Set<string>(); // games played today
 
-  const today = new Date();
-  const todayStr = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
+  /** Normalize any date string to "YYYY-M-D" (no zero-padding) for consistent comparison. */
+  function normalizeDate(raw: string): string {
+    const d = new Date(raw);
+    return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+  }
+
+  const todayStr = normalizeDate(new Date().toISOString());
   const distinctGames = new Set<string>();
 
   await Promise.all(
@@ -77,15 +82,8 @@ export async function checkAchievements(userId: string): Promise<Achievement[]> 
 
       for (const row of rows) {
         const r = row as unknown as Record<string, unknown>;
-        // Normalize date: game_date is "YYYY-M-D", created_at is ISO timestamp
         const rawDate = r[dateField] as string;
-        let gameDate: string;
-        if (dateField === "created_at") {
-          const d = new Date(rawDate);
-          gameDate = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
-        } else {
-          gameDate = rawDate;
-        }
+        const gameDate = normalizeDate(rawDate);
 
         playDates.add(gameDate);
 
