@@ -84,10 +84,10 @@ export default function AchievementBadge({
           className={`flex h-10 w-10 items-center justify-center rounded-xl transition-all ${
             unlocked
               ? `${colors.bg} ${colors.ring} ring-1 ${colors.glow}`
-              : "bg-white/5 opacity-40 grayscale"
+              : "bg-white/[0.03] ring-1 ring-white/[0.06]"
           }`}
         >
-          <Icon size={18} className={unlocked ? colors.text : "text-text-faint"} />
+          <Icon size={18} className={unlocked ? colors.text : "text-text-muted"} />
         </div>
 
         {/* Tooltip */}
@@ -115,16 +115,16 @@ export default function AchievementBadge({
         className={`flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all ${
           unlocked
             ? `${colors.bg} ${colors.ring} ring-1 ${colors.glow}`
-            : "bg-white/5 opacity-40 grayscale"
+            : "bg-white/[0.03] ring-1 ring-white/[0.06]"
         }`}
       >
         <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
-          unlocked ? colors.bg : "bg-white/5"
+          unlocked ? colors.bg : "bg-white/[0.06]"
         }`}>
-          <Icon size={18} className={unlocked ? colors.text : "text-text-faint"} />
+          <Icon size={18} className={unlocked ? colors.text : "text-text-muted"} />
         </div>
         <div className="min-w-0 flex-1">
-          <p className={`text-sm font-bold truncate ${unlocked ? "text-text-primary" : "text-text-faint"}`}>
+          <p className={`text-sm font-bold truncate ${unlocked ? "text-text-primary" : "text-text-muted"}`}>
             {achievement.title}
           </p>
           <p className={`text-xs truncate ${unlocked ? "text-text-muted" : "text-text-faint"}`}>
