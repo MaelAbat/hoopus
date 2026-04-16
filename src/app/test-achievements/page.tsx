@@ -5,20 +5,32 @@ import AchievementBadge from "@/components/AchievementBadge";
 import AchievementToast from "@/components/AchievementToast";
 import type { Achievement } from "@/lib/achievements";
 
-/** All 12 achievements, matching the DB seed data. */
+/** All 21 achievements, matching the DB seed data. */
 const ALL_ACHIEVEMENTS: Achievement[] = [
-  { id: "first_win", title: "Première Victoire", description: "Gagner un mini-jeu pour la première fois", icon: "trophy", category: "games", threshold: 1 },
-  { id: "win_5", title: "Habitué", description: "Gagner 5 mini-jeux", icon: "medal", category: "games", threshold: 5 },
-  { id: "win_25", title: "Vétéran", description: "Gagner 25 mini-jeux", icon: "award", category: "games", threshold: 25 },
-  { id: "win_100", title: "Légende", description: "Gagner 100 mini-jeux", icon: "crown", category: "mastery", threshold: 100 },
-  { id: "streak_3", title: "Série en cours", description: "Gagner 3 jours consécutifs", icon: "flame", category: "streaks", threshold: 3 },
-  { id: "streak_7", title: "Semaine parfaite", description: "Gagner 7 jours consécutifs", icon: "zap", category: "streaks", threshold: 7 },
-  { id: "streak_30", title: "Inarrêtable", description: "Gagner 30 jours consécutifs", icon: "star", category: "streaks", threshold: 30 },
+  // Games
+  { id: "first_win", title: "Premiere Victoire", description: "Gagner un mini-jeu pour la premiere fois", icon: "trophy", category: "games", threshold: 1 },
+  { id: "win_5", title: "Habitue", description: "Gagner 5 mini-jeux", icon: "medal", category: "games", threshold: 5 },
+  { id: "win_25", title: "Veteran", description: "Gagner 25 mini-jeux", icon: "award", category: "games", threshold: 25 },
+  { id: "win_50", title: "Expert", description: "Gagner 50 mini-jeux", icon: "award", category: "games", threshold: 50 },
+  { id: "explorer", title: "Explorateur", description: "Jouer a 3 jeux differents", icon: "compass", category: "games", threshold: 3 },
+  { id: "hooprank_400", title: "Classeur d'elite", description: "Obtenir 400 ou plus au HoopRank", icon: "bar-chart-3", category: "games", threshold: 400 },
+  { id: "hoopmore_10", title: "En feu", description: "Faire une serie de 10 au HoopMore", icon: "flame", category: "games", threshold: 10 },
+  // Streaks
+  { id: "streak_3", title: "Serie en cours", description: "Gagner 3 jours consecutifs", icon: "flame", category: "streaks", threshold: 3 },
+  { id: "streak_7", title: "Semaine parfaite", description: "Gagner 7 jours consecutifs", icon: "zap", category: "streaks", threshold: 7 },
+  { id: "streak_30", title: "Inarretable", description: "Gagner 30 jours consecutifs", icon: "star", category: "streaks", threshold: 30 },
+  { id: "dedicated", title: "Assidu", description: "Jouer pendant 10 jours differents", icon: "calendar-check", category: "streaks", threshold: 10 },
+  // Mastery
+  { id: "win_100", title: "Legende", description: "Gagner 100 mini-jeux", icon: "crown", category: "mastery", threshold: 100 },
   { id: "speed_demon", title: "Speed Demon", description: "Terminer un jeu en moins de 30 secondes", icon: "timer", category: "mastery", threshold: 1 },
+  { id: "speed_10", title: "Eclair", description: "Terminer un jeu en moins de 10 secondes", icon: "bolt", category: "mastery", threshold: 1 },
   { id: "perfect_hoopl", title: "Hoopl Parfait", description: "Trouver le joueur du premier coup dans Hoopl", icon: "target", category: "mastery", threshold: 1 },
-  { id: "all_games", title: "Polyvalent", description: "Jouer aux 7 mini-jeux dans la même journée", icon: "gamepad-2", category: "mastery", threshold: 1 },
-  { id: "explorer", title: "Explorateur", description: "Jouer à 3 jeux différents", icon: "compass", category: "games", threshold: 3 },
-  { id: "dedicated", title: "Assidu", description: "Jouer pendant 10 jours différents", icon: "calendar-check", category: "streaks", threshold: 10 },
+  { id: "hoopixl_first", title: "Oeil de lynx", description: "Trouver le joueur du premier coup dans Hoopixl", icon: "eye", category: "mastery", threshold: 1 },
+  { id: "hooprank_perfect", title: "Score Parfait", description: "Obtenir 500/500 au HoopRank", icon: "crown", category: "mastery", threshold: 500 },
+  { id: "hoopmore_20", title: "Intouchable", description: "Faire une serie de 20 au HoopMore", icon: "shield", category: "mastery", threshold: 20 },
+  { id: "hooplink_3", title: "Court-circuit", description: "Completer HoopLink en 3 maillons ou moins", icon: "link", category: "mastery", threshold: 3 },
+  { id: "quiz_perfect", title: "Incollable", description: "Trouver toutes les reponses d'un quiz Hoopiz", icon: "brain", category: "mastery", threshold: 1 },
+  { id: "all_games", title: "Polyvalent", description: "Jouer aux 7 mini-jeux dans la meme journee", icon: "gamepad-2", category: "mastery", threshold: 1 },
 ];
 
 /** IDs of achievements that are "unlocked" in this test scenario. */

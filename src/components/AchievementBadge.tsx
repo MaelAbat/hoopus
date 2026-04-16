@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   Trophy, Medal, Award, Crown, Flame, Zap, Star,
   Timer, Target, Gamepad2, Compass, CalendarCheck,
+  BarChart3, Shield, Eye, Link, Brain, Bolt,
 } from "lucide-react";
 import type { Achievement } from "@/lib/achievements";
 
@@ -21,6 +22,12 @@ const ICON_MAP: Record<string, React.ComponentType<{ size?: number; className?: 
   "gamepad-2": Gamepad2,
   compass: Compass,
   "calendar-check": CalendarCheck,
+  "bar-chart-3": BarChart3,
+  shield: Shield,
+  eye: Eye,
+  link: Link,
+  brain: Brain,
+  bolt: Bolt,
 };
 
 /** Category-based accent colors. */

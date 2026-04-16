@@ -53,6 +53,11 @@ export async function checkAchievements(userId: string): Promise<Achievement[]> 
   let totalWins = 0;
   let fastestTime = Infinity;
   let hooplFirstGuess = false;
+  let hoopixlFirstGuess = false;
+  let hooplinkShortChain = Infinity;
+  let hooprankBestScore = 0;
+  let hoopmoreBestStreak = 0;
+  let quizPerfect = false;
   const winDates = new Set<string>(); // dates with at least one win
   const playDates = new Set<string>(); // dates with any play
   const todayGames = new Set<string>(); // games played today
@@ -66,11 +71,20 @@ export async function checkAchievements(userId: string): Promise<Achievement[]> 
   const todayStr = normalizeDate(new Date().toISOString());
   const distinctGames = new Set<string>();
 
+  /** Extra fields to select per table for game-specific achievements. */
+  const EXTRA_FIELDS: Record<string, string[]> = {
+    hooprank_scores: ["score"],
+    hoopmore_scores: ["streak"],
+    hooplink_scores: ["chain_length"],
+    quiz_scores: ["found_count", "total_count"],
+  };
+
   await Promise.all(
     SCORE_TABLES.map(async ({ table, dateField, wonField, guessesField }) => {
       const selectFields = [dateField, "time_seconds"];
       if (wonField) selectFields.push(wonField);
       if (guessesField) selectFields.push(guessesField);
+      for (const f of EXTRA_FIELDS[table] || []) selectFields.push(f);
 
       const { data: rows } = await supabase
         .from(table)
@@ -108,20 +122,54 @@ export async function checkAchievements(userId: string): Promise<Achievement[]> 
           }
         }
 
-        // Check perfect Hoopl (first guess win)
+        // ── Game-specific checks ──
+
+        // Hoopl: first guess win
         if (table === "hoopl_scores" && guessesField) {
           const guesses = r[guessesField] as number;
-          const won = r[wonField!] as boolean;
-          if (won && guesses === 1) {
-            hooplFirstGuess = true;
-          }
+          if (!!r[wonField!] && guesses === 1) hooplFirstGuess = true;
+        }
+
+        // Hoopixl: first guess win
+        if (table === "hoopixl_scores" && guessesField) {
+          const guesses = r[guessesField] as number;
+          if (!!r[wonField!] && guesses === 1) hoopixlFirstGuess = true;
+        }
+
+        // HoopRank: best score
+        if (table === "hooprank_scores") {
+          const score = r["score"] as number;
+          if (score > hooprankBestScore) hooprankBestScore = score;
+        }
+
+        // HoopMore: best streak
+        if (table === "hoopmore_scores") {
+          const streak = r["streak"] as number;
+          if (streak > hoopmoreBestStreak) hoopmoreBestStreak = streak;
+        }
+
+        // HoopLink: shortest winning chain
+        if (table === "hooplink_scores" && !!r[wonField!]) {
+          const chain = r["chain_length"] as number;
+          if (chain < hooplinkShortChain) hooplinkShortChain = chain;
+        }
+
+        // Hoopiz: perfect quiz (all answers found)
+        if (table === "quiz_scores" && !!r[wonField!]) {
+          const found = r["found_count"] as number;
+          const total = r["total_count"] as number;
+          if (found === total) quizPerfect = true;
         }
       }
     })
   );
 
   // 4. Calculate win streak (consecutive days with at least one win)
-  const sortedWinDates = Array.from(winDates).sort();
+  const sortedWinDates = Array.from(winDates).sort((a, b) => {
+    const [ay, am, ad] = a.split("-").map(Number);
+    const [by, bm, bd] = b.split("-").map(Number);
+    return new Date(ay, am - 1, ad).getTime() - new Date(by, bm - 1, bd).getTime();
+  });
   let maxStreak = 0;
   let currentStreak = 0;
   let prevDate: Date | null = null;
@@ -187,11 +235,38 @@ export async function checkAchievements(userId: string): Promise<Achievement[]> 
       case "all_games":
         shouldUnlock = todayGames.size >= 7;
         break;
+      case "win_50":
+        shouldUnlock = totalWins >= 50;
+        break;
       case "explorer":
         shouldUnlock = distinctGames.size >= 3;
         break;
       case "dedicated":
         shouldUnlock = playDates.size >= 10;
+        break;
+      case "hooprank_perfect":
+        shouldUnlock = hooprankBestScore >= 500;
+        break;
+      case "hooprank_400":
+        shouldUnlock = hooprankBestScore >= 400;
+        break;
+      case "hoopmore_10":
+        shouldUnlock = hoopmoreBestStreak >= 10;
+        break;
+      case "hoopmore_20":
+        shouldUnlock = hoopmoreBestStreak >= 20;
+        break;
+      case "hoopixl_first":
+        shouldUnlock = hoopixlFirstGuess;
+        break;
+      case "hooplink_3":
+        shouldUnlock = hooplinkShortChain <= 3;
+        break;
+      case "quiz_perfect":
+        shouldUnlock = quizPerfect;
+        break;
+      case "speed_10":
+        shouldUnlock = fastestTime < 10;
         break;
     }
 
