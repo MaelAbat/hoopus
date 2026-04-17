@@ -307,13 +307,13 @@ export default function ScoresTicker({ games, mode = "results" }: { games: Game[
           </div>
         </div>
         <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
-          <button onClick={() => scroll(-1)} className="rounded-md p-1 text-text-muted hover:text-text-primary hover:bg-input transition-colors">
+          <button type="button" aria-label="Défiler vers la gauche" onClick={() => scroll(-1)} className="rounded-md p-1 text-text-muted hover:text-text-primary hover:bg-input transition-colors">
             <ChevronLeft size={14} />
           </button>
-          <button onClick={() => scroll(1)} className="rounded-md p-1 text-text-muted hover:text-text-primary hover:bg-input transition-colors">
+          <button type="button" aria-label="Défiler vers la droite" onClick={() => scroll(1)} className="rounded-md p-1 text-text-muted hover:text-text-primary hover:bg-input transition-colors">
             <ChevronRight size={14} />
           </button>
-          <button onClick={toggle} className="rounded-md p-1 ml-0.5 text-text-faint hover:text-text-primary hover:bg-input transition-colors" title={isUpcoming ? "Masquer" : "Masquer les scores"}>
+          <button type="button" aria-label="Masquer les scores" onClick={toggle} className="rounded-md p-1 ml-0.5 text-text-faint hover:text-text-primary hover:bg-input transition-colors" title={isUpcoming ? "Masquer" : "Masquer les scores"}>
             <X size={14} />
           </button>
         </div>

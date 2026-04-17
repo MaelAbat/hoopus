@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentSeason } from "@/lib/season";
+import { isCronAuthorized } from "@/lib/cron-auth";
 
 const SEASON = getCurrentSeason();
 
@@ -65,12 +66,7 @@ function fetchSchedule(): Promise<NbaSchedule> {
 }
 
 export async function GET(request: NextRequest) {
-  const authHeader = request.headers.get("authorization");
-  const querySecret = request.nextUrl.searchParams.get("cron_secret");
-  const isAuthorized =
-    authHeader === `Bearer ${process.env.CRON_SECRET}` ||
-    querySecret === process.env.CRON_SECRET;
-  if (!isAuthorized) {
+  if (!isCronAuthorized(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

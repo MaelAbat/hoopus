@@ -11,7 +11,9 @@ export default function FollowPlayerButton({ playerId }: { playerId: number }) {
 
   return (
     <button
+      type="button"
       onClick={() => togglePlayer(playerId)}
+      aria-pressed={followed}
       className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-semibold transition-all ${
         followed
           ? "bg-accent/15 text-accent border border-accent/30"

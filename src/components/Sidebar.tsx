@@ -135,7 +135,9 @@ export default function Sidebar() {
         </Link>
         {/* Close button (mobile only) */}
         <button
+          type="button"
           onClick={closeMobile}
+          aria-label="Fermer le menu"
           className="flex h-9 w-9 items-center justify-center rounded-lg text-text-muted hover:bg-input hover:text-text-primary transition-colors lg:hidden"
         >
           <X size={20} />
@@ -245,7 +247,9 @@ export default function Sidebar() {
       {/* Mobile top bar */}
       <div className="fixed left-0 right-0 top-0 z-50 flex h-14 items-center gap-3 border-b border-border-t bg-sidebar/95 backdrop-blur-md px-4 lg:hidden">
         <button
+          type="button"
           onClick={() => setMobileOpen(true)}
+          aria-label="Ouvrir le menu de navigation"
           className="flex h-9 w-9 items-center justify-center rounded-lg text-text-muted hover:bg-input hover:text-text-primary transition-colors"
         >
           <Menu size={22} />
@@ -329,7 +333,7 @@ function ThemeSelector() {
         className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-text-muted transition-colors hover:bg-input hover:text-text-primary"
       >
         <Palette size={14} />
-        Theme
+        Thème
         <span
           className="ml-auto h-3 w-3 rounded-full"
           style={{ backgroundColor: THEMES.find(t => t.id === theme)?.color }}

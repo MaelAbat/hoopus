@@ -157,19 +157,19 @@ export default function StatsTable({ players }: { players: PlayerRow[] }) {
             {minGP > 0 && (
               <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2.5 py-0.5 text-[11px] font-medium text-accent">
                 GP {minGP}+
-                <button onClick={() => { setMinGP(0); setPage(0); }} className="hover:text-white"><X size={10} /></button>
+                <button type="button" aria-label="Retirer le filtre GP" onClick={() => { setMinGP(0); setPage(0); }} className="hover:text-white"><X size={10} /></button>
               </span>
             )}
             {minMPG > 0 && (
               <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2.5 py-0.5 text-[11px] font-medium text-accent">
                 MPG {minMPG}+
-                <button onClick={() => { setMinMPG(0); setPage(0); }} className="hover:text-white"><X size={10} /></button>
+                <button type="button" aria-label="Retirer le filtre MPG" onClick={() => { setMinMPG(0); setPage(0); }} className="hover:text-white"><X size={10} /></button>
               </span>
             )}
             {minUSG > 0 && (
               <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2.5 py-0.5 text-[11px] font-medium text-accent">
                 USG% {minUSG}+
-                <button onClick={() => { setMinUSG(0); setPage(0); }} className="hover:text-white"><X size={10} /></button>
+                <button type="button" aria-label="Retirer le filtre USG" onClick={() => { setMinUSG(0); setPage(0); }} className="hover:text-white"><X size={10} /></button>
               </span>
             )}
             {Object.entries(minAttempts).filter(([, v]) => v > 0).map(([key, val]) => {
@@ -177,7 +177,7 @@ export default function StatsTable({ players }: { players: PlayerRow[] }) {
               return (
                 <span key={key} className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2.5 py-0.5 text-[11px] font-medium text-accent">
                   {af?.label ?? key} {val}+
-                  <button onClick={() => setAttempt(key, 0)} className="hover:text-white"><X size={10} /></button>
+                  <button type="button" aria-label={`Retirer le filtre ${af?.label ?? key}`} onClick={() => setAttempt(key, 0)} className="hover:text-white"><X size={10} /></button>
                 </span>
               );
             })}
@@ -193,6 +193,7 @@ export default function StatsTable({ players }: { players: PlayerRow[] }) {
           value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(0); }}
           placeholder="Rechercher..."
+          aria-label="Rechercher un joueur"
           className="rounded-lg bg-input border border-border-t px-3 py-1.5 text-xs text-text-primary placeholder:text-text-faint outline-none focus:border-accent w-44"
         />
       </div>

@@ -33,11 +33,11 @@ export default async function Blessures() {
     <div className="mx-auto max-w-6xl space-y-8">
       <PageBanner
         title="Infirmerie"
-        subtitle={`Injury report -- ${seasonLabel(season)}`}
+        subtitle={`Rapport des blessures — ${seasonLabel(season)}`}
         variant="injuries"
         extra={
           hasData ? (
-            <span className="text-xs text-text-faint">Mis a jour le {lastUpdate}</span>
+            <span className="text-xs text-text-faint">Mis à jour le {lastUpdate}</span>
           ) : (
             <span className="inline-flex items-center rounded-full bg-yellow-500/20 px-2 py-0.5 text-xs text-yellow-300">
               Synchronisation requise

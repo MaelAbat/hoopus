@@ -49,6 +49,7 @@ function LoginForm() {
             name="email"
             type="email"
             required
+            autoComplete="email"
             className="w-full rounded-xl bg-input border border-border-t px-4 py-3 text-sm text-text-primary placeholder-text-faint outline-none transition-colors focus:border-accent/50 focus:ring-1 focus:ring-accent/50"
             placeholder="votre@email.com"
           />
@@ -64,6 +65,7 @@ function LoginForm() {
             type="password"
             required
             minLength={6}
+            autoComplete="current-password"
             className="w-full rounded-xl bg-input border border-border-t px-4 py-3 text-sm text-text-primary placeholder-text-faint outline-none transition-colors focus:border-accent/50 focus:ring-1 focus:ring-accent/50"
             placeholder="••••••••"
           />

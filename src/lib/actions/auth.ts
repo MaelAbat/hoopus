@@ -4,6 +4,12 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+function safeRedirect(path: string | null | undefined): string {
+  if (!path || typeof path !== "string") return "/";
+  if (!path.startsWith("/") || path.startsWith("//") || path.startsWith("/\\")) return "/";
+  return path;
+}
+
 const SCORE_TABLES = [
   "hoopl_scores",
   "hoopixl_scores",
@@ -38,7 +44,7 @@ export async function login(formData: FormData) {
 
   const redirectTo = formData.get("redirectTo") as string | null;
   revalidatePath("/", "layout");
-  redirect(redirectTo || "/");
+  redirect(safeRedirect(redirectTo));
 }
 
 export async function signup(formData: FormData) {
@@ -86,7 +92,7 @@ export async function signup(formData: FormData) {
 
   const redirectTo = formData.get("redirectTo") as string | null;
   revalidatePath("/", "layout");
-  redirect(redirectTo || "/");
+  redirect(safeRedirect(redirectTo));
 }
 
 export async function logout() {
