@@ -4,6 +4,26 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+const SCORE_TABLES = [
+  "hoopl_scores",
+  "hoopixl_scores",
+  "hoopgrid_scores",
+  "hoopmore_scores",
+  "hooprank_scores",
+  "hooplink_scores",
+  "quiz_scores",
+] as const;
+
+/** Update display_name in all score tables for a given user. */
+async function syncDisplayNameInScores(userId: string, displayName: string) {
+  const supabase = await createClient();
+  await Promise.all(
+    SCORE_TABLES.map((table) =>
+      supabase.from(table).update({ display_name: displayName }).eq("user_id", userId)
+    )
+  );
+}
+
 export async function login(formData: FormData) {
   const supabase = await createClient();
 
@@ -43,11 +63,13 @@ export async function signup(formData: FormData) {
       return { error: error.message };
     }
 
-    // Update profile with real info
+    // Update profile and all score tables with real display name
     await supabase.from("profiles").update({
       email,
       display_name: displayName,
     }).eq("id", currentUser.id);
+
+    await syncDisplayNameInScores(currentUser.id, displayName);
   } else {
     const { error } = await supabase.auth.signUp({
       email,
@@ -106,13 +128,15 @@ export async function updateProfile(formData: FormData) {
 
   if (!user) return { error: "Non connecté" };
 
+  const newName = formData.get("display_name") as string;
+
   const { error } = await supabase
     .from("profiles")
-    .update({
-      display_name: formData.get("display_name") as string,
-    })
+    .update({ display_name: newName })
     .eq("id", user.id);
 
   if (error) return { error: error.message };
+
+  await syncDisplayNameInScores(user.id, newName);
   revalidatePath("/profil");
 }

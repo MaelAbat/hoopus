@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { ensureAuth, getDisplayName, isAnonymousName } from "@/lib/anonymous-auth";
 import { useAchievementNotifier } from "@/components/AchievementProvider";
 import { computeVisibleLeaderboard } from "@/lib/leaderboard-utils";
+import SignupBanner from "./SignupBanner";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -863,6 +864,8 @@ export default function HoopRankGame({ players }: { players: HoopRankPlayer[] })
           </div>
         );
       })()}
+
+      <SignupBanner show={submitted} />
 
       {/* Legend */}
       <div className="flex flex-wrap items-center justify-center gap-4 text-[11px] text-text-faint pb-4">

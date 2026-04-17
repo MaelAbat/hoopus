@@ -30,7 +30,7 @@ function LoginForm() {
         <h1 className="text-2xl font-bold text-text-primary">
           Hoop<span className="text-accent">us</span>
         </h1>
-        <p className="text-sm text-text-muted">Connectez-vous a votre compte</p>
+        <p className="text-sm text-text-muted">Connectez-vous à votre compte</p>
       </div>
 
       {error && (

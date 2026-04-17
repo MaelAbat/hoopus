@@ -16,6 +16,8 @@ function SignupForm() {
     setLoading(true);
     setError(null);
     if (redirectTo) formData.set("redirectTo", redirectTo);
+    // Clean anonymous name before upgrade (redirect on success prevents cleanup after)
+    localStorage.removeItem("hoop-anonymous-name");
     const result = await signup(formData);
     if (result?.error) {
       setError(result.error);
@@ -30,7 +32,7 @@ function SignupForm() {
         <h1 className="text-2xl font-bold text-text-primary">
           Hoop<span className="text-accent">us</span>
         </h1>
-        <p className="text-sm text-text-muted">Creez votre compte</p>
+        <p className="text-sm text-text-muted">Créez votre compte</p>
       </div>
 
       {error && (
@@ -79,7 +81,7 @@ function SignupForm() {
             required
             minLength={6}
             className="w-full rounded-xl bg-input border border-border-t px-4 py-3 text-sm text-text-primary placeholder-text-faint outline-none transition-colors focus:border-accent/50 focus:ring-1 focus:ring-accent/50"
-            placeholder="Minimum 6 caracteres"
+            placeholder="Minimum 6 caractères"
           />
         </div>
 
@@ -89,12 +91,12 @@ function SignupForm() {
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
         >
           <UserPlus size={16} />
-          {loading ? "Creation..." : "Creer un compte"}
+          {loading ? "Création..." : "Créer un compte"}
         </button>
       </form>
 
       <p className="text-center text-sm text-text-muted">
-        Deja un compte ?{" "}
+        Déjà un compte ?{" "}
         <Link href={`/auth/login${redirectTo ? `?redirect=${encodeURIComponent(redirectTo)}` : ""}`} className="font-medium text-accent hover:text-accent-hover transition-colors">
           Se connecter
         </Link>

@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { ensureAuth, getDisplayName, isAnonymousName } from "@/lib/anonymous-auth";
 import { useAchievementNotifier } from "@/components/AchievementProvider";
 import { computeVisibleLeaderboard } from "@/lib/leaderboard-utils";
+import SignupBanner from "./SignupBanner";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -803,6 +804,8 @@ export default function HoopMoreGame({ players }: { players: HoopMorePlayer[] })
           </div>
         );
       })()}
+
+      <SignupBanner show={submitted} />
 
       {/* Personal bests (free mode, shown when not playing) */}
       {mode === "free" && gameOver && Object.values(personalBests).some((v) => v > 0) && (

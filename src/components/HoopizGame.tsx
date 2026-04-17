@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { ensureAuth, getDisplayName, isAnonymousName } from "@/lib/anonymous-auth";
 import { useAchievementNotifier } from "@/components/AchievementProvider";
 import { computeVisibleLeaderboard } from "@/lib/leaderboard-utils";
+import SignupBanner from "./SignupBanner";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -664,6 +665,8 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
           <LeaderboardSection quizId={quiz.id} mode="ordered" label="Dans l'ordre" userId={userId} />
         </div>
       </div>
+
+      <SignupBanner show={submitted} />
 
       {/* Shake animation */}
       <style jsx>{`
