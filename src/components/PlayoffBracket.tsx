@@ -94,12 +94,16 @@ function TeamRow({ tricode, seed, wins, isWinner, record }: {
 }
 
 /* ─── Games detail popover ─── */
-function GamesPopover({ series }: { series: PlayoffSeries }) {
+function GamesPopover({ series, flipUp }: { series: PlayoffSeries; flipUp?: boolean }) {
   const finishedGames = series.games.filter(g => g.status === 3).sort((a, b) => a.game_number - b.game_number);
   if (finishedGames.length === 0) return null;
 
   return (
-    <div className="absolute z-50 top-full left-1/2 -translate-x-1/2 mt-1.5 w-48 rounded-lg border border-border-t bg-card shadow-xl p-2 space-y-1">
+    <div
+      className={`absolute z-50 left-1/2 -translate-x-1/2 w-48 rounded-lg border border-border-t bg-card shadow-xl p-2 space-y-1 ${
+        flipUp ? "bottom-full mb-1.5" : "top-full mt-1.5"
+      }`}
+    >
       <p className="text-[9px] font-semibold text-text-muted uppercase tracking-wider text-center mb-1">
         Détail de la série
       </p>
@@ -135,7 +139,7 @@ function GamesPopover({ series }: { series: PlayoffSeries }) {
 }
 
 /* ─── Matchup box with optional series data ─── */
-function MatchupBox({ series, topTeam, bottomTeam, seedTop, seedBottom, accent, animDelay = 0 }: {
+function MatchupBox({ series, topTeam, bottomTeam, seedTop, seedBottom, accent, animDelay = 0, flipPopover }: {
   series?: PlayoffSeries | null;
   topTeam?: Standing | null;
   bottomTeam?: Standing | null;
@@ -143,6 +147,7 @@ function MatchupBox({ series, topTeam, bottomTeam, seedTop, seedBottom, accent, 
   seedBottom?: number;
   accent?: boolean;
   animDelay?: number;
+  flipPopover?: boolean;
 }) {
   const [showGames, setShowGames] = useState(false);
   const { isTeamFavorite } = useFavorites();
@@ -159,6 +164,8 @@ function MatchupBox({ series, topTeam, bottomTeam, seedTop, seedBottom, accent, 
       <div
         className={`relative rounded-lg overflow-visible shadow-sm shrink-0 ${
           hasGames ? "cursor-pointer" : ""
+        } ${
+          showGames ? "z-50" : ""
         } ${
           hasFav
             ? "border-2 border-accent/60 bg-card ring-2 ring-accent/20 shadow-[0_0_12px_rgba(var(--accent-rgb,249,115,22),0.15)]"
@@ -187,7 +194,7 @@ function MatchupBox({ series, topTeam, bottomTeam, seedTop, seedBottom, accent, 
             isWinner={bottomWinner}
           />
         </div>
-        {showGames && <GamesPopover series={series} />}
+        {showGames && <GamesPopover series={series} flipUp={flipPopover} />}
       </div>
     );
   }
@@ -400,16 +407,16 @@ function FullBracket({ east, west, series }: { east: Standing[]; west: Standing[
             </div>
           </div>
 
-          {/* R1: 4 matchups per conference */}
+          {/* R1: 4 matchups per conference — last in each half flips popover up to avoid page overflow */}
           <div className="shrink-0" style={{ width: BOX_W }}>
             <HalfCol count={4}>
               {eastR1.map((m, i) => (
-                <MatchupBox key={i} series={m.series} topTeam={m.topTeam} bottomTeam={m.bottomTeam} seedTop={m.seedTop} seedBottom={m.seedBottom} animDelay={i * 80} />
+                <MatchupBox key={i} series={m.series} topTeam={m.topTeam} bottomTeam={m.bottomTeam} seedTop={m.seedTop} seedBottom={m.seedBottom} animDelay={i * 80} flipPopover={i === eastR1.length - 1} />
               ))}
             </HalfCol>
             <HalfCol count={4}>
               {westR1.map((m, i) => (
-                <MatchupBox key={i} series={m.series} topTeam={m.topTeam} bottomTeam={m.bottomTeam} seedTop={m.seedTop} seedBottom={m.seedBottom} animDelay={i * 80} />
+                <MatchupBox key={i} series={m.series} topTeam={m.topTeam} bottomTeam={m.bottomTeam} seedTop={m.seedTop} seedBottom={m.seedBottom} animDelay={i * 80} flipPopover={i === westR1.length - 1} />
               ))}
             </HalfCol>
           </div>
@@ -421,11 +428,11 @@ function FullBracket({ east, west, series }: { east: Standing[]; west: Standing[
           <div className="shrink-0" style={{ width: BOX_W }}>
             <HalfCol count={2}>
               <MatchupBox series={eastSemi0} animDelay={400} />
-              <MatchupBox series={eastSemi1} animDelay={480} />
+              <MatchupBox series={eastSemi1} animDelay={480} flipPopover />
             </HalfCol>
             <HalfCol count={2}>
               <MatchupBox series={westSemi0} animDelay={400} />
-              <MatchupBox series={westSemi1} animDelay={480} />
+              <MatchupBox series={westSemi1} animDelay={480} flipPopover />
             </HalfCol>
           </div>
 
@@ -438,7 +445,7 @@ function FullBracket({ east, west, series }: { east: Standing[]; west: Standing[
               <MatchupBox series={eastCF} animDelay={600} />
             </HalfCol>
             <HalfCol count={1}>
-              <MatchupBox series={westCF} animDelay={600} />
+              <MatchupBox series={westCF} animDelay={600} flipPopover />
             </HalfCol>
           </div>
 
