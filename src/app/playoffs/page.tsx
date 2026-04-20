@@ -32,6 +32,30 @@ export default async function Playoffs({ searchParams }: { searchParams: Promise
   const availableSeasons = [...new Set((seasonRows || []).map((r: { season: string }) => r.season))];
   if (!availableSeasons.includes(season)) availableSeasons.unshift(season);
 
+  // Enrich each series game with its game_id by looking up (date, home, away)
+  // in the games table — avoids needing the playoff sync to store it.
+  type SeriesRow = NonNullable<typeof series>[number];
+  type SeriesGameRow = SeriesRow["games"][number];
+  const allSeriesGames: SeriesGameRow[] = (series || []).flatMap((s) => s.games || []);
+  const seriesDates = [...new Set(allSeriesGames.map((g) => g.game_date).filter(Boolean))];
+  let gameIdByKey = new Map<string, string>();
+  if (seriesDates.length > 0) {
+    const { data: games } = await supabase
+      .from("games")
+      .select("game_id, game_date, home_team, away_team")
+      .in("game_date", seriesDates);
+    gameIdByKey = new Map(
+      (games || []).map((g) => [`${g.game_date}|${g.home_team}|${g.away_team}`, g.game_id])
+    );
+  }
+  const enrichedSeries = (series || []).map((s) => ({
+    ...s,
+    games: (s.games || []).map((g: SeriesGameRow) => ({
+      ...g,
+      game_id: gameIdByKey.get(`${g.game_date}|${g.home_team}|${g.away_team}`),
+    })),
+  }));
+
   const hasData = !error && standings && standings.length > 0;
 
   const east = hasData ? standings.filter((s) => s.conference === "East") : [];
@@ -69,7 +93,7 @@ export default async function Playoffs({ searchParams }: { searchParams: Promise
 
         <SeasonContent>
           <ScrollReveal variant="up" delay={100}>
-            <PlayoffBracket east={east} west={west} series={series || []} playinGames={playinGames || []} />
+            <PlayoffBracket east={east} west={west} series={enrichedSeries} playinGames={playinGames || []} />
           </ScrollReveal>
         </SeasonContent>
       </div>

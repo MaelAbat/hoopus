@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { teamLogoUrl } from "@/lib/nba-teams";
 import { useFavorites } from "@/context/FavoritesContext";
 
@@ -17,6 +18,7 @@ interface Standing {
 }
 
 interface SeriesGame {
+  game_id?: string;
   game_number: number;
   home_team: string;
   away_team: string;
@@ -100,37 +102,44 @@ function GamesPopover({ series, flipUp }: { series: PlayoffSeries; flipUp?: bool
 
   return (
     <div
-      className={`absolute z-50 left-1/2 -translate-x-1/2 w-48 rounded-lg border border-border-t bg-card shadow-xl p-2 space-y-1 ${
-        flipUp ? "bottom-full mb-1.5" : "top-full mt-1.5"
+      className={`absolute z-50 left-1/2 -translate-x-1/2 w-48 rounded-lg border border-border-hover bg-card-hover shadow-2xl p-2 space-y-0.5 ${
+        flipUp ? "bottom-full" : "top-full"
       }`}
     >
-      <p className="text-[9px] font-semibold text-text-muted uppercase tracking-wider text-center mb-1">
+      <p className="text-[9px] font-semibold text-text-secondary uppercase tracking-wider text-center mb-1">
         Détail de la série
       </p>
       {finishedGames.map((g) => {
         const awayWon = g.away_score > g.home_score;
         const homeWon = g.home_score > g.away_score;
-        return (
-          <div key={g.game_number} className="flex items-center gap-1.5 text-[10px]">
-            <span className="text-text-faint w-5 shrink-0">G{g.game_number}</span>
-            <span className={`flex-1 text-right ${awayWon ? "font-semibold text-text-primary" : "text-text-faint"}`}>
+        const row = (
+          <div className="flex items-center gap-1.5 text-[10px] px-1 py-0.5 rounded">
+            <span className="text-text-muted w-5 shrink-0">G{g.game_number}</span>
+            <span className={`flex-1 text-right ${awayWon ? "font-semibold text-text-primary" : "text-text-muted"}`}>
               {g.away_team}
             </span>
-            <span className={`w-5 text-center tabular-nums ${awayWon ? "font-bold text-text-primary" : "text-text-faint"}`}>
+            <span className={`w-5 text-center tabular-nums ${awayWon ? "font-bold text-text-primary" : "text-text-muted"}`}>
               {g.away_score}
             </span>
-            <span className="text-text-faint">-</span>
-            <span className={`w-5 text-center tabular-nums ${homeWon ? "font-bold text-text-primary" : "text-text-faint"}`}>
+            <span className="text-text-muted">-</span>
+            <span className={`w-5 text-center tabular-nums ${homeWon ? "font-bold text-text-primary" : "text-text-muted"}`}>
               {g.home_score}
             </span>
-            <span className={`flex-1 ${homeWon ? "font-semibold text-text-primary" : "text-text-faint"}`}>
+            <span className={`flex-1 ${homeWon ? "font-semibold text-text-primary" : "text-text-muted"}`}>
               {g.home_team}
             </span>
           </div>
         );
+        return g.game_id ? (
+          <Link key={g.game_number} href={`/match/${g.game_id}`} className="block hover:bg-input/50 rounded transition-colors">
+            {row}
+          </Link>
+        ) : (
+          <div key={g.game_number}>{row}</div>
+        );
       })}
       {series.games.some(g => g.status === 1) && (
-        <p className="text-[9px] text-text-faint text-center pt-1 border-t border-border-t">
+        <p className="text-[9px] text-text-muted text-center pt-1 mt-1 border-t border-border-hover">
           {series.games.filter(g => g.status === 1).length} match(s) à venir
         </p>
       )}
