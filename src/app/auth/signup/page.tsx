@@ -1,28 +1,39 @@
 "use client";
 
 import { Suspense, useState } from "react";
+import { useFormStatus } from "react-dom";
 import { useSearchParams } from "next/navigation";
 import { signup } from "@/lib/actions/auth";
 import Link from "next/link";
-import { UserPlus } from "lucide-react";
+import { UserPlus, Loader2 } from "lucide-react";
+
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      aria-busy={pending}
+      className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-accent-hover disabled:cursor-wait disabled:opacity-80"
+    >
+      {pending ? <Loader2 size={16} className="animate-spin" /> : <UserPlus size={16} />}
+      {pending ? "Création du compte…" : "Créer un compte"}
+    </button>
+  );
+}
 
 function SignupForm() {
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "";
 
   async function handleSubmit(formData: FormData) {
-    setLoading(true);
     setError(null);
     if (redirectTo) formData.set("redirectTo", redirectTo);
     // Clean anonymous name before upgrade (redirect on success prevents cleanup after)
     localStorage.removeItem("hoop-anonymous-name");
     const result = await signup(formData);
-    if (result?.error) {
-      setError(result.error);
-      setLoading(false);
-    }
+    if (result?.error) setError(result.error);
   }
 
   return (
@@ -89,14 +100,7 @@ function SignupForm() {
           />
         </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
-        >
-          <UserPlus size={16} />
-          {loading ? "Création..." : "Créer un compte"}
-        </button>
+        <SubmitButton />
       </form>
 
       <p className="text-center text-sm text-text-muted">

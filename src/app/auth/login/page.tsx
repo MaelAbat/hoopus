@@ -1,26 +1,37 @@
 "use client";
 
 import { Suspense, useState } from "react";
+import { useFormStatus } from "react-dom";
 import { useSearchParams } from "next/navigation";
 import { login } from "@/lib/actions/auth";
 import Link from "next/link";
-import { LogIn } from "lucide-react";
+import { LogIn, Loader2 } from "lucide-react";
+
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      aria-busy={pending}
+      className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-accent-hover disabled:cursor-wait disabled:opacity-80"
+    >
+      {pending ? <Loader2 size={16} className="animate-spin" /> : <LogIn size={16} />}
+      {pending ? "Connexion en cours…" : "Se connecter"}
+    </button>
+  );
+}
 
 function LoginForm() {
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "";
 
   async function handleSubmit(formData: FormData) {
-    setLoading(true);
     setError(null);
     if (redirectTo) formData.set("redirectTo", redirectTo);
     const result = await login(formData);
-    if (result?.error) {
-      setError(result.error);
-      setLoading(false);
-    }
+    if (result?.error) setError(result.error);
   }
 
   return (
@@ -71,14 +82,7 @@ function LoginForm() {
           />
         </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
-        >
-          <LogIn size={16} />
-          {loading ? "Connexion..." : "Se connecter"}
-        </button>
+        <SubmitButton />
       </form>
 
       <p className="text-center text-sm text-text-muted">
