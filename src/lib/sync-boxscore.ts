@@ -137,6 +137,20 @@ export async function syncBoxscore(gameId: string): Promise<boolean> {
   );
 
   try {
+    // Throttle: if the games row was refreshed very recently (either by a prior
+    // syncBoxscore call or by the /api/live-scores poll), skip the CDN fetch —
+    // prevents duplicate CDN hits when the match page and ticker poll concurrently.
+    const { data: current } = await supabase
+      .from("games")
+      .select("updated_at")
+      .eq("game_id", gameId)
+      .single();
+
+    if (current?.updated_at) {
+      const ageMs = Date.now() - new Date(current.updated_at).getTime();
+      if (ageMs < 15_000) return true;
+    }
+
     const data = await fetchBoxscore(gameId);
     const game = data.game;
     const now = new Date().toISOString();
@@ -157,6 +171,19 @@ export async function syncBoxscore(gameId: string): Promise<boolean> {
       console.error("Boxscore insert error:", error);
       return false;
     }
+
+    // Also refresh live score + status on the game itself, so the header stays
+    // in sync with the live boxscore (cron only syncs scheduleLeagueV2 once a day).
+    await supabase
+      .from("games")
+      .update({
+        home_score: game.homeTeam.score,
+        away_score: game.awayTeam.score,
+        status: game.gameStatus,
+        status_text: game.gameStatusText,
+        updated_at: now,
+      })
+      .eq("game_id", gameId);
 
     return true;
   } catch {

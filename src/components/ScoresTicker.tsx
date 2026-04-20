@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { ChevronLeft, ChevronRight, X, Trophy } from "lucide-react";
 import { teamLogoUrl } from "@/lib/nba-teams";
 import { useFavorites } from "@/context/FavoritesContext";
+import { useLiveScores } from "@/lib/useLiveScores";
 import Link from "next/link";
 
 interface Game {
@@ -214,13 +215,28 @@ export default function ScoresTicker({ games, mode = "results" }: { games: Game[
   const { isTeamFavorite } = useFavorites();
   const isUpcoming = mode === "upcoming";
 
+  // Poll every visible game in the results row. The endpoint only hits the NBA
+  // CDN for rows with status === 2 (throttled to 1x/25s), so polling final games
+  // is basically free — but it lets us catch a scheduled->live transition that
+  // happened after the server render.
+  const polledIds = useMemo(() => games.map((g) => g.game_id), [games]);
+  const liveUpdates = useLiveScores(polledIds, !isUpcoming && polledIds.length > 0);
+
+  const mergedGames = useMemo(() => {
+    if (liveUpdates.size === 0) return games;
+    return games.map((g) => {
+      const u = liveUpdates.get(g.game_id);
+      return u ? { ...g, ...u } : g;
+    });
+  }, [games, liveUpdates]);
+
   const sortedGames = useMemo(() => {
-    return [...games].sort((a, b) => {
+    return [...mergedGames].sort((a, b) => {
       const aFav = isTeamFavorite(a.home_team) || isTeamFavorite(a.away_team) ? 1 : 0;
       const bFav = isTeamFavorite(b.home_team) || isTeamFavorite(b.away_team) ? 1 : 0;
       return bFav - aFav;
     });
-  }, [games, isTeamFavorite]);
+  }, [mergedGames, isTeamFavorite]);
 
   useEffect(() => {
     const stored = localStorage.getItem("ticker-visible");
@@ -280,9 +296,9 @@ export default function ScoresTicker({ games, mode = "results" }: { games: Game[
       : "Derniers scores";
   }
 
-  const liveCount = games.filter(g => g.status === 2).length;
-  const finalCount = games.filter(g => g.status === 3).length;
-  const upcomingCount = isUpcoming ? games.length : games.length - finalCount - liveCount;
+  const liveCount = mergedGames.filter(g => g.status === 2).length;
+  const finalCount = mergedGames.filter(g => g.status === 3).length;
+  const upcomingCount = isUpcoming ? mergedGames.length : mergedGames.length - finalCount - liveCount;
 
   return (
     <div className="mb-4 rounded-xl bg-card border border-border-t overflow-hidden">

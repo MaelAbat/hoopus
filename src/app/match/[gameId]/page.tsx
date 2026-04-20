@@ -6,11 +6,11 @@ import TeamStatsComparison from "@/components/TeamStatsComparison";
 import FloatingVideo from "@/components/FloatingVideo";
 import ScrollReveal from "@/components/ScrollReveal";
 import ScrollToTop from "@/components/ScrollToTop";
-import { teamLogoUrl } from "@/lib/nba-teams";
+import LiveScoreHeader from "@/components/match/LiveScoreHeader";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
-export const revalidate = 300;
+export const revalidate = 60;
 
 interface PageProps {
   params: Promise<{ gameId: string }>;
@@ -82,9 +82,6 @@ export default async function MatchPage({ params }: PageProps) {
       })
     : "";
 
-  const homeWon = homeScore > awayScore;
-  const awayWon = awayScore > homeScore;
-
   // Fetch or resolve highlight video for finished games
   let highlightVideoId: string | null = null;
   if (gameData?.status === 3) {
@@ -109,57 +106,20 @@ export default async function MatchPage({ params }: PageProps) {
 
       {/* Score header */}
       <ScrollReveal variant="scale">
-        <div className="rounded-2xl bg-card border border-border-t overflow-hidden">
-          <div className="px-4 py-6 sm:px-10 sm:py-10">
-            <div className="flex items-center justify-center gap-4 sm:gap-12">
-              {/* Away team */}
-              <div className="flex flex-col items-center gap-2 sm:gap-3">
-                <img src={teamLogoUrl(awayTeam)} alt={awayTeam} className="h-12 w-12 sm:h-20 sm:w-20 object-contain" />
-                <div className="text-center">
-                  <p className={`text-sm sm:text-lg font-bold ${awayWon ? "text-text-primary" : "text-text-muted"}`}>
-                    <span className="hidden sm:inline">{gameData?.away_team_name || awayTeam}</span>
-                    <span className="sm:hidden">{awayTeam}</span>
-                  </p>
-                  <p className="text-xs text-text-faint hidden sm:block">{awayTeam}</p>
-                </div>
-              </div>
-
-              {/* Score */}
-              <div className="flex flex-col items-center gap-1 sm:gap-2">
-                <div className="flex items-center gap-2 sm:gap-4">
-                  <span className={`text-3xl sm:text-5xl font-extrabold tabular-nums ${awayWon ? "text-text-primary" : "text-text-muted"}`}>
-                    {awayScore}
-                  </span>
-                  <span className="text-lg sm:text-xl text-text-faint font-light">-</span>
-                  <span className={`text-3xl sm:text-5xl font-extrabold tabular-nums ${homeWon ? "text-text-primary" : "text-text-muted"}`}>
-                    {homeScore}
-                  </span>
-                </div>
-                <span className="text-xs font-medium text-text-faint uppercase tracking-wider">
-                  {gameData?.status === 3 ? "Terminé" : gameData?.status === 2 ? "En cours" : gameData?.status_text || ""}
-                </span>
-                {gameDate && (
-                  <p className="text-xs text-text-faint capitalize">{gameDate}</p>
-                )}
-                {gameData?.arena && (
-                  <p className="text-[11px] text-text-faint">{gameData.arena} - {gameData.arena_city}</p>
-                )}
-              </div>
-
-              {/* Home team */}
-              <div className="flex flex-col items-center gap-2 sm:gap-3">
-                <img src={teamLogoUrl(homeTeam)} alt={homeTeam} className="h-12 w-12 sm:h-20 sm:w-20 object-contain" />
-                <div className="text-center">
-                  <p className={`text-sm sm:text-lg font-bold ${homeWon ? "text-text-primary" : "text-text-muted"}`}>
-                    <span className="hidden sm:inline">{gameData?.home_team_name || homeTeam}</span>
-                    <span className="sm:hidden">{homeTeam}</span>
-                  </p>
-                  <p className="text-xs text-text-faint hidden sm:block">{homeTeam}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <LiveScoreHeader
+          gameId={gameId}
+          awayTeam={awayTeam}
+          homeTeam={homeTeam}
+          awayTeamName={gameData?.away_team_name || awayTeam}
+          homeTeamName={gameData?.home_team_name || homeTeam}
+          initialAwayScore={awayScore}
+          initialHomeScore={homeScore}
+          initialStatus={gameData?.status ?? 0}
+          initialStatusText={gameData?.status_text ?? null}
+          gameDate={gameDate}
+          arena={gameData?.arena ?? null}
+          arenaCity={gameData?.arena_city ?? null}
+        />
       </ScrollReveal>
 
       {/* Team stats comparison */}
