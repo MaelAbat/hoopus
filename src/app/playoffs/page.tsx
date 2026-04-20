@@ -12,7 +12,16 @@ export default async function Playoffs({ searchParams }: { searchParams: Promise
   const season = seasonParam || getCurrentSeason();
   const supabase = await createClient();
 
-  const [{ data: seasonRows }, { data: standings, error }, { data: series }, { data: playinGames }] = await Promise.all([
+  const PLAYOFF_STAT_CATEGORIES = ["PTS", "REB", "AST", "STL", "BLK", "FG_PCT", "FG3_PCT", "TS_PCT"];
+
+  const [
+    { data: seasonRows },
+    { data: standings, error },
+    { data: series },
+    { data: playinGames },
+    { data: playoffLeaders },
+    { data: playoffTeamStats },
+  ] = await Promise.all([
     supabase.from("standings").select("season").order("season", { ascending: false }).limit(1000),
     supabase
       .from("standings")
@@ -28,6 +37,21 @@ export default async function Playoffs({ searchParams }: { searchParams: Promise
       .from("playin_games")
       .select("*")
       .eq("season", season),
+    supabase
+      .from("stat_leaders")
+      .select("category, rank, player_name, player_id, team, value")
+      .eq("season", season)
+      .eq("season_type", "playoffs")
+      .in("category", PLAYOFF_STAT_CATEGORIES)
+      .gt("rank", 0)
+      .lte("rank", 10)
+      .order("rank", { ascending: true }),
+    supabase
+      .from("team_stats")
+      .select("team_id, team_name, team_tricode, gp, w, l, pts, reb, ast, off_rating, def_rating, net_rating, ts_pct")
+      .eq("season", season)
+      .eq("season_type", "playoffs")
+      .order("net_rating", { ascending: false }),
   ]);
   const availableSeasons = [...new Set((seasonRows || []).map((r: { season: string }) => r.season))];
   if (!availableSeasons.includes(season)) availableSeasons.unshift(season);
@@ -93,7 +117,14 @@ export default async function Playoffs({ searchParams }: { searchParams: Promise
 
         <SeasonContent>
           <ScrollReveal variant="up" delay={100}>
-            <PlayoffBracket east={east} west={west} series={enrichedSeries} playinGames={playinGames || []} />
+            <PlayoffBracket
+              east={east}
+              west={west}
+              series={enrichedSeries}
+              playinGames={playinGames || []}
+              playoffLeaders={playoffLeaders || []}
+              playoffTeamStats={playoffTeamStats || []}
+            />
           </ScrollReveal>
         </SeasonContent>
       </div>

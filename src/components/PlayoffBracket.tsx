@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { teamLogoUrl } from "@/lib/nba-teams";
 import { useFavorites } from "@/context/FavoritesContext";
+import PlayoffStatsPanel from "./PlayoffStatsPanel";
 
 interface Standing {
   id: string;
@@ -615,12 +616,52 @@ function PlayInConference({ teams, label, games }: { teams: Standing[]; label: s
 }
 
 /* ─── Main component ─── */
-export default function PlayoffBracket({ east, west, series, playinGames }: { east: Standing[]; west: Standing[]; series: PlayoffSeries[]; playinGames: PlayInGame[] }) {
-  const [view, setView] = useState<"playin" | "playoffs">("playoffs");
+interface PlayoffLeaderRow {
+  category: string;
+  rank: number;
+  player_name: string;
+  player_id: number;
+  team: string;
+  value: number;
+}
 
-  const views: { key: "playin" | "playoffs"; label: string }[] = [
+interface PlayoffTeamStat {
+  team_id: number;
+  team_name: string;
+  team_tricode: string;
+  gp: number;
+  w: number;
+  l: number;
+  pts: number;
+  reb: number;
+  ast: number;
+  off_rating: number;
+  def_rating: number;
+  net_rating: number;
+  ts_pct: number;
+}
+
+export default function PlayoffBracket({
+  east,
+  west,
+  series,
+  playinGames,
+  playoffLeaders = [],
+  playoffTeamStats = [],
+}: {
+  east: Standing[];
+  west: Standing[];
+  series: PlayoffSeries[];
+  playinGames: PlayInGame[];
+  playoffLeaders?: PlayoffLeaderRow[];
+  playoffTeamStats?: PlayoffTeamStat[];
+}) {
+  const [view, setView] = useState<"playin" | "playoffs" | "stats">("playoffs");
+
+  const views: { key: "playin" | "playoffs" | "stats"; label: string }[] = [
     { key: "playoffs", label: "Playoffs" },
     { key: "playin", label: "Play-In" },
+    { key: "stats", label: "Statistiques" },
   ];
 
   const hasData = east.length > 0 && west.length > 0;
@@ -667,6 +708,8 @@ export default function PlayoffBracket({ east, west, series, playinGames }: { ea
             </ul>
           </div>
         </div>
+      ) : view === "stats" ? (
+        <PlayoffStatsPanel leaders={playoffLeaders} teamStats={playoffTeamStats} />
       ) : (
         <div className="rounded-2xl bg-card border border-border-t p-3 sm:p-6">
           <FullBracket east={east} west={west} series={series} />

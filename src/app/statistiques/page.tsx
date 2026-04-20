@@ -55,6 +55,7 @@ export default async function Statistiques({ searchParams }: { searchParams: Pro
         .from("stat_leaders")
         .select("*")
         .eq("season", season)
+        .eq("season_type", "regular")
         .order("rank", { ascending: true })
         .order("category", { ascending: true })
         .order("player_id", { ascending: true })
@@ -168,6 +169,7 @@ export default async function Statistiques({ searchParams }: { searchParams: Pro
     .from("team_stats")
     .select("*")
     .eq("season", season)
+    .eq("season_type", "regular")
     .order("net_rating", { ascending: false });
 
   const teamData: TeamRow[] = (teamStatsRaw || []).map((t) => ({ ...t } as TeamRow));
