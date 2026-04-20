@@ -227,7 +227,7 @@ export default function CareerChart({ seasons }: CareerChartProps) {
                   : {
                       backgroundColor: "transparent",
                       color: "var(--text-muted)",
-                      borderColor: "var(--border-t)",
+                      borderColor: "var(--border)",
                     }
               }
             >
@@ -257,7 +257,7 @@ export default function CareerChart({ seasons }: CareerChartProps) {
                     y1={y}
                     x2={plotRight}
                     y2={y}
-                    stroke="var(--border-t)"
+                    stroke="var(--border)"
                     strokeDasharray="4,4"
                     strokeWidth={0.5}
                   />
@@ -349,7 +349,7 @@ export default function CareerChart({ seasons }: CareerChartProps) {
                     y1={y}
                     x2={plotRight}
                     y2={y}
-                    stroke="var(--border-t)"
+                    stroke="var(--border)"
                     strokeDasharray="4,4"
                     strokeWidth={0.5}
                   />
@@ -413,7 +413,7 @@ export default function CareerChart({ seasons }: CareerChartProps) {
                       cy={y}
                       r={4}
                       fill={stat.color}
-                      stroke="var(--card)"
+                      stroke="var(--bg-card)"
                       strokeWidth={2}
                       className="cursor-pointer"
                       onMouseEnter={(e) => handleDotHover(e, i)}
@@ -438,8 +438,8 @@ export default function CareerChart({ seasons }: CareerChartProps) {
                   width={130}
                   height={24 + tooltip.values.length * 20}
                   rx={8}
-                  fill="var(--card)"
-                  stroke="var(--border-t)"
+                  fill="var(--bg-card)"
+                  stroke="var(--border)"
                   strokeWidth={1}
                   opacity={0.95}
                 />
@@ -447,7 +447,7 @@ export default function CareerChart({ seasons }: CareerChartProps) {
                   x={10}
                   y={16}
                   className="text-[11px] font-semibold"
-                  fill="var(--text-primary)"
+                  fill="var(--text)"
                 >
                   {tooltip.season}
                 </text>

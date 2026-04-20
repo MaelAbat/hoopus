@@ -34,6 +34,7 @@ interface StatRow {
   awayValue: number;
   homeValue: number;
   format: "int" | "pct";
+  lowerIsBetter?: boolean;
 }
 
 function aggregate(players: BoxscorePlayer[]) {
@@ -83,9 +84,9 @@ function formatValue(value: number, format: "int" | "pct"): string {
 const SVG_WIDTH = 600;
 const BAR_MAX_WIDTH = 200;
 const CENTER_X = SVG_WIDTH / 2;
-const ROW_HEIGHT = 44;
-const BAR_HEIGHT = 14;
-const HEADER_HEIGHT = 60;
+const ROW_HEIGHT = 34;
+const BAR_HEIGHT = 12;
+const HEADER_HEIGHT = 48;
 
 function ComparisonBar({
   stat,
@@ -101,9 +102,13 @@ function ComparisonBar({
   const awayBarWidth = (stat.awayValue / maxVal) * BAR_MAX_WIDTH;
   const homeBarWidth = (stat.homeValue / maxVal) * BAR_MAX_WIDTH;
 
-  const awayLeads = stat.awayValue > stat.homeValue;
-  const homeLeads = stat.homeValue > stat.awayValue;
   const tied = stat.awayValue === stat.homeValue;
+  const awayLeads = stat.lowerIsBetter
+    ? stat.awayValue < stat.homeValue
+    : stat.awayValue > stat.homeValue;
+  const homeLeads = stat.lowerIsBetter
+    ? stat.homeValue < stat.awayValue
+    : stat.homeValue > stat.awayValue;
 
   const awayColor = awayLeads ? "#f97316" : tied ? "#6b7280" : "#6b7280";
   const homeColor = homeLeads ? "#3b82f6" : tied ? "#6b7280" : "#6b7280";
@@ -119,7 +124,7 @@ function ComparisonBar({
           y1={y - 4}
           x2={CENTER_X + BAR_MAX_WIDTH + 50}
           y2={y - 4}
-          stroke="var(--border-t)"
+          stroke="var(--border)"
           strokeWidth={0.5}
           opacity={0.4}
         />
@@ -153,7 +158,7 @@ function ComparisonBar({
         y={barY + BAR_HEIGHT / 2 + 4}
         textAnchor="end"
         className="text-[12px] tabular-nums"
-        fill={awayLeads ? "var(--text-primary)" : "var(--text-muted)"}
+        fill={awayLeads ? "var(--text)" : "var(--text-muted)"}
         fontWeight={awayLeads ? 700 : 400}
       >
         {formatValue(stat.awayValue, stat.format)}
@@ -176,7 +181,7 @@ function ComparisonBar({
         y={barY + BAR_HEIGHT / 2 + 4}
         textAnchor="start"
         className="text-[12px] tabular-nums"
-        fill={homeLeads ? "var(--text-primary)" : "var(--text-muted)"}
+        fill={homeLeads ? "var(--text)" : "var(--text-muted)"}
         fontWeight={homeLeads ? 700 : 400}
       >
         {formatValue(stat.homeValue, stat.format)}
@@ -207,7 +212,7 @@ export default function TeamStatsComparison({
     { label: "Passes", awayValue: away.ast, homeValue: home.ast, format: "int" },
     { label: "Interceptions", awayValue: away.stl, homeValue: home.stl, format: "int" },
     { label: "Contres", awayValue: away.blk, homeValue: home.blk, format: "int" },
-    { label: "Pertes de balle", awayValue: away.tov, homeValue: home.tov, format: "int" },
+    { label: "Pertes de balle", awayValue: away.tov, homeValue: home.tov, format: "int", lowerIsBetter: true },
     { label: "FG%", awayValue: awayFgPct, homeValue: homeFgPct, format: "pct" },
     { label: "3P%", awayValue: awayFg3Pct, homeValue: homeFg3Pct, format: "pct" },
     { label: "FT%", awayValue: awayFtPct, homeValue: homeFtPct, format: "pct" },
@@ -219,14 +224,14 @@ export default function TeamStatsComparison({
   const homeLogo = teamLogoUrl(homeTeam);
 
   return (
-    <div className="rounded-2xl bg-card border border-border-t p-6">
-      <h2 className="text-lg font-bold text-text-primary mb-4">
+    <div className="rounded-2xl bg-card border border-border-t p-4 sm:p-6">
+      <h2 className="text-base font-bold text-text-primary mb-3">
         Comparaison par équipe
       </h2>
 
       <svg
         viewBox={`0 0 ${SVG_WIDTH} ${svgHeight}`}
-        className="w-full"
+        className="w-full max-w-2xl mx-auto block"
         preserveAspectRatio="xMidYMid meet"
       >
         {/* Team headers */}
@@ -243,7 +248,7 @@ export default function TeamStatsComparison({
           y={28}
           textAnchor="start"
           className="text-[13px] font-bold"
-          fill="var(--text-primary)"
+          fill="var(--text)"
         >
           {awayTeam}
         </text>
@@ -261,7 +266,7 @@ export default function TeamStatsComparison({
           y={28}
           textAnchor="end"
           className="text-[13px] font-bold"
-          fill="var(--text-primary)"
+          fill="var(--text)"
         >
           {homeTeam}
         </text>
@@ -272,7 +277,7 @@ export default function TeamStatsComparison({
           y1={HEADER_HEIGHT - 8}
           x2={CENTER_X}
           y2={svgHeight - 10}
-          stroke="var(--border-t)"
+          stroke="var(--border)"
           strokeWidth={0.5}
           strokeDasharray="4,4"
           opacity={0.5}

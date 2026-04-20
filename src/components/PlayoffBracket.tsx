@@ -262,7 +262,7 @@ function DualConnector({ inputPerConf, outputPerConf, animDelay = 300 }: { input
   return (
     <svg width={CONN_W} height={TOTAL_H} className="shrink-0">
       {paths.map((d, i) => (
-        <path key={i} d={d} fill="none" stroke="var(--border-t)" strokeWidth="1.5"
+        <path key={i} d={d} fill="none" stroke="var(--border)" strokeWidth="1.5"
           strokeDasharray="1000" strokeDashoffset="1000"
           style={{ animation: `drawLine 0.8s ease-out ${animDelay}ms both` }} />
       ))}
@@ -279,10 +279,10 @@ function FinalsConnector({ animDelay = 700 }: { animDelay?: number }) {
 
   return (
     <svg width={CONN_W} height={TOTAL_H} className="shrink-0">
-      <path d={`M 0 ${eastY} H ${mid} V ${finalsY} H ${CONN_W}`} fill="none" stroke="var(--border-t)" strokeWidth="1.5"
+      <path d={`M 0 ${eastY} H ${mid} V ${finalsY} H ${CONN_W}`} fill="none" stroke="var(--border)" strokeWidth="1.5"
         strokeDasharray="1000" strokeDashoffset="1000"
         style={{ animation: `drawLine 0.8s ease-out ${animDelay}ms both` }} />
-      <path d={`M 0 ${westY} H ${mid} V ${finalsY} H ${CONN_W}`} fill="none" stroke="var(--border-t)" strokeWidth="1.5"
+      <path d={`M 0 ${westY} H ${mid} V ${finalsY} H ${CONN_W}`} fill="none" stroke="var(--border)" strokeWidth="1.5"
         strokeDasharray="1000" strokeDashoffset="1000"
         style={{ animation: `drawLine 0.8s ease-out ${animDelay}ms both` }} />
     </svg>
@@ -580,10 +580,10 @@ function PlayInConference({ teams, label, games }: { teams: Standing[]; label: s
             const mid = CONN_W / 2;
             return (
               <>
-                <path d={`M 0 ${inY1} H ${mid} V ${outY} H ${CONN_W}`} fill="none" stroke="var(--border-t)" strokeWidth="1.5"
+                <path d={`M 0 ${inY1} H ${mid} V ${outY} H ${CONN_W}`} fill="none" stroke="var(--border)" strokeWidth="1.5"
                   strokeDasharray="1000" strokeDashoffset="1000"
                   style={{ animation: 'drawLine 0.8s ease-out 200ms both' }} />
-                <path d={`M 0 ${inY2} H ${mid} V ${outY} H ${CONN_W}`} fill="none" stroke="var(--border-t)" strokeWidth="1.5"
+                <path d={`M 0 ${inY2} H ${mid} V ${outY} H ${CONN_W}`} fill="none" stroke="var(--border)" strokeWidth="1.5"
                   strokeDasharray="1000" strokeDashoffset="1000"
                   style={{ animation: 'drawLine 0.8s ease-out 200ms both' }} />
               </>
