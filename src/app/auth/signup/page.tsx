@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { signup } from "@/lib/actions/auth";
 import Link from "next/link";
 import { UserPlus, Loader2 } from "lucide-react";
+import PasswordRules, { isPasswordValid, PASSWORD_PATTERN } from "@/components/PasswordRules";
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -24,11 +25,16 @@ function SubmitButton() {
 
 function SignupForm() {
   const [error, setError] = useState<string | null>(null);
+  const [password, setPassword] = useState("");
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "";
 
   async function handleSubmit(formData: FormData) {
     setError(null);
+    if (!isPasswordValid(password)) {
+      setError("Le mot de passe ne respecte pas toutes les exigences.");
+      return;
+    }
     if (redirectTo) formData.set("redirectTo", redirectTo);
     // Clean anonymous name before upgrade (redirect on success prevents cleanup after)
     localStorage.removeItem("hoop-anonymous-name");
@@ -93,11 +99,18 @@ function SignupForm() {
             name="password"
             type="password"
             required
-            minLength={6}
+            minLength={8}
+            pattern={PASSWORD_PATTERN}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             autoComplete="new-password"
             className="w-full rounded-xl bg-input border border-border-t px-4 py-3 text-sm text-text-primary placeholder-text-faint outline-none transition-colors focus:border-accent/50 focus:ring-1 focus:ring-accent/50"
-            placeholder="Minimum 6 caractères"
+            placeholder="Votre mot de passe"
+            aria-describedby="password-rules"
           />
+          <div id="password-rules">
+            <PasswordRules password={password} live />
+          </div>
         </div>
 
         <SubmitButton />
