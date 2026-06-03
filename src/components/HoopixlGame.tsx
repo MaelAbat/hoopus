@@ -38,21 +38,16 @@ function hashTwo(a: number, b: number): number {
   return Math.abs(h);
 }
 
-function getDailyPlayer<T extends { id: number }>(players: T[]): T | null {
-  if (players.length === 0) return null;
+// Deterministic daily ordering: every player ranked by the day's hash, highest
+// first. The top entry is "the player of the day"; if its headshot is missing
+// from the NBA CDN we fall back to the next candidate. Since photo availability
+// is global, all clients converge on the same player.
+function getDailyCandidates<T extends { id: number }>(players: T[]): T[] {
+  if (players.length === 0) return [];
   const now = new Date();
   // Different seed than Hoopl (offset by 7777)
   const daySeed = now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate() + 7777;
-  let best = players[0];
-  let bestScore = -1;
-  for (const p of players) {
-    const score = hashTwo(daySeed, p.id);
-    if (score > bestScore) {
-      bestScore = score;
-      best = p;
-    }
-  }
-  return best;
+  return [...players].sort((a, b) => hashTwo(daySeed, b.id) - hashTwo(daySeed, a.id));
 }
 
 function getStorageKey(): string {
@@ -68,7 +63,7 @@ function formatTime(seconds: number): string {
 
 /* ─── Pixelated image via SVG filter ─── */
 
-function PixelatedImage({ src, pixelSize, size }: { src: string; pixelSize: number; size: number }) {
+function PixelatedImage({ src, pixelSize, size, onError }: { src: string; pixelSize: number; size: number; onError?: () => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
   const offRef = useRef<HTMLCanvasElement | null>(null);
@@ -76,6 +71,7 @@ function PixelatedImage({ src, pixelSize, size }: { src: string; pixelSize: numb
 
   // Load source image once and cache full-res draw
   useEffect(() => {
+    setImgLoaded(false);
     const img = new Image();
     img.onload = () => {
       imgRef.current = img;
@@ -89,8 +85,12 @@ function PixelatedImage({ src, pixelSize, size }: { src: string; pixelSize: numb
       offRef.current = off;
       setImgLoaded(true);
     };
+    // Some players have no headshot on the NBA CDN — signal the failure so the
+    // game can skip to another player instead of showing a blank grey square.
+    img.onerror = () => { onError?.(); };
     img.src = src;
-  }, [src, size]);
+    return () => { img.onload = null; img.onerror = null; };
+  }, [src, size, onError]);
 
   // Redraw pixelated on every pixelSize change using fractional block size
   useEffect(() => {
@@ -201,10 +201,15 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const target = useMemo(() => {
-    if (players.length === 0) return null;
-    return getDailyPlayer(players);
-  }, [players]);
+  const candidates = useMemo(() => getDailyCandidates(players), [players]);
+  const [targetIndex, setTargetIndex] = useState(0);
+  const target = candidates[targetIndex] ?? null;
+
+  // Skip to the next deterministic candidate when the current player's headshot
+  // fails to load (missing from the NBA CDN).
+  const handlePhotoError = useCallback(() => {
+    setTargetIndex((i) => (i < candidates.length - 1 ? i + 1 : i));
+  }, [candidates.length]);
 
   const gameDate = useMemo(() => {
     const now = new Date();
@@ -449,6 +454,7 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
             src={playerPhotoUrl(target.id)}
             pixelSize={pixelSize}
             size={imgSize}
+            onError={handlePhotoError}
           />
           {/* Clarity indicator */}
           {!gameOver && (

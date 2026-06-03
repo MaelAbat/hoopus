@@ -139,7 +139,7 @@ function GamesPopover({ series, flipUp }: { series: PlayoffSeries; flipUp?: bool
           <div key={g.game_number}>{row}</div>
         );
       })}
-      {series.games.some(g => g.status === 1) && (
+      {series.status !== "completed" && series.games.some(g => g.status === 1) && (
         <p className="text-[9px] text-text-muted text-center pt-1 mt-1 border-t border-border-hover">
           {series.games.filter(g => g.status === 1).length} match(s) à venir
         </p>
