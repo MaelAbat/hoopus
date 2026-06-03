@@ -1,8 +1,29 @@
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentSeason } from "@/lib/season";
+import { decidedSeriesKeysFromSeries, filterScheduledByDecidedSeries } from "@/lib/playoff-utils";
 import ScoresTicker from "./ScoresTicker";
 
 export default async function ScoresTickerServer() {
   const supabase = await createClient();
+
+  // Lazily resolve the set of decided playoff series so we can drop scheduled
+  // games that will never be played (series ended 4-0/4-1/4-2). Only queried
+  // when an upcoming list actually contains playoff games.
+  let decidedKeys: Set<string> | null = null;
+  async function dropSettledPlayoffGames<
+    T extends { game_id: string; status: number; home_team: string; away_team: string }
+  >(list: T[]): Promise<T[]> {
+    if (list.length === 0 || !list.some((g) => g.game_id.startsWith("004"))) return list;
+    if (!decidedKeys) {
+      const { data } = await supabase
+        .from("playoff_series")
+        .select("round, team_top, team_bottom, wins_top, wins_bottom, status")
+        .eq("season", getCurrentSeason())
+        .eq("status", "completed");
+      decidedKeys = decidedSeriesKeysFromSeries(data || []);
+    }
+    return filterScheduledByDecidedSeries(list, decidedKeys);
+  }
 
   // Get yesterday's date (ET timezone — NBA games are in ET)
   const now = new Date();
@@ -40,10 +61,13 @@ export default async function ScoresTickerServer() {
     .order("game_time", { ascending: true })
     .limit(50);
 
+  // Drop scheduled games from already-decided playoff series before picking a date
+  const upcomingClean = await dropSettledPlayoffGames(upcomingRaw || []);
+
   // Keep only the first date that has upcoming games
-  const firstUpcomingDate = upcomingRaw?.[0]?.game_date;
+  const firstUpcomingDate = upcomingClean[0]?.game_date;
   const upcoming = firstUpcomingDate
-    ? upcomingRaw!.filter(g => g.game_date === firstUpcomingDate)
+    ? upcomingClean.filter(g => g.game_date === firstUpcomingDate)
     : [];
 
   // Show both results and upcoming if both exist
@@ -74,9 +98,10 @@ export default async function ScoresTickerServer() {
     .order("game_time", { ascending: true })
     .limit(50);
 
-  const firstFutureDate = futureRaw?.[0]?.game_date;
+  const futureClean = await dropSettledPlayoffGames(futureRaw || []);
+  const firstFutureDate = futureClean[0]?.game_date;
   const futureGames = firstFutureDate
-    ? futureRaw!.filter(g => g.game_date === firstFutureDate)
+    ? futureClean.filter(g => g.game_date === firstFutureDate)
     : [];
 
   if (futureGames.length === 0) return null;

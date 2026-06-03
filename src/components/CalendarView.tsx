@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, MapPin, Star, Loader2 } from "lucide-react";
 import { teamLogoUrl } from "@/lib/nba-teams";
 import { useFavorites } from "@/context/FavoritesContext";
 import { createClient } from "@/lib/supabase/client";
+import { hideSettledPlayoffGames } from "@/lib/playoff-utils";
 import Link from "next/link";
 
 interface Game {
@@ -258,14 +259,18 @@ export default function CalendarView({ games: initialGames, initialSeason }: { g
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [year, month]);
 
+  // Hide scheduled playoff games whose series is already decided (e.g. a 4-1
+  // series still carries unplayed "scheduled" games 6 and 7 in the data).
+  const visibleGames = useMemo(() => hideSettledPlayoffGames(allGames), [allGames]);
+
   const gamesByDate = useMemo(() => {
     const map: Record<string, Game[]> = {};
-    allGames.forEach((g) => {
+    visibleGames.forEach((g) => {
       if (!map[g.game_date]) map[g.game_date] = [];
       map[g.game_date].push(g);
     });
     return map;
-  }, [allGames]);
+  }, [visibleGames]);
 
   const calendarDays = useMemo(() => {
     const firstDay = new Date(year, month, 1);
