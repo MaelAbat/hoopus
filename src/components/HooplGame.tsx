@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
-import { ArrowUp, ArrowDown, Check, RotateCcw, Trophy, Search, Clock, LogIn } from "lucide-react";
+import { ArrowUp, ArrowDown, Check, RotateCcw, Trophy, Search, Clock, LogIn, Flag, Gauge } from "lucide-react";
 import { teamLogoUrl, playerPhotoUrl } from "@/lib/nba-teams";
 import { createClient } from "@/lib/supabase/client";
 import { ensureAuth, getDisplayName, isAnonymousName } from "@/lib/anonymous-auth";
@@ -129,6 +129,21 @@ function clueClass(status: ClueStatus): string {
   }
 }
 
+/** Difficulté du joueur du jour, dérivée de ses statistiques.
+ *  Plus un joueur affiche de grosses stats, plus il est connu et donc
+ *  facile à deviner. Le score combine points, rebonds et passes. */
+function getDifficulty(player: HooplPlayer): {
+  label: "Facile" | "Intermédiaire" | "Difficile";
+  className: string;
+} {
+  const score = player.pts + player.reb * 0.7 + player.ast * 0.7;
+  if (score >= 28)
+    return { label: "Facile", className: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" };
+  if (score >= 15)
+    return { label: "Intermédiaire", className: "bg-amber-500/15 text-amber-400 border-amber-500/30" };
+  return { label: "Difficile", className: "bg-red-500/15 text-red-400 border-red-500/30" };
+}
+
 function ClueIcon({ status }: { status: ClueStatus }) {
   if (status === "correct") return <Check size={14} className="text-emerald-400" />;
   if (status === "higher") return <ArrowUp size={14} />;
@@ -242,6 +257,8 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
   const [guessIds, setGuessIds] = useState<number[]>([]);
   const [search, setSearch] = useState("");
   const [won, setWon] = useState(false);
+  const [gaveUp, setGaveUp] = useState(false);
+  const [confirmAbandon, setConfirmAbandon] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [startTime, setStartTime] = useState<number>(0);
@@ -283,6 +300,7 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
         const data = JSON.parse(saved);
         setGuessIds(data.guesses || []);
         setWon(data.won || false);
+        setGaveUp(data.gaveUp || false);
         setElapsed(data.elapsed || 0);
         setSubmitted(data.submitted || false);
         setStartTime(data.startTime || Date.now());
@@ -299,22 +317,22 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
   useEffect(() => {
     if (!target || !loaded) return;
     const key = getStorageKey();
-    localStorage.setItem(key, JSON.stringify({ guesses: guessIds, won, elapsed, submitted, startTime }));
-  }, [guessIds, won, target, loaded, elapsed, submitted, startTime]);
+    localStorage.setItem(key, JSON.stringify({ guesses: guessIds, won, gaveUp, elapsed, submitted, startTime }));
+  }, [guessIds, won, gaveUp, target, loaded, elapsed, submitted, startTime]);
 
   // Timer tick
   useEffect(() => {
-    if (!loaded || won || (guessIds.length >= 10) || !startTime) return;
+    if (!loaded || won || gaveUp || (guessIds.length >= 10) || !startTime) return;
     const interval = setInterval(() => {
       setElapsed(Math.floor((Date.now() - startTime) / 1000));
     }, 1000);
     return () => clearInterval(interval);
-  }, [loaded, won, guessIds.length, startTime]);
+  }, [loaded, won, gaveUp, guessIds.length, startTime]);
 
   // Submit score when user logs in after finishing the game
   useEffect(() => {
     if (!userId || submitted || !loaded) return;
-    const gameOver = won || guessIds.length >= 10;
+    const gameOver = won || gaveUp || guessIds.length >= 10;
     if (!gameOver) return;
     submitScore(guessIds.length, won);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -415,7 +433,8 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
   }, [search, players, guessIds]);
 
   const MAX_GUESSES = 10;
-  const lost = !won && guessIds.length >= MAX_GUESSES;
+  const lost = !won && (guessIds.length >= MAX_GUESSES || gaveUp);
+  const difficulty = target ? getDifficulty(target) : null;
 
   function handleGuess(player: HooplPlayer) {
     if (won || lost || !target || guessIds.includes(player.id)) return;
@@ -432,11 +451,25 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
     }
   }
 
+  function handleAbandon() {
+    if (won || lost || !target) return;
+    if (!confirmAbandon) {
+      setConfirmAbandon(true);
+      return;
+    }
+    setConfirmAbandon(false);
+    setGaveUp(true);
+    setShowDropdown(false);
+    submitScore(guessIds.length, false);
+  }
+
   function handleReset() {
     const key = getStorageKey();
     localStorage.removeItem(key);
     setGuessIds([]);
     setWon(false);
+    setGaveUp(false);
+    setConfirmAbandon(false);
     setSearch("");
   }
 
@@ -458,6 +491,8 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
 
     const result = won
       ? `Trouvé en ${guessIds.length} essai${guessIds.length > 1 ? "s" : ""} (${formatTime(elapsed)})`
+      : gaveUp
+      ? `Abandonné après ${guessIds.length} essai${guessIds.length > 1 ? "s" : ""}`
       : `Pas trouvé en ${MAX_GUESSES} essais`;
 
     return `Hoopl \u{1F3C0} ${dateStr}\n\n${grid}\n\n${result}\n\nhttps://www.hoopus.fr/mini-jeux/hoopl`;
@@ -552,6 +587,17 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
                     : lost ? "Partie terminée"
                     : "Devine le joueur NBA du jour"}
                 </p>
+
+                {/* Difficulté du jour */}
+                {difficulty && (
+                  <span
+                    className={`mt-2 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${difficulty.className}`}
+                    title="Difficulté estimée d'après les statistiques du joueur"
+                  >
+                    <Gauge size={11} />
+                    {difficulty.label}
+                  </span>
+                )}
 
                 {/* Progress bar */}
                 {!won && !lost && loaded && (
@@ -649,6 +695,38 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
         </div>
       )}
 
+      {/* Abandon button */}
+      {!won && !lost && (
+        <div className="flex items-center justify-center gap-2">
+          {confirmAbandon ? (
+            <>
+              <span className="text-xs text-text-muted">Révéler la réponse et terminer la partie ?</span>
+              <button
+                onClick={handleAbandon}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-red-500/15 border border-red-500/30 px-3 py-1.5 text-xs font-bold text-red-400 transition-colors hover:bg-red-500/25"
+              >
+                <Flag size={12} />
+                Confirmer
+              </button>
+              <button
+                onClick={() => setConfirmAbandon(false)}
+                className="rounded-lg bg-input border border-border-t px-3 py-1.5 text-xs font-medium text-text-muted transition-colors hover:bg-card-hover hover:text-text-primary"
+              >
+                Annuler
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={handleAbandon}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-input border border-border-t px-3 py-1.5 text-xs font-medium text-text-muted transition-colors hover:bg-card-hover hover:text-text-primary"
+            >
+              <Flag size={12} />
+              Abandonner
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Win reveal */}
       {won && (
         <div className="rounded-2xl overflow-hidden border border-emerald-500/30 bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-card p-5 sm:p-6">
@@ -680,7 +758,7 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
               <img src={teamLogoUrl(target.team)} alt="" className="absolute -bottom-1 -right-1 h-7 w-7 object-contain bg-card rounded-full p-0.5" />
             </div>
             <div>
-              <p className="text-xs font-bold text-red-400 uppercase tracking-wider">Perdu !</p>
+              <p className="text-xs font-bold text-red-400 uppercase tracking-wider">{gaveUp ? "Abandonné" : "Perdu !"}</p>
               <p className="text-xl sm:text-2xl font-extrabold text-text-primary mt-0.5">{target.name}</p>
               <p className="text-sm text-text-muted">{target.teamName} -- {target.position}</p>
               <div className="flex items-center gap-4 mt-2 text-xs text-text-faint">
