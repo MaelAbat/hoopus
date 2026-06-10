@@ -5,6 +5,8 @@ import ThemeProvider from "@/components/ThemeProvider";
 import AchievementProvider from "@/components/AchievementProvider";
 import LayoutShell from "@/components/LayoutShell";
 import ScoresTickerServer from "@/components/ScoresTickerServer";
+import { hasNews } from "@/lib/actions/news";
+import { hasArticles } from "@/lib/actions/articles";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://hoopus.fr";
 
@@ -26,11 +28,13 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const [newsExists, articlesExist] = await Promise.all([hasNews(), hasArticles()]);
+
   return (
     <html lang="fr" data-theme="light" suppressHydrationWarning>
       <head>
@@ -40,6 +44,8 @@ export default function RootLayout({
         <ThemeProvider>
           <AchievementProvider>
             <LayoutShell
+              hasNews={newsExists}
+              hasArticles={articlesExist}
               ticker={
                 <Suspense fallback={null}>
                   <ScoresTickerServer />

@@ -15,6 +15,7 @@ import {
   BookOpen,
 } from "lucide-react";
 import { getArticles } from "@/lib/actions/articles";
+import { hasNews } from "@/lib/actions/news";
 import { getCurrentSeason, seasonLabel } from "@/lib/season";
 import ScrollReveal from "@/components/ScrollReveal";
 import SeasonWidget from "@/components/SeasonWidget";
@@ -166,9 +167,17 @@ function formatDate(dateStr: string) {
 
 export default async function Home() {
   const season = getCurrentSeason();
-  const articles = await getArticles();
+  const [articles, newsExists] = await Promise.all([getArticles(), hasNews()]);
   const featured = articles[0] ?? null;
   const funFact = getDaily(funFacts);
+
+  // Hide the Articles / Actualités tiles when nothing has been published yet.
+  const articlesExist = articles.length > 0;
+  const visibleCategories = categories.filter((cat) => {
+    if (cat.href === "/articles") return articlesExist;
+    if (cat.href === "/actualites") return newsExists;
+    return true;
+  });
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 sm:space-y-14">
@@ -211,14 +220,25 @@ export default async function Home() {
             </p>
 
             <div className="flex flex-wrap gap-3 pt-2">
-              <Link
-                href="/actualites"
-                className="group inline-flex items-center gap-2 rounded-xl bg-accent px-6 py-3 text-sm font-bold text-white transition-all duration-300 hover:bg-accent-hover hover:shadow-lg hover:shadow-accent/25 hover:scale-[1.03] active:scale-[0.98]"
-              >
-                <Flame size={16} strokeWidth={1.5} />
-                Voir les actus
-                <ArrowRight size={16} strokeWidth={1.5} className="transition-transform duration-300 group-hover:translate-x-0.5" />
-              </Link>
+              {newsExists ? (
+                <Link
+                  href="/actualites"
+                  className="group inline-flex items-center gap-2 rounded-xl bg-accent px-6 py-3 text-sm font-bold text-white transition-all duration-300 hover:bg-accent-hover hover:shadow-lg hover:shadow-accent/25 hover:scale-[1.03] active:scale-[0.98]"
+                >
+                  <Flame size={16} strokeWidth={1.5} />
+                  Voir les actus
+                  <ArrowRight size={16} strokeWidth={1.5} className="transition-transform duration-300 group-hover:translate-x-0.5" />
+                </Link>
+              ) : (
+                <Link
+                  href="/calendrier"
+                  className="group inline-flex items-center gap-2 rounded-xl bg-accent px-6 py-3 text-sm font-bold text-white transition-all duration-300 hover:bg-accent-hover hover:shadow-lg hover:shadow-accent/25 hover:scale-[1.03] active:scale-[0.98]"
+                >
+                  <Calendar size={16} strokeWidth={1.5} />
+                  Matchs du jour
+                  <ArrowRight size={16} strokeWidth={1.5} className="transition-transform duration-300 group-hover:translate-x-0.5" />
+                </Link>
+              )}
               <Link
                 href="/statistiques"
                 className="group inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-6 py-3 text-sm font-bold text-white backdrop-blur-sm transition-all duration-300 hover:bg-white/20 hover:scale-[1.03] active:scale-[0.98]"
@@ -320,7 +340,7 @@ export default async function Home() {
         </ScrollReveal>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {categories.map((cat, i) => {
+          {visibleCategories.map((cat, i) => {
             const isXl = cat.size === "xl";
             const isMd = cat.size === "md";
             const isBanner = cat.size === "banner";
