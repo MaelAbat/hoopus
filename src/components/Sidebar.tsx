@@ -65,9 +65,22 @@ interface UserProfile {
   is_admin: boolean;
 }
 
-export default function Sidebar() {
+export default function Sidebar({
+  hasNews = true,
+  hasArticles = true,
+}: {
+  hasNews?: boolean;
+  hasArticles?: boolean;
+}) {
   const pathname = usePathname();
   const router = useRouter();
+
+  // Hide the Actualités / Articles entries when nothing has been published yet.
+  const visibleNavItems = navItems.filter((item) => {
+    if (item.href === "/actualites") return hasNews;
+    if (item.href === "/articles") return hasArticles;
+    return true;
+  });
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -161,7 +174,7 @@ export default function Sidebar() {
 
       {/* Navigation */}
       <nav className="mt-4 flex flex-1 flex-col gap-1 overflow-y-auto px-3">
-        {navItems.map((item) => {
+        {visibleNavItems.map((item) => {
           const isActive =
             item.href === "/"
               ? pathname === "/"

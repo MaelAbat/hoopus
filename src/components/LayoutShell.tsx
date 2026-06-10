@@ -18,9 +18,13 @@ export function useNavTransition() {
 export default function LayoutShell({
   children,
   ticker,
+  hasNews = true,
+  hasArticles = true,
 }: {
   children: React.ReactNode;
   ticker?: React.ReactNode;
+  hasNews?: boolean;
+  hasArticles?: boolean;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -59,7 +63,7 @@ export default function LayoutShell({
       <FavoritesProvider>
         <VideoProvider>
           <div onClickCapture={handleClickCapture}>
-            <Sidebar />
+            <Sidebar hasNews={hasNews} hasArticles={hasArticles} />
             <main className="min-h-screen pt-14 px-3 pb-4 sm:px-6 sm:pb-6 lg:ml-64 lg:pt-0 lg:p-8">
               {ticker && (
                 <div className="sticky top-14 lg:top-0 z-30 mb-2 pt-3 lg:pt-4">
