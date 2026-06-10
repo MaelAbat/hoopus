@@ -52,14 +52,14 @@ function fetchHtml(url: string, redirects = 0): Promise<string> {
           fetchHtml(location, redirects + 1).then(resolve).catch(reject);
           return;
         }
-        let data = "";
-        res.on("data", (chunk: string) => (data += chunk));
+        const chunks: Buffer[] = [];
+        res.on("data", (chunk: Buffer) => chunks.push(chunk));
         res.on("end", () => {
           if (res.statusCode !== 200) {
             reject(new Error(`HTML fetch error: ${res.statusCode}`));
             return;
           }
-          resolve(data);
+          resolve(Buffer.concat(chunks).toString("utf-8"));
         });
       });
       req.on("error", reject);
@@ -157,15 +157,15 @@ async function fetchSalaries(): Promise<Map<string, string>> {
 function fetchNba(url: string, timeoutMs = 300000): Promise<NbaResponse> {
   return new Promise((resolve, reject) => {
     const req = https.get(url, { headers: NBA_HEADERS }, (res) => {
-      let data = "";
-      res.on("data", (chunk: string) => (data += chunk));
+      const chunks: Buffer[] = [];
+      res.on("data", (chunk: Buffer) => chunks.push(chunk));
       res.on("end", () => {
         if (res.statusCode !== 200) {
           reject(new Error(`NBA API error: ${res.statusCode}`));
           return;
         }
         try {
-          resolve(JSON.parse(data));
+          resolve(JSON.parse(Buffer.concat(chunks).toString("utf-8")));
         } catch {
           reject(new Error("Failed to parse NBA API response"));
         }

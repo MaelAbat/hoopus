@@ -30,15 +30,15 @@ interface NbaResponse {
 function fetchNba(url: string): Promise<NbaResponse> {
   return new Promise((resolve, reject) => {
     const req = https.get(url, { headers: NBA_HEADERS }, (res) => {
-      let data = "";
-      res.on("data", (chunk: string) => (data += chunk));
+      const chunks: Buffer[] = [];
+      res.on("data", (chunk: Buffer) => chunks.push(chunk));
       res.on("end", () => {
         if (res.statusCode !== 200) {
           reject(new Error(`NBA API error: ${res.statusCode}`));
           return;
         }
         try {
-          resolve(JSON.parse(data));
+          resolve(JSON.parse(Buffer.concat(chunks).toString("utf-8")));
         } catch {
           reject(new Error("Failed to parse NBA API response"));
         }
