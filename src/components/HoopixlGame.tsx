@@ -81,7 +81,18 @@ function PixelatedImage({ src, pixelSize, size, onError }: { src: string; pixelS
       off.height = size;
       const ctx = off.getContext("2d")!;
       ctx.imageSmoothingEnabled = true;
-      ctx.drawImage(img, 0, 0, size, size);
+      // NBA headshots are landscape (260x190). Draw with a "cover" crop —
+      // scale to fill the square while keeping the aspect ratio, then center —
+      // so the player isn't squished. The slight extra height is biased toward
+      // the top so the head stays in frame.
+      const iw = img.naturalWidth || img.width;
+      const ih = img.naturalHeight || img.height;
+      const scale = Math.max(size / iw, size / ih);
+      const dw = iw * scale;
+      const dh = ih * scale;
+      const dx = (size - dw) / 2;
+      const dy = Math.min(0, (size - dh) / 2);
+      ctx.drawImage(img, dx, dy, dw, dh);
       offRef.current = off;
       setImgLoaded(true);
     };
