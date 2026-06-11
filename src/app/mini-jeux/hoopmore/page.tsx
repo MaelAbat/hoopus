@@ -4,6 +4,13 @@ import HoopMoreGame from "@/components/HoopMoreGame";
 
 export const revalidate = 3600;
 
+export const metadata = {
+  title: "HoopMore — Plus ou moins, le défi stats NBA",
+  description:
+    "HoopMore : plus ou moins ? Compare les statistiques de deux joueurs NBA et enchaîne la plus longue série possible. Un faux pas et c'est terminé. À jouer sur Hoopus.",
+  alternates: { canonical: "/mini-jeux/hoopmore" },
+};
+
 export default async function HoopMorePage() {
   const season = getCurrentSeason();
   const supabase = await createClient();

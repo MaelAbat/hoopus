@@ -4,6 +4,13 @@ import HoopGridGame from "@/components/HoopGridGame";
 
 export const revalidate = 3600;
 
+export const metadata = {
+  title: "HoopGrid — Mots mêlés NBA",
+  description:
+    "HoopGrid, le jeu de mots mêlés NBA : barre les noms cachés dans la grille pour révéler le joueur mystère. Un puzzle quotidien à résoudre sur Hoopus.",
+  alternates: { canonical: "/mini-jeux/hoopgrid" },
+};
+
 export default async function HoopGridPage() {
   const season = getCurrentSeason();
   const supabase = await createClient();

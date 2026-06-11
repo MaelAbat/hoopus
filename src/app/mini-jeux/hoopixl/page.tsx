@@ -4,6 +4,13 @@ import HoopixlGame from "@/components/HoopixlGame";
 
 export const revalidate = 3600;
 
+export const metadata = {
+  title: "Hoopixl — Devine le joueur NBA pixelisé",
+  description:
+    "Hoopixl : une photo pixelisée de joueur NBA se révèle peu à peu. Reconnais-le avant que l'image ne devienne nette. Le défi photo quotidien de Hoopus.",
+  alternates: { canonical: "/mini-jeux/hoopixl" },
+};
+
 export default async function HoopixlPage() {
   const season = getCurrentSeason();
   const supabase = await createClient();

@@ -7,6 +7,17 @@ import SeasonSelector, { SeasonTransitionProvider, SeasonContent } from "@/compo
 
 export const revalidate = 3600;
 
+export const metadata = {
+  title: "Classement NBA",
+  description:
+    "Le classement NBA complet, conférences Est et Ouest : bilans victoires-défaites, séries en cours et écart sur la tête de division, mis à jour chaque jour.",
+  alternates: { canonical: "/classement" },
+  openGraph: {
+    title: "Classement NBA · Hoopus",
+    description: "Conférences Est et Ouest, bilans et séries en cours, mis à jour chaque jour.",
+  },
+};
+
 export default async function Classement({ searchParams }: { searchParams: Promise<{ season?: string }> }) {
   const { season: seasonParam } = await searchParams;
   const season = seasonParam || getCurrentSeason();

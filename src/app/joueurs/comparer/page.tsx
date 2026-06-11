@@ -7,6 +7,17 @@ import PlayerCompare from "@/components/PlayerCompare";
 
 export const revalidate = 3600;
 
+export const metadata = {
+  title: "Comparer des joueurs NBA",
+  description:
+    "Comparez deux joueurs NBA côte à côte : statistiques de carrière, moyennes et progression saison par saison. L'outil de comparaison Hoopus.",
+  alternates: { canonical: "/joueurs/comparer" },
+  openGraph: {
+    title: "Comparer des joueurs NBA · Hoopus",
+    description: "Deux joueurs côte à côte : stats de carrière et progression.",
+  },
+};
+
 interface CareerStat {
   player_id: number;
   season: string;

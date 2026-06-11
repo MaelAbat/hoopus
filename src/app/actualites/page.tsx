@@ -4,6 +4,17 @@ import NewsList from "@/components/NewsList";
 import PageBanner from "@/components/PageBanner";
 import ScrollReveal from "@/components/ScrollReveal";
 
+export const metadata = {
+  title: "Actualités NBA",
+  description:
+    "Toute l'actualité NBA en français : dernières infos, transferts, blessures et temps forts de la ligue, au fil de l'eau sur Hoopus.",
+  alternates: { canonical: "/actualites" },
+  openGraph: {
+    title: "Actualités NBA · Hoopus",
+    description: "Dernières infos, transferts et temps forts de la NBA, en français.",
+  },
+};
+
 export default async function Actualites() {
   const [news, admin] = await Promise.all([getNews(), isAdmin()]);
 

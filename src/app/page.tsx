@@ -22,6 +22,11 @@ import SeasonWidget from "@/components/SeasonWidget";
 import FavoriteDashboard from "@/components/FavoriteDashboard";
 import FavoriteAlerts from "@/components/FavoriteAlerts";
 
+// Home keeps the root layout's default title/description; only pins its canonical.
+export const metadata = {
+  alternates: { canonical: "/" },
+};
+
 /* ── Fun facts ───────────────────────────── */
 const funFacts = [
   "Wilt Chamberlain a inscrit 100 points en un seul match le 2 mars 1962. Le deuxième record est de 81, par Kobe, 44 ans plus tard.",

@@ -6,6 +6,13 @@ import QuizGrid from "@/components/QuizGrid";
 
 export const revalidate = 3600;
 
+export const metadata = {
+  title: "Hoopiz — Quiz de culture NBA",
+  description:
+    "Hoopiz : le quiz de culture générale NBA. Remplis le tableau le plus vite possible, chrono en main, et grimpe au classement. Teste tes connaissances sur Hoopus.",
+  alternates: { canonical: "/mini-jeux/hoopiz" },
+};
+
 export default async function HoopizPage() {
   const supabase = await createClient();
   const admin = await isAdmin();

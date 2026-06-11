@@ -3,14 +3,55 @@ import { getCurrentSeason } from "@/lib/season";
 import { syncPlayerCareer } from "@/lib/sync-career";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { cache } from "react";
+import type { Metadata } from "next";
 import { ChevronLeft, MapPin, GraduationCap, Calendar, Ruler, Weight, Hash, BarChart3 } from "lucide-react";
 import PlayerCareer from "@/components/PlayerCareer";
 import CareerChart from "@/components/CareerChart";
 import ScrollReveal from "@/components/ScrollReveal";
 import FollowPlayerButton from "@/components/FollowPlayerButton";
+import JsonLd from "@/components/JsonLd";
 import { teamLogoUrl } from "@/lib/nba-teams";
 
 export const revalidate = 3600;
+
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://hoopus.fr";
+
+// cache() dedupes the player read between generateMetadata and the page render.
+const getPlayer = cache(async (playerId: number) => {
+  const supabase = await createClient();
+  const { data } = await supabase.from("players").select("*").eq("player_id", playerId).single();
+  return data;
+});
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const player = await getPlayer(Number(id));
+  if (!player) return { title: "Joueur introuvable", robots: { index: false, follow: false } };
+
+  const fullName = `${player.first_name} ${player.last_name}`;
+  const team = player.team_name ? `${player.team_city ?? ""} ${player.team_name}`.trim() : null;
+  const averages =
+    player.pts != null
+      ? ` Moyennes en carrière : ${player.pts} pts, ${player.reb ?? 0} rebonds et ${player.ast ?? 0} passes par match.`
+      : "";
+  const description =
+    `Profil NBA de ${fullName}${team ? ` (${team})` : ""}${player.position ? `, ${player.position}` : ""}.` +
+    `${averages} Statistiques de carrière, parcours et infos détaillées sur Hoopus.`;
+
+  return {
+    title: fullName,
+    description,
+    alternates: { canonical: `/joueurs/${id}` },
+    openGraph: {
+      title: `${fullName} — Profil & stats NBA`,
+      description,
+      type: "profile",
+      url: `${siteUrl}/joueurs/${id}`,
+    },
+    twitter: { card: "summary_large_image", title: `${fullName} · Hoopus`, description },
+  };
+}
 
 function draftLabel(p: { draft_year: number | null; draft_round: number | null; draft_number: number | null }): string {
   if (!p.draft_year || !p.draft_round || !p.draft_number) return "Non drafté";
@@ -47,12 +88,27 @@ export default async function PlayerDetail({ params }: { params: Promise<{ id: s
 
   const playerId = Number(id);
 
-  const [{ data: player }, { data: rosterEntry }] = await Promise.all([
-    supabase.from("players").select("*").eq("player_id", playerId).single(),
+  const [player, { data: rosterEntry }] = await Promise.all([
+    getPlayer(playerId),
     supabase.from("rosters").select("*").eq("player_id", playerId).eq("season", season).single(),
   ]);
 
   if (!player) notFound();
+
+  const playerJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    name: `${player.first_name} ${player.last_name}`,
+    jobTitle: "Joueur de basketball NBA",
+    nationality: player.country || undefined,
+    height: player.height || undefined,
+    weight: player.weight || undefined,
+    alumniOf: player.college || undefined,
+    affiliation: player.team_name
+      ? { "@type": "SportsTeam", name: `${player.team_city ?? ""} ${player.team_name}`.trim() }
+      : undefined,
+    url: `${siteUrl}/joueurs/${playerId}`,
+  };
 
   // Fetch career stats from DB
   const { data: careerStats } = await supabase
@@ -119,6 +175,7 @@ export default async function PlayerDetail({ params }: { params: Promise<{ id: s
 
   return (
     <div className="mx-auto max-w-5xl space-y-8">
+      <JsonLd data={playerJsonLd} />
       <Link
         href="/joueurs"
         className="inline-flex items-center gap-1 rounded-xl px-3 py-2 text-sm font-medium text-text-muted transition-colors hover:bg-input hover:text-text-primary"

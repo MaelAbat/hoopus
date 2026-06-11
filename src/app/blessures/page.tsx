@@ -6,6 +6,17 @@ import ScrollReveal from "@/components/ScrollReveal";
 
 export const revalidate = 3600;
 
+export const metadata = {
+  title: "Blessures NBA",
+  description:
+    "L'état des blessures en NBA : joueurs indisponibles, statuts et retours attendus, mis à jour chaque jour. Préparez vos soirées NBA sur Hoopus.",
+  alternates: { canonical: "/blessures" },
+  openGraph: {
+    title: "Blessures NBA · Hoopus",
+    description: "Joueurs indisponibles, statuts et retours attendus, au jour le jour.",
+  },
+};
+
 export default async function Blessures() {
   const season = getCurrentSeason();
   const supabase = await createClient();

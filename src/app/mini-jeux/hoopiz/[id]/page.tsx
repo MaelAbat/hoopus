@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
+import { cache } from "react";
+import type { Metadata } from "next";
 import HoopizGame from "@/components/HoopizGame";
 
 export const revalidate = 3600;
@@ -9,15 +11,28 @@ interface QuizEntry {
   answers: string[];
 }
 
+const getQuiz = cache(async (id: string) => {
+  const supabase = await createClient();
+  const { data } = await supabase.from("quizzes").select("*").eq("id", id).single();
+  return data;
+});
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const quiz = await getQuiz(id);
+  if (!quiz) return { title: "Quiz introuvable", robots: { index: false, follow: false } };
+  const description = quiz.description || `${quiz.title} — un quiz NBA à relever sur Hoopus.`;
+  return {
+    title: `${quiz.title} — Quiz NBA`,
+    description,
+    alternates: { canonical: `/mini-jeux/hoopiz/${id}` },
+    openGraph: { title: `${quiz.title} · Hoopiz`, description },
+  };
+}
+
 export default async function QuizPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const supabase = await createClient();
-
-  const { data: quiz } = await supabase
-    .from("quizzes")
-    .select("*")
-    .eq("id", id)
-    .single();
+  const quiz = await getQuiz(id);
 
   if (!quiz) notFound();
 

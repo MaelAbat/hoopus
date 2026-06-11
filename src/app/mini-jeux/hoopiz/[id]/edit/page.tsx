@@ -3,6 +3,11 @@ import { isAdmin } from "@/lib/actions/auth";
 import { redirect, notFound } from "next/navigation";
 import QuizEditor from "@/components/QuizEditor";
 
+export const metadata = {
+  title: "Modifier le quiz",
+  robots: { index: false, follow: false },
+};
+
 export default async function EditQuizPage({ params }: { params: Promise<{ id: string }> }) {
   const admin = await isAdmin();
   if (!admin) redirect("/mini-jeux/hoopiz");

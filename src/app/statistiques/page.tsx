@@ -10,6 +10,17 @@ import SeasonSelector, { SeasonTransitionProvider, SeasonContent } from "@/compo
 
 export const revalidate = 3600;
 
+export const metadata = {
+  title: "Statistiques NBA",
+  description:
+    "Les leaders statistiques de la NBA : points, rebonds, passes, contres, interceptions et minutes par match. Classements des joueurs et des équipes, saison par saison.",
+  alternates: { canonical: "/statistiques" },
+  openGraph: {
+    title: "Statistiques NBA · Hoopus",
+    description: "Leaders points, rebonds, passes et plus, pour les joueurs et les équipes.",
+  },
+};
+
 interface BoardConfig {
   title: string;
   stat: StatCategory;

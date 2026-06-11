@@ -4,6 +4,17 @@ import ArticlesList from "@/components/ArticlesList";
 import PageBanner from "@/components/PageBanner";
 import ScrollReveal from "@/components/ScrollReveal";
 
+export const metadata = {
+  title: "Articles NBA",
+  description:
+    "Analyses, dossiers et grands formats sur la NBA, écrits en français : décryptages tactiques, portraits de joueurs et rétrospectives à lire sur Hoopus.",
+  alternates: { canonical: "/articles" },
+  openGraph: {
+    title: "Articles NBA · Hoopus",
+    description: "Analyses, dossiers et grands formats sur la NBA, en français.",
+  },
+};
+
 export default async function Articles() {
   const [articles, admin] = await Promise.all([getArticles(), isAdmin()]);
 
