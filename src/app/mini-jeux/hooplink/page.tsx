@@ -2,14 +2,18 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentSeason } from "@/lib/season";
 import HoopLinkGame from "@/components/HoopLinkGame";
 import type { HoopLinkPlayer, PlayerTeamsMap, AdjacencyList } from "@/components/HoopLinkGame";
+import { OG_IMAGE } from "@/lib/seo";
 
 export const revalidate = 3600;
 
+const description =
+  "HoopLink : deux joueurs, un défi. Trouve le chemin le plus court en nommant des coéquipiers communs, maillon après maillon. Le jeu de connexions NBA de Hoopus.";
+
 export const metadata = {
   title: "HoopLink — Relie deux joueurs NBA",
-  description:
-    "HoopLink : deux joueurs, un défi. Trouve le chemin le plus court en nommant des coéquipiers communs, maillon après maillon. Le jeu de connexions NBA de Hoopus.",
+  description,
   alternates: { canonical: "/mini-jeux/hooplink" },
+  openGraph: { title: "HoopLink — Relie deux joueurs NBA · Hoopus", description, images: [OG_IMAGE] },
 };
 
 export default async function HoopLinkPage() {

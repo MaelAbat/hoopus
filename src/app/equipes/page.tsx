@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { OG_IMAGE } from "@/lib/seo";
 import { getCurrentSeason } from "@/lib/season";
 import TeamsView from "@/components/TeamsView";
 import PageBanner from "@/components/PageBanner";
@@ -15,6 +16,7 @@ export const metadata = {
   openGraph: {
     title: "Équipes NBA · Hoopus",
     description: "Effectifs et masses salariales des 30 franchises de la ligue.",
+    images: [OG_IMAGE],
   },
 };
 

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { OG_IMAGE } from "@/lib/seo";
 import { getCurrentSeason, seasonLabel } from "@/lib/season";
 import StandingsView from "@/components/StandingsView";
 import PageBanner from "@/components/PageBanner";
@@ -15,6 +16,7 @@ export const metadata = {
   openGraph: {
     title: "Classement NBA · Hoopus",
     description: "Conférences Est et Ouest, bilans et séries en cours, mis à jour chaque jour.",
+    images: [OG_IMAGE],
   },
 };
 

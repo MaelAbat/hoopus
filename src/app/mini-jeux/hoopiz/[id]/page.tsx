@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { cache } from "react";
 import type { Metadata } from "next";
 import HoopizGame from "@/components/HoopizGame";
+import { OG_IMAGE } from "@/lib/seo";
 
 export const revalidate = 3600;
 
@@ -26,7 +27,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     title: `${quiz.title} — Quiz NBA`,
     description,
     alternates: { canonical: `/mini-jeux/hoopiz/${id}` },
-    openGraph: { title: `${quiz.title} · Hoopiz`, description },
+    openGraph: { title: `${quiz.title} · Hoopiz`, description, images: [OG_IMAGE] },
   };
 }
 

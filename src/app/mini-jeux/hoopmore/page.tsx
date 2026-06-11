@@ -1,14 +1,18 @@
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentSeason } from "@/lib/season";
 import HoopMoreGame from "@/components/HoopMoreGame";
+import { OG_IMAGE } from "@/lib/seo";
 
 export const revalidate = 3600;
 
+const description =
+  "HoopMore : plus ou moins ? Compare les statistiques de deux joueurs NBA et enchaîne la plus longue série possible. Un faux pas et c'est terminé. À jouer sur Hoopus.";
+
 export const metadata = {
   title: "HoopMore — Plus ou moins, le défi stats NBA",
-  description:
-    "HoopMore : plus ou moins ? Compare les statistiques de deux joueurs NBA et enchaîne la plus longue série possible. Un faux pas et c'est terminé. À jouer sur Hoopus.",
+  description,
   alternates: { canonical: "/mini-jeux/hoopmore" },
+  openGraph: { title: "HoopMore — Plus ou moins · Hoopus", description, images: [OG_IMAGE] },
 };
 
 export default async function HoopMorePage() {

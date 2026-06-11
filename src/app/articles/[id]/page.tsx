@@ -7,6 +7,7 @@ import { ChevronLeft, Clock, BookOpen, User } from "lucide-react";
 import ScrollReveal from "@/components/ScrollReveal";
 import MarkdownContent from "@/components/MarkdownContent";
 import JsonLd from "@/components/JsonLd";
+import { OG_IMAGE } from "@/lib/seo";
 
 export const revalidate = 3600;
 
@@ -37,13 +38,13 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
       publishedTime: article.created_at,
       authors: article.author ? [article.author] : undefined,
       tags: article.tag ? [article.tag] : undefined,
-      images: article.image_url ? [{ url: article.image_url }] : undefined,
+      images: article.image_url ? [{ url: article.image_url }] : [OG_IMAGE],
     },
     twitter: {
       card: "summary_large_image",
       title: article.title,
       description,
-      images: article.image_url ? [article.image_url] : undefined,
+      images: article.image_url ? [article.image_url] : [OG_IMAGE],
     },
   };
 }

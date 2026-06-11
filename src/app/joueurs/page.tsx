@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { OG_IMAGE } from "@/lib/seo";
 import PageBanner from "@/components/PageBanner";
 import PlayersView from "@/components/PlayersView";
 import ScrollReveal from "@/components/ScrollReveal";
@@ -13,6 +14,7 @@ export const metadata = {
   openGraph: {
     title: "Joueurs NBA · Hoopus",
     description: "Profils, équipes et statistiques de tous les joueurs de la ligue.",
+    images: [OG_IMAGE],
   },
 };
 

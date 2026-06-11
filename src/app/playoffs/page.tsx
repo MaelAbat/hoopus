@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { OG_IMAGE } from "@/lib/seo";
 import { getCurrentSeason } from "@/lib/season";
 import PlayoffBracket from "@/components/PlayoffBracket";
 import PageBanner from "@/components/PageBanner";
@@ -15,6 +16,7 @@ export const metadata = {
   openGraph: {
     title: "Playoffs NBA · Hoopus",
     description: "Bracket complet et séries en cours jusqu'aux Finales NBA.",
+    images: [OG_IMAGE],
   },
 };
 

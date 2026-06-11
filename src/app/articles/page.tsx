@@ -1,4 +1,5 @@
 import { getArticles } from "@/lib/actions/articles";
+import { OG_IMAGE } from "@/lib/seo";
 import { isAdmin } from "@/lib/actions/auth";
 import ArticlesList from "@/components/ArticlesList";
 import PageBanner from "@/components/PageBanner";
@@ -12,6 +13,7 @@ export const metadata = {
   openGraph: {
     title: "Articles NBA · Hoopus",
     description: "Analyses, dossiers et grands formats sur la NBA, en français.",
+    images: [OG_IMAGE],
   },
 };
 

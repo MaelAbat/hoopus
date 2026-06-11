@@ -1,14 +1,18 @@
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentSeason } from "@/lib/season";
 import HoopRankGame from "@/components/HoopRankGame";
+import { OG_IMAGE } from "@/lib/seo";
 
 export const revalidate = 3600;
 
+const description =
+  "HoopRank : cinq joueurs, une stat, classe-les dans le bon ordre. Cinq manches pour prouver que tu connais la NBA sur le bout des doigts. Un jeu Hoopus.";
+
 export const metadata = {
   title: "HoopRank — Classe les joueurs NBA",
-  description:
-    "HoopRank : cinq joueurs, une stat, classe-les dans le bon ordre. Cinq manches pour prouver que tu connais la NBA sur le bout des doigts. Un jeu Hoopus.",
+  description,
   alternates: { canonical: "/mini-jeux/hooprank" },
+  openGraph: { title: "HoopRank — Classe les joueurs NBA · Hoopus", description, images: [OG_IMAGE] },
 };
 
 export default async function HoopRankPage() {
