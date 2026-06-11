@@ -3,14 +3,18 @@ import Link from "next/link";
 import { RotateCcw, Plus } from "lucide-react";
 import { isAdmin } from "@/lib/actions/auth";
 import QuizGrid from "@/components/QuizGrid";
+import { OG_IMAGE } from "@/lib/seo";
 
 export const revalidate = 3600;
 
+const description =
+  "Hoopiz : le quiz de culture générale NBA. Remplis le tableau le plus vite possible, chrono en main, et grimpe au classement. Teste tes connaissances sur Hoopus.";
+
 export const metadata = {
   title: "Hoopiz — Quiz de culture NBA",
-  description:
-    "Hoopiz : le quiz de culture générale NBA. Remplis le tableau le plus vite possible, chrono en main, et grimpe au classement. Teste tes connaissances sur Hoopus.",
+  description,
   alternates: { canonical: "/mini-jeux/hoopiz" },
+  openGraph: { title: "Hoopiz — Quiz de culture NBA · Hoopus", description, images: [OG_IMAGE] },
 };
 
 export default async function HoopizPage() {

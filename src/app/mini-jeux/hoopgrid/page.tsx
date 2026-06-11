@@ -1,14 +1,18 @@
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentSeason } from "@/lib/season";
 import HoopGridGame from "@/components/HoopGridGame";
+import { OG_IMAGE } from "@/lib/seo";
 
 export const revalidate = 3600;
 
+const description =
+  "HoopGrid, le jeu de mots mêlés NBA : barre les noms cachés dans la grille pour révéler le joueur mystère. Un puzzle quotidien à résoudre sur Hoopus.";
+
 export const metadata = {
   title: "HoopGrid — Mots mêlés NBA",
-  description:
-    "HoopGrid, le jeu de mots mêlés NBA : barre les noms cachés dans la grille pour révéler le joueur mystère. Un puzzle quotidien à résoudre sur Hoopus.",
+  description,
   alternates: { canonical: "/mini-jeux/hoopgrid" },
+  openGraph: { title: "HoopGrid — Mots mêlés NBA · Hoopus", description, images: [OG_IMAGE] },
 };
 
 export default async function HoopGridPage() {

@@ -6,6 +6,7 @@ import type { Metadata } from "next";
 import { ChevronLeft, Clock } from "lucide-react";
 import ScrollReveal from "@/components/ScrollReveal";
 import JsonLd from "@/components/JsonLd";
+import { OG_IMAGE } from "@/lib/seo";
 
 export const revalidate = 3600;
 
@@ -35,13 +36,13 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
       url: `${siteUrl}/actualites/${id}`,
       publishedTime: newsItem.created_at,
       section: newsItem.category || undefined,
-      images: newsItem.image_url ? [{ url: newsItem.image_url }] : undefined,
+      images: newsItem.image_url ? [{ url: newsItem.image_url }] : [OG_IMAGE],
     },
     twitter: {
       card: "summary_large_image",
       title: newsItem.title,
       description,
-      images: newsItem.image_url ? [newsItem.image_url] : undefined,
+      images: newsItem.image_url ? [newsItem.image_url] : [OG_IMAGE],
     },
   };
 }

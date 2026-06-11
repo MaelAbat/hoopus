@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { OG_IMAGE } from "@/lib/seo";
 import { getCurrentSeason, seasonLabel } from "@/lib/season";
 import CalendarView from "@/components/CalendarView";
 import PageBanner from "@/components/PageBanner";
@@ -15,6 +16,7 @@ export const metadata = {
   openGraph: {
     title: "Calendrier NBA · Hoopus",
     description: "Tous les matchs, horaires et résultats de la saison NBA.",
+    images: [OG_IMAGE],
   },
 };
 

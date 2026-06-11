@@ -1,14 +1,18 @@
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentSeason } from "@/lib/season";
 import HooplGame from "@/components/HooplGame";
+import { OG_IMAGE } from "@/lib/seo";
 
 export const revalidate = 3600;
 
+const description =
+  "Hoopl : devine le joueur NBA du jour à partir de ses statistiques. Équipe, conférence, division, stats — chaque essai te rapproche. Le Wordle de la NBA, sur Hoopus.";
+
 export const metadata = {
   title: "Hoopl — Devine le joueur NBA du jour",
-  description:
-    "Hoopl : devine le joueur NBA du jour à partir de ses statistiques. Équipe, conférence, division, stats — chaque essai te rapproche. Le Wordle de la NBA, sur Hoopus.",
+  description,
   alternates: { canonical: "/mini-jeux/hoopl" },
+  openGraph: { title: "Hoopl — Devine le joueur NBA du jour · Hoopus", description, images: [OG_IMAGE] },
 };
 
 export default async function HooplPage() {

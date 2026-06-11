@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { OG_IMAGE } from "@/lib/seo";
 
 // Default metadata for the mini-jeux hub (a client component, so it can't
 // export metadata itself). Individual game pages override the title.
@@ -10,6 +11,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Mini-jeux NBA · Hoopus",
     description: "Quiz, devinettes et défis quotidiens autour de la NBA.",
+    images: [OG_IMAGE],
   },
 };
 

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { OG_IMAGE } from "@/lib/seo";
 import { getCurrentSeason, seasonLabel } from "@/lib/season";
 import InjuriesView from "@/components/InjuriesView";
 import PageBanner from "@/components/PageBanner";
@@ -14,6 +15,7 @@ export const metadata = {
   openGraph: {
     title: "Blessures NBA · Hoopus",
     description: "Joueurs indisponibles, statuts et retours attendus, au jour le jour.",
+    images: [OG_IMAGE],
   },
 };
 

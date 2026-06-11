@@ -1,4 +1,5 @@
 import { getNews } from "@/lib/actions/news";
+import { OG_IMAGE } from "@/lib/seo";
 import { isAdmin } from "@/lib/actions/auth";
 import NewsList from "@/components/NewsList";
 import PageBanner from "@/components/PageBanner";
@@ -12,6 +13,7 @@ export const metadata = {
   openGraph: {
     title: "Actualités NBA · Hoopus",
     description: "Dernières infos, transferts et temps forts de la NBA, en français.",
+    images: [OG_IMAGE],
   },
 };
 

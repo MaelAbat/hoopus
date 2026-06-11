@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { OG_IMAGE } from "@/lib/seo";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import PageBanner from "@/components/PageBanner";
@@ -15,6 +16,7 @@ export const metadata = {
   openGraph: {
     title: "Comparer des joueurs NBA · Hoopus",
     description: "Deux joueurs côte à côte : stats de carrière et progression.",
+    images: [OG_IMAGE],
   },
 };
 

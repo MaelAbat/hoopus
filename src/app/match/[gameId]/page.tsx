@@ -11,6 +11,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import type { Metadata } from "next";
 import { createClient as createMatchClient } from "@/lib/supabase/server";
+import { OG_IMAGE } from "@/lib/seo";
 
 export const revalidate = 60;
 
@@ -45,7 +46,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     title,
     description,
     alternates: { canonical: `/match/${gameId}` },
-    openGraph: { title: `${title} · Hoopus`, description, type: "article", url: `${siteUrl}/match/${gameId}` },
+    openGraph: { title: `${title} · Hoopus`, description, type: "article", url: `${siteUrl}/match/${gameId}`, images: [OG_IMAGE] },
     twitter: { card: "summary_large_image", title: `${title} · Hoopus`, description },
   };
 }

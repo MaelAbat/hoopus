@@ -1,14 +1,18 @@
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentSeason } from "@/lib/season";
 import HoopixlGame from "@/components/HoopixlGame";
+import { OG_IMAGE } from "@/lib/seo";
 
 export const revalidate = 3600;
 
+const description =
+  "Hoopixl : une photo pixelisée de joueur NBA se révèle peu à peu. Reconnais-le avant que l'image ne devienne nette. Le défi photo quotidien de Hoopus.";
+
 export const metadata = {
   title: "Hoopixl — Devine le joueur NBA pixelisé",
-  description:
-    "Hoopixl : une photo pixelisée de joueur NBA se révèle peu à peu. Reconnais-le avant que l'image ne devienne nette. Le défi photo quotidien de Hoopus.",
+  description,
   alternates: { canonical: "/mini-jeux/hoopixl" },
+  openGraph: { title: "Hoopixl — Devine le joueur NBA pixelisé · Hoopus", description, images: [OG_IMAGE] },
 };
 
 export default async function HoopixlPage() {

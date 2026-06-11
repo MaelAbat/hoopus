@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { OG_IMAGE } from "@/lib/seo";
 import { getCurrentSeason, seasonLabel } from "@/lib/season";
 import type { PlayerStatLeader, StatCategory } from "@/lib/nba-api";
 import StatsView from "@/components/StatsView";
@@ -18,6 +19,7 @@ export const metadata = {
   openGraph: {
     title: "Statistiques NBA · Hoopus",
     description: "Leaders points, rebonds, passes et plus, pour les joueurs et les équipes.",
+    images: [OG_IMAGE],
   },
 };
 

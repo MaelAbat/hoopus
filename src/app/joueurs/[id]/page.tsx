@@ -11,6 +11,7 @@ import CareerChart from "@/components/CareerChart";
 import ScrollReveal from "@/components/ScrollReveal";
 import FollowPlayerButton from "@/components/FollowPlayerButton";
 import JsonLd from "@/components/JsonLd";
+import { OG_IMAGE } from "@/lib/seo";
 import { teamLogoUrl } from "@/lib/nba-teams";
 
 export const revalidate = 3600;
@@ -48,6 +49,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
       description,
       type: "profile",
       url: `${siteUrl}/joueurs/${id}`,
+      images: [OG_IMAGE],
     },
     twitter: { card: "summary_large_image", title: `${fullName} · Hoopus`, description },
   };
