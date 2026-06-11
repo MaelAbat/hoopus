@@ -63,6 +63,9 @@ export const metadata: Metadata = {
     title: "Hoopus — Toute la NBA en français",
     description,
   },
+  verification: {
+    google: "DQ7e55sjkF0cJA7MyEYfFSaXdOXJW-AsL2z1wuUc6W8",
+  },
 };
 
 const siteJsonLd = [
