@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
 
-export const alt = "Hoopus — Votre olympe du basketball";
+export const alt = "Hoopus — Toute la NBA, en français";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -101,7 +101,7 @@ export default function OGImage() {
             letterSpacing: "0.05em",
           }}
         >
-          Votre olympe du basketball
+          Toute la NBA, en français
         </div>
 
         {/* Accent line */}

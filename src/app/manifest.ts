@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Hoopus — Votre olympe du basketball",
+    name: "Hoopus — Toute la NBA, en français",
     short_name: "Hoopus",
     description:
       "L'app NBA en français : scores en direct, calendrier, classements, statistiques, actualités et mini-jeux.",
