@@ -1,10 +1,50 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { cache } from "react";
+import type { Metadata } from "next";
 import { ChevronLeft, Clock } from "lucide-react";
 import ScrollReveal from "@/components/ScrollReveal";
+import JsonLd from "@/components/JsonLd";
 
 export const revalidate = 3600;
+
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://hoopus.fr";
+
+// cache() lets generateMetadata and the page reuse one DB read for the news item.
+const getNewsItem = cache(async (id: string) => {
+  const supabase = await createClient();
+  const { data } = await supabase.from("news").select("*").eq("id", id).single();
+  return data;
+});
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const newsItem = await getNewsItem(id);
+  if (!newsItem) return { title: "Actualité introuvable", robots: { index: false, follow: false } };
+
+  const description = newsItem.excerpt || `${newsItem.title} — l'actualité NBA sur Hoopus.`;
+  return {
+    title: newsItem.title,
+    description,
+    alternates: { canonical: `/actualites/${id}` },
+    openGraph: {
+      title: newsItem.title,
+      description,
+      type: "article",
+      url: `${siteUrl}/actualites/${id}`,
+      publishedTime: newsItem.created_at,
+      section: newsItem.category || undefined,
+      images: newsItem.image_url ? [{ url: newsItem.image_url }] : undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: newsItem.title,
+      description,
+      images: newsItem.image_url ? [newsItem.image_url] : undefined,
+    },
+  };
+}
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("fr-FR", {
@@ -29,15 +69,33 @@ export default async function NewsDetail({ params }: { params: Promise<{ id: str
   const { id } = await params;
   const supabase = await createClient();
 
-  const [{ data: newsItem }, { data: otherNews }] = await Promise.all([
-    supabase.from("news").select("*").eq("id", id).single(),
+  const [newsItem, { data: otherNews }] = await Promise.all([
+    getNewsItem(id),
     supabase.from("news").select("id, title, category, image_url, created_at").neq("id", id).order("created_at", { ascending: false }).limit(4),
   ]);
 
   if (!newsItem) notFound();
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "NewsArticle",
+    headline: newsItem.title,
+    description: newsItem.excerpt || undefined,
+    image: newsItem.image_url || undefined,
+    datePublished: newsItem.created_at,
+    articleSection: newsItem.category || undefined,
+    publisher: {
+      "@type": "Organization",
+      name: "Hoopus",
+      logo: { "@type": "ImageObject", url: `${siteUrl}/icon.svg` },
+    },
+    mainEntityOfPage: `${siteUrl}/actualites/${id}`,
+    inLanguage: "fr-FR",
+  };
+
   return (
     <div className="mx-auto max-w-4xl space-y-8">
+      <JsonLd data={jsonLd} />
       <Link
         href="/actualites"
         className="inline-flex items-center gap-1 rounded-xl px-3 py-2 text-sm font-medium text-text-muted transition-colors hover:bg-input hover:text-text-primary"

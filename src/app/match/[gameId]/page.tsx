@@ -9,11 +9,45 @@ import ScrollToTop from "@/components/ScrollToTop";
 import LiveScoreHeader from "@/components/match/LiveScoreHeader";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import type { Metadata } from "next";
+import { createClient as createMatchClient } from "@/lib/supabase/server";
 
 export const revalidate = 60;
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://hoopus.fr";
+
 interface PageProps {
   params: Promise<{ gameId: string }>;
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { gameId } = await params;
+  const supabase = await createMatchClient();
+  const { data: game } = await supabase
+    .from("games")
+    .select("home_team_name, away_team_name, home_score, away_score, game_date, status")
+    .eq("game_id", gameId)
+    .single();
+
+  if (!game?.home_team_name || !game?.away_team_name) {
+    return { title: "Match NBA", description: "Feuille de match NBA : box score et statistiques détaillées sur Hoopus." };
+  }
+
+  const finished = game.status === 3 && game.home_score != null && game.away_score != null;
+  const title = finished
+    ? `${game.away_team_name} ${game.away_score} - ${game.home_score} ${game.home_team_name}`
+    : `${game.away_team_name} – ${game.home_team_name}`;
+  const description = finished
+    ? `Résultat et box score complet de ${game.away_team_name} contre ${game.home_team_name} : statistiques joueur par joueur sur Hoopus.`
+    : `Suivez ${game.away_team_name} contre ${game.home_team_name} en direct : score, box score et statistiques sur Hoopus.`;
+
+  return {
+    title,
+    description,
+    alternates: { canonical: `/match/${gameId}` },
+    openGraph: { title: `${title} · Hoopus`, description, type: "article", url: `${siteUrl}/match/${gameId}` },
+    twitter: { card: "summary_large_image", title: `${title} · Hoopus`, description },
+  };
 }
 
 export default async function MatchPage({ params }: PageProps) {

@@ -7,6 +7,17 @@ import SeasonSelector, { SeasonTransitionProvider, SeasonContent } from "@/compo
 
 export const revalidate = 3600;
 
+export const metadata = {
+  title: "Équipes NBA",
+  description:
+    "Les 30 franchises NBA : effectifs complets, masses salariales et détails par équipe, saison après saison. Explorez chaque roster sur Hoopus.",
+  alternates: { canonical: "/equipes" },
+  openGraph: {
+    title: "Équipes NBA · Hoopus",
+    description: "Effectifs et masses salariales des 30 franchises de la ligue.",
+  },
+};
+
 export default async function Equipes({ searchParams }: { searchParams: Promise<{ season?: string }> }) {
   const { season: seasonParam } = await searchParams;
   const season = seasonParam || getCurrentSeason();

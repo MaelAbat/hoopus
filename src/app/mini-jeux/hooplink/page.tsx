@@ -5,6 +5,13 @@ import type { HoopLinkPlayer, PlayerTeamsMap, AdjacencyList } from "@/components
 
 export const revalidate = 3600;
 
+export const metadata = {
+  title: "HoopLink — Relie deux joueurs NBA",
+  description:
+    "HoopLink : deux joueurs, un défi. Trouve le chemin le plus court en nommant des coéquipiers communs, maillon après maillon. Le jeu de connexions NBA de Hoopus.",
+  alternates: { canonical: "/mini-jeux/hooplink" },
+};
+
 export default async function HoopLinkPage() {
   const season = getCurrentSeason();
   const supabase = await createClient();

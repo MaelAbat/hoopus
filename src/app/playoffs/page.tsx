@@ -7,6 +7,17 @@ import SeasonSelector, { SeasonTransitionProvider, SeasonContent } from "@/compo
 
 export const revalidate = 3600;
 
+export const metadata = {
+  title: "Playoffs NBA",
+  description:
+    "Le tableau des playoffs NBA : bracket complet, séries en cours et résultats tour par tour, de la course au titre jusqu'aux Finales. À suivre sur Hoopus.",
+  alternates: { canonical: "/playoffs" },
+  openGraph: {
+    title: "Playoffs NBA · Hoopus",
+    description: "Bracket complet et séries en cours jusqu'aux Finales NBA.",
+  },
+};
+
 export default async function Playoffs({ searchParams }: { searchParams: Promise<{ season?: string }> }) {
   const { season: seasonParam } = await searchParams;
   const season = seasonParam || getCurrentSeason();

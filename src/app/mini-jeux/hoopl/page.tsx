@@ -4,6 +4,13 @@ import HooplGame from "@/components/HooplGame";
 
 export const revalidate = 3600;
 
+export const metadata = {
+  title: "Hoopl — Devine le joueur NBA du jour",
+  description:
+    "Hoopl : devine le joueur NBA du jour à partir de ses statistiques. Équipe, conférence, division, stats — chaque essai te rapproche. Le Wordle de la NBA, sur Hoopus.",
+  alternates: { canonical: "/mini-jeux/hoopl" },
+};
+
 export default async function HooplPage() {
   const season = getCurrentSeason();
   const supabase = await createClient();

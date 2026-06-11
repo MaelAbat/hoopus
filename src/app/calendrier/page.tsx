@@ -7,6 +7,17 @@ import SeasonSelector, { SeasonTransitionProvider, SeasonContent } from "@/compo
 
 export const revalidate = 3600;
 
+export const metadata = {
+  title: "Calendrier NBA",
+  description:
+    "Le calendrier NBA complet : tous les matchs, horaires et résultats, jour après jour. Ne manquez aucune rencontre de la saison sur Hoopus.",
+  alternates: { canonical: "/calendrier" },
+  openGraph: {
+    title: "Calendrier NBA · Hoopus",
+    description: "Tous les matchs, horaires et résultats de la saison NBA.",
+  },
+};
+
 export default async function Calendrier({ searchParams }: { searchParams: Promise<{ season?: string }> }) {
   const { season: seasonParam } = await searchParams;
   const season = seasonParam || getCurrentSeason();

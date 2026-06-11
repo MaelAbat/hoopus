@@ -5,6 +5,17 @@ import ScrollReveal from "@/components/ScrollReveal";
 
 export const revalidate = 3600;
 
+export const metadata = {
+  title: "Joueurs NBA",
+  description:
+    "Tous les joueurs NBA en un seul endroit : profils détaillés, équipe, poste, mensurations et statistiques de carrière. Recherchez votre joueur favori sur Hoopus.",
+  alternates: { canonical: "/joueurs" },
+  openGraph: {
+    title: "Joueurs NBA · Hoopus",
+    description: "Profils, équipes et statistiques de tous les joueurs de la ligue.",
+  },
+};
+
 export default async function Joueurs() {
   const supabase = await createClient();
 

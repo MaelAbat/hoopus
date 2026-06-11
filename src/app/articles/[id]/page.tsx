@@ -1,11 +1,52 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { cache } from "react";
+import type { Metadata } from "next";
 import { ChevronLeft, Clock, BookOpen, User } from "lucide-react";
 import ScrollReveal from "@/components/ScrollReveal";
 import MarkdownContent from "@/components/MarkdownContent";
+import JsonLd from "@/components/JsonLd";
 
 export const revalidate = 3600;
+
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://hoopus.fr";
+
+// Wrapped in cache() so generateMetadata and the page share a single DB read.
+const getArticle = cache(async (id: string) => {
+  const supabase = await createClient();
+  const { data } = await supabase.from("articles").select("*").eq("id", id).single();
+  return data;
+});
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const article = await getArticle(id);
+  if (!article) return { title: "Article introuvable", robots: { index: false, follow: false } };
+
+  const description = article.excerpt || `${article.title} — un article à lire sur Hoopus.`;
+  return {
+    title: article.title,
+    description,
+    alternates: { canonical: `/articles/${id}` },
+    openGraph: {
+      title: article.title,
+      description,
+      type: "article",
+      url: `${siteUrl}/articles/${id}`,
+      publishedTime: article.created_at,
+      authors: article.author ? [article.author] : undefined,
+      tags: article.tag ? [article.tag] : undefined,
+      images: article.image_url ? [{ url: article.image_url }] : undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: article.title,
+      description,
+      images: article.image_url ? [article.image_url] : undefined,
+    },
+  };
+}
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("fr-FR", {
@@ -18,18 +59,31 @@ function formatDate(dateStr: string) {
 
 export default async function ArticleDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const supabase = await createClient();
-
-  const { data: article } = await supabase
-    .from("articles")
-    .select("*")
-    .eq("id", id)
-    .single();
+  const article = await getArticle(id);
 
   if (!article) notFound();
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: article.title,
+    description: article.excerpt || undefined,
+    image: article.image_url || undefined,
+    datePublished: article.created_at,
+    author: article.author ? { "@type": "Person", name: article.author } : undefined,
+    publisher: {
+      "@type": "Organization",
+      name: "Hoopus",
+      logo: { "@type": "ImageObject", url: `${siteUrl}/icon.svg` },
+    },
+    mainEntityOfPage: `${siteUrl}/articles/${id}`,
+    articleSection: article.tag || undefined,
+    inLanguage: "fr-FR",
+  };
+
   return (
     <div className="mx-auto max-w-4xl space-y-8">
+      <JsonLd data={jsonLd} />
       <Link
         href="/articles"
         className="inline-flex items-center gap-1 rounded-xl px-3 py-2 text-sm font-medium text-text-muted transition-colors hover:bg-input hover:text-text-primary"

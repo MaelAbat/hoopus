@@ -7,6 +7,11 @@ import ThemePicker from "@/components/ThemePicker";
 import ProfileFavorites from "@/components/ProfileFavorites";
 import AchievementsGrid from "@/components/AchievementsGrid";
 
+export const metadata = {
+  title: "Mon profil",
+  robots: { index: false, follow: false },
+};
+
 export default async function Profil() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

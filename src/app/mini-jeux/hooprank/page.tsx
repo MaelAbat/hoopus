@@ -4,6 +4,13 @@ import HoopRankGame from "@/components/HoopRankGame";
 
 export const revalidate = 3600;
 
+export const metadata = {
+  title: "HoopRank — Classe les joueurs NBA",
+  description:
+    "HoopRank : cinq joueurs, une stat, classe-les dans le bon ordre. Cinq manches pour prouver que tu connais la NBA sur le bout des doigts. Un jeu Hoopus.",
+  alternates: { canonical: "/mini-jeux/hooprank" },
+};
+
 export default async function HoopRankPage() {
   const season = getCurrentSeason();
   const supabase = await createClient();
