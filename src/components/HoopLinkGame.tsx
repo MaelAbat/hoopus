@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
-import { RotateCcw, Trophy, Clock, LogIn, Check, Search, Link2, Flag, ArrowRight } from "lucide-react";
+import { RotateCcw, Trophy, Clock, LogIn, Check, Link2, Flag, ArrowRight } from "lucide-react";
 import { teamLogoUrl, playerPhotoUrl } from "@/lib/nba-teams";
 import { createClient } from "@/lib/supabase/client";
 import { ensureAuth, getDisplayName, isAnonymousName } from "@/lib/anonymous-auth";
 import { useAchievementNotifier } from "@/components/AchievementProvider";
 import { computeVisibleLeaderboard } from "@/lib/leaderboard-utils";
+import PlayerSearchDropdown from "./PlayerSearchDropdown";
 import SignupBanner from "./SignupBanner";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -265,7 +266,6 @@ export default function HoopLinkGame({ players, playerTeams, adjacencyList }: Pr
   const [won, setWon] = useState(false);
   const [gaveUp, setGaveUp] = useState(false);
   const [search, setSearch] = useState("");
-  const [showDropdown, setShowDropdown] = useState(false);
   const [error, setError] = useState("");
   const [startTime, setStartTime] = useState(0);
   const [elapsed, setElapsed] = useState(0);
@@ -276,8 +276,6 @@ export default function HoopLinkGame({ players, playerTeams, adjacencyList }: Pr
   const [userId, setUserId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const gameOver = won || gaveUp;
   const lastLinkId = chain.length > 0 ? chain[chain.length - 1].playerId : puzzle?.startId ?? 0;
@@ -405,18 +403,6 @@ export default function HoopLinkGame({ players, playerTeams, adjacencyList }: Pr
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, loaded]);
 
-  // Close dropdown
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node) &&
-          inputRef.current && !inputRef.current.contains(e.target as Node)) {
-        setShowDropdown(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, []);
-
   // Search filter
   const normalize = (s: string) =>
     s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
@@ -433,7 +419,6 @@ export default function HoopLinkGame({ players, playerTeams, adjacencyList }: Pr
   function handleGuess(player: HoopLinkPlayer) {
     if (gameOver) return;
     setSearch("");
-    setShowDropdown(false);
     setError("");
 
     // Check connection with last link
@@ -645,47 +630,13 @@ export default function HoopLinkGame({ players, playerTeams, adjacencyList }: Pr
 
       {/* Search input */}
       {!gameOver && loaded && (
-        <div className="relative">
-          <div className="relative">
-            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-faint" />
-            <input
-              ref={inputRef}
-              type="text"
-              value={search}
-              onChange={(e) => { setSearch(e.target.value); setShowDropdown(true); setError(""); }}
-              onFocus={(e) => {
-                setShowDropdown(true);
-                setTimeout(() => e.target.scrollIntoView({ behavior: "smooth", block: "center" }), 300);
-              }}
-              placeholder="Tape le nom d'un joueur..."
-              className="w-full rounded-xl bg-card border border-border-t pl-10 pr-4 py-3 text-sm text-text-primary placeholder:text-text-faint outline-none focus:border-violet-500 transition-colors"
-            />
-          </div>
-
-          {showDropdown && filteredPlayers.length > 0 && (
-            <div ref={dropdownRef} className="absolute z-50 mt-1 w-full rounded-xl bg-card border border-border-t shadow-xl overflow-y-auto max-h-72">
-              {filteredPlayers.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => handleGuess(p)}
-                  className="flex items-center gap-3 w-full px-4 py-3 text-left hover:bg-card-hover active:bg-card-hover transition-colors"
-                >
-                  <img
-                    src={playerPhotoUrl(p.id)}
-                    alt=""
-                    className="h-8 w-8 shrink-0 rounded-full object-cover bg-input"
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <span className="block truncate text-sm font-medium text-text-primary">{p.name}</span>
-                  </div>
-                  <img src={teamLogoUrl(p.team)} alt={p.team} className="h-5 w-5 shrink-0 object-contain" />
-                  <span className="text-xs text-text-faint shrink-0">{p.team}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        <PlayerSearchDropdown
+          value={search}
+          onChange={(v) => { setSearch(v); setError(""); }}
+          onSelect={handleGuess}
+          results={filteredPlayers}
+          focusBorderClass="focus:border-violet-500"
+        />
       )}
 
       {/* Error message */}
