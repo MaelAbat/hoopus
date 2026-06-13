@@ -213,6 +213,15 @@ body::after {
 /* Allow vertical page scroll to pass through horizontal scroll containers */
 @media (pointer: coarse) {
   .overflow-x-auto { touch-action: pan-x pan-y; }
+
+  /* Prevent iOS Safari from auto-zooming when focusing an input whose
+     font-size is < 16px. Scoped to the mini-games so the rest of the
+     site keeps its tighter input typography. */
+  [data-minijeux] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  [data-minijeux] textarea,
+  [data-minijeux] select {
+    font-size: 16px;
+  }
 }
 
 /* Visible scrollbar for data tables */

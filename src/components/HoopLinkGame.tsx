@@ -207,7 +207,7 @@ function Confetti() {
     return () => cancelAnimationFrame(frame);
   }, []);
 
-  return <canvas ref={canvasRef} className="fixed inset-0 z-50 pointer-events-none" style={{ width: "100vw", height: "100vh" }} />;
+  return <canvas ref={canvasRef} className="fixed inset-0 z-50 pointer-events-none" style={{ width: "100%", height: "100%" }} />;
 }
 
 /* ─── Main ─── */
@@ -663,24 +663,24 @@ export default function HoopLinkGame({ players, playerTeams, adjacencyList }: Pr
           </div>
 
           {showDropdown && filteredPlayers.length > 0 && (
-            <div ref={dropdownRef} className="absolute z-50 mt-1 w-full rounded-xl bg-card border border-border-t shadow-xl overflow-hidden">
+            <div ref={dropdownRef} className="absolute z-50 mt-1 w-full rounded-xl bg-card border border-border-t shadow-xl overflow-y-auto max-h-72">
               {filteredPlayers.map((p) => (
                 <button
                   key={p.id}
                   onClick={() => handleGuess(p)}
-                  className="flex items-center gap-3 w-full px-4 py-2.5 text-left hover:bg-card-hover transition-colors"
+                  className="flex items-center gap-3 w-full px-4 py-3 text-left hover:bg-card-hover active:bg-card-hover transition-colors"
                 >
                   <img
                     src={playerPhotoUrl(p.id)}
                     alt=""
-                    className="h-8 w-8 rounded-full object-cover bg-input"
+                    className="h-8 w-8 shrink-0 rounded-full object-cover bg-input"
                     onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                   />
                   <div className="flex-1 min-w-0">
-                    <span className="text-sm font-medium text-text-primary">{p.name}</span>
+                    <span className="block truncate text-sm font-medium text-text-primary">{p.name}</span>
                   </div>
-                  <img src={teamLogoUrl(p.team)} alt={p.team} className="h-5 w-5 object-contain" />
-                  <span className="text-xs text-text-faint">{p.team}</span>
+                  <img src={teamLogoUrl(p.team)} alt={p.team} className="h-5 w-5 shrink-0 object-contain" />
+                  <span className="text-xs text-text-faint shrink-0">{p.team}</span>
                 </button>
               ))}
             </div>
@@ -697,12 +697,12 @@ export default function HoopLinkGame({ players, playerTeams, adjacencyList }: Pr
 
       {/* Give up button */}
       {!gameOver && loaded && (
-        <div className="text-center">
+        <div className="flex justify-center">
           <button
             onClick={handleGiveUp}
-            className="inline-flex items-center gap-1.5 text-xs text-text-faint hover:text-red-400 transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-input border border-border-t px-3.5 py-2 text-xs font-medium text-text-faint hover:text-red-400 hover:border-red-500/30 active:scale-95 transition-all"
           >
-            <Flag size={12} />
+            <Flag size={13} />
             Abandonner
           </button>
         </div>
@@ -800,17 +800,17 @@ export default function HoopLinkGame({ players, playerTeams, adjacencyList }: Pr
           )}
 
           {/* Share */}
-          <div className="flex items-center justify-center gap-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2 sm:gap-3">
             <button
               onClick={handleShare}
-              className="inline-flex items-center gap-2 rounded-xl bg-[#1DA1F2] px-5 py-2.5 text-sm font-bold text-white transition-all hover:bg-[#1a8cd8] hover:scale-[1.03] active:scale-[0.98]"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1DA1F2] px-5 py-3 text-sm font-bold text-white transition-all hover:bg-[#1a8cd8] hover:scale-[1.03] active:scale-[0.98]"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
               Partager
             </button>
             <button
               onClick={handleCopy}
-              className="inline-flex items-center gap-2 rounded-xl bg-input border border-border-t px-5 py-2.5 text-sm font-bold text-text-primary transition-all hover:bg-card-hover hover:scale-[1.03] active:scale-[0.98]"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-input border border-border-t px-5 py-3 text-sm font-bold text-text-primary transition-all hover:bg-card-hover hover:scale-[1.03] active:scale-[0.98]"
             >
               {copied ? <><Check size={14} className="text-emerald-400" /> Copié !</> : "Copier"}
             </button>

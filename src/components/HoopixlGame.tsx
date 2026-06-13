@@ -187,7 +187,7 @@ function Confetti() {
     frame = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(frame);
   }, []);
-  return <canvas ref={canvasRef} className="fixed inset-0 z-50 pointer-events-none" style={{ width: "100vw", height: "100vh" }} />;
+  return <canvas ref={canvasRef} className="fixed inset-0 z-50 pointer-events-none" style={{ width: "100%", height: "100%" }} />;
 }
 
 /* ─── Main component ─── */
@@ -415,8 +415,9 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
   useEffect(() => {
     function updateSize() {
       const w = window.innerWidth;
-      // Use most of the screen width on mobile, capped at 280 on desktop
-      setImgSize(w < 400 ? Math.min(w - 40, 240) : w < 640 ? 240 : 280);
+      // Use most of the screen width on mobile (it's the core of the game),
+      // capped at 300 on desktop.
+      setImgSize(w < 640 ? Math.min(w - 40, 320) : 300);
     }
     updateSize();
     window.addEventListener("resize", updateSize);
@@ -467,10 +468,10 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
             size={imgSize}
             onError={handlePhotoError}
           />
-          {/* Clarity indicator */}
+          {/* Clarity indicator — top-right so the thumb doesn't cover it */}
           {!gameOver && (
-            <div className="absolute bottom-2 right-2 flex items-center gap-1 rounded-lg bg-black/60 backdrop-blur-sm px-2 py-1 text-[10px] font-bold text-white">
-              <Eye size={10} />
+            <div className="absolute top-2 right-2 flex items-center gap-1 rounded-lg bg-black/60 backdrop-blur-sm px-2 py-1 text-xs font-bold text-white">
+              <Eye size={12} />
               {Math.round((1 - Math.pow(Math.max(0, 1 - elapsed / REVEAL_DURATION), 2)) * 100)}%
             </div>
           )}
@@ -478,8 +479,8 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
 
         {/* Timer + guess count */}
         {!gameOver && loaded && (
-          <div className="flex items-center gap-4 text-xs text-text-faint">
-            <span className="flex items-center gap-1"><Clock size={12} />{formatTime(Math.floor(elapsed))}</span>
+          <div className="flex items-center gap-4 text-sm text-text-faint">
+            <span className="flex items-center gap-1"><Clock size={14} />{formatTime(Math.floor(elapsed))}</span>
             <span>{guessIds.length}/{MAX_GUESSES} essais</span>
           </div>
         )}
@@ -501,13 +502,13 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
             />
           </div>
           {showDropdown && filteredPlayers.length > 0 && (
-            <div ref={dropdownRef} className="absolute z-50 mt-1 w-full rounded-xl bg-card border border-border-t shadow-xl overflow-hidden">
+            <div ref={dropdownRef} className="absolute z-50 mt-1 w-full rounded-xl bg-card border border-border-t shadow-xl overflow-y-auto max-h-72">
               {filteredPlayers.map((p) => (
-                <button key={p.id} onClick={() => handleGuess(p)} className="flex items-center gap-3 w-full px-4 py-2.5 text-left hover:bg-card-hover transition-colors">
-                  <img src={playerPhotoUrl(p.id)} alt="" className="h-8 w-8 rounded-full object-cover bg-input" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-                  <span className="flex-1 text-sm font-medium text-text-primary">{p.name}</span>
-                  <img src={teamLogoUrl(p.team)} alt="" className="h-5 w-5 object-contain" />
-                  <span className="text-xs text-text-faint">{p.team}</span>
+                <button key={p.id} onClick={() => handleGuess(p)} className="flex items-center gap-3 w-full px-4 py-3 text-left hover:bg-card-hover active:bg-card-hover transition-colors">
+                  <img src={playerPhotoUrl(p.id)} alt="" className="h-8 w-8 shrink-0 rounded-full object-cover bg-input" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                  <span className="flex-1 min-w-0 truncate text-sm font-medium text-text-primary">{p.name}</span>
+                  <img src={teamLogoUrl(p.team)} alt="" className="h-5 w-5 shrink-0 object-contain" />
+                  <span className="text-xs text-text-faint shrink-0">{p.team}</span>
                 </button>
               ))}
             </div>
@@ -520,9 +521,9 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
         <div className="flex justify-center">
           <button
             onClick={handleGiveUp}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-input border border-border-t px-3 py-1.5 text-xs font-medium text-text-faint hover:text-red-400 hover:border-red-500/30 transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-input border border-border-t px-3.5 py-2 text-xs font-medium text-text-faint hover:text-red-400 hover:border-red-500/30 active:scale-95 transition-all"
           >
-            <Flag size={12} />
+            <Flag size={13} />
             Abandonner
           </button>
         </div>
@@ -551,11 +552,11 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
       {won && (
         <div className="rounded-2xl overflow-hidden border border-emerald-500/30 bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-card p-5 sm:p-6">
           <div className="flex items-center gap-4">
-            <div className="relative">
+            <div className="relative shrink-0">
               <img src={playerPhotoUrl(target.id)} alt="" className="h-20 w-20 sm:h-24 sm:w-24 rounded-2xl object-cover bg-input shadow-lg" />
               <img src={teamLogoUrl(target.team)} alt="" className="absolute -bottom-1 -right-1 h-7 w-7 object-contain bg-card rounded-full p-0.5" />
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-xs font-bold text-emerald-400 uppercase tracking-wider">Bravo !</p>
               <p className="text-xl sm:text-2xl font-extrabold text-text-primary mt-0.5">{target.name}</p>
               <p className="text-sm text-text-muted">{target.teamName} -- {target.position}</p>
@@ -576,11 +577,11 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
       {lost && (
         <div className="rounded-2xl overflow-hidden border border-red-500/30 bg-gradient-to-r from-red-500/10 via-red-500/5 to-card p-5 sm:p-6">
           <div className="flex items-center gap-4">
-            <div className="relative">
+            <div className="relative shrink-0">
               <img src={playerPhotoUrl(target.id)} alt="" className="h-20 w-20 sm:h-24 sm:w-24 rounded-2xl object-cover bg-input shadow-lg" />
               <img src={teamLogoUrl(target.team)} alt="" className="absolute -bottom-1 -right-1 h-7 w-7 object-contain bg-card rounded-full p-0.5" />
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-xs font-bold text-red-400 uppercase tracking-wider">{gaveUp ? "Abandonn\u00e9" : "Perdu !"}</p>
               <p className="text-xl sm:text-2xl font-extrabold text-text-primary mt-0.5">{target.name}</p>
               <p className="text-sm text-text-muted">{target.teamName} -- {target.position}</p>
@@ -591,12 +592,12 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
 
       {/* Share buttons */}
       {gameOver && (
-        <div className="flex items-center justify-center gap-2">
-          <button onClick={handleShare} className="inline-flex items-center gap-2 rounded-xl bg-[#1DA1F2] px-5 py-2.5 text-sm font-bold text-white transition-all hover:bg-[#1a8cd8] hover:scale-[1.03] active:scale-[0.98]">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2 sm:gap-3">
+          <button onClick={handleShare} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1DA1F2] px-5 py-3 text-sm font-bold text-white transition-all hover:bg-[#1a8cd8] hover:scale-[1.03] active:scale-[0.98]">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
             Partager
           </button>
-          <button onClick={() => { navigator.clipboard.writeText(buildShareText()); setCopied(true); setTimeout(() => setCopied(false), 2000); }} className="inline-flex items-center gap-2 rounded-xl bg-input border border-border-t px-5 py-2.5 text-sm font-bold text-text-primary transition-all hover:bg-card-hover hover:scale-[1.03] active:scale-[0.98]">
+          <button onClick={() => { navigator.clipboard.writeText(buildShareText()); setCopied(true); setTimeout(() => setCopied(false), 2000); }} className="inline-flex items-center justify-center gap-2 rounded-xl bg-input border border-border-t px-5 py-3 text-sm font-bold text-text-primary transition-all hover:bg-card-hover hover:scale-[1.03] active:scale-[0.98]">
             {copied ? <><Check size={14} className="text-emerald-400" /> Copié !</> : "Copier"}
           </button>
         </div>

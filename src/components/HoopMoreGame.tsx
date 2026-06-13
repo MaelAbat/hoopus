@@ -124,7 +124,7 @@ function Confetti() {
     return () => cancelAnimationFrame(frame);
   }, []);
 
-  return <canvas ref={canvasRef} className="fixed inset-0 z-50 pointer-events-none" style={{ width: "100vw", height: "100vh" }} />;
+  return <canvas ref={canvasRef} className="fixed inset-0 z-50 pointer-events-none" style={{ width: "100%", height: "100%" }} />;
 }
 
 /* ─── Main component ─── */
@@ -616,9 +616,9 @@ export default function HoopMoreGame({ players }: { players: HoopMorePlayer[] })
                   className="absolute -bottom-1 -right-1 h-7 w-7 object-contain bg-card rounded-full p-0.5"
                 />
               </div>
-              <div className="text-center">
-                <p className="text-sm font-bold text-text-primary">{leftPlayer.name}</p>
-                <p className="text-xs text-text-faint">{leftPlayer.teamName}</p>
+              <div className="text-center w-full min-w-0">
+                <p className="text-sm font-bold text-text-primary truncate">{leftPlayer.name}</p>
+                <p className="text-xs text-text-faint truncate">{leftPlayer.teamName}</p>
               </div>
               <div className="rounded-xl bg-rose-500/15 border border-rose-500/30 px-6 py-3 text-center">
                 <p className="text-2xl sm:text-3xl font-black text-rose-400 tabular-nums">
@@ -671,9 +671,9 @@ export default function HoopMoreGame({ players }: { players: HoopMorePlayer[] })
                   className="absolute -bottom-1 -right-1 h-7 w-7 object-contain bg-card rounded-full p-0.5"
                 />
               </div>
-              <div className="text-center">
-                <p className="text-sm font-bold text-text-primary">{rightPlayer.name}</p>
-                <p className="text-xs text-text-faint">{rightPlayer.teamName}</p>
+              <div className="text-center w-full min-w-0">
+                <p className="text-sm font-bold text-text-primary truncate">{rightPlayer.name}</p>
+                <p className="text-xs text-text-faint truncate">{rightPlayer.teamName}</p>
               </div>
               <div className={`rounded-xl border px-6 py-3 text-center transition-all duration-500 ${
                 revealing
@@ -737,11 +737,11 @@ export default function HoopMoreGame({ players }: { players: HoopMorePlayer[] })
           </div>
 
           {/* Actions */}
-          <div className="flex items-center justify-center gap-2 flex-wrap">
+          <div className="flex items-center justify-center gap-2 sm:gap-3 flex-wrap">
             {mode === "free" && (
               <button
                 onClick={handleFreeReplay}
-                className="inline-flex items-center gap-2 rounded-xl bg-rose-500 px-5 py-2.5 text-sm font-bold text-white transition-all hover:bg-rose-600 hover:scale-[1.03] active:scale-[0.98]"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-rose-500 px-5 py-3 text-sm font-bold text-white transition-all hover:bg-rose-600 hover:scale-[1.03] active:scale-[0.98]"
               >
                 <Play size={14} />
                 Rejouer
@@ -749,14 +749,14 @@ export default function HoopMoreGame({ players }: { players: HoopMorePlayer[] })
             )}
             <button
               onClick={handleShare}
-              className="inline-flex items-center gap-2 rounded-xl bg-[#1DA1F2] px-5 py-2.5 text-sm font-bold text-white transition-all hover:bg-[#1a8cd8] hover:scale-[1.03] active:scale-[0.98]"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1DA1F2] px-5 py-3 text-sm font-bold text-white transition-all hover:bg-[#1a8cd8] hover:scale-[1.03] active:scale-[0.98]"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
               Partager
             </button>
             <button
               onClick={handleCopy}
-              className="inline-flex items-center gap-2 rounded-xl bg-input border border-border-t px-5 py-2.5 text-sm font-bold text-text-primary transition-all hover:bg-card-hover hover:scale-[1.03] active:scale-[0.98]"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-input border border-border-t px-5 py-3 text-sm font-bold text-text-primary transition-all hover:bg-card-hover hover:scale-[1.03] active:scale-[0.98]"
             >
               {copied ? <><Check size={14} className="text-emerald-400" /> Copié !</> : "Copier"}
             </button>
