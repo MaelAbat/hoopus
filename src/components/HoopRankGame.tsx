@@ -185,7 +185,7 @@ function Confetti() {
     return () => cancelAnimationFrame(frame);
   }, []);
 
-  return <canvas ref={canvasRef} className="fixed inset-0 z-50 pointer-events-none" style={{ width: "100vw", height: "100vh" }} />;
+  return <canvas ref={canvasRef} className="fixed inset-0 z-50 pointer-events-none" style={{ width: "100%", height: "100%" }} />;
 }
 
 /* ─── Score calculation ─── */
@@ -472,10 +472,10 @@ export default function HoopRankGame({ players }: { players: HoopRankPlayer[] })
 
     if (i === dragging.index) {
       return {
-        transform: `translateY(${dragging.offsetY}px) scale(1.03)`,
+        transform: `translateY(${dragging.offsetY}px) scale(1.04)`,
         zIndex: 50,
         position: "relative",
-        boxShadow: "0 8px 32px rgba(0,0,0,0.25)",
+        boxShadow: "0 12px 40px rgba(0,0,0,0.35)",
       };
     }
 
@@ -634,6 +634,11 @@ export default function HoopRankGame({ players }: { players: HoopRankPlayer[] })
             <span className="inline-block rounded-full bg-amber-500/15 px-4 py-1.5 text-sm font-bold text-amber-400">
               Classe du plus haut au plus bas : {round.category.label}
             </span>
+            {phase === "ordering" && (
+              <p className="mt-2 text-[11px] text-text-faint sm:hidden">
+                Glisse la poignée ⋮⋮ ou utilise les flèches ▲▼ pour classer
+              </p>
+            )}
           </div>
 
           {/* Player list */}
@@ -653,9 +658,8 @@ export default function HoopRankGame({ players }: { players: HoopRankPlayer[] })
               return (
                 <div
                   key={playerId}
-                  onPointerDown={(e) => handleDragStart(e, i)}
                   className={`flex items-center gap-2 sm:gap-3 rounded-xl border p-3 ${
-                    phase === "ordering" ? "cursor-grab active:cursor-grabbing select-none" : ""
+                    phase === "ordering" ? "select-none" : ""
                   } ${
                     isDragged ? "" : "transition-all duration-300"
                   } ${
@@ -667,15 +671,19 @@ export default function HoopRankGame({ players }: { players: HoopRankPlayer[] })
                       ? "border-amber-500/40 bg-amber-500/5"
                       : "border-border-t bg-card"
                   }`}
-                  style={{
-                    touchAction: phase === "ordering" ? "none" : "auto",
-                    ...getDragStyle(i),
-                  }}
+                  style={getDragStyle(i)}
                 >
                   {/* Drag handle + rank */}
                   {phase === "ordering" ? (
-                    <div className="flex items-center gap-1 shrink-0">
-                      <GripVertical size={14} className="text-text-faint/50" />
+                    <div className="flex items-center gap-0.5 shrink-0">
+                      <button
+                        type="button"
+                        aria-label="Glisser pour réordonner"
+                        onPointerDown={(e) => handleDragStart(e, i)}
+                        className="flex h-11 w-7 -ml-1 touch-none cursor-grab items-center justify-center text-text-muted hover:text-text-primary active:cursor-grabbing"
+                      >
+                        <GripVertical size={20} />
+                      </button>
                       <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-input text-xs font-bold text-text-primary">
                         {i + 1}
                       </span>
@@ -714,22 +722,24 @@ export default function HoopRankGame({ players }: { players: HoopRankPlayer[] })
                   {/* Up/down buttons (secondary control) */}
                   {phase === "ordering" && (
                     <div
-                      className="flex flex-col gap-0.5 shrink-0"
+                      className="flex flex-col gap-1 shrink-0"
                       onPointerDown={(e) => e.stopPropagation()}
                     >
                       <button
                         onClick={() => movePlayer(-1, i)}
                         disabled={i === 0}
-                        className="p-1 rounded hover:bg-input disabled:opacity-20 transition-colors"
+                        aria-label="Monter"
+                        className="flex h-8 w-9 items-center justify-center rounded-lg bg-input/60 text-text-muted hover:bg-input hover:text-text-primary disabled:opacity-20 transition-all active:scale-90"
                       >
-                        <ChevronUp size={16} className="text-text-muted" />
+                        <ChevronUp size={18} />
                       </button>
                       <button
                         onClick={() => movePlayer(1, i)}
                         disabled={i === PLAYERS_PER_ROUND - 1}
-                        className="p-1 rounded hover:bg-input disabled:opacity-20 transition-colors"
+                        aria-label="Descendre"
+                        className="flex h-8 w-9 items-center justify-center rounded-lg bg-input/60 text-text-muted hover:bg-input hover:text-text-primary disabled:opacity-20 transition-all active:scale-90"
                       >
-                        <ChevronDown size={16} className="text-text-muted" />
+                        <ChevronDown size={18} />
                       </button>
                     </div>
                   )}
@@ -808,17 +818,17 @@ export default function HoopRankGame({ players }: { players: HoopRankPlayer[] })
           </div>
 
           {/* Share */}
-          <div className="flex items-center justify-center gap-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2 sm:gap-3">
             <button
               onClick={handleShare}
-              className="inline-flex items-center gap-2 rounded-xl bg-[#1DA1F2] px-5 py-2.5 text-sm font-bold text-white transition-all hover:bg-[#1a8cd8] hover:scale-[1.03] active:scale-[0.98]"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1DA1F2] px-5 py-3 text-sm font-bold text-white transition-all hover:bg-[#1a8cd8] hover:scale-[1.03] active:scale-[0.98]"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
               Partager
             </button>
             <button
               onClick={handleCopy}
-              className="inline-flex items-center gap-2 rounded-xl bg-input border border-border-t px-5 py-2.5 text-sm font-bold text-text-primary transition-all hover:bg-card-hover hover:scale-[1.03] active:scale-[0.98]"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-input border border-border-t px-5 py-3 text-sm font-bold text-text-primary transition-all hover:bg-card-hover hover:scale-[1.03] active:scale-[0.98]"
             >
               {copied ? <><Check size={14} className="text-emerald-400" /> Copié !</> : "Copier"}
             </button>

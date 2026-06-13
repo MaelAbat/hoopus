@@ -256,7 +256,7 @@ function Confetti() {
     frame = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(frame);
   }, []);
-  return <canvas ref={canvasRef} className="fixed inset-0 z-50 pointer-events-none" style={{ width: "100vw", height: "100vh" }} />;
+  return <canvas ref={canvasRef} className="fixed inset-0 z-50 pointer-events-none" style={{ width: "100%", height: "100%" }} />;
 }
 
 /* ─── Main component ─── */
@@ -643,20 +643,20 @@ export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
         {/* Progress */}
         {loaded && (
           <div className="space-y-1.5">
-            <div className="flex items-center justify-between text-[10px]">
-              <span className="text-text-faint">{foundWords.length}/{words.length} mots</span>
-              <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-text-faint font-medium">{foundWords.length}/{words.length} mots</span>
+              <div className="flex items-center gap-1">
                 {!gameOver && (
                   <button
                     onClick={handleGiveUp}
-                    className="flex items-center gap-1 text-text-faint hover:text-red-400 transition-colors"
+                    className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-text-faint hover:text-red-400 hover:bg-red-500/10 transition-colors"
                   >
-                    <Flag size={10} />
+                    <Flag size={13} />
                     Abandonner
                   </button>
                 )}
-                <span className="flex items-center gap-1 text-text-faint">
-                  <Clock size={10} />
+                <span className="flex items-center gap-1 px-1.5 text-text-faint">
+                  <Clock size={13} />
                   {formatTime(elapsed)}
                 </span>
               </div>
@@ -744,7 +744,7 @@ export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
                           key={key}
                           className={`flex items-center justify-center aspect-square rounded-md sm:rounded-lg text-[11px] sm:text-sm font-bold transition-all duration-300 select-none ${
                             isSelecting
-                              ? "bg-accent/30 text-accent-text scale-110 z-10"
+                              ? "bg-accent/50 text-accent-text scale-110 z-10 ring-1 ring-accent"
                               : revealMystery
                                 ? "bg-accent/25 text-accent-text ring-1 ring-accent/40"
                                 : isFound
@@ -840,15 +840,16 @@ export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
               onChange={(e) => setMysteryGuess(e.target.value)}
               maxLength={mystery.name.length}
               placeholder={`${mystery.name.length} lettres...`}
-              className={`flex-1 rounded-xl bg-card border pl-4 pr-4 py-2.5 text-sm font-bold text-text-primary placeholder:text-text-faint outline-none uppercase tracking-widest text-center transition-colors ${
+              className={`flex-1 min-w-0 rounded-xl bg-card border pl-4 pr-4 py-3 text-base font-bold text-text-primary placeholder:text-text-faint outline-none uppercase tracking-widest text-center transition-colors ${
                 mysteryWrong ? "border-red-500 bg-red-500/10" : "border-border-t focus:border-accent"
               }`}
             />
             <button
               type="submit"
-              className="rounded-xl bg-accent px-4 py-2.5 text-sm font-bold text-white hover:bg-accent-hover transition-colors"
+              aria-label="Valider"
+              className="flex items-center justify-center shrink-0 rounded-xl bg-accent px-5 py-3 text-sm font-bold text-white hover:bg-accent-hover active:scale-95 transition-all"
             >
-              <Check size={18} />
+              <Check size={20} />
             </button>
           </form>
           {mysteryWrong && (
@@ -890,12 +891,12 @@ export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
 
       {/* Share */}
       {gameOver && (
-        <div className="flex items-center justify-center gap-2">
-          <button onClick={handleShare} className="inline-flex items-center gap-2 rounded-xl bg-[#1DA1F2] px-5 py-2.5 text-sm font-bold text-white transition-all hover:bg-[#1a8cd8] hover:scale-[1.03] active:scale-[0.98]">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2 sm:gap-3">
+          <button onClick={handleShare} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1DA1F2] px-5 py-3 text-sm font-bold text-white transition-all hover:bg-[#1a8cd8] hover:scale-[1.03] active:scale-[0.98]">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
             Partager
           </button>
-          <button onClick={() => { navigator.clipboard.writeText(buildShareText()); setCopied(true); setTimeout(() => setCopied(false), 2000); }} className="inline-flex items-center gap-2 rounded-xl bg-input border border-border-t px-5 py-2.5 text-sm font-bold text-text-primary transition-all hover:bg-card-hover hover:scale-[1.03] active:scale-[0.98]">
+          <button onClick={() => { navigator.clipboard.writeText(buildShareText()); setCopied(true); setTimeout(() => setCopied(false), 2000); }} className="inline-flex items-center justify-center gap-2 rounded-xl bg-input border border-border-t px-5 py-3 text-sm font-bold text-text-primary transition-all hover:bg-card-hover hover:scale-[1.03] active:scale-[0.98]">
             {copied ? <><Check size={14} className="text-emerald-400" /> Copi&eacute; !</> : "Copier"}
           </button>
         </div>

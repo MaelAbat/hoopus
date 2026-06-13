@@ -16,5 +16,5 @@ export const metadata: Metadata = {
 };
 
 export default function MiniJeuxLayout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+  return <div data-minijeux>{children}</div>;
 }

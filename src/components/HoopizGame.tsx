@@ -485,20 +485,20 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
             <button
               onClick={() => switchMode("unordered")}
               disabled={started && !finished}
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+              className={`flex items-center gap-1.5 rounded-md px-4 py-2 text-xs font-medium transition-all ${
                 activeMode === "unordered" ? "bg-card text-text-primary shadow-sm" : "text-text-muted"
               } ${started && !finished ? "cursor-not-allowed" : ""}`}
             >
-              <List size={13} /> Désordre
+              <List size={14} /> Désordre
             </button>
             <button
               onClick={() => switchMode("ordered")}
               disabled={started && !finished}
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+              className={`flex items-center gap-1.5 rounded-md px-4 py-2 text-xs font-medium transition-all ${
                 activeMode === "ordered" ? "bg-card text-text-primary shadow-sm" : "text-text-muted"
               } ${started && !finished ? "cursor-not-allowed" : ""}`}
             >
-              <ListOrdered size={13} /> Dans l&apos;ordre
+              <ListOrdered size={14} /> Dans l&apos;ordre
             </button>
           </div>
         </div>
@@ -549,10 +549,11 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
             {started && (
               <button
                 onClick={handleGiveUp}
-                className="shrink-0 inline-flex items-center gap-1.5 rounded-xl bg-red-500/10 border border-red-500/30 px-3 py-3 text-xs font-bold text-red-400 hover:bg-red-500/20 transition-colors"
+                className="shrink-0 inline-flex items-center gap-1.5 rounded-xl bg-red-500/10 border border-red-500/30 px-3.5 py-3 text-xs font-bold text-red-400 hover:bg-red-500/20 active:scale-95 transition-all"
                 title="Abandonner"
+                aria-label="Abandonner"
               >
-                <Flag size={14} />
+                <Flag size={16} />
               </button>
             )}
           </div>
@@ -576,17 +577,17 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
 
       {/* Share buttons */}
       {finished && (
-        <div className="flex items-center justify-center gap-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2 sm:gap-3">
           <button
             onClick={handleShare}
-            className="inline-flex items-center gap-2 rounded-xl bg-[#1DA1F2] px-5 py-2.5 text-sm font-bold text-white transition-all hover:bg-[#1a8cd8] hover:scale-[1.03] active:scale-[0.98]"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1DA1F2] px-5 py-3 text-sm font-bold text-white transition-all hover:bg-[#1a8cd8] hover:scale-[1.03] active:scale-[0.98]"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
             Partager
           </button>
           <button
             onClick={handleCopy}
-            className="inline-flex items-center gap-2 rounded-xl bg-input border border-border-t px-5 py-2.5 text-sm font-bold text-text-primary transition-all hover:bg-card-hover hover:scale-[1.03] active:scale-[0.98]"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-input border border-border-t px-5 py-3 text-sm font-bold text-text-primary transition-all hover:bg-card-hover hover:scale-[1.03] active:scale-[0.98]"
           >
             {copied ? <><Check size={14} className="text-emerald-400" /> Copié !</> : <><Copy size={14} /> Copier</>}
           </button>
@@ -594,7 +595,7 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
       )}
 
       {/* Entries in columns */}
-      <div ref={tableRef} className="rounded-2xl bg-card border border-border-t p-3 sm:p-4 overflow-x-auto">
+      <div ref={tableRef} className="rounded-2xl bg-card border border-border-t p-3 sm:p-4 sm:overflow-x-auto">
         {(() => {
           const cols: typeof quiz.entries[] = [];
           for (let i = 0; i < quiz.entries.length; i += MAX_PER_COL) {
@@ -603,9 +604,9 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
           const nextIndex = activeMode === "ordered" ? quiz.entries.findIndex((_, j) => !found.has(j)) : -1;
 
           return (
-            <div className="flex gap-2" style={{ minWidth: cols.length > 2 ? cols.length * 180 : undefined }}>
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-2">
               {cols.map((col, ci) => (
-                <div key={ci} className="flex-1 min-w-[160px] space-y-1.5">
+                <div key={ci} className="min-w-0 sm:flex-1 sm:min-w-[160px] space-y-1.5">
                   {col.map((entry, ei) => {
                     const i = ci * MAX_PER_COL + ei;
                     const isFound = found.has(i);
@@ -660,7 +661,7 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
             Classements
           </h2>
         </div>
-        <div className="p-4 grid grid-cols-2 gap-4">
+        <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-4">
           <LeaderboardSection quizId={quiz.id} mode="unordered" label="Désordre" userId={userId} />
           <LeaderboardSection quizId={quiz.id} mode="ordered" label="Dans l'ordre" userId={userId} />
         </div>

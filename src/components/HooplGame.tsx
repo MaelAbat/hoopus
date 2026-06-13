@@ -232,7 +232,7 @@ function Confetti() {
     <canvas
       ref={canvasRef}
       className="fixed inset-0 z-50 pointer-events-none"
-      style={{ width: "100vw", height: "100vh" }}
+      style={{ width: "100%", height: "100%" }}
     />
   );
 }
@@ -669,13 +669,13 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
           {showDropdown && filteredPlayers.length > 0 && (
             <div
               ref={dropdownRef}
-              className="absolute z-50 mt-1 w-full rounded-xl bg-card border border-border-t shadow-xl overflow-hidden"
+              className="absolute z-50 mt-1 w-full rounded-xl bg-card border border-border-t shadow-xl overflow-y-auto max-h-72"
             >
               {filteredPlayers.map((p) => (
                 <button
                   key={p.id}
                   onClick={() => handleGuess(p)}
-                  className="flex items-center gap-3 w-full px-4 py-2.5 text-left hover:bg-card-hover transition-colors"
+                  className="flex items-center gap-3 w-full px-4 py-3 text-left hover:bg-card-hover active:bg-card-hover transition-colors"
                 >
                   <img
                     src={playerPhotoUrl(p.id)}
@@ -697,30 +697,32 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
 
       {/* Abandon button */}
       {!won && !lost && (
-        <div className="flex items-center justify-center gap-2">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
           {confirmAbandon ? (
             <>
-              <span className="text-xs text-text-muted">Révéler la réponse et terminer la partie ?</span>
-              <button
-                onClick={handleAbandon}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-red-500/15 border border-red-500/30 px-3 py-1.5 text-xs font-bold text-red-400 transition-colors hover:bg-red-500/25"
-              >
-                <Flag size={12} />
-                Confirmer
-              </button>
-              <button
-                onClick={() => setConfirmAbandon(false)}
-                className="rounded-lg bg-input border border-border-t px-3 py-1.5 text-xs font-medium text-text-muted transition-colors hover:bg-card-hover hover:text-text-primary"
-              >
-                Annuler
-              </button>
+              <span className="text-xs text-text-muted text-center">Révéler la réponse et terminer la partie ?</span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleAbandon}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-red-500/15 border border-red-500/30 px-3.5 py-2 text-xs font-bold text-red-400 transition-colors hover:bg-red-500/25 active:scale-95"
+                >
+                  <Flag size={13} />
+                  Confirmer
+                </button>
+                <button
+                  onClick={() => setConfirmAbandon(false)}
+                  className="rounded-lg bg-input border border-border-t px-3.5 py-2 text-xs font-medium text-text-muted transition-colors hover:bg-card-hover hover:text-text-primary active:scale-95"
+                >
+                  Annuler
+                </button>
+              </div>
             </>
           ) : (
             <button
               onClick={handleAbandon}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-input border border-border-t px-3 py-1.5 text-xs font-medium text-text-muted transition-colors hover:bg-card-hover hover:text-text-primary"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-input border border-border-t px-3.5 py-2 text-xs font-medium text-text-muted transition-colors hover:bg-card-hover hover:text-text-primary active:scale-95"
             >
-              <Flag size={12} />
+              <Flag size={13} />
               Abandonner
             </button>
           )}
@@ -731,11 +733,11 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
       {won && (
         <div className="rounded-2xl overflow-hidden border border-emerald-500/30 bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-card p-5 sm:p-6">
           <div className="flex items-center gap-4">
-            <div className="relative">
+            <div className="relative shrink-0">
               <img src={playerPhotoUrl(target.id)} alt="" className="h-20 w-20 sm:h-24 sm:w-24 rounded-2xl object-cover bg-input shadow-lg" />
               <img src={teamLogoUrl(target.team)} alt="" className="absolute -bottom-1 -right-1 h-7 w-7 object-contain bg-card rounded-full p-0.5" />
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-xs font-bold text-emerald-400 uppercase tracking-wider">Bravo !</p>
               <p className="text-xl sm:text-2xl font-extrabold text-text-primary mt-0.5">{target.name}</p>
               <p className="text-sm text-text-muted">{target.teamName} -- {target.position}</p>
@@ -753,11 +755,11 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
       {lost && (
         <div className="rounded-2xl overflow-hidden border border-red-500/30 bg-gradient-to-r from-red-500/10 via-red-500/5 to-card p-5 sm:p-6">
           <div className="flex items-center gap-4">
-            <div className="relative">
+            <div className="relative shrink-0">
               <img src={playerPhotoUrl(target.id)} alt="" className="h-20 w-20 sm:h-24 sm:w-24 rounded-2xl object-cover bg-input shadow-lg" />
               <img src={teamLogoUrl(target.team)} alt="" className="absolute -bottom-1 -right-1 h-7 w-7 object-contain bg-card rounded-full p-0.5" />
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-xs font-bold text-red-400 uppercase tracking-wider">{gaveUp ? "Abandonné" : "Perdu !"}</p>
               <p className="text-xl sm:text-2xl font-extrabold text-text-primary mt-0.5">{target.name}</p>
               <p className="text-sm text-text-muted">{target.teamName} -- {target.position}</p>
@@ -773,17 +775,17 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
 
       {/* Share buttons */}
       {(won || lost) && (
-        <div className="flex items-center justify-center gap-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2 sm:gap-3">
           <button
             onClick={handleShare}
-            className="inline-flex items-center gap-2 rounded-xl bg-[#1DA1F2] px-5 py-2.5 text-sm font-bold text-white transition-all hover:bg-[#1a8cd8] hover:scale-[1.03] active:scale-[0.98]"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1DA1F2] px-5 py-3 text-sm font-bold text-white transition-all hover:bg-[#1a8cd8] hover:scale-[1.03] active:scale-[0.98]"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
             Partager
           </button>
           <button
             onClick={handleCopyResult}
-            className="inline-flex items-center gap-2 rounded-xl bg-input border border-border-t px-5 py-2.5 text-sm font-bold text-text-primary transition-all hover:bg-card-hover hover:scale-[1.03] active:scale-[0.98]"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-input border border-border-t px-5 py-3 text-sm font-bold text-text-primary transition-all hover:bg-card-hover hover:scale-[1.03] active:scale-[0.98]"
           >
             {copied ? <><Check size={14} className="text-emerald-400" /> Copié !</> : "Copier"}
           </button>
@@ -812,10 +814,10 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
                     return (
                       <div
                         key={col.key}
-                        className={`flex flex-col items-center rounded-lg border px-1.5 py-1.5 ${clueClass(status)}`}
+                        className={`flex flex-col items-center rounded-lg border px-1.5 py-2 ${clueClass(status)}`}
                       >
-                        <span className="text-[9px] font-medium opacity-70">{col.label}</span>
-                        <div className="flex items-center gap-0.5 text-xs font-bold">
+                        <span className="text-[10px] font-medium opacity-70">{col.label}</span>
+                        <div className="flex items-center gap-0.5 text-sm font-bold">
                           {col.key === "team" ? (
                             <img src={teamLogoUrl(result.player.team)} alt="" className="h-3.5 w-3.5 object-contain" />
                           ) : (

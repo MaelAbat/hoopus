@@ -65,19 +65,19 @@ export default function QuizGrid({ quizzes, admin, userScores = {} }: { quizzes:
 
       {/* Pagination top */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-1.5">
+        <div className="flex flex-wrap items-center justify-center gap-1.5">
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={currentPage === 1}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-card-hover transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="flex h-10 w-10 items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-card-hover transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
-            <ChevronLeft size={16} />
+            <ChevronLeft size={18} />
           </button>
           {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
             <button
               key={p}
               onClick={() => setPage(p)}
-              className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold transition-colors ${
+              className={`flex h-10 w-10 items-center justify-center rounded-lg text-sm font-bold transition-colors ${
                 p === currentPage
                   ? "bg-accent text-white"
                   : "text-text-muted hover:text-text-primary hover:bg-card-hover"
@@ -89,9 +89,9 @@ export default function QuizGrid({ quizzes, admin, userScores = {} }: { quizzes:
           <button
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={currentPage === totalPages}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-card-hover transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="flex h-10 w-10 items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-card-hover transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
-            <ChevronRight size={16} />
+            <ChevronRight size={18} />
           </button>
         </div>
       )}
@@ -164,9 +164,10 @@ export default function QuizGrid({ quizzes, admin, userScores = {} }: { quizzes:
                   {admin && (
                     <Link
                       href={`/mini-jeux/hoopiz/${quiz.id}/edit`}
-                      className="absolute top-3 right-3 rounded-lg p-1.5 text-text-faint hover:text-accent-text hover:bg-accent/10 transition-colors z-10"
+                      aria-label="Modifier le quiz"
+                      className="absolute top-2.5 right-2.5 rounded-lg p-2 bg-card/70 backdrop-blur-sm text-text-faint hover:text-accent-text hover:bg-accent/10 transition-colors z-10"
                     >
-                      <Pencil size={13} />
+                      <Pencil size={16} />
                     </Link>
                   )}
                 </div>
@@ -178,19 +179,19 @@ export default function QuizGrid({ quizzes, admin, userScores = {} }: { quizzes:
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-1.5">
+        <div className="flex flex-wrap items-center justify-center gap-1.5">
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={currentPage === 1}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-card-hover transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="flex h-10 w-10 items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-card-hover transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
-            <ChevronLeft size={16} />
+            <ChevronLeft size={18} />
           </button>
           {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
             <button
               key={p}
               onClick={() => setPage(p)}
-              className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold transition-colors ${
+              className={`flex h-10 w-10 items-center justify-center rounded-lg text-sm font-bold transition-colors ${
                 p === currentPage
                   ? "bg-accent text-white"
                   : "text-text-muted hover:text-text-primary hover:bg-card-hover"
@@ -202,9 +203,9 @@ export default function QuizGrid({ quizzes, admin, userScores = {} }: { quizzes:
           <button
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={currentPage === totalPages}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-card-hover transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="flex h-10 w-10 items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-card-hover transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
-            <ChevronRight size={16} />
+            <ChevronRight size={18} />
           </button>
         </div>
       )}

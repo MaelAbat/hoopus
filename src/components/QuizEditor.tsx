@@ -82,9 +82,10 @@ function SortableEntry({
       <button
         {...attributes}
         {...listeners}
-        className="shrink-0 mt-2 cursor-grab active:cursor-grabbing text-text-faint hover:text-text-primary transition-colors touch-none"
+        aria-label="Glisser pour réordonner"
+        className="shrink-0 mt-1 -ml-1 p-1 cursor-grab active:cursor-grabbing text-text-faint hover:text-text-primary transition-colors touch-none"
       >
-        <GripVertical size={14} />
+        <GripVertical size={18} />
       </button>
 
       {/* Number */}
@@ -114,9 +115,10 @@ function SortableEntry({
       <button
         onClick={() => onRemove(entry.id)}
         disabled={!canRemove}
-        className="shrink-0 mt-1.5 p-1.5 rounded-lg text-text-faint hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-20"
+        aria-label="Supprimer cette entrée"
+        className="shrink-0 mt-1 p-2 rounded-lg text-text-faint hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-20"
       >
-        <Trash2 size={14} />
+        <Trash2 size={16} />
       </button>
     </div>
   );
@@ -343,6 +345,7 @@ export default function QuizEditor({ existing }: { existing?: ExistingQuiz }) {
             <label className="block text-xs font-bold text-text-muted uppercase tracking-wider mb-1.5">Temps (minutes)</label>
             <input
               type="number"
+              inputMode="numeric"
               min={1}
               max={30}
               value={timeLimit}

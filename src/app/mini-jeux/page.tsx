@@ -435,9 +435,9 @@ export default function MiniJeux() {
                       </div>
                       <div>
                         <h2 className="text-lg font-extrabold text-text-primary group-hover:text-accent-text transition-colors tracking-tight">{game.title}</h2>
-                        <div className="flex gap-1.5 mt-0.5">
+                        <div className="flex flex-wrap gap-1.5 mt-0.5">
                           {game.tags.map((tag) => (
-                            <span key={tag} className="inline-block rounded-full bg-input px-2 py-0.5 text-[10px] font-semibold text-text-faint">
+                            <span key={tag} className="inline-block rounded-full bg-input px-2 py-0.5 text-[11px] font-semibold text-text-faint">
                               {tag}
                             </span>
                           ))}
@@ -448,7 +448,7 @@ export default function MiniJeux() {
 
                   {/* User score result */}
                   {score && (
-                    <div className={`flex items-center gap-2 rounded-lg px-3 py-1.5 mb-3 text-xs ${score.won ? "bg-emerald-500/10" : "bg-red-500/10"}`}>
+                    <div className={`flex flex-wrap items-center gap-x-2 gap-y-0.5 rounded-lg px-3 py-1.5 mb-3 text-xs ${score.won ? "bg-emerald-500/10" : "bg-red-500/10"}`}>
                       {score.won ? (
                         <>
                           <Trophy size={13} className="text-amber-400 shrink-0" />
@@ -476,9 +476,9 @@ export default function MiniJeux() {
                     {game.description}
                   </p>
 
-                  {/* CTA */}
+                  {/* CTA — always visible on touch; arrow nudges on hover */}
                   <div
-                    className="mt-4 flex items-center gap-1.5 text-sm font-bold opacity-0 -translate-x-1 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0"
+                    className="mt-4 flex items-center gap-1.5 text-sm font-bold"
                     style={{ color: game.color }}
                   >
                     {score ? "Voir le classement" : "Jouer maintenant"}
