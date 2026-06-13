@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
-import { ArrowUp, ArrowDown, Check, RotateCcw, Trophy, Search, Clock, LogIn, Flag, Gauge } from "lucide-react";
+import { ArrowUp, ArrowDown, Check, RotateCcw, Trophy, Clock, LogIn, Flag, Gauge } from "lucide-react";
 import { teamLogoUrl, playerPhotoUrl } from "@/lib/nba-teams";
 import { createClient } from "@/lib/supabase/client";
 import { ensureAuth, getDisplayName, isAnonymousName } from "@/lib/anonymous-auth";
 import { useAchievementNotifier } from "@/components/AchievementProvider";
 import { computeVisibleLeaderboard, type LeaderboardRow } from "@/lib/leaderboard-utils";
+import PlayerSearchDropdown from "./PlayerSearchDropdown";
 import SignupBanner from "./SignupBanner";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -259,7 +260,6 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
   const [won, setWon] = useState(false);
   const [gaveUp, setGaveUp] = useState(false);
   const [confirmAbandon, setConfirmAbandon] = useState(false);
-  const [showDropdown, setShowDropdown] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [startTime, setStartTime] = useState<number>(0);
   const [elapsed, setElapsed] = useState(0);
@@ -268,8 +268,6 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
   const [copied, setCopied] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const target = useMemo(() => getDailyPlayer(players), [players]);
 
@@ -383,18 +381,6 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
     triggerCheck();
   }, [submitted, userId, startTime, elapsed, won, guessIds.length, gameDate, fetchLeaderboard, triggerCheck]);
 
-  // Close dropdown on outside click
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node) &&
-          inputRef.current && !inputRef.current.contains(e.target as Node)) {
-        setShowDropdown(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, []);
-
   const guessResults: GuessResult[] = useMemo(() => {
     if (!target) return [];
     return guessIds.map((id) => {
@@ -441,7 +427,6 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
     const newGuesses = [...guessIds, player.id];
     setGuessIds(newGuesses);
     setSearch("");
-    setShowDropdown(false);
     if (player.id === target.id) {
       setWon(true);
       setShowConfetti(true);
@@ -459,7 +444,6 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
     }
     setConfirmAbandon(false);
     setGaveUp(true);
-    setShowDropdown(false);
     submitScore(guessIds.length, false);
   }
 
@@ -647,52 +631,12 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
 
       {/* Search input */}
       {!won && !lost && (
-        <div className="relative">
-          <div className="relative">
-            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-faint" />
-            <input
-              ref={inputRef}
-              type="text"
-              value={search}
-              onChange={(e) => { setSearch(e.target.value); setShowDropdown(true); }}
-              onFocus={(e) => {
-                setShowDropdown(true);
-                // On mobile, scroll input into view above the virtual keyboard
-                setTimeout(() => e.target.scrollIntoView({ behavior: "smooth", block: "center" }), 300);
-              }}
-              placeholder="Tape le nom d'un joueur..."
-              className="w-full rounded-xl bg-card border border-border-t pl-10 pr-4 py-3 text-sm text-text-primary placeholder:text-text-faint outline-none focus:border-accent transition-colors"
-            />
-          </div>
-
-          {/* Dropdown */}
-          {showDropdown && filteredPlayers.length > 0 && (
-            <div
-              ref={dropdownRef}
-              className="absolute z-50 mt-1 w-full rounded-xl bg-card border border-border-t shadow-xl overflow-y-auto max-h-72"
-            >
-              {filteredPlayers.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => handleGuess(p)}
-                  className="flex items-center gap-3 w-full px-4 py-3 text-left hover:bg-card-hover active:bg-card-hover transition-colors"
-                >
-                  <img
-                    src={playerPhotoUrl(p.id)}
-                    alt=""
-                    className="h-8 w-8 rounded-full object-cover bg-input"
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <span className="text-sm font-medium text-text-primary">{p.name}</span>
-                  </div>
-                  <img src={teamLogoUrl(p.team)} alt={p.team} className="h-5 w-5 object-contain" />
-                  <span className="text-xs text-text-faint">{p.team}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        <PlayerSearchDropdown
+          value={search}
+          onChange={setSearch}
+          onSelect={handleGuess}
+          results={filteredPlayers}
+        />
       )}
 
       {/* Abandon button */}
