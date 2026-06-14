@@ -19,8 +19,33 @@ export function useTheme() {
   return useContext(ThemeContext);
 }
 
+/**
+ * Keep the browser/PWA chrome (status bar + nav bar) matching the active theme
+ * by syncing <meta name="theme-color"> to the theme's sidebar background. Reads
+ * the computed CSS variable so globals.css stays the single source of truth.
+ */
+function syncThemeColor() {
+  if (typeof document === "undefined") return;
+  const color = getComputedStyle(document.documentElement)
+    .getPropertyValue("--bg-sidebar")
+    .trim();
+  if (!color) return;
+  let meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+  if (!meta) {
+    meta = document.createElement("meta");
+    meta.name = "theme-color";
+    document.head.appendChild(meta);
+  }
+  meta.content = color;
+}
+
 export default function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>("light");
+
+  // Keep the chrome color in sync whenever the active theme changes.
+  useEffect(() => {
+    syncThemeColor();
+  }, [theme]);
 
   useEffect(() => {
     // Load theme from profile or localStorage fallback

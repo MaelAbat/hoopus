@@ -104,7 +104,9 @@ export default async function RootLayout({
   return (
     <html lang="fr" data-theme="light" suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem("theme");if(t){document.documentElement.setAttribute("data-theme",t)}else{document.documentElement.setAttribute("data-theme",window.innerWidth>=1024?"dark":"light")}}catch(e){}})()` }} />
+        {/* Default chrome color; updated per-theme by the script below and at runtime by ThemeProvider. */}
+        <meta name="theme-color" content="#0c1222" />
+        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem("theme")||(window.innerWidth>=1024?"dark":"light");document.documentElement.setAttribute("data-theme",t);var c={dark:"#0c1222",light:"#ffffff",midnight:"#0e0c20",emerald:"#091e14",sakura:"#1e0c14",ocean:"#081420"}[t]||"#0c1222";var m=document.querySelector('meta[name="theme-color"]');if(!m){m=document.createElement("meta");m.setAttribute("name","theme-color");document.head.appendChild(m)}m.setAttribute("content",c)}catch(e){}})()` }} />
         <JsonLd data={siteJsonLd} />
       </head>
       <body className="antialiased">
