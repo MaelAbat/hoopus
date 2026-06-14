@@ -18,6 +18,13 @@ interface Props<T extends SearchablePlayer> {
   placeholder?: string;
   /** Tailwind border class applied on focus, e.g. "focus:border-accent". */
   focusBorderClass?: string;
+  /**
+   * Optional content pinned at the top of the mobile search sheet (below the
+   * input). Hoopixl uses it to keep the pixelated photo visible while typing —
+   * the sheet covers the page, so without this the thing you're guessing about
+   * would be hidden.
+   */
+  sheetHeader?: React.ReactNode;
 }
 
 const MOBILE_BREAKPOINT = 640;
@@ -43,6 +50,7 @@ export default function PlayerSearchDropdown<T extends SearchablePlayer>({
   results,
   placeholder = "Tape le nom d'un joueur...",
   focusBorderClass = "focus:border-accent",
+  sheetHeader,
 }: Props<T>) {
   const [openDesktop, setOpenDesktop] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -215,6 +223,11 @@ export default function PlayerSearchDropdown<T extends SearchablePlayer>({
               <X size={20} />
             </button>
           </div>
+          {sheetHeader && (
+            <div className="shrink-0 flex justify-center border-b border-border-t/50 py-3">
+              {sheetHeader}
+            </div>
+          )}
           <div className="flex-1 overflow-y-auto overscroll-contain">
             {value.trim() && results.length === 0 ? (
               <p className="px-4 py-8 text-center text-sm text-text-muted">Aucun joueur trouvé.</p>

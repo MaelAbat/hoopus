@@ -478,6 +478,15 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
           onChange={setSearch}
           onSelect={handleGuess}
           results={filteredPlayers}
+          sheetHeader={
+            // Keep the (live) pixelated photo visible inside the mobile search
+            // sheet, compact so it still leaves room for suggestions.
+            <PixelatedImage
+              src={playerPhotoUrl(target.id)}
+              pixelSize={pixelSize}
+              size={Math.min(150, imgSize)}
+            />
+          }
         />
       )}
 
