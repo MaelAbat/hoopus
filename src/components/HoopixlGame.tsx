@@ -368,6 +368,9 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
     return () => window.removeEventListener("resize", updateSize);
   }, []);
 
+  // Scroll target after a guess on mobile: shows the ✓/✗ so you know the result.
+  const resultRef = useRef<HTMLDivElement>(null);
+
   function handleGuess(player: HoopixlPlayer) {
     if (gameOver || !target || guessIds.includes(player.id)) return;
     const newGuesses = [...guessIds, player.id];
@@ -478,6 +481,7 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
           onChange={setSearch}
           onSelect={handleGuess}
           results={filteredPlayers}
+          revealRef={resultRef}
           sheetHeader={
             // Keep the (live) pixelated photo visible inside the mobile search
             // sheet, compact so it still leaves room for suggestions.
@@ -505,7 +509,7 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
 
       {/* Wrong guesses */}
       {guessIds.length > 0 && (
-        <div className="flex flex-wrap gap-2 justify-center">
+        <div ref={resultRef} className="flex flex-wrap gap-2 justify-center scroll-mt-20">
           {guessIds.map((id) => {
             const p = players.find((pl) => pl.id === id);
             if (!p) return null;
