@@ -55,7 +55,7 @@ export default function PlayerSearchDropdown<T extends SearchablePlayer>({
   const [openDesktop, setOpenDesktop] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [sheetRect, setSheetRect] = useState<{ top: number; height: number }>();
+  const [sheetInset, setSheetInset] = useState<{ top: number; bottom: number }>();
 
   const inputRef = useRef<HTMLInputElement>(null);
   const sheetInputRef = useRef<HTMLInputElement>(null);
@@ -89,15 +89,16 @@ export default function PlayerSearchDropdown<T extends SearchablePlayer>({
     return () => document.removeEventListener("mousedown", handleClick);
   }, [isMobile]);
 
-  // Keep the mobile sheet glued to the visible viewport (above the keyboard).
+  // The sheet covers the whole screen (opaque, so nothing behind peeks through),
+  // and we pad its content into the visible band — between the top offset and
+  // the keyboard — so the input and results never hide behind the keyboard.
   useEffect(() => {
     if (!sheetOpen) return;
     const vv = window.visualViewport;
     function update() {
-      setSheetRect({
-        top: vv ? vv.offsetTop : 0,
-        height: vv ? vv.height : window.innerHeight,
-      });
+      const top = vv ? vv.offsetTop : 0;
+      const bottom = vv ? Math.max(0, window.innerHeight - vv.offsetTop - vv.height) : 0;
+      setSheetInset({ top, bottom });
     }
     update();
     vv?.addEventListener("resize", update);
@@ -197,8 +198,8 @@ export default function PlayerSearchDropdown<T extends SearchablePlayer>({
       {/* Mobile: full-screen search sheet pinned above the keyboard */}
       {isMobile && sheetOpen && (
         <div
-          className="fixed inset-x-0 z-[70] flex flex-col bg-bg"
-          style={sheetRect ? { top: sheetRect.top, height: sheetRect.height } : { top: 0, bottom: 0 }}
+          className="fixed inset-0 z-[70] flex flex-col bg-bg"
+          style={sheetInset ? { paddingTop: sheetInset.top, paddingBottom: sheetInset.bottom } : undefined}
         >
           <div className="flex items-center gap-2 border-b border-border-t px-3 py-2.5">
             <div className="relative flex-1">
@@ -228,7 +229,7 @@ export default function PlayerSearchDropdown<T extends SearchablePlayer>({
               {sheetHeader}
             </div>
           )}
-          <div className="flex-1 overflow-y-auto overscroll-contain">
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
             {value.trim() && results.length === 0 ? (
               <p className="px-4 py-8 text-center text-sm text-text-muted">Aucun joueur trouvé.</p>
             ) : (
