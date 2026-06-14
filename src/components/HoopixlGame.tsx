@@ -355,6 +355,19 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
       .slice(0, 8);
   }, [search, players, guessIds]);
 
+  // Image size: most of the screen width on mobile (it's the core of the game),
+  // capped at 300 on desktop.
+  const [imgSize, setImgSize] = useState(280);
+  useEffect(() => {
+    function updateSize() {
+      const w = window.innerWidth;
+      setImgSize(w < 640 ? Math.min(w - 40, 320) : 300);
+    }
+    updateSize();
+    window.addEventListener("resize", updateSize);
+    return () => window.removeEventListener("resize", updateSize);
+  }, []);
+
   function handleGuess(player: HoopixlPlayer) {
     if (gameOver || !target || guessIds.includes(player.id)) return;
     const newGuesses = [...guessIds, player.id];
@@ -395,19 +408,6 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
   if (!target) {
     return <div className="mx-auto max-w-4xl px-4 py-16 text-center text-text-muted">Aucun joueur disponible.</div>;
   }
-
-  const [imgSize, setImgSize] = useState(280);
-  useEffect(() => {
-    function updateSize() {
-      const w = window.innerWidth;
-      // Use most of the screen width on mobile (it's the core of the game),
-      // capped at 300 on desktop.
-      setImgSize(w < 640 ? Math.min(w - 40, 320) : 300);
-    }
-    updateSize();
-    window.addEventListener("resize", updateSize);
-    return () => window.removeEventListener("resize", updateSize);
-  }, []);
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 px-3 sm:px-0 pb-8">
