@@ -598,7 +598,7 @@ export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
       {/* Header */}
       <div className="pt-4 space-y-4">
         <div className="flex items-center justify-between">
-          <Link href="/mini-jeux" className="inline-flex items-center gap-1.5 rounded-lg bg-input px-3 py-1.5 text-xs font-medium text-text-muted hover:text-text-primary hover:bg-card-hover transition-colors">
+          <Link href="/mini-jeux" className="inline-flex items-center gap-2 sm:gap-1.5 rounded-lg bg-input px-4 py-2.5 text-sm sm:px-3 sm:py-1.5 sm:text-xs font-medium text-text-muted hover:text-text-primary hover:bg-card-hover transition-colors">
             <RotateCcw size={12} /> Tous les mini-jeux
           </Link>
           {isAdmin && (
@@ -615,7 +615,7 @@ export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
               </select>
               <button
                 onClick={handleDebugNewGrid}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-input px-3 py-1.5 text-xs font-medium text-text-muted hover:text-text-primary hover:bg-card-hover transition-colors"
+                className="inline-flex items-center gap-2 sm:gap-1.5 rounded-lg bg-input px-4 py-2.5 text-sm sm:px-3 sm:py-1.5 sm:text-xs font-medium text-text-muted hover:text-text-primary hover:bg-card-hover transition-colors"
               >
                 <RotateCcw size={12} /> Nouvelle grille
               </button>
