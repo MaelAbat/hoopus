@@ -25,9 +25,17 @@ interface Props<T extends SearchablePlayer> {
    * would be hidden.
    */
   sheetHeader?: React.ReactNode;
+  /**
+   * Optional element to scroll into view after a pick on mobile. Each game's
+   * feedback lives in a different place (Hoopl clues below, HoopLink chain
+   * above), so the game points us at what the player should see next.
+   */
+  revealRef?: React.RefObject<HTMLElement | null>;
 }
 
 const MOBILE_BREAKPOINT = 640;
+// Clears the fixed mobile top bar (h-14) plus a little breathing room.
+const TOP_BAR_OFFSET = 72;
 
 /**
  * Shared player autocomplete used by the daily guessing games (Hoopl, Hoopixl,
@@ -35,13 +43,12 @@ const MOBILE_BREAKPOINT = 640;
  *
  * Desktop: a plain inline dropdown below the input.
  *
- * Mobile: the input sits low on the page, so an inline dropdown would render
- * behind the virtual keyboard — and trying to lift it with scroll/measure
- * tricks made the list jump around and disappear as you typed. Instead, tapping
- * the field opens a full-screen search sheet pinned to the *visible* viewport
- * (the area above the keyboard, measured via visualViewport): the input stays
- * at the top and the results scroll underneath, so suggestions can never hide
- * behind the keyboard and nothing shifts as the result count changes.
+ * Mobile: the field sits low on the page, so an inline dropdown would render
+ * behind the virtual keyboard. Instead, focusing the field turns its wrapper
+ * into a full-screen search sheet (the SAME input element stays focused, so the
+ * keyboard opens on the first tap), with the input at the top and the results
+ * scrolling above the keyboard. After a pick we close the sheet and scroll the
+ * game's feedback (revealRef) into view, so you immediately see the result.
  */
 export default function PlayerSearchDropdown<T extends SearchablePlayer>({
   value,
@@ -51,15 +58,16 @@ export default function PlayerSearchDropdown<T extends SearchablePlayer>({
   placeholder = "Tape le nom d'un joueur...",
   focusBorderClass = "focus:border-accent",
   sheetHeader,
+  revealRef,
 }: Props<T>) {
-  const [openDesktop, setOpenDesktop] = useState(false);
-  const [sheetOpen, setSheetOpen] = useState(false);
+  const [open, setOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [sheetInset, setSheetInset] = useState<{ top: number; bottom: number }>();
 
+  const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const sheetInputRef = useRef<HTMLInputElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const sheetMode = isMobile && open;
 
   // Switch between inline dropdown (desktop) and full-screen sheet (mobile).
   // Starts false so the first render matches the server (no hydration mismatch).
@@ -67,7 +75,7 @@ export default function PlayerSearchDropdown<T extends SearchablePlayer>({
     function check() {
       const mobile = window.innerWidth < MOBILE_BREAKPOINT;
       setIsMobile(mobile);
-      if (!mobile) setSheetOpen(false);
+      if (!mobile) setOpen(false);
     }
     check();
     window.addEventListener("resize", check);
@@ -79,10 +87,9 @@ export default function PlayerSearchDropdown<T extends SearchablePlayer>({
     if (isMobile) return;
     function handleClick(e: MouseEvent) {
       if (
-        dropdownRef.current && !dropdownRef.current.contains(e.target as Node) &&
-        inputRef.current && !inputRef.current.contains(e.target as Node)
+        rootRef.current && !rootRef.current.contains(e.target as Node)
       ) {
-        setOpenDesktop(false);
+        setOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClick);
@@ -93,7 +100,7 @@ export default function PlayerSearchDropdown<T extends SearchablePlayer>({
   // and we pad its content into the visible band — between the top offset and
   // the keyboard — so the input and results never hide behind the keyboard.
   useEffect(() => {
-    if (!sheetOpen) return;
+    if (!sheetMode) return;
     const vv = window.visualViewport;
     function update() {
       const top = vv ? vv.offsetTop : 0;
@@ -107,33 +114,39 @@ export default function PlayerSearchDropdown<T extends SearchablePlayer>({
       vv?.removeEventListener("resize", update);
       vv?.removeEventListener("scroll", update);
     };
-  }, [sheetOpen]);
-
-  // Focus the sheet's input once it opens (a tick later so it exists and the
-  // keyboard animation can begin).
-  useEffect(() => {
-    if (!sheetOpen) return;
-    const id = setTimeout(() => sheetInputRef.current?.focus(), 50);
-    return () => clearTimeout(id);
-  }, [sheetOpen]);
+  }, [sheetMode]);
 
   // Lock body scroll while the sheet is open.
   useEffect(() => {
-    if (!sheetOpen) return;
+    if (!sheetMode) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = prev; };
-  }, [sheetOpen]);
+  }, [sheetMode]);
+
+  // After a pick on mobile, bring the game's feedback into view. Only games that
+  // opt in (by passing revealRef) get scrolled — others keep their position.
+  const revealResult = useCallback(() => {
+    if (!isMobile || !revealRef) return;
+    // Wait for the keyboard to close and the layout to settle first.
+    setTimeout(() => {
+      const el = revealRef.current;
+      if (!el) return;
+      const y = el.getBoundingClientRect().top + window.scrollY - TOP_BAR_OFFSET;
+      window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+    }, 350);
+  }, [isMobile, revealRef]);
 
   const handleSelect = useCallback((p: T) => {
+    inputRef.current?.blur();
     onSelect(p);
-    setOpenDesktop(false);
-    setSheetOpen(false);
-  }, [onSelect]);
+    setOpen(false);
+    revealResult();
+  }, [onSelect, revealResult]);
 
   const closeSheet = useCallback(() => {
-    sheetInputRef.current?.blur();
-    setSheetOpen(false);
+    inputRef.current?.blur();
+    setOpen(false);
   }, []);
 
   function renderRows() {
@@ -158,63 +171,33 @@ export default function PlayerSearchDropdown<T extends SearchablePlayer>({
   }
 
   return (
-    <div className="relative">
-      <div className="relative">
-        <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-faint z-10 pointer-events-none" />
-        {isMobile ? (
-          // Trigger styled like the input; tapping it opens the sheet. Using a
-          // button (not a readonly input) avoids the keyboard flashing here.
-          <button
-            type="button"
-            onClick={() => setSheetOpen(true)}
-            className={`flex w-full items-center rounded-xl bg-card border border-border-t pl-10 pr-4 py-3 text-sm outline-none ${value ? "text-text-primary" : "text-text-faint"}`}
-          >
-            <span className="truncate">{value || placeholder}</span>
-          </button>
-        ) : (
-          <input
-            ref={inputRef}
-            type="text"
-            value={value}
-            onChange={(e) => { onChange(e.target.value); setOpenDesktop(true); }}
-            onFocus={() => setOpenDesktop(true)}
-            placeholder={placeholder}
-            autoComplete="off"
-            className={`w-full rounded-xl bg-card border border-border-t pl-10 pr-4 py-3 text-sm text-text-primary placeholder:text-text-faint outline-none transition-colors ${focusBorderClass}`}
-          />
-        )}
-      </div>
-
-      {/* Desktop: inline dropdown */}
-      {!isMobile && openDesktop && results.length > 0 && (
-        <div
-          ref={dropdownRef}
-          className="absolute z-50 mt-1 w-full max-h-72 rounded-xl bg-card border border-border-t shadow-xl overflow-y-auto overscroll-contain"
-        >
-          {renderRows()}
-        </div>
-      )}
-
-      {/* Mobile: full-screen search sheet pinned above the keyboard */}
-      {isMobile && sheetOpen && (
-        <div
-          className="fixed inset-0 z-[70] flex flex-col bg-bg"
-          style={sheetInset ? { paddingTop: sheetInset.top, paddingBottom: sheetInset.bottom } : undefined}
-        >
-          <div className="flex items-center gap-2 border-b border-border-t px-3 py-2.5">
-            <div className="relative flex-1">
-              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-faint z-10 pointer-events-none" />
-              <input
-                ref={sheetInputRef}
-                type="text"
-                value={value}
-                onChange={(e) => onChange(e.target.value)}
-                placeholder={placeholder}
-                autoComplete="off"
-                enterKeyHint="search"
-                className={`w-full rounded-xl bg-card border border-border-t pl-10 pr-4 py-3 text-base text-text-primary placeholder:text-text-faint outline-none transition-colors ${focusBorderClass}`}
-              />
-            </div>
+    <div ref={rootRef} className="relative">
+      <div
+        className={sheetMode ? "fixed inset-0 z-[70] flex flex-col bg-bg" : "relative"}
+        style={sheetMode && sheetInset ? { paddingTop: sheetInset.top, paddingBottom: sheetInset.bottom } : undefined}
+      >
+        {/* Input row (the input element is the same node inline or in the sheet,
+            so focus — and the keyboard — survives the switch). */}
+        <div className={`flex items-center gap-2 ${sheetMode ? "px-3 pt-2" : ""}`}>
+          <div className="relative flex-1">
+            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-faint z-10 pointer-events-none" />
+            <input
+              ref={inputRef}
+              type="text"
+              value={value}
+              onChange={(e) => { onChange(e.target.value); setOpen(true); }}
+              onFocus={() => setOpen(true)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && results.length > 0) { e.preventDefault(); handleSelect(results[0]); }
+                else if (e.key === "Escape") closeSheet();
+              }}
+              placeholder={placeholder}
+              autoComplete="off"
+              enterKeyHint="search"
+              className={`w-full rounded-xl bg-card border border-border-t pl-10 pr-4 py-3 text-sm text-text-primary placeholder:text-text-faint outline-none transition-colors ${focusBorderClass}`}
+            />
+          </div>
+          {sheetMode && (
             <button
               type="button"
               onClick={closeSheet}
@@ -223,21 +206,35 @@ export default function PlayerSearchDropdown<T extends SearchablePlayer>({
             >
               <X size={20} />
             </button>
-          </div>
-          {sheetHeader && (
-            <div className="shrink-0 flex justify-center border-b border-border-t/50 py-3">
-              {sheetHeader}
-            </div>
           )}
-          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
+        </div>
+
+        {/* Mobile: keep the game's visual (e.g. Hoopixl photo) in the sheet */}
+        {sheetMode && sheetHeader && (
+          <div className="shrink-0 flex justify-center border-b border-border-t/50 py-3 mt-2">
+            {sheetHeader}
+          </div>
+        )}
+
+        {/* Results */}
+        {sheetMode ? (
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain mt-2">
             {value.trim() && results.length === 0 ? (
               <p className="px-4 py-8 text-center text-sm text-text-muted">Aucun joueur trouvé.</p>
             ) : (
               renderRows()
             )}
           </div>
-        </div>
-      )}
+        ) : (
+          open && results.length > 0 && (
+            <div
+              className="absolute z-50 mt-1 w-full max-h-72 rounded-xl bg-card border border-border-t shadow-xl overflow-y-auto overscroll-contain"
+            >
+              {renderRows()}
+            </div>
+          )
+        )}
+      </div>
     </div>
   );
 }

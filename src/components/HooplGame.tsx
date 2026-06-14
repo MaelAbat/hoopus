@@ -407,6 +407,9 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
     }).filter(Boolean) as GuessResult[];
   }, [guessIds, players, target]);
 
+  // Scroll target after a guess on mobile: the clues live below the search.
+  const resultsRef = useRef<HTMLDivElement>(null);
+
   const normalize = (s: string) =>
     s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
@@ -636,6 +639,7 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
           onChange={setSearch}
           onSelect={handleGuess}
           results={filteredPlayers}
+          revealRef={resultsRef}
         />
       )}
 
@@ -738,10 +742,10 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
 
       {/* Results — cards on mobile, table on desktop */}
       {guessResults.length > 0 && (
-        <>
-          {/* Mobile: card layout */}
+        <div ref={resultsRef} className="space-y-6 scroll-mt-20">
+          {/* Mobile: card layout (newest first so the latest guess shows up top) */}
           <div className="space-y-3 sm:hidden">
-            {guessResults.map((result) => (
+            {[...guessResults].reverse().map((result) => (
               <div key={result.player.id} className="rounded-xl bg-card border border-border-t p-3 space-y-2">
                 <div className="flex items-center gap-2">
                   <img
@@ -828,7 +832,7 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
               </table>
             </div>
           </div>
-        </>
+        </div>
       )}
 
       {/* Leaderboard */}
