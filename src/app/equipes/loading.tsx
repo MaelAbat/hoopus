@@ -1,10 +1,26 @@
-import { SkeletonBox, SkeletonCards } from "@/components/Skeleton";
+import { SkeletonPageBanner } from "@/components/Skeleton";
 
 export default function Loading() {
   return (
     <div className="mx-auto max-w-6xl space-y-8">
-      <SkeletonBox className="h-32 w-full" />
-      <SkeletonCards count={6} />
+      <SkeletonPageBanner />
+
+      {/* View toggle: Effectifs / Masse salariale */}
+      <div className="flex gap-2">
+        <div className="h-9 w-28 animate-pulse rounded-xl bg-input" />
+        <div className="h-9 w-36 animate-pulse rounded-xl bg-input" />
+      </div>
+
+      {/* Team logo grid (30 teams) */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6">
+        {Array.from({ length: 30 }).map((_, i) => (
+          <div key={i} className="flex flex-col items-center gap-2 rounded-2xl bg-card border border-border-t p-4">
+            <div className="h-12 w-12 animate-pulse rounded-full bg-input" />
+            <div className="h-3 w-16 animate-pulse rounded bg-input" />
+            <div className="h-2.5 w-10 animate-pulse rounded bg-input" />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
