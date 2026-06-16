@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { ensureAuth, getDisplayName, isAnonymousName } from "@/lib/anonymous-auth";
 import { useAchievementNotifier } from "@/components/AchievementProvider";
 import { computeVisibleLeaderboard, type LeaderboardRow } from "@/lib/leaderboard-utils";
+import { getDailyRanking } from "@/lib/daily-player";
 import SignupBanner from "./SignupBanner";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -29,26 +30,6 @@ interface LeaderboardEntry {
 
 const MAX_GUESSES = 5;
 const REVEAL_DURATION = 80; // seconds to go from full pixel to clear
-
-function hashTwo(a: number, b: number): number {
-  let h = a * 0x9e3779b9 + b;
-  h = ((h >> 16) ^ h) * 0x45d9f3b;
-  h = ((h >> 16) ^ h) * 0x45d9f3b;
-  h = (h >> 16) ^ h;
-  return Math.abs(h);
-}
-
-// Deterministic daily ordering: every player ranked by the day's hash, highest
-// first. The top entry is "the player of the day"; if its headshot is missing
-// from the NBA CDN we fall back to the next candidate. Since photo availability
-// is global, all clients converge on the same player.
-function getDailyCandidates<T extends { id: number }>(players: T[]): T[] {
-  if (players.length === 0) return [];
-  const now = new Date();
-  // Different seed than Hoopl (offset by 7777)
-  const daySeed = now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate() + 7777;
-  return [...players].sort((a, b) => hashTwo(daySeed, b.id) - hashTwo(daySeed, a.id));
-}
 
 function getStorageKey(): string {
   const now = new Date();
@@ -212,7 +193,12 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const candidates = useMemo(() => getDailyCandidates(players), [players]);
+  // Ranked candidates for today, with recent days' players demoted so the same
+  // player can't show up again within the no-repeat window. The top entry is
+  // the player of the day; if its headshot is missing from the NBA CDN we fall
+  // back to the next candidate (photo availability is global, so all clients
+  // converge on the same player). Offset 7777 distinguishes this from Hoopl.
+  const candidates = useMemo(() => getDailyRanking(players, new Date(), 7777), [players]);
   const [targetIndex, setTargetIndex] = useState(0);
   const target = candidates[targetIndex] ?? null;
 

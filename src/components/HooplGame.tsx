@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { ensureAuth, getDisplayName, isAnonymousName } from "@/lib/anonymous-auth";
 import { useAchievementNotifier } from "@/components/AchievementProvider";
 import { computeVisibleLeaderboard, type LeaderboardRow } from "@/lib/leaderboard-utils";
+import { getDailyRanking } from "@/lib/daily-player";
 import SignupBanner from "./SignupBanner";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -62,34 +63,6 @@ function heightToInches(h: string): number {
   const match = h.match(/(\d+)-(\d+)/);
   if (!match) return 0;
   return parseInt(match[1]) * 12 + parseInt(match[2]);
-}
-
-function hashTwo(a: number, b: number): number {
-  let h = a * 0x9e3779b9 + b;
-  h = ((h >> 16) ^ h) * 0x45d9f3b;
-  h = ((h >> 16) ^ h) * 0x45d9f3b;
-  h = (h >> 16) ^ h;
-  return Math.abs(h);
-}
-
-/** Pick a stable daily player using rendezvous hashing.
- *  Each player gets a deterministic score for the day.
- *  Adding/removing a player only changes the pick if that
- *  specific player was the winner (~1/N chance). */
-function getDailyPlayer<T extends { id: number }>(players: T[]): T | null {
-  if (players.length === 0) return null;
-  const now = new Date();
-  const daySeed = now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate();
-  let best = players[0];
-  let bestScore = -1;
-  for (const p of players) {
-    const score = hashTwo(daySeed, p.id);
-    if (score > bestScore) {
-      bestScore = score;
-      best = p;
-    }
-  }
-  return best;
 }
 
 function getStorageKey(): string {
@@ -271,7 +244,9 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const target = useMemo(() => getDailyPlayer(players), [players]);
+  // Daily player via rendezvous hashing, with recent days' winners excluded so
+  // the same player can't recur within the no-repeat window.
+  const target = useMemo(() => getDailyRanking(players, new Date(), 0)[0] ?? null, [players]);
 
   const gameDate = useMemo(() => {
     const now = new Date();
