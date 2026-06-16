@@ -2,6 +2,73 @@ export function SkeletonBox({ className = "" }: { className?: string }) {
   return <div className={`animate-pulse rounded-xl bg-input ${className}`} />;
 }
 
+// Mirrors the real PageBanner: a bordered card (not a flat grey block) with the
+// left accent bar + bottom accent line, so the skeleton matches the destination
+// header instead of a generic box. `extra` renders the optional row that some
+// banners carry (e.g. a season selector).
+export function SkeletonPageBanner({ extra = false }: { extra?: boolean }) {
+  return (
+    <div className="relative overflow-hidden rounded-2xl border border-border-t bg-card">
+      {/* Left accent bar */}
+      <div
+        className="absolute left-0 top-0 bottom-0 w-1"
+        style={{ background: "linear-gradient(to bottom, var(--accent), var(--accent) 40%, transparent)" }}
+      />
+      {/* Bottom accent line */}
+      <div
+        className="absolute bottom-0 left-0 right-0 h-px"
+        style={{ background: "linear-gradient(to right, var(--accent), transparent 60%)" }}
+      />
+      <div className="relative px-8 py-10 sm:px-10 sm:py-12">
+        <div className="h-9 w-56 animate-pulse rounded-lg bg-input sm:h-10" />
+        <div className="mt-3 h-4 w-72 max-w-full animate-pulse rounded bg-input" />
+        {extra && <div className="mt-4 h-9 w-44 animate-pulse rounded-lg bg-input" />}
+      </div>
+    </div>
+  );
+}
+
+// Back-to-games link pill shared by every mini-game header.
+export function SkeletonGameTopBar() {
+  return (
+    <div className="flex items-center justify-between">
+      <div className="h-10 w-44 animate-pulse rounded-lg bg-input sm:h-7 sm:w-36" />
+    </div>
+  );
+}
+
+// Horizontal game banner: circular icon + title + subtitle + stat pills.
+// Used by Hoopl, HoopRank, HoopLink, HoopMore.
+export function SkeletonGameBanner() {
+  return (
+    <div className="overflow-hidden rounded-2xl border border-border-t bg-card">
+      <div className="px-5 py-6 sm:px-8 sm:py-8">
+        <div className="flex items-center gap-4 sm:gap-6">
+          <div className="h-16 w-16 shrink-0 animate-pulse rounded-full bg-input sm:h-20 sm:w-20" />
+          <div className="flex-1 space-y-2">
+            <div className="h-7 w-40 animate-pulse rounded bg-input sm:h-8" />
+            <div className="h-3.5 w-56 max-w-full animate-pulse rounded bg-input" />
+            <div className="flex gap-2 pt-1">
+              <div className="h-5 w-16 animate-pulse rounded-full bg-input" />
+              <div className="h-5 w-16 animate-pulse rounded-full bg-input" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Centered title + subtitle. Used by HoopGrid, Hoopixl, Hoopiz.
+export function SkeletonGameTitle() {
+  return (
+    <div className="space-y-2 text-center">
+      <div className="mx-auto h-8 w-40 animate-pulse rounded bg-input" />
+      <div className="mx-auto h-4 w-56 max-w-full animate-pulse rounded bg-input" />
+    </div>
+  );
+}
+
 export function SkeletonText({ className = "", lines = 1 }: { className?: string; lines?: number }) {
   return (
     <div className={`space-y-2 ${className}`}>
