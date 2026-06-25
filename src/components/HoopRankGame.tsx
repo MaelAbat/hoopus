@@ -150,7 +150,8 @@ function Confetti() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    const colors = ["#f97316", "#10b981", "#3b82f6", "#eab308", "#ef4444", "#8b5cf6", "#ec4899", "#06b6d4"];
+    const accentVar = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#ff5a1f";
+    const colors = [accentVar, "#f5f2e9", "#807b70"];
     const particles: { x: number; y: number; vx: number; vy: number; w: number; h: number; color: string; rot: number; vr: number; life: number }[] = [];
 
     for (const bp of [{ x: canvas.width * 0.3, y: canvas.height * 0.3 }, { x: canvas.width * 0.7, y: canvas.height * 0.3 }, { x: canvas.width * 0.5, y: canvas.height * 0.2 }]) {
@@ -203,9 +204,9 @@ function calcRoundScore(userOrder: number[], correctOrder: number[]): { total: n
 }
 
 function scoreColor(pts: number): string {
-  if (pts === 20) return "bg-emerald-500/20 text-emerald-400 border-emerald-500/30";
-  if (pts === 10) return "bg-amber-500/15 text-amber-400 border-amber-500/30";
-  return "bg-red-500/15 text-red-400 border-red-500/30";
+  if (pts === 20) return "bg-emerald-500/15 text-emerald-400 border-emerald-500/40";
+  if (pts === 10) return "bg-accent-light text-accent-text border-accent";
+  return "bg-red-500/15 text-red-400 border-red-500/40";
 }
 
 /* ─── Main ─── */
@@ -556,7 +557,7 @@ export default function HoopRankGame({ players }: { players: HoopRankPlayer[] })
         <div className="flex items-center justify-between">
           <Link
             href="/mini-jeux"
-            className="inline-flex items-center gap-2 sm:gap-1.5 rounded-lg bg-input px-4 py-2.5 text-sm sm:px-3 sm:py-1.5 sm:text-xs font-medium text-text-muted hover:text-text-primary hover:bg-card-hover transition-colors"
+            className="inline-flex items-center gap-2 sm:gap-1.5 border border-rule bg-card px-4 py-2.5 font-mono text-xs font-semibold uppercase tracking-wider sm:px-3 sm:py-1.5 sm:text-[11px] text-text-muted hover:border-border-hover hover:text-text-primary transition-colors"
           >
             <RotateCcw size={12} />
             Tous les mini-jeux
@@ -564,7 +565,7 @@ export default function HoopRankGame({ players }: { players: HoopRankPlayer[] })
           {isAdmin && (
             <button
               onClick={handleAdminReset}
-              className="inline-flex items-center gap-2 sm:gap-1.5 rounded-lg bg-input px-4 py-2.5 text-sm sm:px-3 sm:py-1.5 sm:text-xs font-medium text-text-muted hover:text-text-primary hover:bg-card-hover transition-colors"
+              className="inline-flex items-center gap-2 sm:gap-1.5 border border-rule bg-card px-4 py-2.5 font-mono text-xs font-semibold uppercase tracking-wider sm:px-3 sm:py-1.5 sm:text-[11px] text-text-muted hover:border-border-hover hover:text-text-primary transition-colors"
             >
               <RotateCcw size={12} />
               Nouvelle partie
@@ -572,32 +573,33 @@ export default function HoopRankGame({ players }: { players: HoopRankPlayer[] })
           )}
         </div>
 
-        {/* Banner */}
-        <div className="relative overflow-hidden rounded-2xl border border-border-t bg-gradient-to-br from-amber-500/10 via-card to-card">
-          <div className="absolute top-0 right-0 w-32 h-32 sm:w-48 sm:h-48 opacity-[0.07]">
-            <Trophy className="w-full h-full text-amber-500" />
+        {/* Banner — broadcast lower-third */}
+        <div className="relative overflow-hidden border border-rule bg-card">
+          <span className="absolute left-0 top-0 bottom-0 w-1 bg-accent" />
+          <div className="absolute top-0 right-0 w-32 h-32 sm:w-48 sm:h-48 opacity-[0.05]">
+            <Trophy className="w-full h-full text-text-primary" />
           </div>
           <div className="relative px-5 py-6 sm:px-8 sm:py-8">
             <div className="flex items-center gap-4 sm:gap-6">
-              <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-gradient-to-br from-amber-500/30 to-amber-500/10 border-2 border-amber-500/40 flex items-center justify-center">
-                <Trophy size={32} className="text-amber-500" />
+              <div className="h-16 w-16 sm:h-20 sm:w-20 bg-accent flex items-center justify-center">
+                <Trophy size={32} className="text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-text-primary tracking-tight">
-                  Hoop<span className="text-amber-500">Rank</span>
+                <h1 className="font-display text-3xl sm:text-4xl text-text-primary">
+                  Hoop<span className="text-accent-text">Rank</span>
                 </h1>
-                <p className="text-xs sm:text-sm text-text-muted mt-0.5">
+                <p className="text-xs sm:text-sm text-text-muted mt-1">
                   {phase === "gameover"
                     ? `Score final : ${totalScore}/500`
                     : `Manche ${currentRound + 1}/${ROUNDS} - ${round.category.label}`}
                 </p>
                 {loaded && (
-                  <div className="flex items-center gap-3 mt-2">
-                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2.5 py-0.5 text-[11px] font-bold text-amber-400">
-                      <Trophy size={11} /> {phase === "gameover" ? totalScore : roundScores.reduce((s, r) => s + r.total, 0)}/{phase === "gameover" ? 500 : (currentRound) * 100}
+                  <div className="flex items-center gap-2 mt-3">
+                    <span className="inline-flex items-center gap-1.5 border border-rule px-2.5 py-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-text-secondary">
+                      <Trophy size={11} /> <span className="tnum">{phase === "gameover" ? totalScore : roundScores.reduce((s, r) => s + r.total, 0)}/{phase === "gameover" ? 500 : (currentRound) * 100}</span>
                     </span>
-                    <span className="inline-flex items-center gap-1 rounded-full bg-accent/15 px-2.5 py-0.5 text-[11px] font-bold text-accent-text">
-                      <Clock size={11} /> {formatTime(elapsed)}
+                    <span className="inline-flex items-center gap-1.5 border border-rule px-2.5 py-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-accent-text">
+                      <Clock size={11} /> <span className="tnum">{formatTime(elapsed)}</span>
                     </span>
                   </div>
                 )}
@@ -612,11 +614,11 @@ export default function HoopRankGame({ players }: { players: HoopRankPlayer[] })
             {Array.from({ length: ROUNDS }).map((_, i) => (
               <div
                 key={i}
-                className={`flex-1 h-2 rounded-full transition-all ${
+                className={`flex-1 h-2 transition-colors ${
                   i < currentRound
-                    ? "bg-amber-500"
+                    ? "bg-accent"
                     : i === currentRound
-                    ? "bg-amber-500/50"
+                    ? "bg-accent/40"
                     : "bg-input"
                 }`}
               />
@@ -631,11 +633,11 @@ export default function HoopRankGame({ players }: { players: HoopRankPlayer[] })
         <>
           {/* Category */}
           <div className="text-center">
-            <span className="inline-block rounded-full bg-amber-500/15 px-4 py-1.5 text-sm font-bold text-amber-400">
+            <span className="kicker inline-block border border-rule px-4 py-1.5 text-accent-text">
               Classe du plus haut au plus bas : {round.category.label}
             </span>
             {phase === "ordering" && (
-              <p className="mt-2 text-[11px] text-text-faint sm:hidden">
+              <p className="mt-2 font-mono text-[11px] uppercase tracking-wider text-text-faint sm:hidden">
                 Glisse la poignée ⋮⋮ ou utilise les flèches ▲▼ pour classer
               </p>
             )}
@@ -658,18 +660,18 @@ export default function HoopRankGame({ players }: { players: HoopRankPlayer[] })
               return (
                 <div
                   key={playerId}
-                  className={`flex items-center gap-2 sm:gap-3 rounded-xl border p-3 ${
+                  className={`flex items-center gap-2 sm:gap-3 border p-3 ${
                     phase === "ordering" ? "select-none" : ""
                   } ${
-                    isDragged ? "" : "transition-all duration-300"
+                    isDragged ? "" : "transition-colors duration-300"
                   } ${
                     isRevealed && score !== null
                       ? scoreColor(score)
                       : isCurrentReveal
-                      ? "border-amber-500/50 bg-amber-500/5"
+                      ? "border-accent bg-accent-light"
                       : isDragged
-                      ? "border-amber-500/40 bg-amber-500/5"
-                      : "border-border-t bg-card"
+                      ? "border-accent bg-accent-light"
+                      : "border-rule bg-card"
                   }`}
                   style={getDragStyle(i)}
                 >
@@ -684,12 +686,12 @@ export default function HoopRankGame({ players }: { players: HoopRankPlayer[] })
                       >
                         <GripVertical size={20} />
                       </button>
-                      <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-input text-xs font-bold text-text-primary">
+                      <span className="tnum flex h-7 w-7 items-center justify-center border border-rule font-mono text-xs font-bold text-text-primary">
                         {i + 1}
                       </span>
                     </div>
                   ) : (
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-input text-sm font-bold text-text-primary">
+                    <span className="tnum flex h-8 w-8 shrink-0 items-center justify-center border border-rule font-mono text-sm font-bold text-text-primary">
                       {i + 1}
                     </span>
                   )}
@@ -698,23 +700,23 @@ export default function HoopRankGame({ players }: { players: HoopRankPlayer[] })
                   <img
                     src={playerPhotoUrl(player.id)}
                     alt=""
-                    className="h-10 w-10 rounded-full object-cover bg-input shrink-0"
+                    className="h-10 w-10 object-cover bg-input shrink-0"
                     onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                   />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-text-primary truncate">{player.name}</p>
                     <div className="flex items-center gap-1.5">
                       <img src={teamLogoUrl(player.team)} alt="" className="h-3.5 w-3.5 object-contain" />
-                      <span className="text-xs text-text-faint">{player.team}</span>
+                      <span className="font-mono text-[11px] uppercase tracking-wider text-text-faint">{player.team}</span>
                     </div>
                   </div>
 
                   {/* Revealed stat */}
                   {isRevealed && stat != null && (
                     <div className="text-right shrink-0">
-                      <p className="text-sm font-bold tabular-nums">{round.category.format(stat)}</p>
+                      <p className="tnum text-sm font-bold">{round.category.format(stat)}</p>
                       {correctIdx !== i && (
-                        <p className="text-[10px] text-text-faint">#{correctIdx + 1} correct</p>
+                        <p className="font-mono text-[10px] uppercase tracking-wider text-text-faint">#<span className="tnum">{correctIdx + 1}</span> correct</p>
                       )}
                     </div>
                   )}
@@ -729,7 +731,7 @@ export default function HoopRankGame({ players }: { players: HoopRankPlayer[] })
                         onClick={() => movePlayer(-1, i)}
                         disabled={i === 0}
                         aria-label="Monter"
-                        className="flex h-8 w-9 items-center justify-center rounded-lg bg-input/60 text-text-muted hover:bg-input hover:text-text-primary disabled:opacity-20 transition-all active:scale-90"
+                        className="flex h-8 w-9 items-center justify-center border border-rule text-text-muted hover:bg-input hover:text-text-primary disabled:opacity-20 transition-colors"
                       >
                         <ChevronUp size={18} />
                       </button>
@@ -737,7 +739,7 @@ export default function HoopRankGame({ players }: { players: HoopRankPlayer[] })
                         onClick={() => movePlayer(1, i)}
                         disabled={i === PLAYERS_PER_ROUND - 1}
                         aria-label="Descendre"
-                        className="flex h-8 w-9 items-center justify-center rounded-lg bg-input/60 text-text-muted hover:bg-input hover:text-text-primary disabled:opacity-20 transition-all active:scale-90"
+                        className="flex h-8 w-9 items-center justify-center border border-rule text-text-muted hover:bg-input hover:text-text-primary disabled:opacity-20 transition-colors"
                       >
                         <ChevronDown size={18} />
                       </button>
@@ -753,7 +755,7 @@ export default function HoopRankGame({ players }: { players: HoopRankPlayer[] })
             <div className="text-center">
               <button
                 onClick={handleValidate}
-                className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-8 py-3 text-sm font-bold text-white transition-all hover:bg-amber-600 hover:scale-[1.03] active:scale-[0.98]"
+                className="inline-flex items-center gap-2 bg-accent px-8 py-3.5 font-mono text-xs font-bold uppercase tracking-widest text-white transition-colors hover:bg-accent-hover"
               >
                 Valider
                 <ArrowRight size={16} />
@@ -763,9 +765,10 @@ export default function HoopRankGame({ players }: { players: HoopRankPlayer[] })
 
           {/* Round score */}
           {phase === "revealing" && revealIndex >= PLAYERS_PER_ROUND && roundScores[currentRound] && (
-            <div className="text-center rounded-xl bg-amber-500/10 border border-amber-500/30 py-4">
-              <p className="text-2xl font-black text-amber-400">{roundScores[currentRound].total}/100</p>
-              <p className="text-xs text-text-muted mt-1">
+            <div className="relative overflow-hidden text-center border border-accent bg-accent-light py-4">
+              <span className="absolute left-0 top-0 bottom-0 w-1 bg-accent" />
+              <p className="tnum font-display text-3xl text-accent-text">{roundScores[currentRound].total}/100</p>
+              <p className="font-mono text-[11px] uppercase tracking-wider text-text-muted mt-1">
                 {currentRound + 1 < rounds.length ? "Manche suivante..." : "Résultat final..."}
               </p>
             </div>
@@ -776,23 +779,25 @@ export default function HoopRankGame({ players }: { players: HoopRankPlayer[] })
       {/* Game over */}
       {phase === "gameover" && loaded && (
         <>
-          <div className={`rounded-2xl overflow-hidden border p-5 sm:p-6 ${
+          <div className={`relative overflow-hidden border p-5 sm:p-6 ${
             totalScore >= 400
-              ? "border-emerald-500/30 bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-card"
+              ? "border-emerald-500/40 bg-emerald-500/5"
               : totalScore >= 250
-              ? "border-amber-500/30 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-card"
-              : "border-red-500/30 bg-gradient-to-r from-red-500/10 via-red-500/5 to-card"
+              ? "border-accent bg-accent-light"
+              : "border-red-500/40 bg-red-500/5"
           }`}>
+            <span className={`absolute left-0 top-0 bottom-0 w-1 ${
+              totalScore >= 400 ? "bg-emerald-500" : totalScore >= 250 ? "bg-accent" : "bg-red-500"
+            }`} />
             <div className="text-center space-y-3">
-              <p className={`text-xs font-bold uppercase tracking-wider ${
-                totalScore >= 400 ? "text-emerald-400" : totalScore >= 250 ? "text-amber-400" : "text-red-400"
+              <p className={`kicker ${
+                totalScore >= 400 ? "text-emerald-400" : totalScore >= 250 ? "text-accent-text" : "text-red-400"
               }`}>
                 {totalScore >= 450 ? "Parfait !" : totalScore >= 400 ? "Excellent !" : totalScore >= 250 ? "Pas mal !" : "Peut mieux faire"}
               </p>
-              <div className="flex items-center justify-center gap-2">
-                <Trophy size={28} className="text-amber-400" />
-                <span className="text-4xl sm:text-5xl font-black text-text-primary">{totalScore}</span>
-                <span className="text-xl text-text-faint font-bold">/500</span>
+              <div className="flex items-baseline justify-center gap-2">
+                <span className="tnum font-display text-5xl sm:text-6xl text-text-primary">{totalScore}</span>
+                <span className="font-display text-xl text-text-faint">/500</span>
               </div>
 
               {/* Round breakdown */}
@@ -800,19 +805,19 @@ export default function HoopRankGame({ players }: { players: HoopRankPlayer[] })
                 {roundScores.map((r, i) => (
                   <span
                     key={i}
-                    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
-                      r.total >= 80 ? "bg-emerald-500/15 text-emerald-400"
-                      : r.total >= 50 ? "bg-amber-500/15 text-amber-400"
-                      : "bg-red-500/15 text-red-400"
+                    className={`inline-flex items-center gap-1 border px-2.5 py-0.5 font-mono text-[11px] font-bold uppercase tracking-wider ${
+                      r.total >= 80 ? "border-emerald-500/40 text-emerald-400"
+                      : r.total >= 50 ? "border-accent text-accent-text"
+                      : "border-red-500/40 text-red-400"
                     }`}
                   >
-                    R{i + 1}: {r.total}
+                    R{i + 1}: <span className="tnum">{r.total}</span>
                   </span>
                 ))}
               </div>
 
-              <div className="flex items-center justify-center gap-4 text-xs text-text-faint">
-                <span className="flex items-center gap-1"><Clock size={12} /> {formatTime(elapsed)}</span>
+              <div className="flex items-center justify-center gap-4 font-mono text-[11px] uppercase tracking-wider text-text-faint">
+                <span className="flex items-center gap-1"><Clock size={12} /> <span className="tnum">{formatTime(elapsed)}</span></span>
               </div>
             </div>
           </div>
@@ -821,14 +826,14 @@ export default function HoopRankGame({ players }: { players: HoopRankPlayer[] })
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2 sm:gap-3">
             <button
               onClick={handleShare}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1DA1F2] px-5 py-3 text-sm font-bold text-white transition-all hover:bg-[#1a8cd8] hover:scale-[1.03] active:scale-[0.98]"
+              className="inline-flex items-center justify-center gap-2 bg-accent px-6 py-3.5 font-mono text-xs font-bold uppercase tracking-widest text-white transition-colors hover:bg-accent-hover"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
               Partager
             </button>
             <button
               onClick={handleCopy}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-input border border-border-t px-5 py-3 text-sm font-bold text-text-primary transition-all hover:bg-card-hover hover:scale-[1.03] active:scale-[0.98]"
+              className="inline-flex items-center justify-center gap-2 border border-border-hover px-6 py-3.5 font-mono text-xs font-bold uppercase tracking-widest text-text-primary transition-colors hover:bg-input"
             >
               {copied ? <><Check size={14} className="text-emerald-400" /> Copié !</> : "Copier"}
             </button>
@@ -840,33 +845,34 @@ export default function HoopRankGame({ players }: { players: HoopRankPlayer[] })
       {leaderboard.length > 0 && (() => {
         const rows = computeVisibleLeaderboard(leaderboard, userId);
         return (
-          <div className="rounded-2xl bg-card border border-border-t overflow-hidden">
-            <div className="px-4 py-3 border-b border-border-t">
-              <h2 className="text-sm font-bold text-text-primary flex items-center gap-2">
-                <Trophy size={16} className="text-accent-text" />
+          <div className="border border-rule bg-card overflow-hidden">
+            <div className="px-4 py-3 border-b border-rule">
+              <h2 className="kicker text-text-faint flex items-center gap-2">
+                <Trophy size={14} className="text-accent-text" />
                 Classement du jour
               </h2>
             </div>
-            <div className="divide-y divide-border-t/30">
+            <div className="divide-y divide-rule/60">
               {rows.map((row, i) =>
                 row.type === "separator" ? (
                   <div key="sep" className="flex items-center gap-3 px-4 py-1.5">
-                    <div className="flex-1 border-t border-dashed border-border-t" />
+                    <div className="flex-1 border-t border-dashed border-rule" />
                     <span className="text-[10px] text-text-faint">...</span>
-                    <div className="flex-1 border-t border-dashed border-border-t" />
+                    <div className="flex-1 border-t border-dashed border-rule" />
                   </div>
                 ) : (
-                  <div key={`${row.entry.display_name}-${row.rank}`} className={`flex items-center gap-3 px-4 py-2.5 ${row.isUser ? "bg-accent/10 border-l-2 border-l-accent" : ""}`}>
-                    <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[11px] font-bold ${
-                      row.rank === 1 ? "bg-accent/20 text-accent-text" : row.rank <= 3 ? "bg-input text-text-primary" : "text-text-faint"
+                  <div key={`${row.entry.display_name}-${row.rank}`} className={`flex items-center gap-3 px-4 py-2.5 ${row.isUser ? "relative bg-accent-light" : ""}`}>
+                    {row.isUser && <span className="absolute left-0 top-0 bottom-0 w-1 bg-accent" />}
+                    <span className={`tnum flex h-6 w-6 shrink-0 items-center justify-center font-mono text-[11px] font-bold ${
+                      row.rank === 1 ? "bg-accent text-white" : row.rank <= 3 ? "border border-rule text-text-primary" : "text-text-faint"
                     }`}>
                       {row.rank}
                     </span>
                     <span className={`flex-1 text-sm truncate ${row.isUser ? "font-bold text-accent-text" : isAnonymousName(row.entry.display_name) ? "italic text-text-muted" : "font-medium text-text-primary"}`}>
                       {row.entry.display_name}{row.isUser ? " (toi)" : ""}
                     </span>
-                    <span className="text-xs text-text-muted tabular-nums font-bold">{row.entry.score}/500</span>
-                    <span className="text-xs text-text-faint tabular-nums w-12 text-right">{formatTime(row.entry.time_seconds)}</span>
+                    <span className="tnum text-xs text-text-muted font-bold">{row.entry.score}/500</span>
+                    <span className="tnum text-xs text-text-faint w-12 text-right">{formatTime(row.entry.time_seconds)}</span>
                   </div>
                 )
               )}
@@ -878,18 +884,18 @@ export default function HoopRankGame({ players }: { players: HoopRankPlayer[] })
       <SignupBanner show={submitted} />
 
       {/* Legend */}
-      <div className="flex flex-wrap items-center justify-center gap-4 text-[11px] text-text-faint pb-4">
+      <div className="flex flex-wrap items-center justify-center gap-4 font-mono text-[11px] uppercase tracking-wider text-text-faint pb-4">
         <div className="flex items-center gap-1.5">
-          <div className="h-3 w-3 rounded bg-emerald-500/30" />
-          Position correcte (20 pts)
+          <div className="h-3 w-3 bg-emerald-500/40" />
+          Position correcte (<span className="tnum">20</span> pts)
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="h-3 w-3 rounded bg-amber-500/30" />
-          Décalage de 1 (10 pts)
+          <div className="h-3 w-3 bg-accent" />
+          Décalage de <span className="tnum">1</span> (<span className="tnum">10</span> pts)
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="h-3 w-3 rounded bg-red-500/30" />
-          Décalage de 2+ (0 pts)
+          <div className="h-3 w-3 bg-red-500/40" />
+          Décalage de <span className="tnum">2</span>+ (<span className="tnum">0</span> pts)
         </div>
       </div>
     </div>

@@ -85,11 +85,11 @@ export default async function MatchPage({ params }: PageProps) {
   if (uniquePlayers.length === 0) {
     return (
       <div className="mx-auto max-w-6xl space-y-8">
-        <Link href="/calendrier" className="inline-flex items-center gap-2 text-sm text-text-muted hover:text-text-primary transition-colors">
+        <Link href="/calendrier" className="inline-flex items-center gap-2 font-mono text-[11px] font-semibold uppercase tracking-wider text-text-muted hover:text-text-primary transition-colors">
           <ArrowLeft size={16} />
           Retour au calendrier
         </Link>
-        <div className="rounded-2xl bg-card border border-border-t p-12 text-center">
+        <div className="border border-rule bg-card p-12 text-center">
           <p className="text-text-muted">Aucune donnée disponible pour ce match.</p>
           <p className="text-xs text-text-faint mt-2">Le match n&apos;a peut-être pas encore eu lieu ou les données ne sont pas disponibles.</p>
         </div>

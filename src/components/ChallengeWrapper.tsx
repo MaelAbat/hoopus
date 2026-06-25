@@ -100,9 +100,10 @@ export default function ChallengeWrapper({
     <ChallengeContext.Provider value={{ reportCompletion, isChallenge, challengeDate }}>
       {/* Challenge banner when playing from a challenge link */}
       {isChallenge && !myResult && (
-        <div className="mb-4 flex items-center gap-3 rounded-xl border border-accent/20 bg-accent/5 px-4 py-3">
-          <Swords size={18} className="text-accent-text shrink-0" />
-          <p className="text-sm font-medium text-text-muted">
+        <div className="relative mb-4 flex items-center gap-3 overflow-hidden border border-rule bg-card px-4 py-3">
+          <span className="absolute left-0 top-0 bottom-0 w-1 bg-accent" />
+          <Swords size={18} className="shrink-0 text-accent-text" />
+          <p className="text-sm text-text-muted">
             Vous avez été défié ! Terminez la partie pour comparer vos résultats.
           </p>
         </div>

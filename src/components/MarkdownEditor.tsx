@@ -74,15 +74,15 @@ export default function MarkdownEditor({ name, defaultValue = "", placeholder, r
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-1">
-        <label className="block text-sm font-medium text-text-secondary">Contenu</label>
+      <div className="flex items-center justify-between mb-2">
+        <label className="kicker block text-text-faint">Contenu</label>
         <button
           type="button"
           onClick={() => setPreview(!preview)}
-          className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium transition-all ${
+          className={`inline-flex items-center gap-1.5 border px-2.5 py-1 font-mono text-[11px] font-bold uppercase tracking-wider transition-colors ${
             preview
-              ? "bg-accent/10 text-accent"
-              : "text-text-muted hover:text-text-primary"
+              ? "border-accent bg-accent-light text-accent"
+              : "border-rule text-text-muted hover:border-border-hover hover:text-text-primary"
           }`}
         >
           {preview ? <Edit3 size={12} /> : <Eye size={12} />}
@@ -92,13 +92,13 @@ export default function MarkdownEditor({ name, defaultValue = "", placeholder, r
 
       {/* Toolbar */}
       {!preview && (
-        <div className="flex flex-wrap items-center gap-0.5 rounded-t-xl border border-b-0 border-border-t bg-input/50 px-2 py-1.5">
+        <div className="flex flex-wrap items-center gap-0.5 border border-b-0 border-rule bg-input/50 px-2 py-1.5">
           {ACTIONS.map((action, i) => (
             <button
               key={i}
               type="button"
               onClick={() => applyAction(action)}
-              className="rounded-md p-1.5 text-text-muted hover:bg-card hover:text-text-primary transition-colors"
+              className="p-1.5 text-text-muted transition-colors hover:bg-input hover:text-text-primary"
               title={action.label}
             >
               {action.icon}
@@ -108,11 +108,11 @@ export default function MarkdownEditor({ name, defaultValue = "", placeholder, r
       )}
 
       {preview ? (
-        <div className="min-h-[200px] rounded-xl border border-border-t bg-input/30 p-4 sm:p-6">
+        <div className="min-h-[200px] border border-rule bg-input/30 p-4 sm:p-6">
           {value ? (
             <MarkdownContent content={value} />
           ) : (
-            <p className="text-sm text-text-faint italic">Rien a afficher</p>
+            <p className="text-sm italic text-text-faint">Rien a afficher</p>
           )}
         </div>
       ) : (
@@ -122,14 +122,12 @@ export default function MarkdownEditor({ name, defaultValue = "", placeholder, r
           value={value}
           onChange={(e) => setValue(e.target.value)}
           rows={rows}
-          className={`w-full bg-input border border-border-t px-4 py-3 text-sm text-text-primary placeholder-text-faint focus:border-accent/50 focus:outline-none transition-colors resize-y font-mono ${
-            ACTIONS.length > 0 ? "rounded-b-xl" : "rounded-xl"
-          }`}
+          className="w-full resize-y border border-rule bg-input px-4 py-3 font-mono text-sm text-text-primary placeholder-text-faint transition-colors focus:border-accent focus:outline-none"
           placeholder={placeholder || "Ecrivez en Markdown...\n\n## Titre\n**gras** *italique*\n- liste\n> citation"}
         />
       )}
 
-      <p className="mt-1.5 text-[10px] text-text-faint">
+      <p className="mt-1.5 font-mono text-[10px] uppercase tracking-wider text-text-faint">
         Supporte le Markdown : **gras**, *italique*, ## titres, - listes, &gt; citations, [liens](url), ![images](url), ---
       </p>
     </div>

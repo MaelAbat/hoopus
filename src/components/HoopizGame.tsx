@@ -112,22 +112,23 @@ function LeaderboardSection({ quizId, mode, label, userId }: { quizId: string; m
 
   return (
     <div>
-      <h3 className="text-xs font-bold text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1.5">
+      <h3 className="kicker text-text-faint mb-2 flex items-center gap-1.5">
         {mode === "ordered" ? <ListOrdered size={12} /> : <List size={12} />}
         {label}
       </h3>
-      <div className="divide-y divide-border-t/30">
+      <div className="divide-y divide-rule">
         {rows.map((row, i) =>
           row.type === "separator" ? (
             <div key="sep" className="flex items-center gap-3 px-1 py-1.5">
-              <div className="flex-1 border-t border-dashed border-border-t" />
+              <div className="flex-1 border-t border-dashed border-rule" />
               <span className="text-[10px] text-text-faint">...</span>
-              <div className="flex-1 border-t border-dashed border-border-t" />
+              <div className="flex-1 border-t border-dashed border-rule" />
             </div>
           ) : (
-            <div key={`${row.entry.display_name}-${row.rank}`} className={`flex items-center gap-3 px-1 py-2 ${row.isUser ? "bg-accent/10 border-l-2 border-l-accent" : ""}`}>
-              <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[11px] font-bold ${
-                row.rank === 1 ? "bg-accent/20 text-accent-text"
+            <div key={`${row.entry.display_name}-${row.rank}`} className={`relative flex items-center gap-3 px-2 py-2 ${row.isUser ? "bg-accent-light" : ""}`}>
+              {row.isUser && <span className="absolute left-0 top-0 bottom-0 w-1 bg-accent" />}
+              <span className={`tnum flex h-6 w-6 shrink-0 items-center justify-center text-[11px] font-bold ${
+                row.rank === 1 ? "bg-accent text-white"
                 : row.rank <= 3 ? "bg-input text-text-primary"
                 : "text-text-faint"
               }`}>
@@ -136,8 +137,8 @@ function LeaderboardSection({ quizId, mode, label, userId }: { quizId: string; m
               <span className={`flex-1 text-sm truncate ${row.isUser ? "font-bold text-accent-text" : isAnonymousName(row.entry.display_name) ? "italic text-text-muted" : "font-medium text-text-primary"}`}>
                 {row.entry.display_name}{row.isUser ? " (toi)" : ""}
               </span>
-              <span className="text-xs text-text-muted tabular-nums">{row.entry.found_count}/{row.entry.total_count}</span>
-              <span className="text-xs text-text-faint tabular-nums w-14 text-right">{formatTimeShort(row.entry.time_seconds)}</span>
+              <span className="tnum text-xs text-text-muted">{row.entry.found_count}/{row.entry.total_count}</span>
+              <span className="tnum text-xs text-text-faint w-14 text-right">{formatTimeShort(row.entry.time_seconds)}</span>
             </div>
           )
         )}
@@ -369,8 +370,8 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
     setSubmitted(false);
   }
 
-  const timerColor = timeLeft <= 30 ? "text-red-400" : timeLeft <= 60 ? "text-orange-400" : "text-text-primary";
-  const timerBg = timeLeft <= 30 ? "bg-red-500/15" : timeLeft <= 60 ? "bg-orange-500/10" : "bg-input";
+  const timerColor = timeLeft <= 30 ? "text-red-500" : timeLeft <= 60 ? "text-text-primary" : "text-text-primary";
+  const timerBg = timeLeft <= 30 ? "bg-red-500/10 border border-red-500/40" : timeLeft <= 60 ? "bg-input border border-border-hover" : "bg-input border border-rule";
   const progress = total > 0 ? (found.size / total) * 100 : 0;
 
   const displayAnswer = (entry: typeof quiz.entries[0]) => {
@@ -384,7 +385,7 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
       ? `Abandon ! ${found.size}/${total}`
       : `Temps écoulé ! ${found.size}/${total}`;
 
-  const resultColor = won ? "text-emerald-400" : "text-red-400";
+  const resultColor = won ? "text-accent-text" : "text-red-500";
   const ResultIcon = won ? Trophy : XCircle;
   const [copied, setCopied] = useState(false);
 
@@ -417,14 +418,14 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
       {inProgress ? (
         <button
           onClick={() => setShowLeaveModal(true)}
-          className="inline-flex items-center gap-2 sm:gap-1.5 rounded-lg bg-input px-4 py-2.5 text-sm sm:px-3 sm:py-1.5 sm:text-xs font-medium text-text-muted hover:text-text-primary hover:bg-card-hover transition-colors"
+          className="inline-flex items-center gap-2 sm:gap-1.5 border border-rule bg-card px-4 py-2.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-text-muted hover:border-border-hover hover:text-text-primary transition-colors"
         >
           <ArrowLeft size={12} /> Tous les quiz
         </button>
       ) : (
         <Link
           href="/mini-jeux/hoopiz"
-          className="inline-flex items-center gap-2 sm:gap-1.5 rounded-lg bg-input px-4 py-2.5 text-sm sm:px-3 sm:py-1.5 sm:text-xs font-medium text-text-muted hover:text-text-primary hover:bg-card-hover transition-colors"
+          className="inline-flex items-center gap-2 sm:gap-1.5 border border-rule bg-card px-4 py-2.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-text-muted hover:border-border-hover hover:text-text-primary transition-colors"
         >
           <ArrowLeft size={12} /> Tous les quiz
         </Link>
@@ -432,20 +433,20 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
 
       {/* Leave confirmation modal */}
       {showLeaveModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowLeaveModal(false)}>
-          <div className="mx-4 w-full max-w-sm rounded-2xl bg-card border border-border-t p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-bold text-text-primary">Quitter le quiz ?</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowLeaveModal(false)}>
+          <div className="mx-4 w-full max-w-sm bg-card border border-rule p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-display text-xl text-text-primary">Quitter le quiz ?</h3>
             <p className="text-sm text-text-muted">Ta progression sera perdue si tu quittes maintenant.</p>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowLeaveModal(false)}
-                className="flex-1 rounded-xl bg-input border border-border-t px-4 py-2.5 text-sm font-semibold text-text-primary hover:bg-card-hover transition-colors"
+                className="flex-1 border border-border-hover px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-widest text-text-primary hover:bg-input transition-colors"
               >
                 Continuer
               </button>
               <Link
                 href="/mini-jeux/hoopiz"
-                className="flex-1 rounded-xl bg-red-500/15 border border-red-500/30 px-4 py-2.5 text-sm font-semibold text-red-400 hover:bg-red-500/25 transition-colors text-center"
+                className="flex-1 border border-red-500/40 bg-red-500/10 px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-widest text-red-500 hover:bg-red-500/20 transition-colors text-center"
               >
                 Abandonner
               </Link>
@@ -457,36 +458,36 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
       {/* Header */}
       <div className="text-center space-y-3">
         {quiz.imageUrl && (
-          <div className="mx-auto h-36 sm:h-44 w-full max-w-md overflow-hidden rounded-2xl border border-border-t">
-            <img src={quiz.imageUrl} alt={quiz.title} className="h-full w-full object-cover" style={{ objectPosition: `center ${quiz.imagePosition || "center"}` }} />
+          <div className="mx-auto h-36 sm:h-44 w-full max-w-md overflow-hidden border border-rule">
+            <img src={quiz.imageUrl} alt={quiz.title} className="h-full w-full object-cover grayscale" style={{ objectPosition: `center ${quiz.imagePosition || "center"}` }} />
           </div>
         )}
-        <div className="flex items-center justify-center gap-2">
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-text-primary tracking-tight">
+        <div className="flex items-center justify-center gap-2.5">
+          <h1 className="font-display text-3xl sm:text-4xl text-text-primary">
             Hoop<span className="text-accent">iz</span>
           </h1>
           {activeMode === "ordered" && (
-            <span className="rounded-full bg-orange-500/15 px-2.5 py-0.5 text-[10px] font-bold text-orange-400 uppercase tracking-wider">
+            <span className="border border-rule px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-text-muted">
               Dans l&apos;ordre
             </span>
           )}
         </div>
         <p className="text-sm text-text-muted">{quiz.description}</p>
         {bestScore !== null && !started && (
-          <p className="text-xs font-bold text-accent-text">
-            <Trophy size={12} className="inline -mt-0.5 mr-1" />
-            Record a battre : {bestScore}/{total}
+          <p className="inline-flex items-center gap-1 font-mono text-[11px] font-bold uppercase tracking-wider text-accent-text">
+            <Trophy size={12} />
+            Record à battre : <span className="tnum">{bestScore}/{total}</span>
           </p>
         )}
 
         {/* Mode selector */}
         <div className="flex justify-center">
-          <div className="flex rounded-lg bg-input p-0.5">
+          <div className="flex border border-rule bg-card">
             <button
               onClick={() => switchMode("unordered")}
               disabled={started && !finished}
-              className={`flex items-center gap-1.5 rounded-md px-4 py-2 text-xs font-medium transition-all ${
-                activeMode === "unordered" ? "bg-card text-text-primary shadow-sm" : "text-text-muted"
+              className={`flex items-center gap-1.5 px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-wider transition-colors ${
+                activeMode === "unordered" ? "bg-accent text-white" : "text-text-muted hover:text-text-primary"
               } ${started && !finished ? "cursor-not-allowed" : ""}`}
             >
               <List size={14} /> Désordre
@@ -494,8 +495,8 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
             <button
               onClick={() => switchMode("ordered")}
               disabled={started && !finished}
-              className={`flex items-center gap-1.5 rounded-md px-4 py-2 text-xs font-medium transition-all ${
-                activeMode === "ordered" ? "bg-card text-text-primary shadow-sm" : "text-text-muted"
+              className={`flex items-center gap-1.5 px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-wider transition-colors ${
+                activeMode === "ordered" ? "bg-accent text-white" : "text-text-muted hover:text-text-primary"
               } ${started && !finished ? "cursor-not-allowed" : ""}`}
             >
               <ListOrdered size={14} /> Dans l&apos;ordre
@@ -505,26 +506,25 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
       </div>
 
       {/* Score bar */}
-      <div className="rounded-2xl bg-card border border-border-t p-4 space-y-3">
+      <div className="bg-card border border-rule p-4 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5">
-              <CheckCircle size={16} className="text-emerald-400" />
-              <span className="text-lg font-bold text-text-primary tabular-nums">{found.size}</span>
-              <span className="text-sm text-text-faint">/ {total}</span>
+            <div className="flex items-baseline gap-1.5">
+              <span className="tnum font-display text-2xl text-text-primary">{found.size}</span>
+              <span className="tnum text-sm text-text-faint">/ {total}</span>
             </div>
-            <span className="text-xs text-text-faint">({Math.round(progress)}%)</span>
+            <span className="tnum kicker text-text-faint">{Math.round(progress)}%</span>
           </div>
 
-          <div className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 ${timerBg}`}>
+          <div className={`flex items-center gap-1.5 px-3 py-1.5 ${timerBg}`}>
             <Clock size={14} className={timerColor} />
-            <span className={`text-sm font-bold tabular-nums ${timerColor}`}>{formatTime(timeLeft)}</span>
+            <span className={`tnum text-sm font-bold ${timerColor}`}>{formatTime(timeLeft)}</span>
           </div>
         </div>
 
-        <div className="h-2 rounded-full bg-input overflow-hidden">
+        <div className="h-1.5 bg-input overflow-hidden">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-accent to-emerald-500 transition-all duration-500"
+            className="h-full bg-accent transition-all duration-500"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -541,7 +541,7 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
                 onFocus={handleStart}
                 placeholder="Tape une réponse..."
                 autoComplete="off"
-                className={`w-full rounded-xl bg-sidebar border border-border-t px-4 py-3 text-sm text-text-primary placeholder:text-text-faint outline-none focus:border-accent transition-all ${
+                className={`w-full bg-input border border-rule px-4 py-3 text-sm text-text-primary placeholder:text-text-faint outline-none focus:border-accent transition-colors ${
                   shake ? "animate-[shake_0.5s_ease-in-out]" : ""
                 }`}
               />
@@ -549,7 +549,7 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
             {started && (
               <button
                 onClick={handleGiveUp}
-                className="shrink-0 inline-flex items-center gap-1.5 rounded-xl bg-red-500/10 border border-red-500/30 px-3.5 py-3 text-xs font-bold text-red-400 hover:bg-red-500/20 active:scale-95 transition-all"
+                className="shrink-0 inline-flex items-center gap-1.5 border border-red-500/40 bg-red-500/10 px-3.5 py-3 text-xs font-bold text-red-500 hover:bg-red-500/20 active:scale-95 transition-all"
                 title="Abandonner"
                 aria-label="Abandonner"
               >
@@ -562,11 +562,11 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <ResultIcon size={20} className={resultColor} />
-                <span className={`text-sm font-bold ${resultColor}`}>{resultMessage}</span>
+                <span className={`font-display text-lg ${resultColor}`}>{resultMessage}</span>
               </div>
               <button
                 onClick={handleRestart}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-sm font-bold text-white hover:bg-accent-hover transition-colors"
+                className="inline-flex items-center gap-1.5 bg-accent px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-widest text-white hover:bg-accent-hover transition-colors"
               >
                 <RotateCcw size={14} /> Rejouer
               </button>
@@ -580,22 +580,22 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2 sm:gap-3">
           <button
             onClick={handleShare}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1DA1F2] px-5 py-3 text-sm font-bold text-white transition-all hover:bg-[#1a8cd8] hover:scale-[1.03] active:scale-[0.98]"
+            className="inline-flex items-center justify-center gap-2 bg-accent px-5 py-3 font-mono text-xs font-bold uppercase tracking-widest text-white transition-colors hover:bg-accent-hover"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
             Partager
           </button>
           <button
             onClick={handleCopy}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-input border border-border-t px-5 py-3 text-sm font-bold text-text-primary transition-all hover:bg-card-hover hover:scale-[1.03] active:scale-[0.98]"
+            className="inline-flex items-center justify-center gap-2 border border-border-hover px-5 py-3 font-mono text-xs font-bold uppercase tracking-widest text-text-primary transition-colors hover:bg-input"
           >
-            {copied ? <><Check size={14} className="text-emerald-400" /> Copié !</> : <><Copy size={14} /> Copier</>}
+            {copied ? <><Check size={14} className="text-accent-text" /> Copié !</> : <><Copy size={14} /> Copier</>}
           </button>
         </div>
       )}
 
       {/* Entries in columns */}
-      <div ref={tableRef} className="rounded-2xl bg-card border border-border-t p-3 sm:p-4 sm:overflow-x-auto">
+      <div ref={tableRef} className="bg-card border border-rule p-3 sm:p-4 sm:overflow-x-auto">
         {(() => {
           const cols: typeof quiz.entries[] = [];
           for (let i = 0; i < quiz.entries.length; i += MAX_PER_COL) {
@@ -619,27 +619,28 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
                       <div
                         key={i}
                         data-row={i}
-                        className={`rounded-lg border p-2.5 min-h-[62px] flex flex-col justify-center transition-all duration-300 ${
+                        className={`relative border p-2.5 min-h-[62px] flex flex-col justify-center transition-colors duration-300 ${
                           isFound
-                            ? "bg-emerald-500/10 border-emerald-500/30"
+                            ? "bg-emerald-500/10 border-emerald-600/40"
                             : isRevealed
-                              ? "bg-red-500/8 border-red-500/20"
+                              ? "bg-red-500/10 border-red-500/30"
                               : isNext
-                                ? "bg-accent/15 border-accent/50 shadow-[0_0_12px_rgba(var(--accent-rgb,249,115,22),0.15)] scale-[1.02]"
-                                : "bg-sidebar border-border-t"
-                        } ${isLast ? "ring-2 ring-emerald-500/40" : ""}`}
+                                ? "bg-accent-light border-accent"
+                                : "bg-input border-rule"
+                        } ${isLast ? "ring-1 ring-emerald-600/50" : ""}`}
                       >
+                        {isNext && <span className="absolute left-0 top-0 bottom-0 w-1 bg-accent" />}
                         <div className="flex items-center justify-between mb-1">
-                          <span className={`text-[10px] font-bold ${isNext ? "text-accent-text" : "text-text-secondary"}`}>{label}</span>
-                          {isFound && <CheckCircle size={11} className="text-emerald-400" />}
-                          {isRevealed && !isFound && <XCircle size={11} className="text-red-400" />}
+                          <span className={`font-mono text-[10px] uppercase tracking-wider ${isNext ? "text-accent-text" : "text-text-secondary"}`}>{label}</span>
+                          {isFound && <CheckCircle size={11} className="text-emerald-600" />}
+                          {isRevealed && !isFound && <XCircle size={11} className="text-red-500" />}
                         </div>
                         {isRevealed ? (
-                          <p className={`text-xs font-bold truncate ${isFound ? "text-emerald-400" : "text-red-400"}`}>
+                          <p className={`text-xs font-bold truncate ${isFound ? "text-emerald-600" : "text-red-500"}`}>
                             {displayAnswer(entry)}
                           </p>
                         ) : (
-                          <div className="h-[18px] w-full rounded bg-input border border-dashed border-border-t flex items-center justify-center">
+                          <div className="h-[18px] w-full bg-card border border-dashed border-rule flex items-center justify-center">
                             <span className="text-[10px] text-text-faint select-none">?</span>
                           </div>
                         )}
@@ -654,10 +655,11 @@ export default function HoopizGame({ quiz }: { quiz: Quiz }) {
       </div>
 
       {/* Leaderboards */}
-      <div className="rounded-2xl bg-card border border-border-t overflow-hidden">
-        <div className="px-4 py-3 border-b border-border-t">
-          <h2 className="text-sm font-bold text-text-primary flex items-center gap-2">
-            <Trophy size={16} className="text-accent-text" />
+      <div className="bg-card border border-rule overflow-hidden">
+        <div className="px-4 py-3 border-b border-rule flex items-center gap-2.5">
+          <span className="block h-3 w-1 bg-accent shrink-0" />
+          <h2 className="kicker text-text-primary flex items-center gap-2">
+            <Trophy size={14} className="text-accent-text" />
             Classements
           </h2>
         </div>

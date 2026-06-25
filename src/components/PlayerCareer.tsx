@@ -245,20 +245,20 @@ export default function PlayerCareer({ seasons }: { seasons: SeasonStats[] }) {
   return (
     <div className="space-y-6">
       {/* Teams timeline */}
-      <div className="rounded-2xl bg-card border border-border-t p-6">
-        <h2 className="mb-4 text-lg font-bold text-text-primary">Équipes</h2>
-        <div className="space-y-2">
+      <div className="bg-card border border-rule p-6 sm:p-8">
+        <h2 className="mb-4 font-display text-2xl text-text-primary sm:text-3xl">Équipes</h2>
+        <div className="divide-y divide-rule border-t border-rule">
           {careerTeams.map((t, i) => {
             const logoUrl = teamLogoUrl(t.team);
             const span = t.first === t.last ? t.first : `${t.first} — ${t.last}`;
             return (
-              <div key={`${t.team}-${i}`} className="flex items-center gap-3 rounded-xl bg-input px-4 py-3">
+              <div key={`${t.team}-${i}`} className="flex items-center gap-3 px-1 py-3 transition-colors hover:bg-card-hover">
                 {logoUrl && <img src={logoUrl} alt={t.team} className="h-6 w-6 object-contain" />}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-text-primary">{t.team}</p>
-                  <p className="text-xs text-text-muted">{span}</p>
+                  <p className="text-sm font-semibold uppercase tracking-wide text-text-primary">{t.team}</p>
+                  <p className="tnum font-mono text-[11px] uppercase tracking-wider text-text-muted">{span}</p>
                 </div>
-                <span className="text-xs text-text-faint">
+                <span className="tnum font-mono text-[11px] uppercase tracking-wider text-text-faint">
                   {t.count} saison{t.count > 1 ? "s" : ""}
                 </span>
               </div>
@@ -268,19 +268,19 @@ export default function PlayerCareer({ seasons }: { seasons: SeasonStats[] }) {
       </div>
 
       {/* Career stats table */}
-      <div className="rounded-2xl bg-card border border-border-t overflow-hidden">
-        <div className="flex flex-col gap-3 border-b border-border-t px-4 sm:px-6 py-4">
-          <h2 className="text-lg font-bold text-text-primary">Statistiques de carrière</h2>
-          <div ref={tabsRef} className="flex rounded-lg bg-input p-0.5 overflow-x-auto no-scrollbar">
+      <div className="bg-card border border-rule overflow-hidden">
+        <div className="flex flex-col gap-3 border-b border-rule px-4 sm:px-6 py-4">
+          <h2 className="font-display text-2xl text-text-primary sm:text-3xl">Statistiques de carrière</h2>
+          <div ref={tabsRef} className="flex gap-1 overflow-x-auto no-scrollbar">
             {GROUPS.map((g) => (
               <button
                 key={g.id}
                 onClick={() => setActiveGroup(g.id)}
                 {...(activeGroup === g.id ? { "data-active-tab": true } : {})}
-                className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap ${
+                className={`border px-3 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-wider transition-colors whitespace-nowrap ${
                   activeGroup === g.id
-                    ? "bg-card text-text-primary shadow-sm"
-                    : "text-text-muted hover:text-text-primary"
+                    ? "border-accent bg-accent text-white"
+                    : "border-rule text-text-muted hover:border-border-hover hover:text-text-primary"
                 }`}
               >
                 {g.label}
@@ -288,17 +288,17 @@ export default function PlayerCareer({ seasons }: { seasons: SeasonStats[] }) {
             ))}
           </div>
           {group.description && (
-            <p className="text-[11px] text-text-faint">{group.description}</p>
+            <p className="font-mono text-[11px] uppercase tracking-wider text-text-faint">{group.description}</p>
           )}
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="sticky top-0 z-10 bg-card">
-              <tr className="border-b border-border-t text-text-muted">
-                <th className="sticky left-0 z-20 bg-card px-3 sm:px-4 py-3 text-left font-medium whitespace-nowrap">Saison</th>
-                <th className="px-3 sm:px-4 py-3 text-left font-medium">Équipe</th>
+              <tr className="border-b border-rule">
+                <th className="kicker sticky left-0 z-20 bg-card px-3 sm:px-4 py-3 text-left text-text-faint whitespace-nowrap">Saison</th>
+                <th className="kicker px-3 sm:px-4 py-3 text-left text-text-faint">Équipe</th>
                 {group.columns.map((col) => (
-                  <th key={col.key} className="px-2 sm:px-3 py-3 text-center font-medium whitespace-nowrap">
+                  <th key={col.key} className="kicker px-2 sm:px-3 py-3 text-right text-text-faint whitespace-nowrap">
                     {col.label}
                   </th>
                 ))}
@@ -309,12 +309,12 @@ export default function PlayerCareer({ seasons }: { seasons: SeasonStats[] }) {
                 const isTot = s.team === "TOT";
                 const logoUrl = isTot ? "" : teamLogoUrl(s.team);
                 return (
-                  <tr key={`${s.season}-${s.team}-${i}`} className={`border-b border-border-t/50 transition-colors hover:bg-card-hover ${isTot ? "bg-input/50" : ""}`}>
-                    <td className="sticky left-0 z-10 bg-card px-3 sm:px-4 py-2.5 text-text-secondary font-medium whitespace-nowrap">{s.season}</td>
+                  <tr key={`${s.season}-${s.team}-${i}`} className={`border-b border-rule transition-colors hover:bg-card-hover ${isTot ? "bg-input/50" : ""}`}>
+                    <td className="tnum sticky left-0 z-10 bg-card px-3 sm:px-4 py-2.5 text-text-secondary font-medium whitespace-nowrap">{s.season}</td>
                     <td className="px-3 sm:px-4 py-2.5">
                       <div className="flex items-center gap-2">
                         {logoUrl && <img src={logoUrl} alt={s.team} className="h-4 w-4 object-contain" />}
-                        <span className={`font-medium ${isTot ? "text-text-muted italic" : "text-text-primary"}`}>
+                        <span className={`font-medium uppercase tracking-wide ${isTot ? "text-text-muted italic" : "text-text-primary"}`}>
                           {isTot ? "Total" : s.team}
                         </span>
                       </div>
@@ -324,7 +324,7 @@ export default function PlayerCareer({ seasons }: { seasons: SeasonStats[] }) {
                       return (
                         <td
                           key={col.key}
-                          className={`px-2 sm:px-3 py-2.5 text-center whitespace-nowrap ${
+                          className={`tnum px-2 sm:px-3 py-2.5 text-right whitespace-nowrap ${
                             col.bold ? "font-semibold text-text-primary" : netClass(val, col.format)
                           }`}
                         >
@@ -342,9 +342,9 @@ export default function PlayerCareer({ seasons }: { seasons: SeasonStats[] }) {
                 if (real.length === 0) return null;
                 const totalGP = real.reduce((sum, s) => sum + s.gp, 0);
                 return (
-                  <tr className="border-t-2 border-accent/30 bg-card font-semibold">
-                    <td className="sticky left-0 z-10 bg-card px-3 sm:px-4 py-3 text-accent-text whitespace-nowrap">Carrière</td>
-                    <td className="px-3 sm:px-4 py-3 text-accent-text text-xs">{real.length} saisons</td>
+                  <tr className="border-t-2 border-accent bg-card font-semibold">
+                    <td className="kicker sticky left-0 z-10 bg-card px-3 sm:px-4 py-3 text-accent-text whitespace-nowrap">Carrière</td>
+                    <td className="tnum px-3 sm:px-4 py-3 font-mono text-[11px] uppercase tracking-wider text-accent-text">{real.length} saisons</td>
                     {group.columns.map((col) => {
                       let avg: number;
                       if (col.compute) {
@@ -379,7 +379,7 @@ export default function PlayerCareer({ seasons }: { seasons: SeasonStats[] }) {
                       return (
                         <td
                           key={col.key}
-                          className={`px-2 sm:px-3 py-3 text-center whitespace-nowrap ${
+                          className={`tnum px-2 sm:px-3 py-3 text-right whitespace-nowrap ${
                             col.bold ? "text-accent-text" : netClass(avg, col.format)
                           }`}
                         >

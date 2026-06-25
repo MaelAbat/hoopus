@@ -57,70 +57,71 @@ export default function ChallengeResult({
       : "Égalité parfaite !";
 
   const verdictClass = winner === "me"
-    ? "text-emerald-400"
+    ? "text-emerald-500"
     : winner === "challenger"
-      ? "text-red-400"
-      : "text-amber-400";
+      ? "text-red-500"
+      : "text-accent-text";
 
   return (
-    <div className="rounded-2xl border border-border-t bg-card p-5 space-y-4">
+    <div className="relative overflow-hidden border border-rule bg-card p-6 sm:p-8 space-y-5">
+      <span className="absolute left-0 top-0 bottom-0 w-1 bg-accent" />
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/15">
+        <div className="flex h-11 w-11 items-center justify-center border border-rule bg-input">
           <Swords size={20} className="text-accent-text" />
         </div>
         <div>
-          <h3 className="text-base font-extrabold text-text-primary">Résultat du défi</h3>
-          <p className={`text-sm font-bold ${verdictClass}`}>{verdictText}</p>
+          <p className="kicker text-text-faint">Résultat du défi</p>
+          <p className={`font-display text-2xl leading-none ${verdictClass}`}>{verdictText}</p>
         </div>
       </div>
 
-      {/* Side-by-side comparison */}
-      <div className="grid grid-cols-3 gap-3 text-center text-sm">
+      {/* Side-by-side comparison — mini box-score */}
+      <div className="grid grid-cols-3 gap-px border border-rule bg-rule text-center">
         {/* Header row */}
-        <div className="text-xs font-bold text-text-faint uppercase tracking-wide">Défi</div>
-        <div />
-        <div className="text-xs font-bold text-text-faint uppercase tracking-wide">Vous</div>
+        <div className="kicker bg-card px-3 py-2 text-text-faint">Défi</div>
+        <div className="bg-card" />
+        <div className="kicker bg-card px-3 py-2 text-text-faint">Vous</div>
 
         {/* Won status */}
-        <div className={`rounded-lg px-3 py-2 font-bold ${
-          winner === "challenger" ? "bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/30" : challengerWon ? "bg-white/5 text-text-muted" : "bg-red-500/10 text-red-400"
+        <div className={`px-3 py-2.5 font-mono text-xs font-bold uppercase tracking-wider ${
+          winner === "challenger" ? "bg-emerald-600 text-white" : challengerWon ? "bg-card text-text-muted" : "bg-red-600 text-white"
         }`}>
           {challengerWon ? "Gagné" : "Perdu"}
         </div>
-        <div className="flex items-center justify-center">
-          <Trophy size={16} className="text-text-faint" />
+        <div className="flex items-center justify-center bg-card">
+          <Trophy size={15} className="text-text-faint" />
         </div>
-        <div className={`rounded-lg px-3 py-2 font-bold ${
-          winner === "me" ? "bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/30" : myWon ? "bg-white/5 text-text-muted" : "bg-red-500/10 text-red-400"
+        <div className={`px-3 py-2.5 font-mono text-xs font-bold uppercase tracking-wider ${
+          winner === "me" ? "bg-emerald-600 text-white" : myWon ? "bg-card text-text-muted" : "bg-red-600 text-white"
         }`}>
           {myWon ? "Gagné" : "Perdu"}
         </div>
 
         {/* Score */}
-        <div className={`rounded-lg px-3 py-2 font-bold ${
-          winner === "challenger" && challengerWon ? "bg-emerald-500/15 text-emerald-400" : "bg-white/5 text-text-muted"
+        <div className={`tnum px-3 py-2.5 font-display text-2xl ${
+          winner === "challenger" && challengerWon ? "bg-accent text-white" : "bg-card text-text-muted"
         }`}>
           {challengerScore}
         </div>
-        <div className="flex items-center justify-center text-xs text-text-faint font-semibold">Score</div>
-        <div className={`rounded-lg px-3 py-2 font-bold ${
-          winner === "me" && myWon ? "bg-emerald-500/15 text-emerald-400" : "bg-white/5 text-text-muted"
+        <div className="flex items-center justify-center bg-card kicker text-text-faint">Score</div>
+        <div className={`tnum px-3 py-2.5 font-display text-2xl ${
+          winner === "me" && myWon ? "bg-accent text-white" : "bg-card text-text-muted"
         }`}>
           {myScore}
         </div>
 
         {/* Time */}
-        <div className={`rounded-lg px-3 py-2 font-bold ${
-          winner === "challenger" && challengerWon ? "bg-emerald-500/15 text-emerald-400" : "bg-white/5 text-text-muted"
+        <div className={`tnum px-3 py-2.5 font-mono text-sm font-bold ${
+          winner === "challenger" && challengerWon ? "bg-accent-light text-text-primary" : "bg-card text-text-muted"
         }`}>
           {formatTime(challengerTime)}
         </div>
-        <div className="flex items-center justify-center">
-          <Clock size={16} className="text-text-faint" />
+        <div className="flex items-center justify-center bg-card">
+          <Clock size={15} className="text-text-faint" />
         </div>
-        <div className={`rounded-lg px-3 py-2 font-bold ${
-          winner === "me" && myWon ? "bg-emerald-500/15 text-emerald-400" : "bg-white/5 text-text-muted"
+        <div className={`tnum px-3 py-2.5 font-mono text-sm font-bold ${
+          winner === "me" && myWon ? "bg-accent-light text-text-primary" : "bg-card text-text-muted"
         }`}>
           {formatTime(myTime)}
         </div>

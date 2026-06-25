@@ -41,7 +41,7 @@ export default function ScrollButton() {
   return (
     <button
       onClick={handleClick}
-      className="fixed bottom-4 right-3 z-40 lg:hidden flex items-center justify-center w-10 h-10 rounded-full bg-accent text-white shadow-lg active:scale-95 transition-transform"
+      className="fixed bottom-4 right-3 z-40 lg:hidden flex items-center justify-center w-10 h-10 bg-accent text-white shadow-lg active:scale-95 transition-transform hover:bg-accent-hover"
       aria-label={atBottom ? "Remonter en haut" : "Aller en bas"}
     >
       {atBottom ? <ArrowUp size={20} /> : <ArrowDown size={20} />}

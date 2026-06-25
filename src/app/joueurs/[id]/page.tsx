@@ -62,12 +62,12 @@ function draftLabel(p: { draft_year: number | null; draft_round: number | null; 
 
 function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="flex items-center gap-3 py-2.5 border-b border-border-t/50 last:border-0">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-input text-text-muted">
+    <div className="flex items-center gap-3 py-2.5 border-b border-rule last:border-0">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center bg-input text-text-muted">
         {icon}
       </div>
       <div className="flex-1">
-        <p className="text-[10px] uppercase tracking-wider text-text-faint">{label}</p>
+        <p className="kicker text-text-faint">{label}</p>
         <p className="text-sm font-medium text-text-primary">{value}</p>
       </div>
     </div>
@@ -76,9 +76,9 @@ function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string;
 
 function StatBox({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl bg-card border border-border-t p-4 text-center">
-      <p className="text-2xl font-bold text-accent-text">{value}</p>
-      <p className="mt-1 text-[10px] uppercase tracking-wider text-text-faint">{label}</p>
+    <div className="bg-card border border-rule p-4 text-center">
+      <p className="tnum font-display text-3xl text-text-primary">{value}</p>
+      <p className="kicker mt-1 text-text-faint">{label}</p>
     </div>
   );
 }
@@ -180,18 +180,18 @@ export default async function PlayerDetail({ params }: { params: Promise<{ id: s
       <JsonLd data={playerJsonLd} />
       <Link
         href="/joueurs"
-        className="inline-flex items-center gap-1 rounded-xl px-3 py-2 text-sm font-medium text-text-muted transition-colors hover:bg-input hover:text-text-primary"
+        className="inline-flex items-center gap-1 px-3 py-2 font-mono text-[11px] font-semibold uppercase tracking-wider text-text-muted transition-colors hover:bg-input hover:text-text-primary"
       >
         <ChevronLeft size={16} />
         Tous les joueurs
       </Link>
 
-      {/* Hero card */}
-      <div className="relative overflow-hidden rounded-2xl border border-border-t bg-card">
-        <div className="absolute inset-0 bg-gradient-to-br from-accent/8 via-transparent to-transparent" />
+      {/* Hero — broadcast box-score header */}
+      <div className="relative overflow-hidden border border-rule bg-card">
+        <span className="absolute left-0 top-0 bottom-0 w-1 bg-accent" />
         <div className="relative flex flex-col items-center gap-6 p-5 sm:flex-row sm:items-start sm:gap-8 sm:p-10">
           <div className="relative shrink-0">
-            <div className="h-40 w-48 overflow-hidden rounded-2xl bg-gradient-to-b from-accent/15 to-accent/5 shadow-lg">
+            <div className="h-44 w-44 overflow-hidden bg-input">
               <img src={photoUrl} alt={`${player.first_name} ${player.last_name}`} className="h-full w-full object-cover object-top" />
             </div>
             {player.team_tricode && teamLogoUrl(player.team_tricode) && (
@@ -200,28 +200,28 @@ export default async function PlayerDetail({ params }: { params: Promise<{ id: s
           </div>
 
           <div className="flex-1 text-center sm:text-left">
-            <p className="text-lg text-text-muted">{player.first_name}</p>
-            <h1 className="text-4xl font-extrabold tracking-tight text-text-primary sm:text-5xl">{player.last_name}</h1>
+            <p className="kicker text-text-muted">{player.first_name}</p>
+            <h1 className="font-display text-5xl text-text-primary sm:text-6xl">{player.last_name}</h1>
 
             <div className="mt-3 flex flex-wrap items-center justify-center gap-2 sm:justify-start">
               {player.is_active ? (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-400">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                <span className="inline-flex items-center gap-1.5 bg-accent px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-widest text-white">
+                  <span className="h-1 w-1 rounded-full bg-white animate-pulse" />
                   En activité
                 </span>
               ) : (
-                <span className="inline-flex items-center rounded-full bg-input px-3 py-1 text-xs font-semibold text-text-muted">Retraité</span>
+                <span className="inline-flex items-center border border-rule px-3 py-1 font-mono text-[10px] uppercase tracking-wider text-text-muted">Retraité</span>
               )}
               {player.position && (
-                <span className="rounded-full bg-accent-light px-3 py-1 text-xs font-semibold text-accent-text">{player.position}</span>
+                <span className="border border-rule px-3 py-1 font-mono text-[10px] uppercase tracking-wider text-text-secondary">{player.position}</span>
               )}
               {player.jersey_number && (
-                <span className="rounded-full bg-input px-3 py-1 text-xs font-bold text-text-secondary">#{player.jersey_number}</span>
+                <span className="tnum border border-rule px-3 py-1 font-mono text-[10px] uppercase tracking-wider text-text-secondary">#{player.jersey_number}</span>
               )}
             </div>
 
             {player.team_tricode && player.team_city && player.team_name && (
-              <Link href="/equipes" className="mt-4 inline-flex items-center gap-2 rounded-xl bg-input px-4 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-card-hover hover:text-text-primary">
+              <Link href="/equipes" className="mt-4 inline-flex items-center gap-2 border border-rule px-4 py-2 text-sm font-medium text-text-secondary transition-colors hover:border-border-hover hover:text-text-primary">
                 {teamLogoUrl(player.team_tricode) && <img src={teamLogoUrl(player.team_tricode)} alt="" className="h-5 w-5 object-contain" />}
                 {player.team_city} {player.team_name}
               </Link>
@@ -229,7 +229,7 @@ export default async function PlayerDetail({ params }: { params: Promise<{ id: s
 
             {rosterEntry?.salary && (
               <p className="mt-3 text-sm text-text-muted">
-                Salaire {season} : <strong className="text-text-primary">{rosterEntry.salary}</strong>
+                Salaire {season} : <strong className="tnum text-text-primary">{rosterEntry.salary}</strong>
               </p>
             )}
 
@@ -237,7 +237,7 @@ export default async function PlayerDetail({ params }: { params: Promise<{ id: s
               <FollowPlayerButton playerId={player.player_id} />
               <Link
                 href={`/joueurs/comparer?p1=${player.player_id}`}
-                className="inline-flex items-center gap-2 rounded-xl bg-input px-4 py-2 text-sm font-medium text-text-muted transition-colors hover:bg-card-hover hover:text-text-primary"
+                className="inline-flex items-center gap-2 border border-rule px-4 py-2 font-mono text-xs font-bold uppercase tracking-widest text-text-muted transition-colors hover:border-border-hover hover:text-text-primary"
               >
                 <BarChart3 size={16} />
                 Comparer
@@ -264,8 +264,8 @@ export default async function PlayerDetail({ params }: { params: Promise<{ id: s
       )}
 
       {/* Bio info */}
-      <div className="rounded-2xl bg-card border border-border-t p-6">
-        <h2 className="mb-4 text-lg font-bold text-text-primary">Informations</h2>
+      <div className="bg-card border border-rule p-6 sm:p-8">
+        <h2 className="mb-4 font-display text-2xl text-text-primary sm:text-3xl">Informations</h2>
         {player.height && <InfoRow icon={<Ruler size={14} />} label="Taille" value={player.height} />}
         {player.weight && <InfoRow icon={<Weight size={14} />} label="Poids" value={`${player.weight} lbs`} />}
         {player.country && <InfoRow icon={<MapPin size={14} />} label="Nationalité" value={player.country} />}

@@ -2,11 +2,11 @@ import { SkeletonGameTopBar, SkeletonGameBanner } from "@/components/Skeleton";
 
 function PlayerCard() {
   return (
-    <div className="flex flex-1 flex-col items-center gap-3 rounded-2xl bg-card border border-border-t p-5">
-      <div className="h-24 w-24 animate-pulse rounded-full bg-input" />
-      <div className="h-5 w-28 animate-pulse rounded bg-input" />
-      <div className="h-3 w-20 animate-pulse rounded bg-input" />
-      <div className="h-8 w-16 animate-pulse rounded-lg bg-input" />
+    <div className="flex flex-1 flex-col items-center gap-3 border border-rule bg-card p-5">
+      <div className="h-24 w-24 animate-pulse bg-input" />
+      <div className="h-5 w-28 animate-pulse bg-input" />
+      <div className="h-3 w-20 animate-pulse bg-input" />
+      <div className="h-8 w-16 animate-pulse bg-input" />
     </div>
   );
 }
@@ -17,9 +17,9 @@ export default function Loading() {
       <div className="space-y-4 pt-4">
         <SkeletonGameTopBar />
         {/* Mode tabs */}
-        <div className="flex gap-1 rounded-xl bg-input p-1">
-          <div className="h-9 flex-1 animate-pulse rounded-lg bg-card" />
-          <div className="h-9 flex-1 animate-pulse rounded-lg bg-card" />
+        <div className="flex gap-1 border border-rule bg-card p-1">
+          <div className="h-9 flex-1 animate-pulse bg-input" />
+          <div className="h-9 flex-1 animate-pulse bg-input" />
         </div>
         <SkeletonGameBanner />
       </div>
@@ -28,8 +28,8 @@ export default function Loading() {
       <div className="flex flex-col items-stretch gap-4 sm:flex-row sm:gap-6">
         <PlayerCard />
         <div className="flex flex-row items-center justify-center gap-3 sm:flex-col">
-          <div className="h-10 w-16 animate-pulse rounded-lg bg-input" />
-          <div className="h-10 w-16 animate-pulse rounded-lg bg-input" />
+          <div className="h-10 w-16 animate-pulse bg-input" />
+          <div className="h-10 w-16 animate-pulse bg-input" />
         </div>
         <PlayerCard />
       </div>

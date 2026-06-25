@@ -50,47 +50,50 @@ export default function LiveScoreHeader({
   const statusLabel = status === 3 ? "Terminé" : isLive ? statusText || "En cours" : statusText;
 
   return (
-    <div className="rounded-2xl bg-card border border-border-t overflow-hidden">
-      <div className="px-4 py-6 sm:px-10 sm:py-10">
+    <div className="relative bg-card border border-rule overflow-hidden">
+      {/* Top status rail — broadcast lower-third */}
+      <div className="flex items-center justify-between border-b border-rule px-4 py-2.5 sm:px-6">
+        <span className="kicker text-text-faint">Feuille de match</span>
+        {isLive ? (
+          <span className="inline-flex items-center gap-1.5 bg-accent px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-white">
+            <span className="h-1 w-1 rounded-full bg-white animate-pulse" />
+            {statusLabel}
+          </span>
+        ) : (
+          <span className="kicker text-text-muted">{statusLabel}</span>
+        )}
+      </div>
+
+      <div className="px-4 py-7 sm:px-10 sm:py-12">
         <div className="flex items-center justify-center gap-4 sm:gap-12">
           {/* Away team */}
           <div className="flex flex-col items-center gap-2 sm:gap-3">
             <img src={teamLogoUrl(awayTeam)} alt={awayTeam} className="h-12 w-12 sm:h-20 sm:w-20 object-contain" />
             <div className="text-center">
-              <p className={`text-sm sm:text-lg font-bold ${awayWon ? "text-text-primary" : "text-text-muted"}`}>
+              <p className={`font-display text-lg sm:text-2xl ${awayWon ? "text-text-primary" : "text-text-muted"}`}>
                 <span className="hidden sm:inline">{awayTeamName}</span>
                 <span className="sm:hidden">{awayTeam}</span>
               </p>
-              <p className="text-xs text-text-faint hidden sm:block">{awayTeam}</p>
+              <p className="kicker text-text-faint hidden sm:block">{awayTeam}</p>
             </div>
           </div>
 
           {/* Score */}
-          <div className="flex flex-col items-center gap-1 sm:gap-2">
-            <div className="flex items-center gap-2 sm:gap-4">
-              <span className={`text-3xl sm:text-5xl font-extrabold tabular-nums ${awayWon ? "text-text-primary" : "text-text-muted"}`}>
+          <div className="flex flex-col items-center gap-2 sm:gap-3">
+            <div className="flex items-end gap-2 sm:gap-5">
+              <span className={`font-display tnum text-5xl sm:text-7xl leading-none ${awayWon ? "text-text-primary" : "text-text-muted"}`}>
                 {awayScore}
               </span>
-              <span className="text-lg sm:text-xl text-text-faint font-light">-</span>
-              <span className={`text-3xl sm:text-5xl font-extrabold tabular-nums ${homeWon ? "text-text-primary" : "text-text-muted"}`}>
+              <span className="mb-1 text-lg sm:text-2xl text-text-faint">–</span>
+              <span className={`font-display tnum text-5xl sm:text-7xl leading-none ${homeWon ? "text-text-primary" : "text-text-muted"}`}>
                 {homeScore}
               </span>
             </div>
-            {isLive ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-red-500/20 px-2 py-0.5 text-[11px] font-bold text-red-400 uppercase tracking-wider">
-                <span className="h-1.5 w-1.5 rounded-full bg-red-400 animate-pulse" />
-                {statusLabel}
-              </span>
-            ) : (
-              <span className="text-xs font-medium text-text-faint uppercase tracking-wider">
-                {statusLabel}
-              </span>
-            )}
-            {gameDate && <p className="text-xs text-text-faint capitalize">{gameDate}</p>}
+            {gameDate && <p className="kicker text-text-faint capitalize">{gameDate}</p>}
             {arena && (
-              <p className="text-[11px] text-text-faint">
+              <p className="font-mono text-[11px] uppercase tracking-wider text-text-faint">
                 {arena}
-                {arenaCity ? ` - ${arenaCity}` : ""}
+                {arenaCity ? ` · ${arenaCity}` : ""}
               </p>
             )}
           </div>
@@ -99,11 +102,11 @@ export default function LiveScoreHeader({
           <div className="flex flex-col items-center gap-2 sm:gap-3">
             <img src={teamLogoUrl(homeTeam)} alt={homeTeam} className="h-12 w-12 sm:h-20 sm:w-20 object-contain" />
             <div className="text-center">
-              <p className={`text-sm sm:text-lg font-bold ${homeWon ? "text-text-primary" : "text-text-muted"}`}>
+              <p className={`font-display text-lg sm:text-2xl ${homeWon ? "text-text-primary" : "text-text-muted"}`}>
                 <span className="hidden sm:inline">{homeTeamName}</span>
                 <span className="sm:hidden">{homeTeam}</span>
               </p>
-              <p className="text-xs text-text-faint hidden sm:block">{homeTeam}</p>
+              <p className="kicker text-text-faint hidden sm:block">{homeTeam}</p>
             </div>
           </div>
         </div>

@@ -15,7 +15,7 @@ export default function FavoriteTeamButton({ tricode }: { tricode: string }) {
       onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleTeam(tricode); }}
       aria-label={fav ? `Retirer ${tricode} des favoris` : `Ajouter ${tricode} aux favoris`}
       aria-pressed={fav}
-      className={`inline-flex items-center justify-center rounded-lg p-1.5 transition-all ${
+      className={`inline-flex items-center justify-center p-1.5 transition-colors ${
         fav
           ? "text-accent"
           : "text-text-faint hover:text-accent/70"

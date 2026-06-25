@@ -173,7 +173,8 @@ function Confetti() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    const colors = ["#f97316", "#10b981", "#3b82f6", "#eab308", "#ef4444", "#8b5cf6", "#ec4899", "#06b6d4"];
+    const accentVar = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#ff5a1f";
+    const colors = [accentVar, "#f5f2e9", "#807b70"];
     const particles: { x: number; y: number; vx: number; vy: number; w: number; h: number; color: string; rot: number; vr: number; life: number }[] = [];
 
     for (const bp of [{ x: canvas.width * 0.3, y: canvas.height * 0.3 }, { x: canvas.width * 0.7, y: canvas.height * 0.3 }, { x: canvas.width * 0.5, y: canvas.height * 0.2 }]) {
@@ -498,7 +499,7 @@ export default function HoopLinkGame({ players, playerTeams, adjacencyList }: Pr
         <div className="flex items-center justify-between">
           <Link
             href="/mini-jeux"
-            className="inline-flex items-center gap-2 sm:gap-1.5 rounded-lg bg-input px-4 py-2.5 text-sm sm:px-3 sm:py-1.5 sm:text-xs font-medium text-text-muted hover:text-text-primary hover:bg-card-hover transition-colors"
+            className="inline-flex items-center gap-2 sm:gap-1.5 border border-rule bg-card px-4 py-2.5 font-mono text-xs font-semibold uppercase tracking-wider sm:px-3 sm:py-1.5 sm:text-[11px] text-text-muted hover:border-border-hover hover:text-text-primary transition-colors"
           >
             <RotateCcw size={12} />
             Tous les mini-jeux
@@ -506,7 +507,7 @@ export default function HoopLinkGame({ players, playerTeams, adjacencyList }: Pr
           {isAdmin && (
             <button
               onClick={handleAdminReset}
-              className="inline-flex items-center gap-2 sm:gap-1.5 rounded-lg bg-input px-4 py-2.5 text-sm sm:px-3 sm:py-1.5 sm:text-xs font-medium text-text-muted hover:text-text-primary hover:bg-card-hover transition-colors"
+              className="inline-flex items-center gap-2 sm:gap-1.5 border border-rule bg-card px-4 py-2.5 font-mono text-xs font-semibold uppercase tracking-wider sm:px-3 sm:py-1.5 sm:text-[11px] text-text-muted hover:border-border-hover hover:text-text-primary transition-colors"
             >
               <RotateCcw size={12} />
               Recommencer
@@ -514,32 +515,33 @@ export default function HoopLinkGame({ players, playerTeams, adjacencyList }: Pr
           )}
         </div>
 
-        {/* Banner */}
-        <div className="relative overflow-hidden rounded-2xl border border-border-t bg-gradient-to-br from-violet-500/10 via-card to-card">
-          <div className="absolute top-0 right-0 w-32 h-32 sm:w-48 sm:h-48 opacity-[0.07]">
-            <Link2 className="w-full h-full text-violet-500" />
+        {/* Banner — broadcast lower-third */}
+        <div className="relative overflow-hidden border border-rule bg-card">
+          <span className="absolute left-0 top-0 bottom-0 w-1 bg-accent" />
+          <div className="absolute top-0 right-0 w-32 h-32 sm:w-48 sm:h-48 opacity-[0.05]">
+            <Link2 className="w-full h-full text-text-primary" />
           </div>
           <div className="relative px-5 py-6 sm:px-8 sm:py-8">
             <div className="flex items-center gap-4 sm:gap-6">
-              <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-gradient-to-br from-violet-500/30 to-violet-500/10 border-2 border-violet-500/40 flex items-center justify-center">
-                <Link2 size={32} className="text-violet-500" />
+              <div className="h-16 w-16 sm:h-20 sm:w-20 bg-accent flex items-center justify-center">
+                <Link2 size={32} className="text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-text-primary tracking-tight">
-                  Hoop<span className="text-violet-500">Link</span>
+                <h1 className="font-display text-3xl sm:text-4xl text-text-primary">
+                  Hoop<span className="text-accent-text">Link</span>
                 </h1>
-                <p className="text-xs sm:text-sm text-text-muted mt-0.5">
+                <p className="text-xs sm:text-sm text-text-muted mt-1">
                   {won ? `Chaîne complétée en ${chain.length} maillon${chain.length > 1 ? "s" : ""} !`
                     : gaveUp ? "Partie terminée"
                     : "Trouve le chemin le plus court entre ces deux joueurs"}
                 </p>
                 {loaded && (
-                  <div className="flex items-center gap-3 mt-2">
-                    <span className="inline-flex items-center gap-1 rounded-full bg-violet-500/15 px-2.5 py-0.5 text-[11px] font-bold text-violet-400">
-                      <Link2 size={11} /> {chain.length}/{MAX_CHAIN}
+                  <div className="flex items-center gap-2 mt-3">
+                    <span className="inline-flex items-center gap-1.5 border border-rule px-2.5 py-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-text-secondary">
+                      <Link2 size={11} /> <span className="tnum">{chain.length}/{MAX_CHAIN}</span>
                     </span>
-                    <span className="inline-flex items-center gap-1 rounded-full bg-accent/15 px-2.5 py-0.5 text-[11px] font-bold text-accent-text">
-                      <Clock size={11} /> {formatTime(elapsed)}
+                    <span className="inline-flex items-center gap-1.5 border border-rule px-2.5 py-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-accent-text">
+                      <Clock size={11} /> <span className="tnum">{formatTime(elapsed)}</span>
                     </span>
                   </div>
                 )}
@@ -556,7 +558,7 @@ export default function HoopLinkGame({ players, playerTeams, adjacencyList }: Pr
         <PlayerNode
           player={startPlayer}
           label="Départ"
-          color="violet"
+          color="accent"
         />
 
         {/* Chain links */}
@@ -569,7 +571,7 @@ export default function HoopLinkGame({ players, playerTeams, adjacencyList }: Pr
               <PlayerNode
                 player={player}
                 label={`Maillon ${i + 1}`}
-                color="violet"
+                color="accent"
               />
             </div>
           );
@@ -584,11 +586,11 @@ export default function HoopLinkGame({ players, playerTeams, adjacencyList }: Pr
         {!gameOver && chain.length < MAX_CHAIN && (
           <>
             <div className="flex justify-center py-1">
-              <div className="w-0.5 h-6 bg-border-t" />
+              <div className="w-px h-6 bg-rule" />
             </div>
             <div className="flex justify-center">
-              <div className="rounded-xl border-2 border-dashed border-violet-500/30 bg-violet-500/5 px-6 py-3 text-center">
-                <p className="text-xs text-violet-400/60 font-medium">?</p>
+              <div className="border border-dashed border-border-hover bg-card px-6 py-3 text-center">
+                <p className="font-display text-base text-text-faint">?</p>
               </div>
             </div>
           </>
@@ -596,24 +598,24 @@ export default function HoopLinkGame({ players, playerTeams, adjacencyList }: Pr
 
         {/* End player */}
         <div className="flex justify-center py-1">
-          <div className={`w-0.5 h-6 ${won ? "bg-emerald-500" : "bg-border-t"}`} />
+          <div className={`w-px h-6 ${won ? "bg-emerald-500" : "bg-rule"}`} />
         </div>
         <PlayerNode
           player={endPlayer}
           label="Arrivée"
-          color={won ? "emerald" : "slate"}
+          color={won ? "emerald" : "neutral"}
         />
       </div>
 
       {/* Rules + team hint */}
       {loaded && !gameOver && (
-        <div className="rounded-xl bg-input/50 border border-border-t px-4 py-3 space-y-3">
+        <div className="border border-rule bg-card px-4 py-3 space-y-3">
           {chain.length === 0 ? (
             <>
-              <p className="text-xs text-text-primary text-center font-bold">Comment jouer ?</p>
+              <p className="kicker text-text-faint text-center">Comment jouer ?</p>
               <p className="text-xs text-text-muted text-center leading-relaxed">
-                Trouve des joueurs intermédiaires pour relier le <span className="font-bold text-violet-400">départ</span> à l'<span className="font-bold text-text-primary">arrivée</span>.
-                Chaque maillon doit partager la <span className="font-bold text-text-primary">même équipe</span> que le précédent (même saison).
+                Trouve des joueurs intermédiaires pour relier le <span className="font-semibold text-accent-text">départ</span> à l'<span className="font-semibold text-text-primary">arrivée</span>.
+                Chaque maillon doit partager la <span className="font-semibold text-text-primary">même équipe</span> que le précédent (même saison).
               </p>
               <div className="text-[11px] text-text-faint text-center leading-relaxed italic">
                 Ex : LeBron (LAL) → Anthony Davis (LAL/NOP) → Zion (NOP)
@@ -622,8 +624,8 @@ export default function HoopLinkGame({ players, playerTeams, adjacencyList }: Pr
           ) : (
             <LastLinkTeamsHint lastLinkId={lastLinkId} players={players} />
           )}
-          <p className="text-[11px] text-text-faint text-center">
-            Chemin le plus court : {puzzle.optimalLength} maillon{puzzle.optimalLength > 1 ? "s" : ""}
+          <p className="font-mono text-[11px] text-text-faint text-center">
+            Chemin le plus court : <span className="tnum">{puzzle.optimalLength}</span> maillon{puzzle.optimalLength > 1 ? "s" : ""}
           </p>
         </div>
       )}
@@ -635,13 +637,13 @@ export default function HoopLinkGame({ players, playerTeams, adjacencyList }: Pr
           onChange={(v) => { setSearch(v); setError(""); }}
           onSelect={handleGuess}
           results={filteredPlayers}
-          focusBorderClass="focus:border-violet-500"
+          focusBorderClass="focus:border-accent"
         />
       )}
 
       {/* Error message */}
       {error && (
-        <div className="rounded-xl bg-red-500/10 border border-red-500/30 px-4 py-2.5 text-center text-xs text-red-400 animate-[shakeX_0.4s_ease-out]">
+        <div className="border border-red-500/40 bg-red-500/10 px-4 py-2.5 text-center text-xs text-red-400 animate-[shakeX_0.4s_ease-out]">
           {error}
         </div>
       )}
@@ -651,7 +653,7 @@ export default function HoopLinkGame({ players, playerTeams, adjacencyList }: Pr
         <div className="flex justify-center">
           <button
             onClick={handleGiveUp}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-input border border-border-t px-3.5 py-2 text-xs font-medium text-text-faint hover:text-red-400 hover:border-red-500/30 active:scale-95 transition-all"
+            className="inline-flex items-center gap-1.5 border border-rule bg-card px-4 py-2 font-mono text-[11px] font-semibold uppercase tracking-wider text-text-faint hover:text-red-400 hover:border-red-500/40 transition-colors"
           >
             <Flag size={13} />
             Abandonner
@@ -662,43 +664,43 @@ export default function HoopLinkGame({ players, playerTeams, adjacencyList }: Pr
       {/* Win/lose result */}
       {gameOver && loaded && (
         <>
-          <div className={`rounded-2xl overflow-hidden border p-5 sm:p-6 ${
+          <div className={`relative overflow-hidden border p-5 sm:p-6 ${
             won
-              ? "border-emerald-500/30 bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-card"
-              : "border-red-500/30 bg-gradient-to-r from-red-500/10 via-red-500/5 to-card"
+              ? "border-emerald-500/40 bg-emerald-500/5"
+              : "border-red-500/40 bg-red-500/5"
           }`}>
+            <span className={`absolute left-0 top-0 bottom-0 w-1 ${won ? "bg-emerald-500" : "bg-red-500"}`} />
             <div className="text-center space-y-3">
-              <p className={`text-xs font-bold uppercase tracking-wider ${won ? "text-emerald-400" : "text-red-400"}`}>
+              <p className={`kicker ${won ? "text-emerald-400" : "text-red-400"}`}>
                 {won
                   ? chain.length <= puzzle.optimalLength ? "Chemin optimal !" : "Chaîne complétée !"
                   : "Abandonné"}
               </p>
               {won && (
-                <div className="flex items-center justify-center gap-2">
-                  <Link2 size={28} className="text-violet-400" />
-                  <span className="text-4xl sm:text-5xl font-black text-text-primary">{chain.length}</span>
-                  <span className="text-xl text-text-faint font-bold">maillon{chain.length > 1 ? "s" : ""}</span>
+                <div className="flex items-baseline justify-center gap-2">
+                  <span className="tnum font-display text-5xl sm:text-6xl text-text-primary">{chain.length}</span>
+                  <span className="font-display text-xl text-text-faint">maillon{chain.length > 1 ? "s" : ""}</span>
                 </div>
               )}
-              <div className="flex items-center justify-center gap-4 text-xs text-text-faint">
-                <span className="flex items-center gap-1"><Clock size={12} /> {formatTime(elapsed)}</span>
-                <span>Optimal : {puzzle.optimalLength}</span>
+              <div className="flex items-center justify-center gap-4 font-mono text-[11px] uppercase tracking-wider text-text-faint">
+                <span className="flex items-center gap-1"><Clock size={12} /> <span className="tnum">{formatTime(elapsed)}</span></span>
+                <span>Optimal : <span className="tnum">{puzzle.optimalLength}</span></span>
               </div>
             </div>
           </div>
 
           {/* Optimal path reveal on give up */}
           {gaveUp && puzzle.optimalPath.length > 0 && (
-            <div className="rounded-2xl bg-card border border-border-t overflow-hidden">
-              <div className="px-4 py-3 border-b border-border-t">
-                <h2 className="text-sm font-bold text-text-primary">Un chemin possible</h2>
+            <div className="border border-rule bg-card overflow-hidden">
+              <div className="px-4 py-3 border-b border-rule">
+                <h2 className="kicker text-text-faint">Un chemin possible</h2>
               </div>
               <div className="px-4 py-3 space-y-0">
                 {/* Start */}
                 <div className="flex items-center gap-2.5 py-1.5">
-                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-violet-500/20 text-[10px] font-bold text-violet-400">D</div>
-                  <img src={playerPhotoUrl(startPlayer.id)} alt="" className="h-7 w-7 rounded-full object-cover bg-input" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-                  <span className="text-sm font-medium text-text-primary">{startPlayer.name}</span>
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center bg-accent font-mono text-[10px] font-bold text-white">D</div>
+                  <img src={playerPhotoUrl(startPlayer.id)} alt="" className="h-7 w-7 object-cover bg-input" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                  <span className="text-sm font-semibold text-text-primary">{startPlayer.name}</span>
                   <img src={teamLogoUrl(startPlayer.team)} alt="" className="h-4 w-4 object-contain ml-auto" />
                 </div>
                 {/* Path intermediaries */}
@@ -712,15 +714,15 @@ export default function HoopLinkGame({ players, playerTeams, adjacencyList }: Pr
                     <div key={pid}>
                       {bestShared && (
                         <div className="flex items-center gap-1.5 pl-8 py-0.5">
-                          <div className="w-0.5 h-3 bg-violet-500/30 mr-1" />
+                          <div className="w-px h-3 bg-rule mr-1" />
                           <img src={teamLogoUrl(bestShared.team)} alt="" className="h-3 w-3 object-contain" />
-                          <span className="text-[10px] text-text-faint">{bestShared.team} {bestShared.season}</span>
+                          <span className="font-mono text-[10px] uppercase tracking-wider text-text-faint">{bestShared.team} <span className="tnum">{bestShared.season}</span></span>
                         </div>
                       )}
                       <div className="flex items-center gap-2.5 py-1.5">
-                        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-violet-500/15 text-[10px] font-bold text-violet-400">{i + 1}</div>
-                        <img src={playerPhotoUrl(p.id)} alt="" className="h-7 w-7 rounded-full object-cover bg-input" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-                        <span className="text-sm font-medium text-text-primary">{p.name}</span>
+                        <div className="flex h-6 w-6 shrink-0 items-center justify-center border border-rule font-mono text-[10px] font-bold tnum text-accent-text">{i + 1}</div>
+                        <img src={playerPhotoUrl(p.id)} alt="" className="h-7 w-7 object-cover bg-input" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                        <span className="text-sm font-semibold text-text-primary">{p.name}</span>
                         <img src={teamLogoUrl(p.team)} alt="" className="h-4 w-4 object-contain ml-auto" />
                       </div>
                     </div>
@@ -733,17 +735,17 @@ export default function HoopLinkGame({ players, playerTeams, adjacencyList }: Pr
                   const bestShared = shared.sort((a, b) => b.season.localeCompare(a.season))[0];
                   return bestShared ? (
                     <div className="flex items-center gap-1.5 pl-8 py-0.5">
-                      <div className="w-0.5 h-3 bg-violet-500/30 mr-1" />
+                      <div className="w-px h-3 bg-rule mr-1" />
                       <img src={teamLogoUrl(bestShared.team)} alt="" className="h-3 w-3 object-contain" />
-                      <span className="text-[10px] text-text-faint">{bestShared.team} {bestShared.season}</span>
+                      <span className="font-mono text-[10px] uppercase tracking-wider text-text-faint">{bestShared.team} <span className="tnum">{bestShared.season}</span></span>
                     </div>
                   ) : null;
                 })()}
                 {/* End */}
                 <div className="flex items-center gap-2.5 py-1.5">
-                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-[10px] font-bold text-emerald-400">A</div>
-                  <img src={playerPhotoUrl(endPlayer.id)} alt="" className="h-7 w-7 rounded-full object-cover bg-input" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-                  <span className="text-sm font-medium text-text-primary">{endPlayer.name}</span>
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center bg-emerald-500 font-mono text-[10px] font-bold text-white">A</div>
+                  <img src={playerPhotoUrl(endPlayer.id)} alt="" className="h-7 w-7 object-cover bg-input" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                  <span className="text-sm font-semibold text-text-primary">{endPlayer.name}</span>
                   <img src={teamLogoUrl(endPlayer.team)} alt="" className="h-4 w-4 object-contain ml-auto" />
                 </div>
               </div>
@@ -754,14 +756,14 @@ export default function HoopLinkGame({ players, playerTeams, adjacencyList }: Pr
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2 sm:gap-3">
             <button
               onClick={handleShare}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1DA1F2] px-5 py-3 text-sm font-bold text-white transition-all hover:bg-[#1a8cd8] hover:scale-[1.03] active:scale-[0.98]"
+              className="inline-flex items-center justify-center gap-2 bg-accent px-6 py-3.5 font-mono text-xs font-bold uppercase tracking-widest text-white transition-colors hover:bg-accent-hover"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
               Partager
             </button>
             <button
               onClick={handleCopy}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-input border border-border-t px-5 py-3 text-sm font-bold text-text-primary transition-all hover:bg-card-hover hover:scale-[1.03] active:scale-[0.98]"
+              className="inline-flex items-center justify-center gap-2 border border-border-hover px-6 py-3.5 font-mono text-xs font-bold uppercase tracking-widest text-text-primary transition-colors hover:bg-input"
             >
               {copied ? <><Check size={14} className="text-emerald-400" /> Copié !</> : "Copier"}
             </button>
@@ -773,35 +775,36 @@ export default function HoopLinkGame({ players, playerTeams, adjacencyList }: Pr
       {leaderboard.length > 0 && (() => {
         const rows = computeVisibleLeaderboard(leaderboard, userId);
         return (
-          <div className="rounded-2xl bg-card border border-border-t overflow-hidden">
-            <div className="px-4 py-3 border-b border-border-t">
-              <h2 className="text-sm font-bold text-text-primary flex items-center gap-2">
-                <Trophy size={16} className="text-accent-text" />
+          <div className="border border-rule bg-card overflow-hidden">
+            <div className="px-4 py-3 border-b border-rule">
+              <h2 className="kicker text-text-faint flex items-center gap-2">
+                <Trophy size={14} className="text-accent-text" />
                 Classement du jour
               </h2>
             </div>
-            <div className="divide-y divide-border-t/30">
+            <div className="divide-y divide-rule/60">
               {rows.map((row, i) =>
                 row.type === "separator" ? (
                   <div key="sep" className="flex items-center gap-3 px-4 py-1.5">
-                    <div className="flex-1 border-t border-dashed border-border-t" />
+                    <div className="flex-1 border-t border-dashed border-rule" />
                     <span className="text-[10px] text-text-faint">...</span>
-                    <div className="flex-1 border-t border-dashed border-border-t" />
+                    <div className="flex-1 border-t border-dashed border-rule" />
                   </div>
                 ) : (
-                  <div key={`${row.entry.display_name}-${row.rank}`} className={`flex items-center gap-3 px-4 py-2.5 ${row.isUser ? "bg-accent/10 border-l-2 border-l-accent" : ""}`}>
-                    <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[11px] font-bold ${
-                      row.rank === 1 ? "bg-accent/20 text-accent-text" : row.rank <= 3 ? "bg-input text-text-primary" : "text-text-faint"
+                  <div key={`${row.entry.display_name}-${row.rank}`} className={`flex items-center gap-3 px-4 py-2.5 ${row.isUser ? "relative bg-accent-light" : ""}`}>
+                    {row.isUser && <span className="absolute left-0 top-0 bottom-0 w-1 bg-accent" />}
+                    <span className={`tnum flex h-6 w-6 shrink-0 items-center justify-center font-mono text-[11px] font-bold ${
+                      row.rank === 1 ? "bg-accent text-white" : row.rank <= 3 ? "border border-rule text-text-primary" : "text-text-faint"
                     }`}>
                       {row.rank}
                     </span>
                     <span className={`flex-1 text-sm truncate ${row.isUser ? "font-bold text-accent-text" : isAnonymousName(row.entry.display_name) ? "italic text-text-muted" : "font-medium text-text-primary"}`}>
                       {row.entry.display_name}{row.isUser ? " (toi)" : ""}
                     </span>
-                    <span className="text-xs text-text-muted tabular-nums flex items-center gap-1">
-                      <Link2 size={11} className="text-violet-400" /> {row.entry.chain_length}
+                    <span className="tnum text-xs text-text-muted flex items-center gap-1">
+                      <Link2 size={11} className="text-accent-text" /> {row.entry.chain_length}
                     </span>
-                    <span className="text-xs text-text-faint tabular-nums w-12 text-right">{formatTime(row.entry.time_seconds)}</span>
+                    <span className="tnum text-xs text-text-faint w-12 text-right">{formatTime(row.entry.time_seconds)}</span>
                   </div>
                 )
               )}
@@ -829,29 +832,29 @@ export default function HoopLinkGame({ players, playerTeams, adjacencyList }: Pr
 
 function PlayerNode({ player, label, color }: { player: HoopLinkPlayer; label: string; color: string }) {
   const colorClasses: Record<string, string> = {
-    violet: "border-violet-500/30 bg-violet-500/5",
-    emerald: "border-emerald-500/30 bg-emerald-500/5",
-    slate: "border-border-t bg-card",
+    accent: "border-accent bg-accent-light",
+    emerald: "border-emerald-500/40 bg-emerald-500/5",
+    neutral: "border-rule bg-card",
   };
 
   return (
     <div className="flex justify-center">
-      <div className={`flex items-center gap-3 rounded-xl border px-4 py-3 ${colorClasses[color] || colorClasses.slate}`}>
+      <div className={`flex items-center gap-3 border px-4 py-3 ${colorClasses[color] || colorClasses.neutral}`}>
         <div className="relative shrink-0">
           <img
             src={playerPhotoUrl(player.id)}
             alt=""
-            className="h-12 w-12 rounded-full object-cover bg-input"
+            className="h-12 w-12 object-cover bg-input"
             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
           />
           <img
             src={teamLogoUrl(player.team)}
             alt=""
-            className="absolute -bottom-0.5 -right-0.5 h-5 w-5 object-contain bg-card rounded-full p-0.5"
+            className="absolute -bottom-0.5 -right-0.5 h-5 w-5 object-contain bg-card p-0.5"
           />
         </div>
         <div>
-          <p className="text-[10px] font-bold text-text-faint uppercase tracking-wider">{label}</p>
+          <p className="kicker text-text-faint">{label}</p>
           <p className="text-sm font-bold text-text-primary">{player.name}</p>
           <p className="text-xs text-text-faint">{player.teamName}</p>
         </div>
@@ -865,13 +868,13 @@ function ConnectionLine({ sharedTeams }: { sharedTeams: { season: string; team: 
 
   return (
     <div className="flex flex-col items-center py-1">
-      <div className="w-0.5 h-3 bg-violet-500/40" />
-      <div className="flex items-center gap-1.5 rounded-full bg-violet-500/10 border border-violet-500/20 px-2.5 py-0.5">
+      <div className="w-px h-3 bg-accent" />
+      <div className="flex items-center gap-1.5 border border-rule bg-card px-2.5 py-0.5">
         {teamLogoUrl(best.team) && <img src={teamLogoUrl(best.team)} alt="" className="h-3.5 w-3.5 object-contain" />}
-        <span className="text-[10px] font-bold text-violet-400">{best.team}</span>
-        <span className="text-[10px] text-text-faint">{best.season}</span>
+        <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-accent-text">{best.team}</span>
+        <span className="font-mono text-[10px] tnum text-text-faint">{best.season}</span>
       </div>
-      <div className="w-0.5 h-3 bg-violet-500/40" />
+      <div className="w-px h-3 bg-accent" />
     </div>
   );
 }
@@ -885,9 +888,9 @@ function LastLinkTeamsHint({ lastLinkId, players }: { lastLinkId: number; player
       <p className="text-xs text-text-muted text-center">
         Trouve un coéquipier (actuel ou passé) de <span className="font-bold text-text-primary">{player.name}</span>
       </p>
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-500/10 border border-violet-500/20 px-3 py-1">
+      <span className="inline-flex items-center gap-1.5 border border-rule bg-card px-3 py-1">
         <img src={teamLogoUrl(player.team)} alt="" className="h-4 w-4 object-contain" />
-        <span className="text-xs font-bold text-violet-400">{player.teamName}</span>
+        <span className="font-mono text-xs font-bold uppercase tracking-wider text-accent-text">{player.teamName}</span>
       </span>
     </div>
   );

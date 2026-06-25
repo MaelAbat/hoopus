@@ -10,16 +10,16 @@ export default function Loading() {
 
       {/* Pixelated image */}
       <div className="flex flex-col items-center gap-4">
-        <div className="aspect-square w-full max-w-[280px] animate-pulse rounded-2xl bg-input" />
+        <div className="aspect-square w-full max-w-[280px] animate-pulse bg-input" />
         {/* Timer + guess count */}
         <div className="flex items-center gap-4">
-          <div className="h-3 w-16 animate-pulse rounded bg-input" />
-          <div className="h-3 w-16 animate-pulse rounded bg-input" />
+          <div className="h-3 w-16 animate-pulse bg-input" />
+          <div className="h-3 w-16 animate-pulse bg-input" />
         </div>
       </div>
 
       {/* Search input */}
-      <div className="h-12 w-full animate-pulse rounded-xl bg-input" />
+      <div className="h-12 w-full animate-pulse bg-input" />
     </div>
   );
 }

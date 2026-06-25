@@ -97,11 +97,11 @@ function GameCard({ game }: { game: Game }) {
   const canLink = isFinal || isLive;
 
   const card = (
-    <div className={`rounded-xl bg-sidebar border p-3 transition-all duration-200 hover:border-border-hover ${canLink ? "cursor-pointer hover:shadow-lg hover:-translate-y-0.5" : ""} ${isFav ? "border-accent/60 ring-2 ring-accent/20 shadow-[0_0_12px_rgba(var(--accent-rgb,249,115,22),0.15)]" : "border-border-t"}`}>
+    <div className={`bg-card border p-3 transition-colors hover:border-border-hover ${isFav ? "border-accent ring-1 ring-accent/40" : "border-rule"}`}>
       {/* Playoff label */}
       {getGameLabel(game.game_id) && (
         <div className="mb-1.5">
-          <span className="inline-block rounded-md bg-accent/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-accent-text">
+          <span className="inline-block border border-rule px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-text-secondary">
             {getGameLabel(game.game_id)}
           </span>
         </div>
@@ -110,19 +110,19 @@ function GameCard({ game }: { game: Game }) {
       {/* Status */}
       <div className="flex items-center justify-between mb-2">
         {isLive ? (
-          <span className="inline-flex items-center gap-1 rounded-full bg-red-500/20 px-2 py-0.5 text-xs font-semibold text-red-400">
-            <span className="h-1.5 w-1.5 rounded-full bg-red-400 animate-pulse" />
-            LIVE
+          <span className="inline-flex items-center gap-1 bg-accent px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-white">
+            <span className="h-1 w-1 rounded-full bg-white animate-pulse" />
+            Live
           </span>
         ) : isFinal ? (
-          <span className="text-xs font-medium text-text-muted">Termin\u00E9</span>
+          <span className="font-mono text-[10px] font-semibold uppercase tracking-wider text-text-faint">Termin\u00E9</span>
         ) : (
-          <span className="text-xs font-medium text-text-muted">
+          <span className="tnum font-mono text-[10px] uppercase tracking-wider text-text-muted">
             {toParisTime(game.game_date, game.game_time) || game.status_text}
           </span>
         )}
         {game.arena && (
-          <span className="flex items-center gap-1 text-xs text-text-faint">
+          <span className="flex items-center gap-1 font-mono text-[10px] uppercase tracking-wider text-text-faint">
             <MapPin size={10} />
             {game.arena_city}
           </span>
@@ -134,15 +134,15 @@ function GameCard({ game }: { game: Game }) {
         <div className={`flex items-center justify-between ${awayWon ? "text-text-primary" : isFinal ? "text-text-muted" : "text-text-secondary"}`}>
           <div className="flex items-center gap-2">
             {game.away_team === "TBD" ? (
-              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-input text-[8px] font-bold text-text-faint">?</span>
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center bg-input text-[8px] font-bold text-text-faint">?</span>
             ) : (
               <img src={teamLogoUrl(game.away_team)} alt={game.away_team} className="h-5 w-5 shrink-0 object-contain" />
             )}
-            <span className={`text-xs font-bold ${game.away_team === "TBD" ? "text-text-faint italic" : ""}`}>{game.away_team === "TBD" ? "\u00C0 d\u00E9terminer" : game.away_team}</span>
+            <span className={`text-xs font-bold uppercase ${game.away_team === "TBD" ? "text-text-faint italic" : ""}`}>{game.away_team === "TBD" ? "\u00C0 d\u00E9terminer" : game.away_team}</span>
             {game.away_team !== "TBD" && <span className="text-xs hidden sm:inline">{game.away_team_name}</span>}
           </div>
           {(isFinal || isLive) && (
-            <span className={`text-sm font-bold ${awayWon ? "text-accent-text" : ""}`}>
+            <span className={`tnum text-sm font-bold ${awayWon ? "text-text-primary" : "text-text-muted"}`}>
               {game.away_score}
             </span>
           )}
@@ -150,15 +150,15 @@ function GameCard({ game }: { game: Game }) {
         <div className={`flex items-center justify-between ${homeWon ? "text-text-primary" : isFinal ? "text-text-muted" : "text-text-secondary"}`}>
           <div className="flex items-center gap-2">
             {game.home_team === "TBD" ? (
-              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-input text-[8px] font-bold text-text-faint">?</span>
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center bg-input text-[8px] font-bold text-text-faint">?</span>
             ) : (
               <img src={teamLogoUrl(game.home_team)} alt={game.home_team} className="h-5 w-5 shrink-0 object-contain" />
             )}
-            <span className={`text-xs font-bold ${game.home_team === "TBD" ? "text-text-faint italic" : ""}`}>{game.home_team === "TBD" ? "\u00C0 d\u00E9terminer" : game.home_team}</span>
+            <span className={`text-xs font-bold uppercase ${game.home_team === "TBD" ? "text-text-faint italic" : ""}`}>{game.home_team === "TBD" ? "\u00C0 d\u00E9terminer" : game.home_team}</span>
             {game.home_team !== "TBD" && <span className="text-xs hidden sm:inline">{game.home_team_name}</span>}
           </div>
           {(isFinal || isLive) && (
-            <span className={`text-sm font-bold ${homeWon ? "text-accent-text" : ""}`}>
+            <span className={`tnum text-sm font-bold ${homeWon ? "text-text-primary" : "text-text-muted"}`}>
               {game.home_score}
             </span>
           )}
@@ -315,17 +315,17 @@ export default function CalendarView({ games: initialGames, initialSeason }: { g
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_350px] lg:h-[calc(100vh-12rem)]">
       {/* Calendar */}
-      <div className="rounded-2xl bg-card border border-border-t p-5 flex flex-col">
+      <div className="bg-card border border-rule p-5 flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
-          <button onClick={prevMonth} className="rounded-lg p-2 text-text-muted hover:bg-input hover:text-text-primary transition-colors">
+          <button onClick={prevMonth} className="p-2 text-text-muted hover:bg-input hover:text-text-primary transition-colors">
             <ChevronLeft size={20} />
           </button>
-          <h2 className="text-lg font-bold text-text-primary flex items-center gap-2">
-            {MONTHS_FR[month]} {year}
+          <h2 className="font-display text-xl text-text-primary flex items-center gap-2 uppercase">
+            {MONTHS_FR[month]} <span className="tnum">{year}</span>
             {loading && <Loader2 size={14} className="animate-spin text-text-faint" />}
           </h2>
-          <button onClick={nextMonth} className="rounded-lg p-2 text-text-muted hover:bg-input hover:text-text-primary transition-colors">
+          <button onClick={nextMonth} className="p-2 text-text-muted hover:bg-input hover:text-text-primary transition-colors">
             <ChevronRight size={20} />
           </button>
         </div>
@@ -333,7 +333,7 @@ export default function CalendarView({ games: initialGames, initialSeason }: { g
         {/* Day headers */}
         <div className="grid grid-cols-7 gap-1 mb-1">
           {DAYS_FR.map((d) => (
-            <div key={d} className="text-center text-xs font-medium text-text-muted py-1">
+            <div key={d} className="kicker text-center text-text-faint py-1">
               {d}
             </div>
           ))}
@@ -358,14 +358,14 @@ export default function CalendarView({ games: initialGames, initialSeason }: { g
               <button
                 key={dateKey}
                 onClick={() => selectDate(dateKey)}
-                className={`relative flex flex-col items-center justify-center rounded-lg text-sm transition-all duration-150 ${
+                className={`relative flex flex-col items-center justify-center border tnum text-sm transition-colors ${
                   isSelected
-                    ? "bg-accent text-white font-bold shadow-lg"
+                    ? "border-accent bg-accent text-white font-bold"
                     : isToday
-                      ? "bg-accent-light text-accent-text font-semibold"
+                      ? "border-rule bg-accent-light text-accent-text font-semibold"
                       : gameCount > 0
-                        ? "text-text-primary hover:bg-input"
-                        : "text-text-faint hover:bg-input"
+                        ? "border-rule text-text-primary hover:border-border-hover hover:bg-input"
+                        : "border-transparent text-text-faint hover:bg-input"
                 }`}
               >
                 {day}
@@ -375,14 +375,14 @@ export default function CalendarView({ games: initialGames, initialSeason }: { g
                       <Star size={8} className="fill-accent text-accent" />
                     )}
                     <span
-                      className={`text-[9px] font-bold leading-none ${
+                      className={`tnum text-[9px] font-bold leading-none ${
                         isSelected
                           ? "text-white/80"
                           : hasLive
-                            ? "text-red-400"
+                            ? "text-accent"
                             : hasFav
                               ? "text-accent"
-                              : "text-accent/60"
+                              : "text-text-faint"
                       }`}
                     >
                       {gameCount}
@@ -397,13 +397,15 @@ export default function CalendarView({ games: initialGames, initialSeason }: { g
 
       {/* Games for selected date */}
       <div className="flex flex-col min-h-0 lg:max-h-none">
-        <h3 className="text-sm font-semibold text-text-secondary mb-3 shrink-0">
-          {new Date(selectedDate + "T12:00:00").toLocaleDateString("fr-FR", {
-            weekday: "long",
-            day: "numeric",
-            month: "long",
-          })}
-          <span className="ml-2 text-text-faint">
+        <h3 className="mb-3 shrink-0 flex items-baseline gap-2">
+          <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-text-primary">
+            {new Date(selectedDate + "T12:00:00").toLocaleDateString("fr-FR", {
+              weekday: "long",
+              day: "numeric",
+              month: "long",
+            })}
+          </span>
+          <span className="font-mono text-[11px] uppercase tracking-wider text-text-faint">
             {selectedGames.length > 0
               ? `${selectedGames.length} match${selectedGames.length > 1 ? "s" : ""}`
               : "Aucun match"}
@@ -412,7 +414,7 @@ export default function CalendarView({ games: initialGames, initialSeason }: { g
 
         <div ref={gamesListRef} className="flex-1 lg:overflow-y-auto space-y-2 min-h-0 lg:pr-1">
           {selectedGames.length === 0 ? (
-            <div className="rounded-2xl bg-card border border-border-t p-8 text-center">
+            <div className="bg-card border border-rule p-8 text-center">
               <p className="text-sm text-text-muted">Pas de match ce jour</p>
             </div>
           ) : (

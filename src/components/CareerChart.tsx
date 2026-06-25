@@ -23,21 +23,28 @@ interface CareerChartProps {
 interface StatConfig {
   key: keyof SeasonStats;
   label: string;
-  color: string;
   format: (v: number) => string;
 }
 
 const STATS: StatConfig[] = [
-  { key: "pts", label: "PTS", color: "#f97316", format: (v) => v.toFixed(1) },
-  { key: "reb", label: "REB", color: "#3b82f6", format: (v) => v.toFixed(1) },
-  { key: "ast", label: "AST", color: "#10b981", format: (v) => v.toFixed(1) },
-  { key: "stl", label: "STL", color: "#8b5cf6", format: (v) => v.toFixed(1) },
-  { key: "blk", label: "BLK", color: "#ec4899", format: (v) => v.toFixed(1) },
-  { key: "fgPct", label: "FG%", color: "#eab308", format: (v) => (v * 100).toFixed(1) + "%" },
-  { key: "min", label: "MIN", color: "#06b6d4", format: (v) => v.toFixed(1) },
+  { key: "pts", label: "PTS", format: (v) => v.toFixed(1) },
+  { key: "reb", label: "REB", format: (v) => v.toFixed(1) },
+  { key: "ast", label: "AST", format: (v) => v.toFixed(1) },
+  { key: "stl", label: "STL", format: (v) => v.toFixed(1) },
+  { key: "blk", label: "BLK", format: (v) => v.toFixed(1) },
+  { key: "fgPct", label: "FG%", format: (v) => (v * 100).toFixed(1) + "%" },
+  { key: "min", label: "MIN", format: (v) => v.toFixed(1) },
 ];
 
 const MAX_SELECTED = 3;
+
+// Single-accent palette: the primary series is the theme accent, additional
+// series step down into neutral text tones so up to 3 lines stay distinguishable
+// without resorting to a decorative rainbow. Colors come from the theme tokens.
+const SERIES_COLORS = ["var(--accent)", "var(--text-secondary)", "var(--text-faint)"];
+function seriesColor(index: number): string {
+  return SERIES_COLORS[index % SERIES_COLORS.length];
+}
 
 // Chart layout constants
 const CHART_PADDING_LEFT = 50;
@@ -177,10 +184,10 @@ export default function CareerChart({ seasons }: CareerChartProps) {
     if (!svg) return;
 
     const s = chartSeasons[seasonIndex];
-    const values = selectedStats.map((stat) => ({
+    const values = selectedStats.map((stat, idx) => ({
       label: stat.label,
       value: stat.format(getStatValue(s, stat.key)),
-      color: stat.color,
+      color: seriesColor(idx),
     }));
 
     // Get position relative to the SVG element
@@ -203,32 +210,32 @@ export default function CareerChart({ seasons }: CareerChartProps) {
   }
 
   return (
-    <div className="rounded-2xl bg-card border border-border-t p-6">
-      <h2 className="text-lg font-bold text-text-primary mb-4">
+    <div className="bg-card border border-rule p-6 sm:p-8">
+      <h2 className="font-display text-2xl text-text-primary sm:text-3xl mb-4">
         Évolution de carrière
       </h2>
 
       {/* Stat toggle pills */}
-      <div className="flex flex-wrap gap-2 mb-5">
+      <div className="flex flex-wrap gap-1 mb-5">
         {STATS.map((stat) => {
           const isActive = selected.includes(stat.key);
+          const activeIdx = selectedStats.findIndex((s) => s.key === stat.key);
           return (
             <button
               key={stat.key}
               onClick={() => toggleStat(stat.key)}
-              className="rounded-lg px-3 py-1.5 text-xs font-medium transition-all border"
+              className={`border px-3 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-wider transition-colors ${
+                isActive
+                  ? "text-white"
+                  : "border-rule text-text-muted hover:border-border-hover hover:text-text-primary"
+              }`}
               style={
                 isActive
                   ? {
-                      backgroundColor: stat.color,
-                      color: "#fff",
-                      borderColor: stat.color,
+                      backgroundColor: seriesColor(activeIdx),
+                      borderColor: seriesColor(activeIdx),
                     }
-                  : {
-                      backgroundColor: "transparent",
-                      color: "var(--text-muted)",
-                      borderColor: "var(--border)",
-                    }
+                  : undefined
               }
             >
               {stat.label}
@@ -278,6 +285,7 @@ export default function CareerChart({ seasons }: CareerChartProps) {
             {selectedStats.map((stat, statIdx) => {
               const s = chartSeasons[0];
               const val = getDisplayValue(s, stat);
+              const color = seriesColor(statIdx);
               const barWidth = Math.min(80, plotWidth / (selectedStats.length * 2));
               const totalBarsWidth =
                 selectedStats.length * barWidth +
@@ -293,16 +301,15 @@ export default function CareerChart({ seasons }: CareerChartProps) {
                     y={plotBottom - barHeight}
                     width={barWidth}
                     height={barHeight}
-                    fill={stat.color}
-                    opacity={0.85}
-                    rx={4}
+                    fill={color}
+                    opacity={0.9}
                   />
                   <text
                     x={startX + barWidth / 2}
                     y={plotBottom - barHeight - 8}
                     textAnchor="middle"
-                    className="text-[11px] font-medium"
-                    fill={stat.color}
+                    className="text-[11px] font-medium tabular-nums"
+                    fill={color}
                   >
                     {stat.format(getStatValue(s, stat.key))}
                   </text>
@@ -385,19 +392,21 @@ export default function CareerChart({ seasons }: CareerChartProps) {
             })}
 
             {/* Area fills + lines + dots for each selected stat */}
-            {selectedStats.map((stat) => (
+            {selectedStats.map((stat, statIdx) => {
+              const color = seriesColor(statIdx);
+              return (
               <g key={stat.key}>
                 {/* Area fill */}
                 <path
                   d={buildAreaPath(stat)}
-                  fill={stat.color}
-                  opacity={0.1}
+                  fill={color}
+                  opacity={0.08}
                 />
                 {/* Line */}
                 <path
                   d={buildLinePath(stat)}
                   fill="none"
-                  stroke={stat.color}
+                  stroke={color}
                   strokeWidth={2.5}
                   strokeLinejoin="round"
                   strokeLinecap="round"
@@ -412,7 +421,7 @@ export default function CareerChart({ seasons }: CareerChartProps) {
                       cx={x}
                       cy={y}
                       r={4}
-                      fill={stat.color}
+                      fill={color}
                       stroke="var(--bg-card)"
                       strokeWidth={2}
                       className="cursor-pointer"
@@ -422,7 +431,8 @@ export default function CareerChart({ seasons }: CareerChartProps) {
                   );
                 })}
               </g>
-            ))}
+              );
+            })}
 
             {/* Tooltip */}
             {tooltip && (
@@ -437,27 +447,26 @@ export default function CareerChart({ seasons }: CareerChartProps) {
                   y={0}
                   width={130}
                   height={24 + tooltip.values.length * 20}
-                  rx={8}
                   fill="var(--bg-card)"
-                  stroke="var(--border)"
+                  stroke="var(--rule)"
                   strokeWidth={1}
-                  opacity={0.95}
+                  opacity={0.97}
                 />
                 <text
                   x={10}
                   y={16}
-                  className="text-[11px] font-semibold"
+                  className="text-[11px] font-semibold tabular-nums"
                   fill="var(--text)"
                 >
                   {tooltip.season}
                 </text>
                 {tooltip.values.map((v, i) => (
                   <g key={i}>
-                    <circle cx={16} cy={32 + i * 20} r={4} fill={v.color} />
+                    <rect x={11} y={28 + i * 20} width={8} height={8} fill={v.color} />
                     <text
                       x={26}
                       y={36 + i * 20}
-                      className="text-[10px]"
+                      className="text-[10px] tabular-nums"
                       fill="var(--text-muted)"
                     >
                       {v.label}: {v.value}

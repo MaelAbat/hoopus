@@ -92,14 +92,14 @@ function comparePosition(guess: string, target: string): ClueStatus {
 function clueClass(status: ClueStatus): string {
   switch (status) {
     case "correct":
-      return "bg-emerald-500/20 text-emerald-400 border-emerald-500/30";
+      return "bg-emerald-600/20 text-emerald-300 border-emerald-600/40";
     case "higher":
     case "lower":
-      return "bg-orange-500/15 text-orange-400 border-orange-500/30";
+      return "bg-accent-light text-accent-text border-accent/40";
     case "partial":
-      return "bg-amber-500/15 text-amber-400 border-amber-500/30";
+      return "bg-input text-text-secondary border-border-hover";
     case "wrong":
-      return "bg-red-500/15 text-red-400 border-red-500/30";
+      return "bg-red-600/15 text-red-300 border-red-600/30";
   }
 }
 
@@ -112,14 +112,14 @@ function getDifficulty(player: HooplPlayer): {
 } {
   const score = player.pts + player.reb * 0.7 + player.ast * 0.7;
   if (score >= 28)
-    return { label: "Facile", className: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" };
+    return { label: "Facile", className: "bg-emerald-600/15 text-emerald-300 border-emerald-600/30" };
   if (score >= 15)
-    return { label: "Intermédiaire", className: "bg-amber-500/15 text-amber-400 border-amber-500/30" };
-  return { label: "Difficile", className: "bg-red-500/15 text-red-400 border-red-500/30" };
+    return { label: "Intermédiaire", className: "bg-accent-light text-accent-text border-accent/30" };
+  return { label: "Difficile", className: "bg-red-600/15 text-red-300 border-red-600/30" };
 }
 
 function ClueIcon({ status }: { status: ClueStatus }) {
-  if (status === "correct") return <Check size={14} className="text-emerald-400" />;
+  if (status === "correct") return <Check size={14} className="text-emerald-300" />;
   if (status === "higher") return <ArrowUp size={14} />;
   if (status === "lower") return <ArrowDown size={14} />;
   if (status === "partial") return <span className="text-xs font-bold">~</span>;
@@ -505,46 +505,39 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
       <div className="pt-4 space-y-4">
         <Link
           href="/mini-jeux"
-          className="inline-flex items-center gap-2 sm:gap-1.5 rounded-lg bg-input px-4 py-2.5 text-sm sm:px-3 sm:py-1.5 sm:text-xs font-medium text-text-muted hover:text-text-primary hover:bg-card-hover transition-colors"
+          className="inline-flex items-center gap-2 sm:gap-1.5 border border-rule bg-card px-4 py-2.5 sm:px-3 sm:py-1.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-text-muted transition-colors hover:border-border-hover hover:text-text-primary"
         >
           <RotateCcw size={12} />
           Tous les mini-jeux
         </Link>
 
         {/* Game banner */}
-        <div className="relative overflow-hidden rounded-2xl border border-border-t bg-gradient-to-br from-accent/10 via-card to-card">
-          <div className="absolute top-0 right-0 w-32 h-32 sm:w-48 sm:h-48 opacity-[0.07]">
-            <svg viewBox="0 0 100 100" className="w-full h-full text-accent">
-              <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="3" />
-              <circle cx="50" cy="50" r="20" fill="none" stroke="currentColor" strokeWidth="2" />
-              <line x1="50" y1="5" x2="50" y2="95" stroke="currentColor" strokeWidth="2" />
-              <line x1="5" y1="50" x2="95" y2="50" stroke="currentColor" strokeWidth="2" />
-            </svg>
-          </div>
+        <div className="relative overflow-hidden border border-rule bg-card">
+          <div className="absolute left-0 top-0 bottom-0 w-1 bg-accent" />
 
           <div className="relative px-5 py-6 sm:px-8 sm:py-8">
             <div className="flex items-center gap-4 sm:gap-6">
               {/* Mystery silhouette */}
               <div className="relative shrink-0">
-                <div className={`h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-gradient-to-br from-accent/30 to-accent/10 border-2 border-accent/40 flex items-center justify-center ${won ? "" : "animate-pulse"}`}>
+                <div className={`flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center border border-border-hover bg-input ${won ? "" : "animate-pulse"}`}>
                   {won || lost ? (
-                    <img src={playerPhotoUrl(target.id)} alt="" className="h-full w-full rounded-full object-cover" />
+                    <img src={playerPhotoUrl(target.id)} alt="" className="h-full w-full object-cover" />
                   ) : (
-                    <span className="text-2xl sm:text-3xl font-black text-accent/60">?</span>
+                    <span className="font-display text-3xl sm:text-4xl text-accent-text">?</span>
                   )}
                 </div>
                 {won && (
-                  <div className="absolute -top-1 -right-1 h-6 w-6 rounded-full bg-emerald-500 flex items-center justify-center">
+                  <div className="absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center bg-emerald-600">
                     <Check size={14} className="text-white" />
                   </div>
                 )}
               </div>
 
               <div className="flex-1 min-w-0">
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-text-primary tracking-tight">
+                <h1 className="font-display text-3xl sm:text-4xl text-text-primary">
                   Hoop<span className="text-accent">l</span>
                 </h1>
-                <p className="text-xs sm:text-sm text-text-muted mt-0.5">
+                <p className="mt-1 font-mono text-[11px] uppercase tracking-wider text-text-muted">
                   {won ? `Trouvé en ${guessIds.length} essai${guessIds.length > 1 ? "s" : ""} !`
                     : lost ? "Partie terminée"
                     : "Devine le joueur NBA du jour"}
@@ -553,7 +546,7 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
                 {/* Difficulté du jour */}
                 {difficulty && (
                   <span
-                    className={`mt-2 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${difficulty.className}`}
+                    className={`mt-2 inline-flex items-center gap-1.5 border px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider ${difficulty.className}`}
                     title="Difficulté estimée d'après les statistiques du joueur"
                   >
                     <Gauge size={11} />
@@ -564,16 +557,16 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
                 {/* Progress bar */}
                 {!won && !lost && loaded && (
                   <div className="mt-3 space-y-1">
-                    <div className="flex items-center justify-between text-[10px]">
-                      <span className="text-text-faint">{guessIds.length}/{MAX_GUESSES} essais</span>
+                    <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-wider">
+                      <span className="tnum text-text-faint">{guessIds.length}/{MAX_GUESSES} essais</span>
                       <span className="flex items-center gap-1 text-text-faint">
                         <Clock size={10} />
-                        {formatTime(elapsed)}
+                        <span className="tnum">{formatTime(elapsed)}</span>
                       </span>
                     </div>
-                    <div className="h-1.5 rounded-full bg-input overflow-hidden">
+                    <div className="h-1.5 bg-input overflow-hidden">
                       <div
-                        className="h-full rounded-full bg-gradient-to-r from-accent to-accent-hover transition-all duration-500"
+                        className="h-full bg-accent transition-all duration-500"
                         style={{ width: `${(guessIds.length / MAX_GUESSES) * 100}%` }}
                       />
                     </div>
@@ -582,12 +575,12 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
 
                 {/* Win stats */}
                 {won && (
-                  <div className="flex items-center gap-3 mt-2">
-                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[11px] font-bold text-emerald-400">
-                      <Trophy size={11} /> {guessIds.length} essai{guessIds.length > 1 ? "s" : ""}
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="inline-flex items-center gap-1 border border-emerald-600/40 bg-emerald-600/15 px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-emerald-300">
+                      <Trophy size={11} /> <span className="tnum">{guessIds.length}</span> essai{guessIds.length > 1 ? "s" : ""}
                     </span>
-                    <span className="inline-flex items-center gap-1 rounded-full bg-accent/15 px-2.5 py-0.5 text-[11px] font-bold text-accent-text">
-                      <Clock size={11} /> {formatTime(elapsed)}
+                    <span className="inline-flex items-center gap-1 border border-accent/40 bg-accent-light px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-accent-text">
+                      <Clock size={11} /> <span className="tnum">{formatTime(elapsed)}</span>
                     </span>
                   </div>
                 )}
@@ -600,7 +593,7 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
 
       {/* Hint after 5 guesses */}
       {!won && !lost && guessIds.length >= 5 && (
-        <div className="rounded-xl bg-accent/10 border border-accent/30 px-4 py-3 text-center text-sm animate-[fadeIn_0.5s_ease-out]">
+        <div className="border border-accent/30 bg-accent-light px-4 py-3 text-center text-sm animate-[fadeIn_0.5s_ease-out]">
           <span className="text-text-muted">Indice : il joue pour les </span>
           <span className="font-bold text-accent-text">{target.teamName}</span>
           <img src={teamLogoUrl(target.team)} alt="" className="inline h-5 w-5 ml-1.5 -mt-0.5 object-contain" />
@@ -627,14 +620,14 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleAbandon}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-red-500/15 border border-red-500/30 px-3.5 py-2 text-xs font-bold text-red-400 transition-colors hover:bg-red-500/25 active:scale-95"
+                  className="inline-flex items-center gap-1.5 border border-red-600/40 bg-red-600/15 px-3.5 py-2 font-mono text-[11px] font-bold uppercase tracking-wider text-red-300 transition-colors hover:bg-red-600/25 active:scale-95"
                 >
                   <Flag size={13} />
                   Confirmer
                 </button>
                 <button
                   onClick={() => setConfirmAbandon(false)}
-                  className="rounded-lg bg-input border border-border-t px-3.5 py-2 text-xs font-medium text-text-muted transition-colors hover:bg-card-hover hover:text-text-primary active:scale-95"
+                  className="border border-rule bg-card px-3.5 py-2 font-mono text-[11px] font-semibold uppercase tracking-wider text-text-muted transition-colors hover:border-border-hover hover:text-text-primary active:scale-95"
                 >
                   Annuler
                 </button>
@@ -643,7 +636,7 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
           ) : (
             <button
               onClick={handleAbandon}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-input border border-border-t px-3.5 py-2 text-xs font-medium text-text-muted transition-colors hover:bg-card-hover hover:text-text-primary active:scale-95"
+              className="inline-flex items-center gap-1.5 border border-rule bg-card px-3.5 py-2 font-mono text-[11px] font-semibold uppercase tracking-wider text-text-muted transition-colors hover:border-border-hover hover:text-text-primary active:scale-95"
             >
               <Flag size={13} />
               Abandonner
@@ -654,20 +647,21 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
 
       {/* Win reveal */}
       {won && (
-        <div className="rounded-2xl overflow-hidden border border-emerald-500/30 bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-card p-5 sm:p-6">
+        <div className="relative overflow-hidden border border-emerald-600/40 bg-card p-5 sm:p-6">
+          <span className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-600" />
           <div className="flex items-center gap-4">
             <div className="relative shrink-0">
-              <img src={playerPhotoUrl(target.id)} alt="" className="h-20 w-20 sm:h-24 sm:w-24 rounded-2xl object-cover bg-input shadow-lg" />
-              <img src={teamLogoUrl(target.team)} alt="" className="absolute -bottom-1 -right-1 h-7 w-7 object-contain bg-card rounded-full p-0.5" />
+              <img src={playerPhotoUrl(target.id)} alt="" className="h-20 w-20 sm:h-24 sm:w-24 object-cover bg-input" />
+              <img src={teamLogoUrl(target.team)} alt="" className="absolute -bottom-1 -right-1 h-7 w-7 object-contain bg-card p-0.5" />
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-bold text-emerald-400 uppercase tracking-wider">Bravo !</p>
-              <p className="text-xl sm:text-2xl font-extrabold text-text-primary mt-0.5">{target.name}</p>
+              <p className="kicker text-emerald-300">Bravo !</p>
+              <p className="font-display text-2xl sm:text-3xl text-text-primary mt-0.5">{target.name}</p>
               <p className="text-sm text-text-muted">{target.teamName} -- {target.position}</p>
               <div className="flex items-center gap-4 mt-2 text-xs text-text-faint">
-                <span className="font-bold text-text-secondary">{target.pts.toFixed(1)} <span className="font-normal">PTS</span></span>
-                <span className="font-bold text-text-secondary">{target.reb.toFixed(1)} <span className="font-normal">REB</span></span>
-                <span className="font-bold text-text-secondary">{target.ast.toFixed(1)} <span className="font-normal">AST</span></span>
+                <span className="tnum font-bold text-text-secondary">{target.pts.toFixed(1)} <span className="kicker font-normal text-text-faint">PTS</span></span>
+                <span className="tnum font-bold text-text-secondary">{target.reb.toFixed(1)} <span className="kicker font-normal text-text-faint">REB</span></span>
+                <span className="tnum font-bold text-text-secondary">{target.ast.toFixed(1)} <span className="kicker font-normal text-text-faint">AST</span></span>
               </div>
             </div>
           </div>
@@ -676,20 +670,21 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
 
       {/* Lost reveal */}
       {lost && (
-        <div className="rounded-2xl overflow-hidden border border-red-500/30 bg-gradient-to-r from-red-500/10 via-red-500/5 to-card p-5 sm:p-6">
+        <div className="relative overflow-hidden border border-red-600/30 bg-card p-5 sm:p-6">
+          <span className="absolute left-0 top-0 bottom-0 w-1 bg-red-600" />
           <div className="flex items-center gap-4">
             <div className="relative shrink-0">
-              <img src={playerPhotoUrl(target.id)} alt="" className="h-20 w-20 sm:h-24 sm:w-24 rounded-2xl object-cover bg-input shadow-lg" />
-              <img src={teamLogoUrl(target.team)} alt="" className="absolute -bottom-1 -right-1 h-7 w-7 object-contain bg-card rounded-full p-0.5" />
+              <img src={playerPhotoUrl(target.id)} alt="" className="h-20 w-20 sm:h-24 sm:w-24 object-cover bg-input" />
+              <img src={teamLogoUrl(target.team)} alt="" className="absolute -bottom-1 -right-1 h-7 w-7 object-contain bg-card p-0.5" />
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-bold text-red-400 uppercase tracking-wider">{gaveUp ? "Abandonné" : "Perdu !"}</p>
-              <p className="text-xl sm:text-2xl font-extrabold text-text-primary mt-0.5">{target.name}</p>
+              <p className="kicker text-red-300">{gaveUp ? "Abandonné" : "Perdu !"}</p>
+              <p className="font-display text-2xl sm:text-3xl text-text-primary mt-0.5">{target.name}</p>
               <p className="text-sm text-text-muted">{target.teamName} -- {target.position}</p>
               <div className="flex items-center gap-4 mt-2 text-xs text-text-faint">
-                <span className="font-bold text-text-secondary">{target.pts.toFixed(1)} <span className="font-normal">PTS</span></span>
-                <span className="font-bold text-text-secondary">{target.reb.toFixed(1)} <span className="font-normal">REB</span></span>
-                <span className="font-bold text-text-secondary">{target.ast.toFixed(1)} <span className="font-normal">AST</span></span>
+                <span className="tnum font-bold text-text-secondary">{target.pts.toFixed(1)} <span className="kicker font-normal text-text-faint">PTS</span></span>
+                <span className="tnum font-bold text-text-secondary">{target.reb.toFixed(1)} <span className="kicker font-normal text-text-faint">REB</span></span>
+                <span className="tnum font-bold text-text-secondary">{target.ast.toFixed(1)} <span className="kicker font-normal text-text-faint">AST</span></span>
               </div>
             </div>
           </div>
@@ -701,16 +696,16 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2 sm:gap-3">
           <button
             onClick={handleShare}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1DA1F2] px-5 py-3 text-sm font-bold text-white transition-all hover:bg-[#1a8cd8] hover:scale-[1.03] active:scale-[0.98]"
+            className="inline-flex items-center justify-center gap-2 bg-accent px-6 py-3.5 font-mono text-xs font-bold uppercase tracking-widest text-white transition-colors hover:bg-accent-hover"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
             Partager
           </button>
           <button
             onClick={handleCopyResult}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-input border border-border-t px-5 py-3 text-sm font-bold text-text-primary transition-all hover:bg-card-hover hover:scale-[1.03] active:scale-[0.98]"
+            className="inline-flex items-center justify-center gap-2 border border-border-hover bg-card px-6 py-3.5 font-mono text-xs font-bold uppercase tracking-widest text-text-primary transition-colors hover:bg-input"
           >
-            {copied ? <><Check size={14} className="text-emerald-400" /> Copié !</> : "Copier"}
+            {copied ? <><Check size={14} className="text-emerald-300" /> Copié !</> : "Copier"}
           </button>
         </div>
       )}
@@ -721,12 +716,12 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
           {/* Mobile: card layout (newest first so the latest guess shows up top) */}
           <div className="space-y-3 sm:hidden">
             {[...guessResults].reverse().map((result) => (
-              <div key={result.player.id} className="rounded-xl bg-card border border-border-t p-3 space-y-2">
+              <div key={result.player.id} className="border border-rule bg-card p-3 space-y-2">
                 <div className="flex items-center gap-2">
                   <img
                     src={playerPhotoUrl(result.player.id)}
                     alt=""
-                    className="h-8 w-8 rounded-full object-cover bg-input"
+                    className="h-8 w-8 object-cover bg-input"
                     onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                   />
                   <span className="text-sm font-bold text-text-primary">{result.player.name}</span>
@@ -737,10 +732,10 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
                     return (
                       <div
                         key={col.key}
-                        className={`flex flex-col items-center rounded-lg border px-1.5 py-2 ${clueClass(status)}`}
+                        className={`flex flex-col items-center border px-1.5 py-2 ${clueClass(status)}`}
                       >
-                        <span className="text-[10px] font-medium opacity-70">{col.label}</span>
-                        <div className="flex items-center gap-0.5 text-sm font-bold">
+                        <span className="kicker opacity-70">{col.label}</span>
+                        <div className="tnum flex items-center gap-0.5 text-sm font-bold">
                           {col.key === "team" ? (
                             <img src={teamLogoUrl(result.player.team)} alt="" className="h-3.5 w-3.5 object-contain" />
                           ) : (
@@ -757,28 +752,28 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
           </div>
 
           {/* Desktop: table layout */}
-          <div className="hidden sm:block rounded-2xl bg-card border border-border-t overflow-hidden">
+          <div className="hidden sm:block border border-rule bg-card overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-border-t text-text-faint">
-                    <th className="sticky left-0 z-10 bg-card px-3 py-2 text-left text-xs font-medium">Joueur</th>
+                  <tr className="border-b border-rule">
+                    <th className="sticky left-0 z-10 bg-card px-3 py-2 text-left"><span className="kicker text-text-faint">Joueur</span></th>
                     {COLUMNS.map((col) => (
-                      <th key={col.key} className="px-2 py-2 text-center text-xs font-medium whitespace-nowrap">
-                        {col.label}
+                      <th key={col.key} className="px-2 py-2 text-center whitespace-nowrap">
+                        <span className="kicker text-text-faint">{col.label}</span>
                       </th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {guessResults.map((result, i) => (
-                    <tr key={result.player.id} className="border-b border-border-t/30">
+                    <tr key={result.player.id} className="border-b border-rule">
                       <td className="sticky left-0 z-10 bg-card px-3 py-2">
                         <div className="flex items-center gap-2">
                           <img
                             src={playerPhotoUrl(result.player.id)}
                             alt=""
-                            className="h-7 w-7 rounded-full object-cover bg-input"
+                            className="h-7 w-7 object-cover bg-input"
                             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                           />
                           <span className="text-xs font-medium text-text-primary whitespace-nowrap">{result.player.name}</span>
@@ -789,7 +784,7 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
                         return (
                           <td key={col.key} className="px-1.5 py-2">
                             <div
-                              className={`flex items-center justify-center gap-1 rounded-lg border px-2 py-1.5 text-xs font-medium whitespace-nowrap ${clueClass(status)}`}
+                              className={`tnum flex items-center justify-center gap-1 border px-2 py-1.5 text-xs font-medium whitespace-nowrap ${clueClass(status)}`}
                             >
                               {col.key === "team" ? (
                                 <img src={teamLogoUrl(result.player.team)} alt="" className="h-4 w-4 object-contain" />
@@ -814,25 +809,26 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
       {leaderboard.length > 0 && (() => {
         const rows = computeVisibleLeaderboard(leaderboard, userId);
         return (
-          <div className="rounded-2xl bg-card border border-border-t overflow-hidden">
-            <div className="px-4 py-3 border-b border-border-t">
-              <h2 className="text-sm font-bold text-text-primary flex items-center gap-2">
+          <div className="border border-rule bg-card overflow-hidden">
+            <div className="px-4 py-3 border-b border-rule">
+              <h2 className="font-display text-lg text-text-primary flex items-center gap-2">
                 <Trophy size={16} className="text-accent-text" />
                 Classement du jour
               </h2>
             </div>
-            <div className="divide-y divide-border-t/30">
+            <div className="divide-y divide-rule">
               {rows.map((row, i) =>
                 row.type === "separator" ? (
                   <div key="sep" className="flex items-center gap-3 px-4 py-1.5">
-                    <div className="flex-1 border-t border-dashed border-border-t" />
+                    <div className="flex-1 border-t border-dashed border-rule" />
                     <span className="text-[10px] text-text-faint">...</span>
-                    <div className="flex-1 border-t border-dashed border-border-t" />
+                    <div className="flex-1 border-t border-dashed border-rule" />
                   </div>
                 ) : (
-                  <div key={`${row.entry.display_name}-${row.rank}`} className={`flex items-center gap-3 px-4 py-2.5 ${row.isUser ? "bg-accent/10 border-l-2 border-l-accent" : ""}`}>
-                    <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[11px] font-bold ${
-                      row.rank === 1 ? "bg-accent/20 text-accent-text"
+                  <div key={`${row.entry.display_name}-${row.rank}`} className={`flex items-center gap-3 px-4 py-2.5 ${row.isUser ? "relative bg-accent-light" : ""}`}>
+                    {row.isUser && <span className="absolute left-0 top-0 bottom-0 w-1 bg-accent" />}
+                    <span className={`tnum flex h-6 w-6 shrink-0 items-center justify-center text-[11px] font-bold ${
+                      row.rank === 1 ? "bg-accent text-white"
                       : row.rank <= 3 ? "bg-input text-text-primary"
                       : "text-text-faint"
                     }`}>
@@ -841,8 +837,8 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
                     <span className={`flex-1 text-sm truncate ${row.isUser ? "font-bold text-accent-text" : isAnonymousName(row.entry.display_name) ? "italic text-text-muted" : "font-medium text-text-primary"}`}>
                       {row.entry.display_name}{row.isUser ? " (toi)" : ""}
                     </span>
-                    <span className="text-xs text-text-muted tabular-nums">{row.entry.guesses} essai{row.entry.guesses > 1 ? "s" : ""}</span>
-                    <span className="text-xs text-text-faint tabular-nums w-12 text-right">{formatTime(row.entry.time_seconds)}</span>
+                    <span className="tnum text-xs text-text-muted">{row.entry.guesses} essai{row.entry.guesses > 1 ? "s" : ""}</span>
+                    <span className="tnum text-xs text-text-faint w-12 text-right">{formatTime(row.entry.time_seconds)}</span>
                   </div>
                 )
               )}
@@ -854,21 +850,21 @@ export default function HooplGame({ players }: { players: HooplPlayer[] }) {
       <SignupBanner show={submitted} />
 
       {/* Legend */}
-      <div className="flex flex-wrap items-center justify-center gap-4 text-[11px] text-text-faint pb-4">
+      <div className="flex flex-wrap items-center justify-center gap-4 font-mono text-[10px] uppercase tracking-wider text-text-faint pb-4">
         <div className="flex items-center gap-1.5">
-          <div className="h-3 w-3 rounded bg-emerald-500/30" />
+          <div className="h-3 w-3 bg-emerald-600/40" />
           Correct
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="h-3 w-3 rounded bg-orange-500/30" />
+          <div className="h-3 w-3 bg-accent/40" />
           <ArrowUp size={10} /> Plus haut / <ArrowDown size={10} /> Plus bas
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="h-3 w-3 rounded bg-amber-500/30" />
+          <div className="h-3 w-3 bg-border-hover" />
           <span className="font-bold">~</span> Poste proche
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="h-3 w-3 rounded bg-red-500/30" />
+          <div className="h-3 w-3 bg-red-600/40" />
           Incorrect
         </div>
       </div>

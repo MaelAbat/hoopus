@@ -180,7 +180,7 @@ export default function GlobalPipPlayer() {
   return (
     <div
       ref={pipRef}
-      className="fixed z-50 rounded-xl overflow-visible shadow-2xl border border-border-t bg-card"
+      className="fixed z-50 overflow-visible shadow-2xl border border-rule bg-card"
       style={{ left: rect.x, top: rect.y, width: rect.w, height: rect.h }}
     >
       {/* Resize handles */}
@@ -207,14 +207,17 @@ export default function GlobalPipPlayer() {
       <div
         data-dragbar
         onMouseDown={onDragStart}
-        className="flex items-center justify-between px-3 py-1.5 bg-card border-b border-border-t/50 cursor-grab active:cursor-grabbing select-none rounded-t-xl"
+        className="flex items-center justify-between px-3 py-1.5 bg-card border-b border-rule cursor-grab active:cursor-grabbing select-none"
       >
-        <span className="text-[10px] font-medium text-text-muted truncate mr-2">Résumé du match</span>
+        <span className="flex items-center gap-2 min-w-0 mr-2">
+          <span className="block h-2.5 w-1 bg-accent shrink-0" />
+          <span className="font-mono text-[10px] uppercase tracking-wider text-text-muted truncate">Résumé du match</span>
+        </span>
         <div className="flex items-center gap-1 shrink-0">
           {isOnMatchPage && (
             <button
               onClick={reattach}
-              className="rounded p-1 text-text-faint hover:text-text-primary transition-colors"
+              className="p-1 text-text-faint hover:bg-input hover:text-text-primary transition-colors"
               title="Rattacher"
             >
               <Undo2 size={12} />
@@ -222,7 +225,7 @@ export default function GlobalPipPlayer() {
           )}
           <button
             onClick={close}
-            className="rounded p-1 text-text-faint hover:text-text-primary transition-colors"
+            className="p-1 text-text-faint hover:bg-input hover:text-text-primary transition-colors"
             title="Fermer"
           >
             <X size={12} />
@@ -231,7 +234,7 @@ export default function GlobalPipPlayer() {
       </div>
 
       {/* Video */}
-      <div className="relative rounded-b-xl overflow-hidden" style={{ height: "calc(100% - 32px)" }}>
+      <div className="relative overflow-hidden" style={{ height: "calc(100% - 32px)" }}>
         <iframe
           src={`https://www.youtube.com/embed/${videoId}`}
           title="Highlights"

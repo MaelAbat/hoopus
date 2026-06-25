@@ -38,13 +38,13 @@ export default function StatsView({
     <div className="space-y-6">
       {/* Main section tabs */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="flex rounded-xl bg-card border border-border-t p-1">
+        <div className="flex border border-rule bg-card">
           <button
             onClick={() => setSection("players")}
-            className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider transition-colors ${
               section === "players"
-                ? "bg-accent text-white shadow-md"
-                : "text-text-muted hover:text-text-primary"
+                ? "bg-accent text-white"
+                : "text-text-muted hover:bg-input hover:text-text-primary"
             }`}
           >
             <User size={16} />
@@ -52,10 +52,10 @@ export default function StatsView({
           </button>
           <button
             onClick={() => setSection("teams")}
-            className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider transition-colors ${
               section === "teams"
-                ? "bg-accent text-white shadow-md"
-                : "text-text-muted hover:text-text-primary"
+                ? "bg-accent text-white"
+                : "text-text-muted hover:bg-input hover:text-text-primary"
             }`}
           >
             <Users size={16} />
@@ -65,12 +65,12 @@ export default function StatsView({
 
         {/* Player sub-tabs */}
         {section === "players" && (
-          <div className="flex rounded-lg bg-input p-0.5 overflow-x-auto">
+          <div className="flex border border-rule bg-input overflow-x-auto">
             <button
               onClick={() => setPlayerView("carousel")}
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-wider transition-colors whitespace-nowrap ${
                 playerView === "carousel"
-                  ? "bg-card text-text-primary shadow-sm"
+                  ? "bg-card text-text-primary"
                   : "text-text-muted hover:text-text-primary"
               }`}
             >
@@ -79,9 +79,9 @@ export default function StatsView({
             </button>
             <button
               onClick={() => setPlayerView("table")}
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-wider transition-colors whitespace-nowrap ${
                 playerView === "table"
-                  ? "bg-card text-text-primary shadow-sm"
+                  ? "bg-card text-text-primary"
                   : "text-text-muted hover:text-text-primary"
               }`}
             >
@@ -90,9 +90,9 @@ export default function StatsView({
             </button>
             <button
               onClick={() => setPlayerView("advanced")}
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-wider transition-colors whitespace-nowrap ${
                 playerView === "advanced"
-                  ? "bg-card text-text-primary shadow-sm"
+                  ? "bg-card text-text-primary"
                   : "text-text-muted hover:text-text-primary"
               }`}
             >

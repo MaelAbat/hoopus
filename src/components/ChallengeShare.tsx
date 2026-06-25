@@ -52,16 +52,16 @@ export default function ChallengeShare({
   return (
     <button
       onClick={handleShare}
-      className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-bold text-white transition-all duration-200 hover:bg-accent-hover active:scale-95"
+      className="inline-flex items-center gap-2.5 bg-accent px-6 py-3.5 font-mono text-xs font-bold uppercase tracking-widest text-white transition-colors hover:bg-accent-hover"
     >
       {copied ? (
         <>
-          <Check size={16} />
+          <Check size={15} strokeWidth={2} />
           Lien copié
         </>
       ) : (
         <>
-          <Swords size={16} />
+          <Swords size={15} strokeWidth={2} />
           Défier un ami
         </>
       )}

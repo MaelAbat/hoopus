@@ -76,7 +76,7 @@ function SortableEntry({
       ref={setNodeRef}
       style={style}
       data-entry-id={entry.id}
-      className={`flex items-start gap-2 px-4 py-3 ${isDragging ? "bg-card-hover shadow-lg rounded-lg opacity-90" : ""}`}
+      className={`flex items-start gap-2 px-4 py-3 ${isDragging ? "bg-card-hover shadow-lg opacity-90" : ""}`}
     >
       {/* Drag handle */}
       <button
@@ -89,7 +89,7 @@ function SortableEntry({
       </button>
 
       {/* Number */}
-      <span className="shrink-0 flex h-7 w-7 items-center justify-center rounded-md bg-input text-[11px] font-bold text-text-faint mt-1.5">
+      <span className="tnum shrink-0 flex h-7 w-7 items-center justify-center bg-input text-[11px] font-bold text-text-faint mt-1.5">
         {index + 1}
       </span>
 
@@ -100,14 +100,14 @@ function SortableEntry({
           value={entry.label}
           onChange={(e) => onUpdate(entry.id, "label", e.target.value)}
           placeholder="Indice affiché (optionnel)"
-          className="w-full rounded-lg bg-sidebar border border-border-t px-3 py-2 text-xs text-text-primary placeholder:text-text-faint outline-none focus:border-accent"
+          className="w-full bg-input border border-rule px-3 py-2 text-xs text-text-primary placeholder:text-text-faint outline-none focus:border-accent transition-colors"
         />
         <input
           type="text"
           value={entry.answers}
           onChange={(e) => onUpdate(entry.id, "answers", e.target.value)}
           placeholder="Réponses acceptées, séparées par des virgules"
-          className="w-full rounded-lg bg-sidebar border border-border-t px-3 py-2 text-xs text-text-primary placeholder:text-text-faint outline-none focus:border-accent"
+          className="w-full bg-input border border-rule px-3 py-2 text-xs text-text-primary placeholder:text-text-faint outline-none focus:border-accent transition-colors"
         />
       </div>
 
@@ -116,7 +116,7 @@ function SortableEntry({
         onClick={() => onRemove(entry.id)}
         disabled={!canRemove}
         aria-label="Supprimer cette entrée"
-        className="shrink-0 mt-1 p-2 rounded-lg text-text-faint hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-20"
+        className="shrink-0 mt-1 p-2 text-text-faint hover:text-red-500 hover:bg-red-500/10 transition-colors disabled:opacity-20"
       >
         <Trash2 size={16} />
       </button>
@@ -262,40 +262,40 @@ export default function QuizEditor({ existing }: { existing?: ExistingQuiz }) {
       <div className="flex items-center justify-between">
         <Link
           href="/mini-jeux/hoopiz"
-          className="inline-flex items-center gap-2 sm:gap-1.5 rounded-lg bg-input px-4 py-2.5 text-sm sm:px-3 sm:py-1.5 sm:text-xs font-medium text-text-muted hover:text-text-primary hover:bg-card-hover transition-colors"
+          className="inline-flex items-center gap-2 sm:gap-1.5 border border-rule bg-card px-4 py-2.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-text-muted hover:border-border-hover hover:text-text-primary transition-colors"
         >
           <ArrowLeft size={12} /> Retour
         </Link>
-        <h1 className="text-xl font-bold text-text-primary">{isEdit ? "Modifier le quiz" : "Nouveau quiz"}</h1>
+        <h1 className="font-display text-2xl text-text-primary">{isEdit ? "Modifier le quiz" : "Nouveau quiz"}</h1>
       </div>
 
       {/* Basic info */}
-      <div className="rounded-2xl bg-card border border-border-t p-5 space-y-4">
+      <div className="bg-card border border-rule p-5 space-y-4">
         <div>
-          <label className="block text-xs font-bold text-text-muted uppercase tracking-wider mb-1.5">Titre</label>
+          <label className="kicker block text-text-faint mb-1.5">Titre</label>
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Ex: Palmarès NBA"
-            className="w-full rounded-lg bg-sidebar border border-border-t px-3 py-2.5 text-sm text-text-primary placeholder:text-text-faint outline-none focus:border-accent"
+            className="w-full bg-input border border-rule px-3 py-2.5 text-sm text-text-primary placeholder:text-text-faint outline-none focus:border-accent transition-colors"
           />
         </div>
         <div>
-          <label className="block text-xs font-bold text-text-muted uppercase tracking-wider mb-1.5">Description</label>
+          <label className="kicker block text-text-faint mb-1.5">Description</label>
           <input
             type="text"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Ex: Retrouve tous les champions NBA depuis 1947."
-            className="w-full rounded-lg bg-sidebar border border-border-t px-3 py-2.5 text-sm text-text-primary placeholder:text-text-faint outline-none focus:border-accent"
+            className="w-full bg-input border border-rule px-3 py-2.5 text-sm text-text-primary placeholder:text-text-faint outline-none focus:border-accent transition-colors"
           />
         </div>
         <ImageUpload defaultValue={imageUrl} onChange={(url) => setImageUrl(url)} hidePreview={!!imageUrl} />
         {imageUrl && (
           <div className="space-y-2">
-            <label className="block text-xs font-bold text-text-muted uppercase tracking-wider">Cadrage de l'image</label>
-            <div className="h-32 w-full overflow-hidden rounded-xl border border-border-t">
+            <label className="kicker block text-text-faint">Cadrage de l'image</label>
+            <div className="h-32 w-full overflow-hidden border border-rule">
               <img
                 src={imageUrl}
                 alt="Apercu cadrage"
@@ -303,14 +303,14 @@ export default function QuizEditor({ existing }: { existing?: ExistingQuiz }) {
                 style={{ objectPosition: `center ${imagePosition}` }}
               />
             </div>
-            <div className="flex rounded-lg bg-input p-0.5">
+            <div className="flex border border-rule bg-card">
               {Array.from({ length: 10 }, (_, i) => `${i * 10 + 10}%`).map((value) => (
                 <button
                   key={value}
                   type="button"
                   onClick={() => setImagePosition(value)}
-                  className={`flex-1 rounded-md py-1.5 text-[10px] font-medium transition-all ${
-                    imagePosition === value ? "bg-card text-text-primary shadow-sm" : "text-text-muted"
+                  className={`tnum flex-1 py-1.5 font-mono text-[10px] transition-colors ${
+                    imagePosition === value ? "bg-accent text-white" : "text-text-muted hover:text-text-primary"
                   }`}
                 >
                   {value}
@@ -321,20 +321,20 @@ export default function QuizEditor({ existing }: { existing?: ExistingQuiz }) {
         )}
         <div className="flex flex-wrap gap-4">
           <div>
-            <label className="block text-xs font-bold text-text-muted uppercase tracking-wider mb-1.5">Mode</label>
-            <div className="flex rounded-lg bg-input p-0.5">
+            <label className="kicker block text-text-faint mb-1.5">Mode</label>
+            <div className="flex border border-rule bg-card">
               <button
                 onClick={() => setMode("unordered")}
-                className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
-                  mode === "unordered" ? "bg-card text-text-primary shadow-sm" : "text-text-muted"
+                className={`flex items-center gap-1.5 px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-wider transition-colors ${
+                  mode === "unordered" ? "bg-accent text-white" : "text-text-muted hover:text-text-primary"
                 }`}
               >
                 <List size={13} /> Désordre
               </button>
               <button
                 onClick={() => setMode("ordered")}
-                className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
-                  mode === "ordered" ? "bg-card text-text-primary shadow-sm" : "text-text-muted"
+                className={`flex items-center gap-1.5 px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-wider transition-colors ${
+                  mode === "ordered" ? "bg-accent text-white" : "text-text-muted hover:text-text-primary"
                 }`}
               >
                 <ListOrdered size={13} /> Dans l'ordre
@@ -342,7 +342,7 @@ export default function QuizEditor({ existing }: { existing?: ExistingQuiz }) {
             </div>
           </div>
           <div>
-            <label className="block text-xs font-bold text-text-muted uppercase tracking-wider mb-1.5">Temps (minutes)</label>
+            <label className="kicker block text-text-faint mb-1.5">Temps (minutes)</label>
             <input
               type="number"
               inputMode="numeric"
@@ -350,28 +350,28 @@ export default function QuizEditor({ existing }: { existing?: ExistingQuiz }) {
               max={30}
               value={timeLimit}
               onChange={(e) => setTimeLimit(Number(e.target.value) || 5)}
-              className="w-20 rounded-lg bg-sidebar border border-border-t px-3 py-2.5 text-sm text-text-primary outline-none focus:border-accent"
+              className="tnum w-20 bg-input border border-rule px-3 py-2.5 text-sm text-text-primary outline-none focus:border-accent transition-colors"
             />
           </div>
         </div>
       </div>
 
       {/* Entries */}
-      <div className="rounded-2xl bg-card border border-border-t overflow-hidden">
-        <div className="px-5 py-3 border-b border-border-t flex items-center justify-between">
-          <h2 className="text-sm font-bold text-text-primary">
-            Réponses ({entries.length})
+      <div className="bg-card border border-rule overflow-hidden">
+        <div className="px-5 py-3 border-b border-rule flex items-center justify-between">
+          <h2 className="kicker text-text-primary">
+            Réponses (<span className="tnum">{entries.length}</span>)
           </h2>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setEntries([...entries].reverse())}
-              className="inline-flex items-center gap-1 rounded-lg bg-input border border-border-t px-3 py-1.5 text-xs font-medium text-text-muted hover:text-text-primary hover:bg-card-hover transition-colors"
+              className="inline-flex items-center gap-1 border border-rule px-3 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-text-muted hover:border-border-hover hover:text-text-primary transition-colors"
             >
               <ArrowDownUp size={12} /> Inverser
             </button>
             <button
               onClick={addEntry}
-              className="inline-flex items-center gap-1 rounded-lg bg-accent px-3 py-1.5 text-xs font-bold text-white hover:bg-accent-hover transition-colors"
+              className="inline-flex items-center gap-1 bg-accent px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-widest text-white hover:bg-accent-hover transition-colors"
             >
               <Plus size={12} /> Ajouter
             </button>
@@ -380,7 +380,7 @@ export default function QuizEditor({ existing }: { existing?: ExistingQuiz }) {
 
         <DndContext id="quiz-editor-dnd" sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={entries.map((e) => e.id)} strategy={verticalListSortingStrategy}>
-            <div className="divide-y divide-border-t/30">
+            <div className="divide-y divide-rule">
               {entries.map((entry, i) => (
                 <SortableEntry
                   key={entry.id}
@@ -398,32 +398,32 @@ export default function QuizEditor({ existing }: { existing?: ExistingQuiz }) {
 
       {/* Error */}
       {error && (
-        <div className="rounded-lg bg-red-500/10 border border-red-500/30 px-4 py-2.5 text-sm text-red-400">
+        <div className="bg-red-500/10 border border-red-500/40 px-4 py-2.5 text-sm text-red-500">
           {error}
         </div>
       )}
 
       {/* Actions — sticky bottom */}
-      <div className="sticky bottom-0 z-40 -mx-3 sm:-mx-0 border-t border-border-t bg-card/95 backdrop-blur-sm rounded-t-2xl">
+      <div className="sticky bottom-0 z-40 -mx-3 sm:-mx-0 border-t border-rule bg-card">
         <div className="flex items-center justify-between px-5 py-3">
           <div className="flex items-center gap-3">
             <button
               onClick={addEntry}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2.5 text-sm font-bold text-white hover:bg-accent-hover transition-colors"
+              className="inline-flex items-center gap-1.5 border border-border-hover px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-widest text-text-primary hover:bg-input transition-colors"
             >
               <Plus size={14} /> Ajouter
             </button>
             <button
               onClick={() => handleSave(true)}
               disabled={saving}
-              className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-emerald-700 transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-2 bg-accent px-5 py-2.5 font-mono text-xs font-bold uppercase tracking-widest text-white hover:bg-accent-hover transition-colors disabled:opacity-50"
             >
               <Save size={14} /> {saving ? "Enregistrement..." : "Publier"}
             </button>
             <button
               onClick={() => handleSave(false)}
               disabled={saving}
-              className="inline-flex items-center gap-2 rounded-xl bg-input border border-border-t px-5 py-2.5 text-sm font-bold text-text-primary hover:bg-card-hover transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-2 border border-border-hover px-5 py-2.5 font-mono text-xs font-bold uppercase tracking-widest text-text-primary hover:bg-input transition-colors disabled:opacity-50"
             >
               Brouillon
             </button>
@@ -432,7 +432,7 @@ export default function QuizEditor({ existing }: { existing?: ExistingQuiz }) {
             <button
               onClick={handleDelete}
               disabled={deleting}
-              className="inline-flex items-center gap-2 rounded-xl bg-red-500/10 border border-red-500/30 px-5 py-2.5 text-sm font-bold text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-2 border border-red-500/40 bg-red-500/10 px-5 py-2.5 font-mono text-xs font-bold uppercase tracking-widest text-red-500 hover:bg-red-500/20 transition-colors disabled:opacity-50"
             >
               <Trash2 size={14} /> {deleting ? "Suppression..." : "Supprimer"}
             </button>

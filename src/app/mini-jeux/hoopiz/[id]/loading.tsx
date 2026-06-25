@@ -9,13 +9,13 @@ export default function Loading() {
       </div>
 
       {/* Timer / progress bar */}
-      <div className="h-10 w-full animate-pulse rounded-xl bg-input" />
+      <div className="h-10 w-full animate-pulse bg-input" />
 
       {/* Answer-entry table */}
-      <div className="rounded-2xl bg-card border border-border-t p-3 sm:p-4">
+      <div className="bg-card border border-rule p-3 sm:p-4">
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {Array.from({ length: 16 }).map((_, i) => (
-            <div key={i} className="h-[62px] animate-pulse rounded-lg bg-input" />
+            <div key={i} className="h-[62px] animate-pulse bg-input" />
           ))}
         </div>
       </div>

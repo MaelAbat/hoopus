@@ -59,7 +59,7 @@ export default function QuizGrid({ quizzes, admin, userScores = {} }: { quizzes:
           value={search}
           onChange={(e) => handleSearch(e.target.value)}
           placeholder="Rechercher un quiz..."
-          className="w-full rounded-xl bg-card border border-border-t pl-9 pr-4 py-2.5 text-sm text-text-primary placeholder:text-text-faint outline-none focus:border-accent transition-colors"
+          className="w-full bg-card border border-rule pl-9 pr-4 py-2.5 text-sm text-text-primary placeholder:text-text-faint outline-none focus:border-accent transition-colors"
         />
       </div>
 
@@ -69,7 +69,7 @@ export default function QuizGrid({ quizzes, admin, userScores = {} }: { quizzes:
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={currentPage === 1}
-            className="flex h-10 w-10 items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-card-hover transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="flex h-10 w-10 items-center justify-center border border-rule text-text-muted hover:border-border-hover hover:text-text-primary hover:bg-input transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
             <ChevronLeft size={18} />
           </button>
@@ -77,10 +77,10 @@ export default function QuizGrid({ quizzes, admin, userScores = {} }: { quizzes:
             <button
               key={p}
               onClick={() => setPage(p)}
-              className={`flex h-10 w-10 items-center justify-center rounded-lg text-sm font-bold transition-colors ${
+              className={`flex h-10 w-10 items-center justify-center border tnum text-sm font-bold transition-colors ${
                 p === currentPage
-                  ? "bg-accent text-white"
-                  : "text-text-muted hover:text-text-primary hover:bg-card-hover"
+                  ? "border-accent bg-accent text-white"
+                  : "border-rule text-text-muted hover:border-border-hover hover:text-text-primary hover:bg-input"
               }`}
             >
               {p}
@@ -89,7 +89,7 @@ export default function QuizGrid({ quizzes, admin, userScores = {} }: { quizzes:
           <button
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={currentPage === totalPages}
-            className="flex h-10 w-10 items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-card-hover transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="flex h-10 w-10 items-center justify-center border border-rule text-text-muted hover:border-border-hover hover:text-text-primary hover:bg-input transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
             <ChevronRight size={18} />
           </button>
@@ -98,7 +98,7 @@ export default function QuizGrid({ quizzes, admin, userScores = {} }: { quizzes:
 
       {/* Grid */}
       {paginated.length === 0 ? (
-        <div className="rounded-2xl bg-card border border-border-t px-6 py-12 text-center text-sm text-text-muted">
+        <div className="bg-card border border-rule px-6 py-12 text-center text-sm text-text-muted">
           {search.trim() ? "Aucun quiz trouvé." : "Aucun quiz disponible pour le moment."}
         </div>
       ) : (
@@ -110,14 +110,14 @@ export default function QuizGrid({ quizzes, admin, userScores = {} }: { quizzes:
                 <div className="relative">
                   <Link
                     href={`/mini-jeux/hoopiz/${quiz.id}`}
-                    className="group flex flex-col rounded-2xl bg-card border border-border-t overflow-hidden transition-all duration-200 hover:border-accent/50 hover:shadow-lg hover:-translate-y-1 h-full"
+                    className="group flex flex-col bg-card border border-rule overflow-hidden transition-colors duration-200 hover:border-border-hover h-full"
                   >
                     <div className="h-32 w-full overflow-hidden bg-input">
                       {quiz.image_url ? (
                         <img
                           src={quiz.image_url}
                           alt={quiz.title}
-                          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                          className="h-full w-full object-cover grayscale transition-all duration-300 group-hover:grayscale-0 group-hover:scale-105"
                           style={{ objectPosition: `center ${quiz.image_position || "center"}` }}
                         />
                       ) : (
@@ -128,11 +128,11 @@ export default function QuizGrid({ quizzes, admin, userScores = {} }: { quizzes:
                     </div>
                     <div className="p-5 flex flex-col flex-1">
                       <div className="flex items-start justify-between gap-2 mb-2">
-                        <h2 className="text-lg font-bold leading-snug text-text-primary group-hover:text-accent-text transition-colors overflow-hidden" style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", textOverflow: "clip", minHeight: "2lh" }}>
+                        <h2 className="font-display text-xl leading-tight text-text-primary group-hover:text-accent-text transition-colors overflow-hidden" style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", textOverflow: "clip", minHeight: "2lh" }}>
                           {quiz.title}
                         </h2>
                         {!quiz.published && (
-                          <span className="shrink-0 rounded-full bg-orange-500/15 px-2 py-0.5 text-[10px] font-bold text-orange-400">
+                          <span className="shrink-0 border border-rule px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-text-muted">
                             Brouillon
                           </span>
                         )}
@@ -141,23 +141,23 @@ export default function QuizGrid({ quizzes, admin, userScores = {} }: { quizzes:
                       <div className="flex items-center gap-1.5 mt-2 h-4">
                         {userScores[quiz.id] && (
                           <>
-                            <Trophy size={12} className={userScores[quiz.id].found_count === userScores[quiz.id].total_count ? "text-emerald-400" : "text-accent-text"} />
-                            <span className={`text-xs font-bold ${userScores[quiz.id].found_count === userScores[quiz.id].total_count ? "text-emerald-400" : "text-accent-text"}`}>
+                            <Trophy size={12} className="text-accent-text" />
+                            <span className="tnum text-xs font-bold text-accent-text">
                               {userScores[quiz.id].found_count}/{userScores[quiz.id].total_count}
                             </span>
                           </>
                         )}
                       </div>
-                      <div className="flex items-center gap-3 mt-3 text-[11px] text-text-faint">
+                      <div className="flex items-center gap-3 mt-3 font-mono text-[11px] uppercase tracking-wider text-text-faint">
                         <span className="flex items-center gap-1">
                           {quiz.mode === "ordered" ? <ListOrdered size={12} /> : <List size={12} />}
                           {quiz.mode === "ordered" ? "Dans l'ordre" : "Désordre"}
                         </span>
                         <span className="flex items-center gap-1">
                           <Clock size={12} />
-                          {Math.floor(quiz.time_limit / 60)} min
+                          <span className="tnum">{Math.floor(quiz.time_limit / 60)}</span> min
                         </span>
-                        <span>{entryCount} réponse{entryCount > 1 ? "s" : ""}</span>
+                        <span><span className="tnum">{entryCount}</span> réponse{entryCount > 1 ? "s" : ""}</span>
                       </div>
                     </div>
                   </Link>
@@ -165,7 +165,7 @@ export default function QuizGrid({ quizzes, admin, userScores = {} }: { quizzes:
                     <Link
                       href={`/mini-jeux/hoopiz/${quiz.id}/edit`}
                       aria-label="Modifier le quiz"
-                      className="absolute top-2.5 right-2.5 rounded-lg p-2 bg-card/70 backdrop-blur-sm text-text-faint hover:text-accent-text hover:bg-accent/10 transition-colors z-10"
+                      className="absolute top-2.5 right-2.5 p-2 bg-card/90 border border-rule text-text-faint hover:text-accent-text hover:border-border-hover transition-colors z-10"
                     >
                       <Pencil size={16} />
                     </Link>
@@ -183,7 +183,7 @@ export default function QuizGrid({ quizzes, admin, userScores = {} }: { quizzes:
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={currentPage === 1}
-            className="flex h-10 w-10 items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-card-hover transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="flex h-10 w-10 items-center justify-center border border-rule text-text-muted hover:border-border-hover hover:text-text-primary hover:bg-input transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
             <ChevronLeft size={18} />
           </button>
@@ -191,10 +191,10 @@ export default function QuizGrid({ quizzes, admin, userScores = {} }: { quizzes:
             <button
               key={p}
               onClick={() => setPage(p)}
-              className={`flex h-10 w-10 items-center justify-center rounded-lg text-sm font-bold transition-colors ${
+              className={`flex h-10 w-10 items-center justify-center border tnum text-sm font-bold transition-colors ${
                 p === currentPage
-                  ? "bg-accent text-white"
-                  : "text-text-muted hover:text-text-primary hover:bg-card-hover"
+                  ? "border-accent bg-accent text-white"
+                  : "border-rule text-text-muted hover:border-border-hover hover:text-text-primary hover:bg-input"
               }`}
             >
               {p}
@@ -203,7 +203,7 @@ export default function QuizGrid({ quizzes, admin, userScores = {} }: { quizzes:
           <button
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={currentPage === totalPages}
-            className="flex h-10 w-10 items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-card-hover transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="flex h-10 w-10 items-center justify-center border border-rule text-text-muted hover:border-border-hover hover:text-text-primary hover:bg-input transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
             <ChevronRight size={18} />
           </button>

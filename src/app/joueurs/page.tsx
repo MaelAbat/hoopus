@@ -42,7 +42,7 @@ export default async function Joueurs() {
         subtitle={hasData ? `${players.length} joueurs référencés` : "Répertoire de tous les joueurs NBA"}
         variant="players"
         extra={!hasData ? (
-          <span className="inline-flex items-center rounded-full bg-yellow-500/20 px-2 py-0.5 text-xs text-yellow-300">
+          <span className="inline-flex items-center border border-rule px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-text-muted">
             Synchronisation requise
           </span>
         ) : undefined}

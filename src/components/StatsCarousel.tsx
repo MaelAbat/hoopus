@@ -26,14 +26,15 @@ function PlayerRow({ player, displayRank }: { player: PlayerStatLeader; displayR
   const { isPlayerFollowed } = useFavorites();
   const followed = isPlayerFollowed(player.player_id);
   return (
-    <Link href={`/joueurs/${player.player_id}`} className={`flex items-center gap-3 sm:gap-4 px-3 sm:px-6 py-3.5 transition-all duration-150 hover:bg-card-hover hover:pl-4 sm:hover:pl-7 ${followed ? "bg-accent/5" : ""}`}>
+    <Link href={`/joueurs/${player.player_id}`} className={`group relative flex items-center gap-3 sm:gap-4 px-3 sm:px-6 py-3.5 transition-colors duration-150 hover:bg-card-hover ${followed ? "bg-accent-light" : ""}`}>
+      {rank === 1 && <span className="absolute left-0 top-0 bottom-0 w-1 bg-accent" />}
       <span
-        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
+        className={`tnum flex h-8 w-8 shrink-0 items-center justify-center text-xs font-bold ${
           rank === 1
-            ? "bg-accent/20 text-accent-text"
+            ? "bg-accent text-white"
             : rank <= 3
               ? "bg-input text-text-primary"
-              : "bg-input text-text-muted"
+              : "text-text-faint"
         }`}
       >
         {rank}
@@ -42,7 +43,7 @@ function PlayerRow({ player, displayRank }: { player: PlayerStatLeader; displayR
         <img
           src={playerPhotoUrl(player.player_id)}
           alt=""
-          className="h-10 w-10 rounded-full object-cover bg-input"
+          className="h-10 w-10 object-cover bg-input"
           onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
         />
         <img
@@ -53,12 +54,12 @@ function PlayerRow({ player, displayRank }: { player: PlayerStatLeader; displayR
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
-          <p className="font-semibold text-text-primary truncate group-hover:text-accent transition-colors">{player.name}</p>
+          <p className="font-semibold text-text-primary truncate transition-colors group-hover:text-accent-text">{player.name}</p>
           {followed && <Heart size={12} className="shrink-0 fill-accent text-accent" />}
         </div>
-        <p className="text-xs text-text-muted">{player.team}</p>
+        <p className="font-mono text-[11px] uppercase tracking-wider text-text-muted">{player.team}</p>
       </div>
-      <span className="text-xl font-bold text-text-primary tabular-nums">
+      <span className="tnum font-display text-2xl text-text-primary">
         {player.value}
       </span>
     </Link>
@@ -170,19 +171,19 @@ export default function StatsCarousel({ boards }: { boards: Board[] }) {
     <div className="flex items-center gap-2 sm:gap-4 sm:h-[calc(100vh-14rem)]">
       <button
         onClick={() => go(-1)}
-        className="hidden sm:flex shrink-0 h-10 w-10 items-center justify-center rounded-full bg-card border border-border-t text-text-muted hover:bg-input hover:text-text-primary transition-colors"
+        className="hidden sm:flex shrink-0 h-10 w-10 items-center justify-center bg-card border border-rule text-text-muted hover:border-border-hover hover:bg-input hover:text-text-primary transition-colors"
       >
         <ChevronLeft size={22} />
       </button>
 
       <div
-        className="rounded-2xl bg-card border border-border-t overflow-hidden flex flex-col flex-1 h-full min-w-0"
+        className="bg-card border border-rule overflow-hidden flex flex-col flex-1 h-full min-w-0"
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
       >
         {/* Category tabs */}
-        <div className="border-b border-border-t py-3 overflow-hidden">
+        <div className="border-b border-rule py-3 overflow-hidden">
           <div
             ref={trackRef}
             className="flex gap-1.5 transition-transform duration-300 ease-out w-max"
@@ -192,9 +193,9 @@ export default function StatsCarousel({ boards }: { boards: Board[] }) {
               <button
                 key={b.stat}
                 onClick={() => setActive(i)}
-                className={`whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 shrink-0 ${
+                className={`whitespace-nowrap px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider transition-colors duration-200 shrink-0 ${
                   active === i
-                    ? "bg-accent text-white shadow-md"
+                    ? "bg-accent text-white"
                     : "bg-input text-text-muted hover:bg-card-hover hover:text-text-primary"
                 }`}
               >
@@ -205,13 +206,13 @@ export default function StatsCarousel({ boards }: { boards: Board[] }) {
         </div>
 
         {/* Controls bar */}
-        <div className="flex flex-wrap items-center gap-2 px-3 sm:px-6 py-2.5 border-b border-border-t/50">
-          <div className="flex rounded-lg bg-input p-0.5">
+        <div className="flex flex-wrap items-center gap-2 px-3 sm:px-6 py-2.5 border-b border-rule">
+          <div className="flex border border-rule bg-input">
             <button
               onClick={() => setMode("top10")}
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-wider transition-colors ${
                 mode === "top10"
-                  ? "bg-card text-text-primary shadow-sm"
+                  ? "bg-card text-text-primary"
                   : "text-text-muted hover:text-text-primary"
               }`}
             >
@@ -220,9 +221,9 @@ export default function StatsCarousel({ boards }: { boards: Board[] }) {
             </button>
             <button
               onClick={() => setMode("full")}
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-wider transition-colors ${
                 mode === "full"
-                  ? "bg-card text-text-primary shadow-sm"
+                  ? "bg-card text-text-primary"
                   : "text-text-muted hover:text-text-primary"
               }`}
             >
@@ -232,29 +233,29 @@ export default function StatsCarousel({ boards }: { boards: Board[] }) {
           </div>
 
           {hasEligibility && (
-            <div className="flex rounded-lg bg-input p-0.5">
+            <div className="flex border border-rule bg-input">
               <button
                 onClick={() => { setMode("full"); setEligibility("eligible"); }}
-                className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-all ${
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-wider transition-colors ${
                   mode === "full" && eligibility === "eligible"
-                    ? "bg-card text-text-primary shadow-sm"
+                    ? "bg-card text-text-primary"
                     : "text-text-muted hover:text-text-primary"
                 }`}
               >
                 <Filter size={12} />
                 Éligibles
-                <span className="text-text-faint">({board.full.filter((p) => p.rank <= board.eligibleCount).length})</span>
+                <span className="tnum text-text-faint">({board.full.filter((p) => p.rank <= board.eligibleCount).length})</span>
               </button>
               <button
                 onClick={() => { setMode("full"); setEligibility("all"); }}
-                className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-all ${
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-wider transition-colors ${
                   mode === "full" && eligibility === "all"
-                    ? "bg-card text-text-primary shadow-sm"
+                    ? "bg-card text-text-primary"
                     : "text-text-muted hover:text-text-primary"
                 }`}
               >
                 Tous
-                <span className="text-text-faint">({board.full.length})</span>
+                <span className="tnum text-text-faint">({board.full.length})</span>
               </button>
             </div>
           )}
@@ -265,28 +266,28 @@ export default function StatsCarousel({ boards }: { boards: Board[] }) {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Rechercher un joueur..."
-              className="ml-auto rounded-lg bg-input border border-border-t px-3 py-1.5 text-xs text-text-primary placeholder:text-text-faint outline-none focus:border-accent w-48"
+              className="ml-auto bg-input border border-rule px-3 py-1.5 font-mono text-xs text-text-primary placeholder:text-text-faint outline-none focus:border-accent w-48"
             />
           )}
         </div>
 
         {/* Pagination top */}
         {mode === "full" && totalPages > 1 && (
-          <div className="flex items-center justify-center gap-3 py-2 border-b border-border-t/50">
+          <div className="flex items-center justify-center gap-3 py-2 border-b border-rule">
             <button
               onClick={() => setPage((p) => Math.max(0, p - 1))}
               disabled={page === 0}
-              className="rounded-md px-2 py-1 text-xs font-medium text-text-muted hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              className="px-2 py-1 text-text-muted hover:bg-input hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
               <ChevronLeft size={16} />
             </button>
-            <span className="text-xs text-text-muted tabular-nums">
+            <span className="tnum font-mono text-[11px] uppercase tracking-wider text-text-muted">
               {page * PAGE_SIZE + 1}--{Math.min((page + 1) * PAGE_SIZE, filteredFull.length)} sur {filteredFull.length}
             </span>
             <button
               onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
               disabled={page >= totalPages - 1}
-              className="rounded-md px-2 py-1 text-xs font-medium text-text-muted hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              className="px-2 py-1 text-text-muted hover:bg-input hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
               <ChevronRight size={16} />
             </button>
@@ -294,9 +295,9 @@ export default function StatsCarousel({ boards }: { boards: Board[] }) {
         )}
 
         {/* Header row */}
-        <div className="flex items-center justify-between px-3 sm:px-6 py-3 border-b border-border-t/50">
-          <span className="text-xs font-medium text-text-muted uppercase tracking-wider">Joueur</span>
-          <span className="text-xs font-medium text-text-muted uppercase tracking-wider">{board.unit}</span>
+        <div className="flex items-center justify-between px-3 sm:px-6 py-3 border-b border-rule">
+          <span className="kicker text-text-faint">Joueur</span>
+          <span className="kicker text-text-faint">{board.unit}</span>
         </div>
 
         {/* Players list */}
@@ -306,7 +307,7 @@ export default function StatsCarousel({ boards }: { boards: Board[] }) {
               {search ? "Aucun résultat" : "Aucune donnée disponible"}
             </div>
           ) : (
-            <div className="divide-y divide-border-t/50">
+            <div className="divide-y divide-rule">
               {displayPlayers.map((player, i) => (
                 <PlayerRow
                   key={`${board.stat}-${player.player_id}-${player.name}`}
@@ -319,23 +320,23 @@ export default function StatsCarousel({ boards }: { boards: Board[] }) {
         </div>
 
         {/* Pagination */}
-        <div className="flex items-center justify-center gap-1.5 py-3 border-t border-border-t/50">
+        <div className="flex items-center justify-center gap-1.5 py-3 border-t border-rule">
           {mode === "full" && totalPages > 1 ? (
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setPage((p) => Math.max(0, p - 1))}
                 disabled={page === 0}
-                className="rounded-md px-2 py-1 text-xs font-medium text-text-muted hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                className="px-2 py-1 text-text-muted hover:bg-input hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               >
                 <ChevronLeft size={16} />
               </button>
-              <span className="text-xs text-text-muted tabular-nums">
+              <span className="tnum font-mono text-[11px] uppercase tracking-wider text-text-muted">
                 {page * PAGE_SIZE + 1}--{Math.min((page + 1) * PAGE_SIZE, filteredFull.length)} sur {filteredFull.length}
               </span>
               <button
                 onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
                 disabled={page >= totalPages - 1}
-                className="rounded-md px-2 py-1 text-xs font-medium text-text-muted hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                className="px-2 py-1 text-text-muted hover:bg-input hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               >
                 <ChevronRight size={16} />
               </button>
@@ -345,7 +346,7 @@ export default function StatsCarousel({ boards }: { boards: Board[] }) {
               <button
                 key={i}
                 onClick={() => setActive(i)}
-                className={`h-1.5 rounded-full transition-all duration-300 ${
+                className={`h-1.5 transition-all duration-300 ${
                   active === i ? "w-6 bg-accent" : "w-1.5 bg-text-faint/50 hover:bg-text-muted"
                 }`}
               />
@@ -356,7 +357,7 @@ export default function StatsCarousel({ boards }: { boards: Board[] }) {
 
       <button
         onClick={() => go(1)}
-        className="hidden sm:flex shrink-0 h-10 w-10 items-center justify-center rounded-full bg-card border border-border-t text-text-muted hover:bg-input hover:text-text-primary transition-colors"
+        className="hidden sm:flex shrink-0 h-10 w-10 items-center justify-center bg-card border border-rule text-text-muted hover:border-border-hover hover:bg-input hover:text-text-primary transition-colors"
       >
         <ChevronRight size={22} />
       </button>

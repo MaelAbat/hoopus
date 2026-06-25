@@ -160,12 +160,12 @@ export default function PlayerSearchDropdown<T extends SearchablePlayer>({
         <img
           src={playerPhotoUrl(p.id)}
           alt=""
-          className="h-9 w-9 shrink-0 rounded-full object-cover bg-input"
+          className="h-9 w-9 shrink-0 object-cover bg-input"
           onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
         />
         <span className="flex-1 min-w-0 truncate text-sm font-medium text-text-primary">{p.name}</span>
         <img src={teamLogoUrl(p.team)} alt="" className="h-5 w-5 shrink-0 object-contain" />
-        <span className="text-xs text-text-faint shrink-0">{p.team}</span>
+        <span className="font-mono text-[11px] uppercase tracking-wider text-text-faint shrink-0">{p.team}</span>
       </button>
     ));
   }
@@ -194,7 +194,7 @@ export default function PlayerSearchDropdown<T extends SearchablePlayer>({
               placeholder={placeholder}
               autoComplete="off"
               enterKeyHint="search"
-              className={`w-full rounded-xl bg-card border border-border-t pl-10 pr-4 py-3 text-sm text-text-primary placeholder:text-text-faint outline-none transition-colors ${focusBorderClass}`}
+              className={`w-full bg-card border border-rule pl-10 pr-4 py-3 text-sm text-text-primary placeholder:text-text-faint outline-none transition-colors ${focusBorderClass}`}
             />
           </div>
           {sheetMode && (
@@ -202,7 +202,7 @@ export default function PlayerSearchDropdown<T extends SearchablePlayer>({
               type="button"
               onClick={closeSheet}
               aria-label="Fermer la recherche"
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-text-muted hover:bg-input active:scale-95 transition"
+              className="flex h-11 w-11 shrink-0 items-center justify-center text-text-muted hover:bg-input active:scale-95 transition"
             >
               <X size={20} />
             </button>
@@ -211,7 +211,7 @@ export default function PlayerSearchDropdown<T extends SearchablePlayer>({
 
         {/* Mobile: keep the game's visual (e.g. Hoopixl photo) in the sheet */}
         {sheetMode && sheetHeader && (
-          <div className="shrink-0 flex justify-center border-b border-border-t/50 py-3 mt-2">
+          <div className="shrink-0 flex justify-center border-b border-rule py-3 mt-2">
             {sheetHeader}
           </div>
         )}
@@ -228,7 +228,7 @@ export default function PlayerSearchDropdown<T extends SearchablePlayer>({
         ) : (
           open && results.length > 0 && (
             <div
-              className="absolute z-50 mt-1 w-full max-h-72 rounded-xl bg-card border border-border-t shadow-xl overflow-y-auto overscroll-contain"
+              className="absolute z-50 mt-1 w-full max-h-72 bg-card border border-rule shadow-xl overflow-y-auto overscroll-contain"
             >
               {renderRows()}
             </div>

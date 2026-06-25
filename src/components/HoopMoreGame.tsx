@@ -89,7 +89,8 @@ function Confetti() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    const colors = ["#f97316", "#10b981", "#3b82f6", "#eab308", "#ef4444", "#8b5cf6", "#ec4899", "#06b6d4"];
+    const accentVar = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#ff5a1f";
+    const colors = [accentVar, "#f5f2e9", "#807b70"];
     const particles: { x: number; y: number; vx: number; vy: number; w: number; h: number; color: string; rot: number; vr: number; life: number }[] = [];
 
     for (const bp of [{ x: canvas.width * 0.3, y: canvas.height * 0.3 }, { x: canvas.width * 0.7, y: canvas.height * 0.3 }, { x: canvas.width * 0.5, y: canvas.height * 0.2 }]) {
@@ -476,7 +477,7 @@ export default function HoopMoreGame({ players }: { players: HoopMorePlayer[] })
         <div className="flex items-center justify-between">
           <Link
             href="/mini-jeux"
-            className="inline-flex items-center gap-2 sm:gap-1.5 rounded-lg bg-input px-4 py-2.5 text-sm sm:px-3 sm:py-1.5 sm:text-xs font-medium text-text-muted hover:text-text-primary hover:bg-card-hover transition-colors"
+            className="inline-flex items-center gap-2 sm:gap-1.5 border border-rule bg-card px-4 py-2.5 font-mono text-xs font-semibold uppercase tracking-wider sm:px-3 sm:py-1.5 sm:text-[11px] text-text-muted hover:border-border-hover hover:text-text-primary transition-colors"
           >
             <RotateCcw size={12} />
             Tous les mini-jeux
@@ -484,7 +485,7 @@ export default function HoopMoreGame({ players }: { players: HoopMorePlayer[] })
           {isAdmin && mode === "daily" && (
             <button
               onClick={handleAdminReset}
-              className="inline-flex items-center gap-2 sm:gap-1.5 rounded-lg bg-input px-4 py-2.5 text-sm sm:px-3 sm:py-1.5 sm:text-xs font-medium text-text-muted hover:text-text-primary hover:bg-card-hover transition-colors"
+              className="inline-flex items-center gap-2 sm:gap-1.5 border border-rule bg-card px-4 py-2.5 font-mono text-xs font-semibold uppercase tracking-wider sm:px-3 sm:py-1.5 sm:text-[11px] text-text-muted hover:border-border-hover hover:text-text-primary transition-colors"
             >
               <RotateCcw size={12} />
               Nouvelle partie
@@ -493,66 +494,67 @@ export default function HoopMoreGame({ players }: { players: HoopMorePlayer[] })
         </div>
 
         {/* Mode tabs */}
-        <div className="flex rounded-xl bg-input p-1 gap-1">
+        <div className="flex border border-rule bg-card p-1 gap-1">
           <button
             onClick={() => switchMode("daily")}
-            className={`flex-1 rounded-lg px-4 py-2 text-sm font-bold transition-all ${
+            className={`flex-1 px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider transition-colors ${
               mode === "daily"
-                ? "bg-card text-text-primary shadow-sm"
-                : "text-text-faint hover:text-text-muted"
+                ? "bg-accent text-white"
+                : "text-text-faint hover:text-text-primary hover:bg-input"
             }`}
           >
             Défi quotidien
           </button>
           <button
             onClick={() => switchMode("free")}
-            className={`flex-1 rounded-lg px-4 py-2 text-sm font-bold transition-all ${
+            className={`flex-1 px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider transition-colors ${
               mode === "free"
-                ? "bg-card text-text-primary shadow-sm"
-                : "text-text-faint hover:text-text-muted"
+                ? "bg-accent text-white"
+                : "text-text-faint hover:text-text-primary hover:bg-input"
             }`}
           >
             Mode libre
           </button>
         </div>
 
-        {/* Banner */}
-        <div className="relative overflow-hidden rounded-2xl border border-border-t bg-gradient-to-br from-rose-500/10 via-card to-card">
-          <div className="absolute top-0 right-0 w-32 h-32 sm:w-48 sm:h-48 opacity-[0.07]">
-            <Flame className="w-full h-full text-rose-500" />
+        {/* Banner — broadcast lower-third */}
+        <div className="relative overflow-hidden border border-rule bg-card">
+          <span className="absolute left-0 top-0 bottom-0 w-1 bg-accent" />
+          <div className="absolute top-0 right-0 w-32 h-32 sm:w-48 sm:h-48 opacity-[0.05]">
+            <Flame className="w-full h-full text-text-primary" />
           </div>
           <div className="relative px-5 py-6 sm:px-8 sm:py-8">
             <div className="flex items-center gap-4 sm:gap-6">
               <div className="relative shrink-0">
-                <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-gradient-to-br from-rose-500/30 to-rose-500/10 border-2 border-rose-500/40 flex items-center justify-center">
-                  <Flame size={32} className="text-rose-500" />
+                <div className="h-16 w-16 sm:h-20 sm:w-20 bg-accent flex items-center justify-center">
+                  <Flame size={32} className="text-white" />
                 </div>
                 {gameOver && streak >= 10 && (
-                  <div className="absolute -top-1 -right-1 h-6 w-6 rounded-full bg-emerald-500 flex items-center justify-center">
+                  <div className="absolute -top-1 -right-1 h-6 w-6 bg-emerald-500 flex items-center justify-center">
                     <Check size={14} className="text-white" />
                   </div>
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-text-primary tracking-tight">
-                  Hoop<span className="text-rose-500">More</span>
+                <h1 className="font-display text-3xl sm:text-4xl text-text-primary">
+                  Hoop<span className="text-accent-text">More</span>
                 </h1>
-                <p className="text-xs sm:text-sm text-text-muted mt-0.5">
+                <p className="text-xs sm:text-sm text-text-muted mt-1">
                   {gameOver
                     ? `Série terminée : ${streak} bonne${streak > 1 ? "s" : ""} réponse${streak > 1 ? "s" : ""}`
                     : `${category.label} - Plus ou moins ?`}
                 </p>
                 {loaded && (
-                  <div className="flex items-center gap-3 mt-2">
-                    <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/15 px-2.5 py-0.5 text-[11px] font-bold text-rose-400">
-                      <Flame size={11} /> {streak}
+                  <div className="flex items-center gap-2 mt-3">
+                    <span className="inline-flex items-center gap-1.5 border border-rule px-2.5 py-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-text-secondary">
+                      <Flame size={11} /> <span className="tnum">{streak}</span>
                     </span>
-                    <span className="inline-flex items-center gap-1 rounded-full bg-accent/15 px-2.5 py-0.5 text-[11px] font-bold text-accent-text">
-                      <Clock size={11} /> {formatTime(elapsed)}
+                    <span className="inline-flex items-center gap-1.5 border border-rule px-2.5 py-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-accent-text">
+                      <Clock size={11} /> <span className="tnum">{formatTime(elapsed)}</span>
                     </span>
                     {mode === "free" && currentBest > 0 && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2.5 py-0.5 text-[11px] font-bold text-amber-400">
-                        <Trophy size={11} /> Record : {currentBest}
+                      <span className="inline-flex items-center gap-1.5 border border-rule px-2.5 py-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-text-secondary">
+                        <Trophy size={11} /> Record : <span className="tnum">{currentBest}</span>
                       </span>
                     )}
                   </div>
@@ -570,15 +572,15 @@ export default function HoopMoreGame({ players }: { players: HoopMorePlayer[] })
                 key={cat.key}
                 onClick={() => handleFreeCategoryChange(cat.key)}
                 disabled={gameOver ? false : revealing}
-                className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition-all ${
+                className={`border px-3.5 py-1.5 font-mono text-[11px] font-bold uppercase tracking-wider transition-colors ${
                   category.key === cat.key
-                    ? "bg-rose-500 text-white shadow-lg"
-                    : "bg-input text-text-muted hover:text-text-primary hover:bg-card-hover"
+                    ? "border-accent bg-accent text-white"
+                    : "border-rule text-text-muted hover:text-text-primary hover:border-border-hover"
                 }`}
               >
                 {cat.shortLabel}
                 {(personalBests[cat.key] || 0) > 0 && (
-                  <span className="ml-1.5 opacity-60">({personalBests[cat.key]})</span>
+                  <span className="ml-1.5 tnum opacity-60">({personalBests[cat.key]})</span>
                 )}
               </button>
             ))}
@@ -592,7 +594,7 @@ export default function HoopMoreGame({ players }: { players: HoopMorePlayer[] })
         <>
           {/* Category label */}
           <div className="text-center">
-            <span className="inline-block rounded-full bg-rose-500/15 px-4 py-1.5 text-sm font-bold text-rose-400">
+            <span className="kicker inline-block border border-rule px-4 py-1.5 text-accent-text">
               {category.label}
             </span>
           </div>
@@ -600,28 +602,28 @@ export default function HoopMoreGame({ players }: { players: HoopMorePlayer[] })
           {/* Cards + buttons */}
           <div className="flex flex-col sm:flex-row items-stretch gap-4 sm:gap-6">
             {/* Left card */}
-            <div className="flex-1 rounded-2xl border border-border-t bg-card p-5 flex flex-col items-center gap-3">
+            <div className="flex-1 border border-rule bg-card p-5 flex flex-col items-center gap-3">
               <div className="relative">
                 <img
                   key={leftPlayer.id}
                   src={playerPhotoUrl(leftPlayer.id)}
                   alt=""
-                  className="h-20 w-20 sm:h-24 sm:w-24 rounded-full object-cover bg-input"
+                  className="h-20 w-20 sm:h-24 sm:w-24 object-cover bg-input"
                   onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                 />
                 <img
                   key={`team-${leftPlayer.id}`}
                   src={teamLogoUrl(leftPlayer.team)}
                   alt=""
-                  className="absolute -bottom-1 -right-1 h-7 w-7 object-contain bg-card rounded-full p-0.5"
+                  className="absolute -bottom-1 -right-1 h-7 w-7 object-contain bg-card p-0.5"
                 />
               </div>
               <div className="text-center w-full min-w-0">
                 <p className="text-sm font-bold text-text-primary truncate">{leftPlayer.name}</p>
                 <p className="text-xs text-text-faint truncate">{leftPlayer.teamName}</p>
               </div>
-              <div className="rounded-xl bg-rose-500/15 border border-rose-500/30 px-6 py-3 text-center">
-                <p className="text-2xl sm:text-3xl font-black text-rose-400 tabular-nums">
+              <div className="border border-accent bg-accent-light px-6 py-3 text-center">
+                <p className="tnum font-display text-3xl sm:text-4xl text-accent-text">
                   {category.format(leftVal!)}
                 </p>
               </div>
@@ -632,64 +634,64 @@ export default function HoopMoreGame({ players }: { players: HoopMorePlayer[] })
               <button
                 onClick={() => handleGuess(true)}
                 disabled={revealing}
-                className="flex items-center gap-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30 px-6 py-3 text-sm font-bold text-emerald-400 transition-all hover:bg-emerald-500/25 hover:scale-[1.05] active:scale-[0.95] disabled:opacity-40 disabled:hover:scale-100"
+                className="flex items-center gap-2 border border-border-hover bg-card px-6 py-3 font-mono text-xs font-bold uppercase tracking-widest text-text-primary transition-colors hover:bg-input disabled:opacity-40"
               >
-                <ArrowUp size={18} />
+                <ArrowUp size={18} className="text-accent-text" />
                 Plus
               </button>
-              <span className="text-xs text-text-faint font-medium">ou</span>
+              <span className="font-mono text-[11px] uppercase tracking-wider text-text-faint">ou</span>
               <button
                 onClick={() => handleGuess(false)}
                 disabled={revealing}
-                className="flex items-center gap-2 rounded-xl bg-blue-500/15 border border-blue-500/30 px-6 py-3 text-sm font-bold text-blue-400 transition-all hover:bg-blue-500/25 hover:scale-[1.05] active:scale-[0.95] disabled:opacity-40 disabled:hover:scale-100"
+                className="flex items-center gap-2 border border-border-hover bg-card px-6 py-3 font-mono text-xs font-bold uppercase tracking-widest text-text-primary transition-colors hover:bg-input disabled:opacity-40"
               >
-                <ArrowDown size={18} />
+                <ArrowDown size={18} className="text-accent-text" />
                 Moins
               </button>
             </div>
 
             {/* Right card */}
-            <div className={`flex-1 rounded-2xl border p-5 flex flex-col items-center gap-3 transition-all duration-500 ${
+            <div className={`flex-1 border p-5 flex flex-col items-center gap-3 transition-colors duration-500 ${
               revealing
                 ? lastCorrect
                   ? "border-emerald-500/50 bg-emerald-500/5"
                   : "border-red-500/50 bg-red-500/5"
-                : "border-border-t bg-card"
+                : "border-rule bg-card"
             }`}>
               <div className="relative">
                 <img
                   key={rightPlayer.id}
                   src={playerPhotoUrl(rightPlayer.id)}
                   alt=""
-                  className="h-20 w-20 sm:h-24 sm:w-24 rounded-full object-cover bg-input"
+                  className="h-20 w-20 sm:h-24 sm:w-24 object-cover bg-input"
                   onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                 />
                 <img
                   key={`team-${rightPlayer.id}`}
                   src={teamLogoUrl(rightPlayer.team)}
                   alt=""
-                  className="absolute -bottom-1 -right-1 h-7 w-7 object-contain bg-card rounded-full p-0.5"
+                  className="absolute -bottom-1 -right-1 h-7 w-7 object-contain bg-card p-0.5"
                 />
               </div>
               <div className="text-center w-full min-w-0">
                 <p className="text-sm font-bold text-text-primary truncate">{rightPlayer.name}</p>
                 <p className="text-xs text-text-faint truncate">{rightPlayer.teamName}</p>
               </div>
-              <div className={`rounded-xl border px-6 py-3 text-center transition-all duration-500 ${
+              <div className={`border px-6 py-3 text-center transition-colors duration-500 ${
                 revealing
                   ? lastCorrect
-                    ? "bg-emerald-500/15 border-emerald-500/30"
-                    : "bg-red-500/15 border-red-500/30"
-                  : "bg-input/50 border-border-t"
+                    ? "bg-emerald-500/15 border-emerald-500/40"
+                    : "bg-red-500/15 border-red-500/40"
+                  : "bg-card border-rule"
               }`}>
                 {revealing ? (
-                  <p className={`text-2xl sm:text-3xl font-black tabular-nums animate-[scaleIn_0.3s_ease-out] ${
+                  <p className={`tnum font-display text-3xl sm:text-4xl animate-[scaleIn_0.3s_ease-out] ${
                     lastCorrect ? "text-emerald-400" : "text-red-400"
                   }`}>
                     {category.format(rightVal!)}
                   </p>
                 ) : (
-                  <p className="text-2xl sm:text-3xl font-black text-text-faint">???</p>
+                  <p className="font-display text-3xl sm:text-4xl text-text-faint">???</p>
                 )}
               </div>
             </div>
@@ -700,32 +702,34 @@ export default function HoopMoreGame({ players }: { players: HoopMorePlayer[] })
       {/* Game over */}
       {gameOver && loaded && (
         <>
-          <div className={`rounded-2xl overflow-hidden border p-5 sm:p-6 ${
+          <div className={`relative overflow-hidden border p-5 sm:p-6 ${
             streak >= 10
-              ? "border-emerald-500/30 bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-card"
+              ? "border-emerald-500/40 bg-emerald-500/5"
               : streak >= 5
-              ? "border-amber-500/30 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-card"
-              : "border-red-500/30 bg-gradient-to-r from-red-500/10 via-red-500/5 to-card"
+              ? "border-accent bg-accent-light"
+              : "border-red-500/40 bg-red-500/5"
           }`}>
+            <span className={`absolute left-0 top-0 bottom-0 w-1 ${
+              streak >= 10 ? "bg-emerald-500" : streak >= 5 ? "bg-accent" : "bg-red-500"
+            }`} />
             <div className="text-center space-y-3">
-              <p className={`text-xs font-bold uppercase tracking-wider ${
-                streak >= 10 ? "text-emerald-400" : streak >= 5 ? "text-amber-400" : "text-red-400"
+              <p className={`kicker ${
+                streak >= 10 ? "text-emerald-400" : streak >= 5 ? "text-accent-text" : "text-red-400"
               }`}>
                 {streak >= 15 ? "Légendaire !" : streak >= 10 ? "Impressionnant !" : streak >= 5 ? "Pas mal !" : "Fin de série"}
               </p>
-              <div className="flex items-center justify-center gap-2">
-                <Flame size={28} className="text-rose-400" />
-                <span className="text-4xl sm:text-5xl font-black text-text-primary">{streak}</span>
+              <div className="flex items-center justify-center">
+                <span className="tnum font-display text-5xl sm:text-6xl text-text-primary">{streak}</span>
               </div>
               <p className="text-sm text-text-muted">
                 bonne{streak > 1 ? "s" : ""} réponse{streak > 1 ? "s" : ""} consécutive{streak > 1 ? "s" : ""}
               </p>
-              <div className="flex items-center justify-center gap-4 text-xs text-text-faint">
-                <span className="flex items-center gap-1"><Clock size={12} /> {formatTime(elapsed)}</span>
-                <span className="font-medium text-text-muted">{category.label}</span>
+              <div className="flex items-center justify-center gap-4 font-mono text-[11px] uppercase tracking-wider text-text-faint">
+                <span className="flex items-center gap-1"><Clock size={12} /> <span className="tnum">{formatTime(elapsed)}</span></span>
+                <span className="text-text-muted">{category.label}</span>
               </div>
               {mode === "free" && currentBest > 0 && (
-                <p className="text-xs text-amber-400 font-bold">
+                <p className="font-mono text-[11px] uppercase tracking-wider text-accent-text font-bold">
                   {streak > currentBest
                     ? `Nouveau record ! (ancien : ${currentBest})`
                     : streak === currentBest
@@ -741,7 +745,7 @@ export default function HoopMoreGame({ players }: { players: HoopMorePlayer[] })
             {mode === "free" && (
               <button
                 onClick={handleFreeReplay}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-rose-500 px-5 py-3 text-sm font-bold text-white transition-all hover:bg-rose-600 hover:scale-[1.03] active:scale-[0.98]"
+                className="inline-flex items-center justify-center gap-2 bg-accent px-6 py-3.5 font-mono text-xs font-bold uppercase tracking-widest text-white transition-colors hover:bg-accent-hover"
               >
                 <Play size={14} />
                 Rejouer
@@ -749,14 +753,14 @@ export default function HoopMoreGame({ players }: { players: HoopMorePlayer[] })
             )}
             <button
               onClick={handleShare}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1DA1F2] px-5 py-3 text-sm font-bold text-white transition-all hover:bg-[#1a8cd8] hover:scale-[1.03] active:scale-[0.98]"
+              className="inline-flex items-center justify-center gap-2 border border-border-hover px-6 py-3.5 font-mono text-xs font-bold uppercase tracking-widest text-text-primary transition-colors hover:bg-input"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
               Partager
             </button>
             <button
               onClick={handleCopy}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-input border border-border-t px-5 py-3 text-sm font-bold text-text-primary transition-all hover:bg-card-hover hover:scale-[1.03] active:scale-[0.98]"
+              className="inline-flex items-center justify-center gap-2 border border-border-hover px-6 py-3.5 font-mono text-xs font-bold uppercase tracking-widest text-text-primary transition-colors hover:bg-input"
             >
               {copied ? <><Check size={14} className="text-emerald-400" /> Copié !</> : "Copier"}
             </button>
@@ -768,35 +772,36 @@ export default function HoopMoreGame({ players }: { players: HoopMorePlayer[] })
       {mode === "daily" && leaderboard.length > 0 && (() => {
         const rows = computeVisibleLeaderboard(leaderboard, userId);
         return (
-          <div className="rounded-2xl bg-card border border-border-t overflow-hidden">
-            <div className="px-4 py-3 border-b border-border-t">
-              <h2 className="text-sm font-bold text-text-primary flex items-center gap-2">
-                <Trophy size={16} className="text-accent-text" />
+          <div className="border border-rule bg-card overflow-hidden">
+            <div className="px-4 py-3 border-b border-rule">
+              <h2 className="kicker text-text-faint flex items-center gap-2">
+                <Trophy size={14} className="text-accent-text" />
                 Classement du jour
               </h2>
             </div>
-            <div className="divide-y divide-border-t/30">
+            <div className="divide-y divide-rule/60">
               {rows.map((row, i) =>
                 row.type === "separator" ? (
                   <div key="sep" className="flex items-center gap-3 px-4 py-1.5">
-                    <div className="flex-1 border-t border-dashed border-border-t" />
+                    <div className="flex-1 border-t border-dashed border-rule" />
                     <span className="text-[10px] text-text-faint">...</span>
-                    <div className="flex-1 border-t border-dashed border-border-t" />
+                    <div className="flex-1 border-t border-dashed border-rule" />
                   </div>
                 ) : (
-                  <div key={`${row.entry.display_name}-${row.rank}`} className={`flex items-center gap-3 px-4 py-2.5 ${row.isUser ? "bg-accent/10 border-l-2 border-l-accent" : ""}`}>
-                    <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[11px] font-bold ${
-                      row.rank === 1 ? "bg-accent/20 text-accent-text" : row.rank <= 3 ? "bg-input text-text-primary" : "text-text-faint"
+                  <div key={`${row.entry.display_name}-${row.rank}`} className={`flex items-center gap-3 px-4 py-2.5 ${row.isUser ? "relative bg-accent-light" : ""}`}>
+                    {row.isUser && <span className="absolute left-0 top-0 bottom-0 w-1 bg-accent" />}
+                    <span className={`tnum flex h-6 w-6 shrink-0 items-center justify-center font-mono text-[11px] font-bold ${
+                      row.rank === 1 ? "bg-accent text-white" : row.rank <= 3 ? "border border-rule text-text-primary" : "text-text-faint"
                     }`}>
                       {row.rank}
                     </span>
                     <span className={`flex-1 text-sm truncate ${row.isUser ? "font-bold text-accent-text" : isAnonymousName(row.entry.display_name) ? "italic text-text-muted" : "font-medium text-text-primary"}`}>
                       {row.entry.display_name}{row.isUser ? " (toi)" : ""}
                     </span>
-                    <span className="text-xs text-text-muted tabular-nums flex items-center gap-1">
-                      <Flame size={11} className="text-rose-400" /> {row.entry.streak}
+                    <span className="tnum text-xs text-text-muted flex items-center gap-1">
+                      <Flame size={11} className="text-accent-text" /> {row.entry.streak}
                     </span>
-                    <span className="text-xs text-text-faint tabular-nums w-12 text-right">{formatTime(row.entry.time_seconds)}</span>
+                    <span className="tnum text-xs text-text-faint w-12 text-right">{formatTime(row.entry.time_seconds)}</span>
                   </div>
                 )
               )}
@@ -809,21 +814,21 @@ export default function HoopMoreGame({ players }: { players: HoopMorePlayer[] })
 
       {/* Personal bests (free mode, shown when not playing) */}
       {mode === "free" && gameOver && Object.values(personalBests).some((v) => v > 0) && (
-        <div className="rounded-2xl bg-card border border-border-t overflow-hidden">
-          <div className="px-4 py-3 border-b border-border-t">
-            <h2 className="text-sm font-bold text-text-primary flex items-center gap-2">
-              <Trophy size={16} className="text-amber-400" />
+        <div className="border border-rule bg-card overflow-hidden">
+          <div className="px-4 py-3 border-b border-rule">
+            <h2 className="kicker text-text-faint flex items-center gap-2">
+              <Trophy size={14} className="text-accent-text" />
               Tes records personnels
             </h2>
           </div>
-          <div className="divide-y divide-border-t/30">
+          <div className="divide-y divide-rule/60">
             {availableCategories.map((cat) => {
               const best = personalBests[cat.key] || 0;
               if (best === 0) return null;
               return (
                 <div key={cat.key} className="flex items-center gap-3 px-4 py-2.5">
                   <span className="flex-1 text-sm font-medium text-text-primary">{cat.label}</span>
-                  <span className="text-xs text-amber-400 tabular-nums font-bold flex items-center gap-1">
+                  <span className="tnum text-xs text-accent-text font-bold flex items-center gap-1">
                     <Flame size={11} /> {best}
                   </span>
                 </div>
@@ -834,14 +839,14 @@ export default function HoopMoreGame({ players }: { players: HoopMorePlayer[] })
       )}
 
       {/* Legend */}
-      <div className="flex flex-wrap items-center justify-center gap-4 text-[11px] text-text-faint pb-4">
+      <div className="flex flex-wrap items-center justify-center gap-4 font-mono text-[11px] uppercase tracking-wider text-text-faint pb-4">
         <div className="flex items-center gap-1.5">
-          <ArrowUp size={10} className="text-emerald-400" />
-          Le joueur a une stat plus haute
+          <ArrowUp size={10} className="text-accent-text" />
+          Stat plus haute
         </div>
         <div className="flex items-center gap-1.5">
-          <ArrowDown size={10} className="text-blue-400" />
-          Le joueur a une stat plus basse
+          <ArrowDown size={10} className="text-accent-text" />
+          Stat plus basse
         </div>
       </div>
 

@@ -2,11 +2,11 @@ import { SkeletonGameTopBar, SkeletonGameBanner } from "@/components/Skeleton";
 
 function Node() {
   return (
-    <div className="flex items-center gap-3 rounded-xl bg-card border border-border-t p-4">
-      <div className="h-12 w-12 shrink-0 animate-pulse rounded-full bg-input" />
+    <div className="flex items-center gap-3 bg-card border border-rule p-4">
+      <div className="h-12 w-12 shrink-0 animate-pulse bg-input" />
       <div className="flex-1 space-y-2">
-        <div className="h-4 w-32 animate-pulse rounded bg-input" />
-        <div className="h-3 w-20 animate-pulse rounded bg-input" />
+        <div className="h-4 w-32 animate-pulse bg-input" />
+        <div className="h-3 w-20 animate-pulse bg-input" />
       </div>
     </div>
   );
@@ -30,7 +30,7 @@ export default function Loading() {
       </div>
 
       {/* Search input */}
-      <div className="h-12 w-full animate-pulse rounded-xl bg-input" />
+      <div className="h-12 w-full animate-pulse bg-input" />
     </div>
   );
 }

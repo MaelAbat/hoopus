@@ -37,26 +37,27 @@ export default async function Profil() {
   return (
     <div className="mx-auto max-w-4xl space-y-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-text-primary">Profil</h1>
-        <p className="mt-1 text-text-muted">Gérez vos préférences et vos favoris</p>
+        <h1 className="font-display text-3xl text-text-primary sm:text-4xl">Profil</h1>
+        <p className="mt-1.5 kicker text-text-muted">Gérez vos préférences et vos favoris</p>
       </div>
 
       {/* User card */}
-      <div className="flex flex-col items-center gap-4 rounded-2xl bg-card border border-border-t p-6 sm:flex-row sm:items-center sm:gap-6">
-        <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-accent to-accent-hover text-3xl font-bold text-white shadow-lg">
+      <div className="relative flex flex-col items-center gap-4 overflow-hidden border border-rule bg-card p-6 sm:flex-row sm:items-center sm:gap-6">
+        <span className="absolute left-0 top-0 bottom-0 w-1 bg-accent" />
+        <div className="flex h-20 w-20 shrink-0 items-center justify-center bg-accent font-display text-4xl text-white">
           {profile?.display_name?.charAt(0).toUpperCase() || "U"}
         </div>
         <div className="flex-1 text-center sm:text-left">
-          <h2 className="text-2xl font-bold text-text-primary">{profile?.display_name}</h2>
+          <h2 className="font-display text-2xl text-text-primary sm:text-3xl">{profile?.display_name}</h2>
           <p className="text-sm text-text-muted">{user.email}</p>
-          <p className="text-xs text-text-faint mt-1">Membre depuis {memberSince}</p>
-          <div className="mt-2 flex justify-center gap-2 sm:justify-start">
+          <p className="mt-1 font-mono text-[11px] uppercase tracking-wider text-text-faint">Membre depuis {memberSince}</p>
+          <div className="mt-2.5 flex justify-center gap-2 sm:justify-start">
             {profile?.is_admin ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-accent-light px-3 py-1 text-xs font-medium text-accent-text">
+              <span className="inline-flex items-center gap-1.5 bg-accent px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-widest text-white">
                 <Shield size={12} /> Administrateur
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 rounded-full bg-accent-light px-3 py-1 text-xs font-medium text-accent-text">
+              <span className="inline-flex items-center gap-1.5 border border-rule px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-widest text-accent-text">
                 <Star size={12} /> Fan NBA
               </span>
             )}

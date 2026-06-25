@@ -84,18 +84,21 @@ export default function TestAchievements() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-8 pb-16">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-text-primary">
-          Test des succès
-        </h1>
-        <p className="mt-1 text-text-muted">
-          Page de test pour visualiser les achievements
-        </p>
+      <div className="flex items-baseline gap-3">
+        <span className="font-mono text-sm tabular-nums text-text-faint">00</span>
+        <div>
+          <h1 className="font-display text-2xl text-text-primary sm:text-3xl">
+            Test des succès
+          </h1>
+          <p className="mt-1 kicker text-text-faint">
+            Page de test pour visualiser les achievements
+          </p>
+        </div>
       </div>
 
       {/* Toast triggers */}
-      <div className="rounded-2xl border border-border-t bg-card p-6 space-y-4">
-        <h2 className="text-lg font-extrabold text-text-primary">
+      <div className="border border-rule bg-card p-6 space-y-4">
+        <h2 className="font-display text-xl text-text-primary">
           Notifications de déblocage
         </h2>
         <p className="text-sm text-text-muted">
@@ -104,19 +107,19 @@ export default function TestAchievements() {
         <div className="flex flex-wrap gap-3">
           <button
             onClick={triggerSingle}
-            className="rounded-xl bg-accent px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-accent-hover"
+            className="bg-accent px-6 py-3.5 font-mono text-xs font-bold uppercase tracking-widest text-white transition-colors hover:bg-accent-hover"
           >
             1 succès aléatoire
           </button>
           <button
             onClick={triggerMultiple}
-            className="rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-violet-500"
+            className="border border-border-hover px-6 py-3.5 font-mono text-xs font-bold uppercase tracking-widest text-text-primary transition-colors hover:bg-input"
           >
             3 succès d'un coup
           </button>
           <button
             onClick={triggerAll}
-            className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-emerald-500"
+            className="border border-border-hover px-6 py-3.5 font-mono text-xs font-bold uppercase tracking-widest text-text-primary transition-colors hover:bg-input"
           >
             Tous les succès
           </button>
@@ -124,10 +127,10 @@ export default function TestAchievements() {
       </div>
 
       {/* Achievements grid (mocked data) */}
-      <div className="rounded-2xl border border-border-t bg-card p-6 space-y-6">
+      <div className="border border-rule bg-card p-6 space-y-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-extrabold text-text-primary">Succès</h2>
-          <span className="text-sm font-bold text-text-muted">
+          <h2 className="font-display text-xl text-text-primary">Succès</h2>
+          <span className="tnum kicker text-text-muted">
             {unlockedCount}/{ALL_ACHIEVEMENTS.length} débloqués
           </span>
         </div>
@@ -138,7 +141,7 @@ export default function TestAchievements() {
 
           return (
             <div key={category} className="space-y-3">
-              <h3 className="text-xs font-bold text-text-faint uppercase tracking-wide">
+              <h3 className="kicker text-text-faint">
                 {CATEGORY_LABELS[category] || category}
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -161,8 +164,8 @@ export default function TestAchievements() {
       </div>
 
       {/* Compact badges preview */}
-      <div className="rounded-2xl border border-border-t bg-card p-6 space-y-4">
-        <h2 className="text-lg font-extrabold text-text-primary">
+      <div className="border border-rule bg-card p-6 space-y-4">
+        <h2 className="font-display text-xl text-text-primary">
           Badges compacts
         </h2>
         <div className="flex flex-wrap gap-2">

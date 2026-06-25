@@ -258,16 +258,16 @@ export default function CommandPalette() {
       onClick={closePalette}
     >
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in duration-150" />
+      <div className="fixed inset-0 bg-black/60 animate-in fade-in duration-150" />
 
       {/* Modal */}
       <div
-        className="relative z-10 max-w-lg w-full mx-4 bg-card border border-border-t rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+        className="relative z-10 max-w-lg w-full mx-4 bg-card border border-rule shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Search input */}
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-border-t">
-          <Search size={20} className="shrink-0 text-text-faint" />
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-rule">
+          <Search size={18} strokeWidth={1.75} className="shrink-0 text-text-faint" />
           <input
             ref={inputRef}
             type="text"
@@ -277,7 +277,7 @@ export default function CommandPalette() {
             placeholder="Rechercher..."
             className="flex-1 bg-transparent text-lg text-text-primary placeholder:text-text-faint outline-none"
           />
-          <kbd className="hidden sm:inline-flex items-center gap-0.5 rounded-md border border-border-t bg-input px-1.5 py-0.5 text-[10px] font-mono text-text-faint">
+          <kbd className="hidden sm:inline-flex items-center gap-0.5 border border-rule px-1.5 py-0.5 text-[10px] font-mono text-text-faint">
             {isMac ? "\u2318" : "Ctrl+"}K
           </kbd>
         </div>
@@ -308,7 +308,7 @@ export default function CommandPalette() {
           {/* Players */}
           {grouped.players.length > 0 && (
             <div className="mb-1">
-              <p className="text-[10px] uppercase tracking-wider text-text-faint font-semibold px-3 py-1.5">
+              <p className="kicker text-text-faint px-3 py-1.5">
                 Joueurs
               </p>
               {grouped.players.map((item, i) => {
@@ -320,7 +320,7 @@ export default function CommandPalette() {
                     data-active={idx === activeIndex}
                     onClick={() => navigateTo(item)}
                     onMouseEnter={() => setActiveIndex(idx)}
-                    className={`flex w-full items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-colors text-left ${
+                    className={`flex w-full items-center gap-3 border-b border-rule/50 px-3 py-2.5 cursor-pointer transition-colors text-left ${
                       idx === activeIndex ? "bg-input" : "hover:bg-input"
                     }`}
                   >
@@ -329,14 +329,14 @@ export default function CommandPalette() {
                       alt={`${p.first_name} ${p.last_name}`}
                       width={20}
                       height={20}
-                      className="rounded-full object-cover shrink-0"
+                      className="bg-input object-cover shrink-0"
                       unoptimized
                     />
                     <span className="flex-1 text-sm text-text-primary truncate">
                       {p.first_name} {p.last_name}
                     </span>
-                    <span className="text-xs text-text-faint">{p.team_tricode}</span>
-                    <span className="text-xs text-text-faint">{p.position}</span>
+                    <span className="font-mono text-[11px] uppercase tracking-wider text-text-faint">{p.team_tricode}</span>
+                    <span className="font-mono text-[11px] uppercase tracking-wider text-text-faint">{p.position}</span>
                   </button>
                 );
               })}
@@ -346,7 +346,7 @@ export default function CommandPalette() {
           {/* Teams */}
           {grouped.teams.length > 0 && (
             <div className="mb-1">
-              <p className="text-[10px] uppercase tracking-wider text-text-faint font-semibold px-3 py-1.5">
+              <p className="kicker text-text-faint px-3 py-1.5">
                 Équipes
               </p>
               {grouped.teams.map((item, i) => {
@@ -358,7 +358,7 @@ export default function CommandPalette() {
                     data-active={idx === activeIndex}
                     onClick={() => navigateTo(item)}
                     onMouseEnter={() => setActiveIndex(idx)}
-                    className={`flex w-full items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-colors text-left ${
+                    className={`flex w-full items-center gap-3 border-b border-rule/50 px-3 py-2.5 cursor-pointer transition-colors text-left ${
                       idx === activeIndex ? "bg-input" : "hover:bg-input"
                     }`}
                   >
@@ -373,7 +373,7 @@ export default function CommandPalette() {
                     <span className="flex-1 text-sm text-text-primary truncate">
                       {t.city} {t.name}
                     </span>
-                    <span className="text-xs text-text-faint">{t.tricode}</span>
+                    <span className="font-mono text-[11px] uppercase tracking-wider text-text-faint">{t.tricode}</span>
                   </button>
                 );
               })}
@@ -383,7 +383,7 @@ export default function CommandPalette() {
           {/* Articles */}
           {grouped.articles.length > 0 && (
             <div className="mb-1">
-              <p className="text-[10px] uppercase tracking-wider text-text-faint font-semibold px-3 py-1.5">
+              <p className="kicker text-text-faint px-3 py-1.5">
                 Articles
               </p>
               {grouped.articles.map((item, i) => {
@@ -395,12 +395,12 @@ export default function CommandPalette() {
                     data-active={idx === activeIndex}
                     onClick={() => navigateTo(item)}
                     onMouseEnter={() => setActiveIndex(idx)}
-                    className={`flex w-full items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-colors text-left ${
+                    className={`flex w-full items-center gap-3 border-b border-rule/50 px-3 py-2.5 cursor-pointer transition-colors text-left ${
                       idx === activeIndex ? "bg-input" : "hover:bg-input"
                     }`}
                   >
                     {a.tag && (
-                      <span className="shrink-0 rounded-md bg-accent-light px-2 py-0.5 text-[10px] font-semibold text-accent">
+                      <span className="shrink-0 bg-accent px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-widest text-white">
                         {a.tag}
                       </span>
                     )}

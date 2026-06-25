@@ -82,7 +82,7 @@ export default function PlayersView({ players }: { players: Player[] }) {
             value={search}
             onChange={(e) => handleSearch(e.target.value)}
             placeholder="Rechercher un joueur..."
-            className="w-full rounded-xl bg-input border border-border-t pl-10 pr-4 py-2.5 text-sm text-text-primary placeholder-text-faint focus:border-accent/50 focus:outline-none transition-colors"
+            className="w-full bg-input border border-rule pl-10 pr-4 py-2.5 font-mono text-xs uppercase tracking-wider text-text-primary placeholder-text-faint focus:border-border-hover focus:outline-none transition-colors"
           />
         </div>
 
@@ -91,10 +91,10 @@ export default function PlayersView({ players }: { players: Player[] }) {
             <button
               key={f}
               onClick={() => { setFilter(f); setPage(0); }}
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
+              className={`border px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-wider transition-colors ${
                 filter === f
-                  ? "bg-accent text-white"
-                  : "bg-input text-text-muted hover:bg-card-hover hover:text-text-primary"
+                  ? "bg-accent border-accent text-white"
+                  : "border-rule bg-input text-text-muted hover:border-border-hover hover:text-text-primary"
               }`}
             >
               {f === "active" ? "En activité" : f === "retired" ? "Retraités" : "Tous"}
@@ -125,8 +125,8 @@ export default function PlayersView({ players }: { players: Player[] }) {
       </div>
 
       {/* Count */}
-      <p className="text-xs text-text-faint">
-        {filtered.length} joueur{filtered.length > 1 ? "s" : ""}
+      <p className="kicker text-text-faint">
+        <span className="tnum">{filtered.length}</span> joueur{filtered.length > 1 ? "s" : ""}
         {filter === "active" ? " en activité" : filter === "retired" ? " retraités" : ""}
       </p>
 
@@ -136,17 +136,17 @@ export default function PlayersView({ players }: { players: Player[] }) {
           <button
             onClick={() => setPage(Math.max(0, page - 1))}
             disabled={page === 0}
-            className="rounded-lg px-3 py-1.5 text-xs font-medium bg-input text-text-muted hover:bg-card-hover disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            className="border border-rule bg-input px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-wider text-text-muted hover:border-border-hover hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
             Précédent
           </button>
-          <span className="text-xs text-text-muted">
-            {page + 1} / {pageCount}
+          <span className="kicker text-text-muted">
+            <span className="tnum">{page + 1}</span> / <span className="tnum">{pageCount}</span>
           </span>
           <button
             onClick={() => setPage(Math.min(pageCount - 1, page + 1))}
             disabled={page >= pageCount - 1}
-            className="rounded-lg px-3 py-1.5 text-xs font-medium bg-input text-text-muted hover:bg-card-hover disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            className="border border-rule bg-input px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-wider text-text-muted hover:border-border-hover hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
             Suivant
           </button>
@@ -158,27 +158,27 @@ export default function PlayersView({ players }: { players: Player[] }) {
         {visible.map((p) => (
           <div
             key={p.player_id}
-            className="group relative overflow-hidden rounded-2xl bg-card border border-border-t transition-all duration-200 hover:border-border-hover hover:shadow-lg hover:-translate-y-0.5 cursor-pointer"
+            className="group relative overflow-hidden border border-rule bg-card transition-colors duration-150 hover:border-border-hover cursor-pointer"
             onClick={() => router.push(`/joueurs/${p.player_id}`)}
           >
             {/* Heart button — outside the navigation flow */}
             <button
               onClick={(e) => { e.stopPropagation(); togglePlayer(p.player_id); }}
-              className={`absolute top-2 right-2 z-10 rounded-full p-2 transition-all ${
+              className={`absolute top-2 right-2 z-10 p-2 transition-colors ${
                 isPlayerFollowed(p.player_id)
-                  ? "bg-accent/20 text-accent backdrop-blur-sm"
-                  : "bg-black/30 text-white/60 backdrop-blur-sm sm:opacity-0 sm:group-hover:opacity-100 hover:text-accent"
+                  ? "bg-accent text-white"
+                  : "bg-black/40 text-white/70 sm:opacity-0 sm:group-hover:opacity-100 hover:text-accent"
               }`}
             >
-              <Heart size={14} className={isPlayerFollowed(p.player_id) ? "fill-accent" : ""} />
+              <Heart size={14} className={isPlayerFollowed(p.player_id) ? "fill-white" : ""} />
             </button>
 
             {/* Photo */}
-            <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-b from-accent/10 to-transparent">
+            <div className="relative aspect-[4/3] overflow-hidden bg-input">
               <img
                 src={playerPhotoUrl(p.player_id)}
                 alt={`${p.first_name} ${p.last_name}`}
-                className="h-full w-full object-cover object-top transition-transform duration-300 group-hover:scale-105"
+                className="h-full w-full object-cover object-top"
                 onError={(e) => {
                   const img = e.target as HTMLImageElement;
                   img.style.display = "none";
@@ -192,29 +192,31 @@ export default function PlayersView({ players }: { players: Player[] }) {
                 />
               )}
               {!p.is_active && (
-                <span className="absolute top-2 left-2 rounded bg-black/50 px-1.5 py-0.5 text-[9px] font-semibold text-white/70 backdrop-blur-sm">
+                <span className="absolute top-2 left-2 bg-black/60 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-white/70">
                   {p.to_year || "Retiré"}
                 </span>
               )}
             </div>
 
             {/* Info */}
-            <div className="px-3 py-3">
+            <div className="border-t border-rule px-3 py-3">
               <p className="text-xs text-text-muted truncate">{p.first_name}</p>
-              <p className="text-sm font-bold text-text-primary truncate">{p.last_name}</p>
-              <div className="mt-1.5 flex items-center gap-2 text-[10px] text-text-faint">
+              <p className="font-display text-base text-text-primary truncate">{p.last_name}</p>
+              <div className="mt-1.5 flex items-center gap-2">
                 {p.position && (
-                  <span className="rounded bg-input px-1.5 py-0.5 font-semibold text-text-secondary">
+                  <span className="border border-rule px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-text-secondary">
                     {p.position}
                   </span>
                 )}
-                {p.team_tricode && <span>{p.team_tricode}</span>}
+                {p.team_tricode && (
+                  <span className="font-mono text-[10px] uppercase tracking-wider text-text-faint">{p.team_tricode}</span>
+                )}
               </div>
               {p.pts != null && (
-                <div className="mt-2 flex gap-3 text-[10px] text-text-muted">
-                  <span><strong className="text-text-secondary">{p.pts.toFixed(1)}</strong> PTS</span>
-                  {p.reb != null && <span><strong className="text-text-secondary">{p.reb.toFixed(1)}</strong> REB</span>}
-                  {p.ast != null && <span><strong className="text-text-secondary">{p.ast.toFixed(1)}</strong> AST</span>}
+                <div className="mt-2 flex gap-3 text-[10px]">
+                  <span className="text-text-muted"><strong className="tnum text-text-secondary">{p.pts.toFixed(1)}</strong> <span className="kicker">PTS</span></span>
+                  {p.reb != null && <span className="text-text-muted"><strong className="tnum text-text-secondary">{p.reb.toFixed(1)}</strong> <span className="kicker">REB</span></span>}
+                  {p.ast != null && <span className="text-text-muted"><strong className="tnum text-text-secondary">{p.ast.toFixed(1)}</strong> <span className="kicker">AST</span></span>}
                 </div>
               )}
             </div>
@@ -228,17 +230,17 @@ export default function PlayersView({ players }: { players: Player[] }) {
           <button
             onClick={() => setPage(Math.max(0, page - 1))}
             disabled={page === 0}
-            className="rounded-lg px-3 py-1.5 text-xs font-medium bg-input text-text-muted hover:bg-card-hover disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            className="border border-rule bg-input px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-wider text-text-muted hover:border-border-hover hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
             Précédent
           </button>
-          <span className="text-xs text-text-muted">
-            {page + 1} / {pageCount}
+          <span className="kicker text-text-muted">
+            <span className="tnum">{page + 1}</span> / <span className="tnum">{pageCount}</span>
           </span>
           <button
             onClick={() => setPage(Math.min(pageCount - 1, page + 1))}
             disabled={page >= pageCount - 1}
-            className="rounded-lg px-3 py-1.5 text-xs font-medium bg-input text-text-muted hover:bg-card-hover disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            className="border border-rule bg-input px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-wider text-text-muted hover:border-border-hover hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
             Suivant
           </button>
@@ -276,10 +278,10 @@ function Dropdown({ value, onChange, placeholder, options }: DropdownProps) {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-all ${
+        className={`flex items-center gap-1.5 border px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-wider transition-colors ${
           value
-            ? "bg-accent/10 border-accent/30 text-accent"
-            : "bg-input border-border-t text-text-muted hover:text-text-primary"
+            ? "bg-accent border-accent text-white"
+            : "bg-input border-rule text-text-muted hover:border-border-hover hover:text-text-primary"
         }`}
       >
         {selected?.label || placeholder}
@@ -287,11 +289,11 @@ function Dropdown({ value, onChange, placeholder, options }: DropdownProps) {
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 z-40 mt-1 min-w-[160px] max-h-64 overflow-y-auto rounded-xl bg-card border border-border-t shadow-xl">
+        <div className="absolute top-full left-0 z-40 mt-1 min-w-[160px] max-h-64 overflow-y-auto bg-card border border-rule shadow-xl">
           <button
             onClick={() => { onChange(""); setOpen(false); }}
-            className={`w-full text-left px-3 py-2 text-xs transition-colors ${
-              !value ? "text-accent font-semibold bg-accent/5" : "text-text-muted hover:bg-card-hover hover:text-text-primary"
+            className={`w-full text-left px-3 py-2 font-mono text-[11px] uppercase tracking-wider transition-colors ${
+              !value ? "text-accent-text bg-input" : "text-text-muted hover:bg-card-hover hover:text-text-primary"
             }`}
           >
             {placeholder} (tous)
@@ -300,9 +302,9 @@ function Dropdown({ value, onChange, placeholder, options }: DropdownProps) {
             <button
               key={opt.value}
               onClick={() => { onChange(opt.value); setOpen(false); }}
-              className={`w-full text-left px-3 py-2 text-xs transition-colors ${
+              className={`w-full text-left px-3 py-2 font-mono text-[11px] uppercase tracking-wider transition-colors ${
                 value === opt.value
-                  ? "text-accent font-semibold bg-accent/5"
+                  ? "text-accent-text bg-input"
                   : "text-text-primary hover:bg-card-hover"
               }`}
             >
