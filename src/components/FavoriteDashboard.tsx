@@ -52,7 +52,7 @@ function formatGameTime(gameDate: string, gameTime: string): string {
 
 function TeamLogo({ tricode }: { tricode: string }) {
   const url = teamLogoUrl(tricode);
-  if (!url) return <span className="inline-block h-5 w-5 shrink-0 rounded bg-input" />;
+  if (!url) return <span className="inline-block h-5 w-5 shrink-0 bg-input" />;
   return <img src={url} alt={tricode} width={20} height={20} className="shrink-0" />;
 }
 
@@ -62,24 +62,24 @@ function GameCard({ game }: { game: Game }) {
   return (
     <Link
       href={`/match/${game.game_id}`}
-      className="flex items-center gap-3 rounded-xl border border-border-t bg-card px-3 py-2.5 h-14 transition-colors hover:border-border-hover"
+      className="flex items-center gap-3 border border-rule bg-card px-3 py-2.5 h-14 transition-colors hover:border-border-hover"
     >
       <div className="flex flex-1 items-center gap-2 min-w-0">
         <TeamLogo tricode={game.away_team} />
-        <span className="text-sm font-semibold text-text-primary truncate">{game.away_team}</span>
+        <span className="text-sm font-semibold uppercase tracking-wide text-text-primary truncate">{game.away_team}</span>
       </div>
       <div className="shrink-0 text-center">
         {isFinal ? (
-          <div className="text-sm font-bold text-text-primary">
-            {game.away_score} - {game.home_score}
+          <div className="tnum text-sm font-bold text-text-primary">
+            {game.away_score} – {game.home_score}
           </div>
         ) : (
-          <div className="text-xs text-accent font-semibold">{time || game.status_text}</div>
+          <div className="tnum text-xs font-semibold text-accent-text">{time || game.status_text}</div>
         )}
-        <div className="text-[10px] text-text-faint">{formatGameDate(game.game_date)}</div>
+        <div className="font-mono text-[10px] uppercase tracking-wider text-text-faint">{formatGameDate(game.game_date)}</div>
       </div>
       <div className="flex flex-1 items-center justify-end gap-2 min-w-0">
-        <span className="text-sm font-semibold text-text-primary truncate">{game.home_team}</span>
+        <span className="text-sm font-semibold uppercase tracking-wide text-text-primary truncate">{game.home_team}</span>
         <TeamLogo tricode={game.home_team} />
       </div>
     </Link>
@@ -88,13 +88,13 @@ function GameCard({ game }: { game: Game }) {
 
 function PlayerCard({ player }: { player: PlayerStats }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-border-t bg-card px-3 py-2.5">
+    <div className="flex items-center gap-3 border border-rule bg-card px-3 py-2.5">
       <img
         src={playerPhotoUrl(player.player_id)}
         alt={`${player.first_name} ${player.last_name}`}
         width={30}
         height={30}
-        className="shrink-0 rounded-full bg-input object-cover"
+        className="shrink-0 bg-input object-cover"
       />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
@@ -115,9 +115,9 @@ function PlayerCard({ player }: { player: PlayerStats }) {
 
 function StatBox({ label, value }: { label: string; value: number | null }) {
   return (
-    <div className="flex flex-col items-center rounded-lg bg-input/50 px-2 py-1 min-w-[40px]">
-      <span className="text-xs font-bold text-text-primary">{value != null ? Number(value).toFixed(1) : "-"}</span>
-      <span className="text-[9px] font-semibold uppercase text-text-muted">{label}</span>
+    <div className="flex flex-col items-center bg-input/50 px-2 py-1 min-w-[40px]">
+      <span className="tnum text-xs font-bold text-text-primary">{value != null ? Number(value).toFixed(1) : "-"}</span>
+      <span className="font-mono text-[9px] font-semibold uppercase tracking-wider text-text-muted">{label}</span>
     </div>
   );
 }
@@ -126,7 +126,7 @@ function LoadingSkeleton() {
   return (
     <div className="space-y-3 animate-pulse">
       {[...Array(3)].map((_, i) => (
-        <div key={i} className="h-12 rounded-xl bg-input/30" />
+        <div key={i} className="h-12 bg-input/30" />
       ))}
     </div>
   );
@@ -209,8 +209,8 @@ export default function FavoriteDashboard() {
   return (
     <section>
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-text-primary">Mon espace</h2>
-        <p className="mt-1 text-sm text-text-muted">Vos équipes et joueurs favoris</p>
+        <h2 className="font-display text-2xl text-text-primary sm:text-3xl">Mon espace</h2>
+        <p className="mt-1.5 font-mono text-[11px] uppercase tracking-wider text-text-muted">Vos équipes et joueurs favoris</p>
       </div>
 
       {loading ? (
@@ -223,7 +223,7 @@ export default function FavoriteDashboard() {
               {/* Recent results */}
               {recentGames.length > 0 && (
                 <div>
-                  <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-text-muted">
+                  <h3 className="kicker mb-3 text-text-faint">
                     Résultats récents
                   </h3>
                   <div className="space-y-2">
@@ -237,7 +237,7 @@ export default function FavoriteDashboard() {
               {/* Upcoming games */}
               {upcomingGames.length > 0 && (
                 <div>
-                  <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-text-muted">
+                  <h3 className="kicker mb-3 text-text-faint">
                     Prochains matchs
                   </h3>
                   <div className="space-y-2">
@@ -253,7 +253,7 @@ export default function FavoriteDashboard() {
           {/* Followed players */}
           {players.length > 0 && (
             <div>
-              <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-text-muted">
+              <h3 className="kicker mb-3 text-text-faint">
                 Joueurs suivis
               </h3>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">

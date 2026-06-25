@@ -117,21 +117,23 @@ export default function FavoriteAlerts() {
           return (
             <div
               key={alert.id}
-              className="flex items-center gap-3 rounded-xl border border-accent/30 bg-accent/5 px-4 py-3 text-sm"
+              className="relative flex items-center gap-3 border border-rule bg-card pl-4 pr-3 py-3 text-sm"
             >
-              <img src={teamLogoUrl(alert.team)} alt={alert.team} width={16} height={16} className="shrink-0" />
+              <span className="absolute left-0 top-0 bottom-0 w-1 bg-accent" />
+              <img src={teamLogoUrl(alert.team)} alt={alert.team} width={18} height={18} className="shrink-0" />
               <Link
                 href={`/match/${alert.gameId}`}
-                className="flex-1 text-text-primary hover:text-accent transition-colors"
+                className="flex-1 text-text-secondary transition-colors hover:text-text-primary"
               >
-                <span className="font-semibold">Match ce soir</span>
-                {" : "}
-                {alert.team} vs {alert.opponent}
-                {alert.time ? ` à ${alert.time}` : ""}
+                <span className="kicker text-accent-text">Match ce soir</span>
+                <span className="ml-2.5 font-semibold uppercase tracking-wide text-text-primary">
+                  {alert.team} vs {alert.opponent}
+                </span>
+                {alert.time ? <span className="tnum ml-2 text-text-muted">{alert.time}</span> : null}
               </Link>
               <button
                 onClick={() => setDismissed((prev) => new Set(prev).add(alert.id))}
-                className="shrink-0 rounded-lg p-1 text-text-muted transition-colors hover:bg-input hover:text-text-primary"
+                className="shrink-0 p-1 text-text-faint transition-colors hover:bg-input hover:text-text-primary"
                 aria-label="Fermer"
               >
                 <X size={14} />
@@ -143,20 +145,23 @@ export default function FavoriteAlerts() {
         return (
           <div
             key={alert.id}
-            className="flex items-center gap-3 rounded-xl border border-yellow-500/30 bg-yellow-500/5 px-4 py-3 text-sm"
+            className="relative flex items-center gap-3 border border-rule bg-card pl-4 pr-3 py-3 text-sm"
           >
-            <img src={teamLogoUrl(alert.team)} alt={alert.team} width={16} height={16} className="shrink-0" />
-            <span className="flex-1 text-text-primary">
-              <span className="font-semibold">Blessure</span>
-              {" : "}
-              {alert.playerName} ({alert.team})
-              {" -- "}
-              {alert.status}
-              {alert.injuryType ? ` (${alert.injuryType})` : ""}
+            <span className="absolute left-0 top-0 bottom-0 w-1 bg-text-faint" />
+            <img src={teamLogoUrl(alert.team)} alt={alert.team} width={18} height={18} className="shrink-0" />
+            <span className="flex-1 text-text-secondary">
+              <span className="kicker text-text-muted">Blessure</span>
+              <span className="ml-2.5 font-semibold uppercase tracking-wide text-text-primary">
+                {alert.playerName}
+              </span>
+              <span className="ml-2 text-text-muted">
+                {alert.team} · {alert.status}
+                {alert.injuryType ? ` (${alert.injuryType})` : ""}
+              </span>
             </span>
             <button
               onClick={() => setDismissed((prev) => new Set(prev).add(alert.id))}
-              className="shrink-0 rounded-lg p-1 text-text-muted transition-colors hover:bg-input hover:text-text-primary"
+              className="shrink-0 p-1 text-text-faint transition-colors hover:bg-input hover:text-text-primary"
               aria-label="Fermer"
             >
               <X size={14} />

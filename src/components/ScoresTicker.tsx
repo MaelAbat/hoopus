@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
-import { ChevronLeft, ChevronRight, X, Trophy } from "lucide-react";
+import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { teamLogoUrl } from "@/lib/nba-teams";
 import { useFavorites } from "@/context/FavoritesContext";
 import { useLiveScores } from "@/lib/useLiveScores";
@@ -49,6 +49,20 @@ function toParisTime(gameDate: string, gameTime: string): string {
   }).format(realUtc);
 }
 
+const cardBase = "shrink-0 border bg-card transition-colors duration-150 hover:border-border-hover";
+function favCls(isFav: boolean) {
+  return isFav ? "border-accent ring-1 ring-accent/40" : "border-rule";
+}
+
+function LiveTag() {
+  return (
+    <span className="inline-flex items-center gap-1 bg-accent px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-white">
+      <span className="h-1 w-1 rounded-full bg-white animate-pulse" />
+      Live
+    </span>
+  );
+}
+
 function MobileScore({ game, isFav }: { game: Game; isFav: boolean }) {
   const isFinal = game.status === 3;
   const isLive = game.status === 2;
@@ -58,19 +72,17 @@ function MobileScore({ game, isFav }: { game: Game; isFav: boolean }) {
   return (
     <Link
       href={`/match/${game.game_id}`}
-      className={`grid grid-cols-[1fr_auto_1fr] items-center rounded-xl bg-card border px-3 py-3 shrink-0 min-w-[220px] gap-3 transition-all duration-200 hover:border-border-hover hover:shadow-lg hover:-translate-y-0.5 ${
-        isFav ? "border-accent/60 ring-2 ring-accent/20 shadow-[0_0_12px_rgba(var(--accent-rgb,249,115,22),0.15)]" : "border-border-t"
-      }`}
+      className={`grid grid-cols-[1fr_auto_1fr] items-center px-3 py-3 min-w-[220px] gap-3 ${cardBase} ${favCls(isFav)}`}
     >
       {/* Away */}
       <div className="flex items-center gap-2">
         <img src={teamLogoUrl(game.away_team)} alt={game.away_team} className="h-7 w-7 object-contain shrink-0" />
         <div className="flex flex-col min-w-0">
-          <span className={`text-xs font-bold ${awayWon ? "text-text-primary" : "text-text-muted"}`}>
+          <span className={`text-xs font-bold uppercase ${awayWon ? "text-text-primary" : "text-text-muted"}`}>
             {game.away_team}
           </span>
           {(isFinal || isLive) && (
-            <span className={`text-lg font-extrabold tabular-nums leading-tight ${awayWon ? "text-text-primary" : "text-text-muted"}`}>
+            <span className={`tnum text-lg font-bold leading-tight ${awayWon ? "text-text-primary" : "text-text-muted"}`}>
               {game.away_score}
             </span>
           )}
@@ -80,25 +92,22 @@ function MobileScore({ game, isFav }: { game: Game; isFav: boolean }) {
       {/* Status - fixed center */}
       <div className="flex flex-col items-center justify-center">
         {isLive ? (
-          <span className="inline-flex items-center gap-1 rounded-full bg-red-500/20 px-2 py-0.5 text-[10px] font-bold text-red-400">
-            <span className="h-1.5 w-1.5 rounded-full bg-red-400 animate-pulse" />
-            LIVE
-          </span>
+          <LiveTag />
         ) : isFinal ? (
-          <span className="text-[10px] font-semibold text-text-faint uppercase">Terminé</span>
+          <span className="font-mono text-[9px] font-semibold uppercase tracking-wider text-text-faint">Terminé</span>
         ) : (
-          <span className="text-[10px] text-text-muted text-center">{game.status_text}</span>
+          <span className="font-mono text-[10px] text-text-muted text-center">{game.status_text}</span>
         )}
       </div>
 
       {/* Home */}
       <div className="flex items-center gap-2 justify-end">
         <div className="flex flex-col items-end min-w-0">
-          <span className={`text-xs font-bold ${homeWon ? "text-text-primary" : "text-text-muted"}`}>
+          <span className={`text-xs font-bold uppercase ${homeWon ? "text-text-primary" : "text-text-muted"}`}>
             {game.home_team}
           </span>
           {(isFinal || isLive) && (
-            <span className={`text-lg font-extrabold tabular-nums leading-tight ${homeWon ? "text-text-primary" : "text-text-muted"}`}>
+            <span className={`tnum text-lg font-bold leading-tight ${homeWon ? "text-text-primary" : "text-text-muted"}`}>
               {game.home_score}
             </span>
           )}
@@ -115,23 +124,21 @@ function MobileUpcoming({ game, isFav }: { game: Game; isFav: boolean }) {
   return (
     <Link
       href={`/match/${game.game_id}`}
-      className={`grid grid-cols-[1fr_auto_1fr] items-center rounded-xl bg-card border px-3 py-3 shrink-0 min-w-[220px] gap-3 transition-all duration-200 hover:border-border-hover hover:shadow-lg hover:-translate-y-0.5 ${
-        isFav ? "border-accent/60 ring-2 ring-accent/20 shadow-[0_0_12px_rgba(var(--accent-rgb,249,115,22),0.15)]" : "border-border-t"
-      }`}
+      className={`grid grid-cols-[1fr_auto_1fr] items-center px-3 py-3 min-w-[220px] gap-3 ${cardBase} ${favCls(isFav)}`}
     >
       <div className="flex items-center gap-2">
         <img src={teamLogoUrl(game.away_team)} alt={game.away_team} className="h-7 w-7 object-contain shrink-0" />
-        <span className="text-xs font-bold text-text-primary">{game.away_team}</span>
+        <span className="text-xs font-bold uppercase text-text-primary">{game.away_team}</span>
       </div>
       <div className="flex flex-col items-center justify-center">
         {time ? (
-          <span className="text-xs font-semibold text-accent">{time}</span>
+          <span className="tnum text-xs font-semibold text-accent-text">{time}</span>
         ) : (
-          <span className="text-[10px] text-text-muted">{game.status_text}</span>
+          <span className="font-mono text-[10px] text-text-muted">{game.status_text}</span>
         )}
       </div>
       <div className="flex items-center gap-2 justify-end">
-        <span className="text-xs font-bold text-text-primary">{game.home_team}</span>
+        <span className="text-xs font-bold uppercase text-text-primary">{game.home_team}</span>
         <img src={teamLogoUrl(game.home_team)} alt={game.home_team} className="h-7 w-7 object-contain shrink-0" />
       </div>
     </Link>
@@ -147,33 +154,31 @@ function DesktopScore({ game, isFav }: { game: Game; isFav: boolean }) {
   return (
     <Link
       href={`/match/${game.game_id}`}
-      className={`flex items-center gap-3 rounded-lg bg-card border px-3 py-2 shrink-0 min-w-[180px] transition-all duration-200 hover:border-border-hover hover:shadow-lg hover:-translate-y-0.5 ${
-        isFav ? "border-accent/60 ring-2 ring-accent/20 shadow-[0_0_12px_rgba(var(--accent-rgb,249,115,22),0.15)]" : "border-border-t"
-      }`}
+      className={`flex items-center gap-3 px-3 py-2 min-w-[180px] ${cardBase} ${favCls(isFav)}`}
     >
       <div className="flex flex-col items-center gap-0.5 w-10">
         <img src={teamLogoUrl(game.away_team)} alt={game.away_team} className="h-5 w-5 object-contain" />
-        <span className={`text-[10px] font-bold ${awayWon ? "text-text-primary" : "text-text-muted"}`}>{game.away_team}</span>
+        <span className={`text-[10px] font-bold uppercase ${awayWon ? "text-text-primary" : "text-text-muted"}`}>{game.away_team}</span>
       </div>
       <div className="flex flex-col items-center">
         {isFinal || isLive ? (
           <>
             <div className="flex items-center gap-1.5">
-              <span className={`text-sm font-bold tabular-nums ${awayWon ? "text-text-primary" : "text-text-muted"}`}>{game.away_score}</span>
-              <span className="text-[10px] text-text-faint">-</span>
-              <span className={`text-sm font-bold tabular-nums ${homeWon ? "text-text-primary" : "text-text-muted"}`}>{game.home_score}</span>
+              <span className={`tnum text-sm font-bold ${awayWon ? "text-text-primary" : "text-text-muted"}`}>{game.away_score}</span>
+              <span className="text-[10px] text-text-faint">–</span>
+              <span className={`tnum text-sm font-bold ${homeWon ? "text-text-primary" : "text-text-muted"}`}>{game.home_score}</span>
             </div>
-            <span className={`text-[9px] font-medium mt-0.5 ${isLive ? "text-red-400" : "text-text-faint"}`}>
-              {isLive ? "LIVE" : "Terminé"}
+            <span className={`mt-0.5 font-mono text-[9px] font-semibold uppercase tracking-wider ${isLive ? "text-accent-text" : "text-text-faint"}`}>
+              {isLive ? "Live" : "Terminé"}
             </span>
           </>
         ) : (
-          <span className="text-[10px] text-text-muted">{game.status_text}</span>
+          <span className="font-mono text-[10px] text-text-muted">{game.status_text}</span>
         )}
       </div>
       <div className="flex flex-col items-center gap-0.5 w-10">
         <img src={teamLogoUrl(game.home_team)} alt={game.home_team} className="h-5 w-5 object-contain" />
-        <span className={`text-[10px] font-bold ${homeWon ? "text-text-primary" : "text-text-muted"}`}>{game.home_team}</span>
+        <span className={`text-[10px] font-bold uppercase ${homeWon ? "text-text-primary" : "text-text-muted"}`}>{game.home_team}</span>
       </div>
     </Link>
   );
@@ -185,24 +190,22 @@ function DesktopUpcoming({ game, isFav }: { game: Game; isFav: boolean }) {
   return (
     <Link
       href={`/match/${game.game_id}`}
-      className={`grid grid-cols-[1fr_auto_1fr] items-center gap-3 rounded-lg bg-card border px-3 py-2 shrink-0 min-w-[180px] transition-all duration-200 hover:border-border-hover hover:shadow-lg hover:-translate-y-0.5 ${
-        isFav ? "border-accent/60 ring-2 ring-accent/20 shadow-[0_0_12px_rgba(var(--accent-rgb,249,115,22),0.15)]" : "border-border-t"
-      }`}
+      className={`grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-3 py-2 min-w-[180px] ${cardBase} ${favCls(isFav)}`}
     >
       <div className="flex flex-col items-center gap-0.5 justify-self-end">
         <img src={teamLogoUrl(game.away_team)} alt={game.away_team} className="h-5 w-5 object-contain" />
-        <span className="text-[10px] font-bold text-text-primary">{game.away_team}</span>
+        <span className="text-[10px] font-bold uppercase text-text-primary">{game.away_team}</span>
       </div>
       <div className="flex flex-col items-center justify-center">
         {time ? (
-          <span className="text-xs font-semibold text-accent">{time}</span>
+          <span className="tnum text-xs font-semibold text-accent-text">{time}</span>
         ) : (
-          <span className="text-[10px] text-text-muted">{game.status_text}</span>
+          <span className="font-mono text-[10px] text-text-muted">{game.status_text}</span>
         )}
       </div>
       <div className="flex flex-col items-center gap-0.5 justify-self-start">
         <img src={teamLogoUrl(game.home_team)} alt={game.home_team} className="h-5 w-5 object-contain" />
-        <span className="text-[10px] font-bold text-text-primary">{game.home_team}</span>
+        <span className="text-[10px] font-bold uppercase text-text-primary">{game.home_team}</span>
       </div>
     </Link>
   );
@@ -262,9 +265,8 @@ export default function ScoresTicker({ games, mode = "results" }: { games: Game[
       <div className="mb-4">
         <button
           onClick={toggle}
-          className="flex items-center gap-1.5 rounded-lg bg-card border border-border-t px-3 py-1.5 text-xs font-medium text-text-muted hover:text-text-primary hover:border-border-hover transition-colors"
+          className="inline-flex items-center gap-1.5 border border-rule bg-card px-3 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-text-muted hover:border-border-hover hover:text-text-primary transition-colors"
         >
-          <Trophy size={12} />
           {isUpcoming ? "Matchs à venir" : "Scores de la nuit"}
           <ChevronRight size={12} />
         </button>
@@ -301,35 +303,35 @@ export default function ScoresTicker({ games, mode = "results" }: { games: Game[
   const upcomingCount = isUpcoming ? mergedGames.length : mergedGames.length - finalCount - liveCount;
 
   return (
-    <div className="mb-4 rounded-xl bg-card border border-border-t overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between px-3 sm:px-4 py-2 border-b border-border-t/50">
-        <div className="flex items-center gap-2 min-w-0">
-          <Trophy size={13} className="text-accent shrink-0" />
-          <span className="text-xs font-semibold text-text-primary capitalize truncate">{headerLabel}</span>
-          <div className="flex items-center gap-1.5 shrink-0">
+    <div className="mb-4 border border-rule bg-card overflow-hidden">
+      {/* Header — broadcast lower-third */}
+      <div className="flex items-center justify-between border-b border-rule px-3 sm:px-4 py-2">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className="block h-3 w-1 bg-accent shrink-0" />
+          <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-text-primary truncate">{headerLabel}</span>
+          <div className="flex items-center gap-2 shrink-0">
             {liveCount > 0 && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-red-500/20 px-1.5 py-0.5 text-[9px] font-bold text-red-400">
-                <span className="h-1 w-1 rounded-full bg-red-400 animate-pulse" />
-                {liveCount} LIVE
+              <span className="inline-flex items-center gap-1 bg-accent px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-white">
+                <span className="h-1 w-1 rounded-full bg-white animate-pulse" />
+                {liveCount} Live
               </span>
             )}
             {finalCount > 0 && (
-              <span className="text-[10px] text-text-faint">{finalCount} terminé{finalCount > 1 ? "s" : ""}</span>
+              <span className="font-mono text-[10px] text-text-faint">{finalCount} terminé{finalCount > 1 ? "s" : ""}</span>
             )}
             {upcomingCount > 0 && (
-              <span className="text-[10px] text-text-faint hidden sm:inline">{upcomingCount} match{upcomingCount > 1 ? "s" : ""} à venir</span>
+              <span className="font-mono text-[10px] text-text-faint hidden sm:inline">{upcomingCount} à venir</span>
             )}
           </div>
         </div>
         <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
-          <button type="button" aria-label="Défiler vers la gauche" onClick={() => scroll(-1)} className="rounded-md p-1 text-text-muted hover:text-text-primary hover:bg-input transition-colors">
+          <button type="button" aria-label="Défiler vers la gauche" onClick={() => scroll(-1)} className="p-1 text-text-muted hover:text-text-primary hover:bg-input transition-colors">
             <ChevronLeft size={14} />
           </button>
-          <button type="button" aria-label="Défiler vers la droite" onClick={() => scroll(1)} className="rounded-md p-1 text-text-muted hover:text-text-primary hover:bg-input transition-colors">
+          <button type="button" aria-label="Défiler vers la droite" onClick={() => scroll(1)} className="p-1 text-text-muted hover:text-text-primary hover:bg-input transition-colors">
             <ChevronRight size={14} />
           </button>
-          <button type="button" aria-label="Masquer les scores" onClick={toggle} className="rounded-md p-1 ml-0.5 text-text-faint hover:text-text-primary hover:bg-input transition-colors" title={isUpcoming ? "Masquer" : "Masquer les scores"}>
+          <button type="button" aria-label="Masquer les scores" onClick={toggle} className="p-1 ml-0.5 text-text-faint hover:text-text-primary hover:bg-input transition-colors" title={isUpcoming ? "Masquer" : "Masquer les scores"}>
             <X size={14} />
           </button>
         </div>

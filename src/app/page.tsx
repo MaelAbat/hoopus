@@ -1,19 +1,5 @@
 import Link from "next/link";
-import {
-  Newspaper,
-  FileText,
-  BarChart3,
-  Calendar,
-  Users,
-  UserRound,
-  Trophy,
-  Gamepad2,
-  ArrowRight,
-  Flame,
-  Sparkles,
-  Clock,
-  BookOpen,
-} from "lucide-react";
+import { ArrowRight, ArrowUpRight } from "lucide-react";
 import { getArticles } from "@/lib/actions/articles";
 import { hasNews } from "@/lib/actions/news";
 import { getCurrentSeason, seasonLabel } from "@/lib/season";
@@ -42,119 +28,20 @@ const funFacts = [
 ];
 
 /*
- * Bento grid — 4 cols desktop, 2 tablet, 1 mobile.
- * Sizes: xl (2×2), md (2×1), sm (1×1), banner (4×1).
- * Order = visual priority the user asked for.
+ * Sommaire — rundown de régie. Chaque rubrique est une ligne numérotée
+ * pleine largeur ; le survol remplit la ligne en accent. Zéro carte bento.
  */
-const categories = [
-  // ── Row 1-2: hero cards ──
-  {
-    href: "/playoffs",
-    title: "Playoffs",
-    tagline: "Win or go home",
-    description: "Brackets, séries, play-in -- suivez chaque match décisif de l'après-saison.",
-    icon: <Trophy size={22} strokeWidth={1.5} />,
-    iconBg: <Trophy size={80} strokeWidth={0.7} />,
-    color: "#1e3a4a",
-    size: "xl" as const,
-    cell: "sm:col-span-2 sm:row-span-2",
-  },
-  {
-    href: "/calendrier",
-    title: "Calendrier",
-    tagline: "Ne ratez rien",
-    description: "Tous les matchs, scores et horaires -- hier, aujourd'hui et demain.",
-    icon: <Calendar size={22} strokeWidth={1.5} />,
-    iconBg: <Calendar size={80} strokeWidth={0.7} />,
-    color: "#2a2d4a",
-    size: "xl" as const,
-    cell: "sm:col-span-2 sm:row-span-2",
-  },
-  // ── Row 3: medium cards ──
-  {
-    href: "/classement",
-    title: "Classement",
-    tagline: "La course aux playoffs, conférence par conférence",
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="2" y="10" width="6" height="11" rx="1" />
-        <rect x="9" y="4" width="6" height="17" rx="1" />
-        <rect x="16" y="14" width="6" height="7" rx="1" />
-      </svg>
-    ),
-    iconBg: (
-      <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="0.7" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="2" y="10" width="6" height="11" rx="1" />
-        <rect x="9" y="4" width="6" height="17" rx="1" />
-        <rect x="16" y="14" width="6" height="7" rx="1" />
-      </svg>
-    ),
-    color: "#3a3225",
-    size: "md" as const,
-    cell: "sm:col-span-2",
-  },
-  {
-    href: "/mini-jeux",
-    title: "Mini-jeux",
-    tagline: "7 jeux quotidiens pour tester vos connaissances",
-    icon: <Gamepad2 size={20} strokeWidth={1.5} />,
-    iconBg: <Gamepad2 size={56} strokeWidth={0.7} />,
-    color: "#3a2535",
-    size: "md" as const,
-    cell: "sm:col-span-2",
-  },
-  // ── Row 4: small tiles ──
-  {
-    href: "/joueurs",
-    title: "Joueurs",
-    tagline: "Profils et carrières",
-    icon: <UserRound size={18} strokeWidth={1.5} />,
-    iconBg: <UserRound size={48} strokeWidth={0.8} />,
-    color: "#2a2d4a",
-    size: "sm" as const,
-    cell: "",
-  },
-  {
-    href: "/equipes",
-    title: "Équipes",
-    tagline: "30 franchises",
-    icon: <Users size={18} strokeWidth={1.5} />,
-    iconBg: <Users size={48} strokeWidth={0.8} />,
-    color: "#1e3a4a",
-    size: "sm" as const,
-    cell: "",
-  },
-  {
-    href: "/statistiques",
-    title: "Statistiques",
-    tagline: "Les chiffres parlent",
-    icon: <BarChart3 size={18} strokeWidth={1.5} />,
-    iconBg: <BarChart3 size={48} strokeWidth={0.8} />,
-    color: "#1e3a30",
-    size: "sm" as const,
-    cell: "",
-  },
-  {
-    href: "/articles",
-    title: "Articles",
-    tagline: "Analyses",
-    icon: <FileText size={18} strokeWidth={1.5} />,
-    iconBg: <FileText size={48} strokeWidth={0.8} />,
-    color: "#3a3225",
-    size: "sm" as const,
-    cell: "",
-  },
-  // ── Row 5: full-width banner ──
-  {
-    href: "/actualites",
-    title: "Actualités",
-    tagline: "Trades, drama, buzzer beaters -- tout ce qui fait vibrer la ligue",
-    icon: <Newspaper size={18} strokeWidth={1.5} />,
-    iconBg: <Newspaper size={48} strokeWidth={0.8} />,
-    color: "#3a2535",
-    size: "banner" as const,
-    cell: "sm:col-span-4",
-  },
+const sections = [
+  { href: "/calendrier", title: "Calendrier", tagline: "Tous les matchs, scores et horaires" },
+  { href: "/classement", title: "Classement", tagline: "La course aux playoffs, conférence par conférence" },
+  { href: "/statistiques", title: "Statistiques", tagline: "Leaders, moyennes, classements" },
+  { href: "/joueurs", title: "Joueurs", tagline: "Profils et carrières" },
+  { href: "/equipes", title: "Équipes", tagline: "Les 30 franchises" },
+  { href: "/playoffs", title: "Playoffs", tagline: "Brackets, séries, play-in" },
+  { href: "/blessures", title: "Infirmerie", tagline: "Le rapport blessures du jour" },
+  { href: "/mini-jeux", title: "Mini-jeux", tagline: "7 défis quotidiens" },
+  { href: "/articles", title: "Articles", tagline: "Analyses au long format" },
+  { href: "/actualites", title: "Actualités", tagline: "Trades, drama, buzzer beaters" },
 ];
 
 function getDaily<T>(arr: T[]): T {
@@ -176,316 +63,233 @@ export default async function Home() {
   const featured = articles[0] ?? null;
   const funFact = getDaily(funFacts);
 
-  // Hide the Articles / Actualités tiles when nothing has been published yet.
   const articlesExist = articles.length > 0;
-  const visibleCategories = categories.filter((cat) => {
-    if (cat.href === "/articles") return articlesExist;
-    if (cat.href === "/actualites") return newsExists;
+  const visibleSections = sections.filter((s) => {
+    if (s.href === "/articles") return articlesExist;
+    if (s.href === "/actualites") return newsExists;
     return true;
   });
 
   return (
-    <div className="mx-auto max-w-6xl space-y-8 sm:space-y-14">
+    <div className="mx-auto max-w-6xl">
       {/* ── Favorite Alerts ──────────────────── */}
       <FavoriteAlerts />
 
-      {/* ── Hero with background image ───────── */}
-      <section className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-border-t">
-        {/* Background photo */}
-        <div className="absolute inset-0">
-          <img
-            src="https://images.unsplash.com/photo-1640862101983-9f7ef7fd7cc9?w=1400&q=80"
-            alt=""
-            className="h-full w-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-black/40" />
+      {/* ── Masthead ─────────────────────────── */}
+      <section className="relative overflow-hidden border border-rule bg-card">
+        {/* Basketball seam line-art, bleeding off the right edge */}
+        <svg
+          viewBox="0 0 200 200"
+          aria-hidden
+          className="pointer-events-none absolute -right-20 -bottom-24 hidden h-[440px] w-[440px] text-accent opacity-[0.07] lg:block"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
+          <circle cx="100" cy="100" r="96" />
+          <line x1="100" y1="4" x2="100" y2="196" />
+          <line x1="4" y1="100" x2="196" y2="100" />
+          <path d="M34 32 Q104 100 34 168" />
+          <path d="M166 32 Q96 100 166 168" />
+        </svg>
+
+        {/* Top status rail */}
+        <div className="flex items-center justify-between border-b border-rule px-5 py-2.5 sm:px-8">
+          <span className="kicker text-text-muted">Saison {seasonLabel(season)}</span>
+          <span className="inline-flex items-center gap-2">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
+            </span>
+            <span className="kicker text-accent-text">En direct</span>
+          </span>
         </div>
 
-        <div className="relative px-5 py-10 sm:px-12 sm:py-20">
-          <div className="max-w-2xl space-y-5">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-1.5 text-xs font-semibold text-white backdrop-blur-sm">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
-              </span>
-              {seasonLabel(season)} en cours
-            </div>
+        <div className="relative px-5 py-10 sm:px-8 sm:py-16">
+          <h1 className="font-display text-text-primary text-[clamp(2.75rem,9vw,7rem)]">
+            Toute la NBA.
+            <br />
+            En français<span className="text-accent">.</span>
+          </h1>
 
-            <h1 className="text-3xl font-extrabold tracking-tight text-white sm:text-5xl">
-              Bienvenue sur{" "}
-              <span className="bg-gradient-to-r from-accent to-accent-hover bg-clip-text text-transparent">
-                Hoopus
-              </span>
-            </h1>
+          <div className="mt-6 h-[2px] w-24 bg-accent" />
 
-            <p className="text-lg leading-relaxed text-white/70">
-              Toute la NBA, distillée pour les vrais passionnés.
-              <br className="hidden sm:block" />
-              Actu, stats, classements, rosters et playoffs — tout est là.
-            </p>
+          <p className="mt-6 max-w-xl font-mono text-xs uppercase tracking-[0.18em] leading-relaxed text-text-secondary">
+            Scores · Stats · Classements · Rosters · Playoffs
+          </p>
 
-            <div className="flex flex-wrap gap-3 pt-2">
-              {newsExists ? (
-                <Link
-                  href="/actualites"
-                  className="group inline-flex items-center gap-2 rounded-xl bg-accent px-6 py-3 text-sm font-bold text-white transition-all duration-300 hover:bg-accent-hover hover:shadow-lg hover:shadow-accent/25 hover:scale-[1.03] active:scale-[0.98]"
-                >
-                  <Flame size={16} strokeWidth={1.5} />
-                  Voir les actus
-                  <ArrowRight size={16} strokeWidth={1.5} className="transition-transform duration-300 group-hover:translate-x-0.5" />
-                </Link>
-              ) : (
-                <Link
-                  href="/calendrier"
-                  className="group inline-flex items-center gap-2 rounded-xl bg-accent px-6 py-3 text-sm font-bold text-white transition-all duration-300 hover:bg-accent-hover hover:shadow-lg hover:shadow-accent/25 hover:scale-[1.03] active:scale-[0.98]"
-                >
-                  <Calendar size={16} strokeWidth={1.5} />
-                  Matchs du jour
-                  <ArrowRight size={16} strokeWidth={1.5} className="transition-transform duration-300 group-hover:translate-x-0.5" />
-                </Link>
-              )}
+          <div className="mt-8 flex flex-wrap gap-3">
+            {newsExists ? (
               <Link
-                href="/statistiques"
-                className="group inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-6 py-3 text-sm font-bold text-white backdrop-blur-sm transition-all duration-300 hover:bg-white/20 hover:scale-[1.03] active:scale-[0.98]"
+                href="/actualites"
+                className="group inline-flex items-center gap-2.5 bg-accent px-6 py-3.5 font-mono text-xs font-bold uppercase tracking-widest text-white transition-colors hover:bg-accent-hover"
               >
-                <BarChart3 size={16} strokeWidth={1.5} />
-                Plonger dans les stats
+                Voir les actus
+                <ArrowRight size={15} strokeWidth={2} className="transition-transform duration-200 group-hover:translate-x-1" />
               </Link>
-            </div>
+            ) : (
+              <Link
+                href="/calendrier"
+                className="group inline-flex items-center gap-2.5 bg-accent px-6 py-3.5 font-mono text-xs font-bold uppercase tracking-widest text-white transition-colors hover:bg-accent-hover"
+              >
+                Matchs du jour
+                <ArrowRight size={15} strokeWidth={2} className="transition-transform duration-200 group-hover:translate-x-1" />
+              </Link>
+            )}
+            <Link
+              href="/statistiques"
+              className="inline-flex items-center gap-2.5 border border-border-hover px-6 py-3.5 font-mono text-xs font-bold uppercase tracking-widest text-text-primary transition-colors hover:bg-input"
+            >
+              Plonger dans les stats
+            </Link>
           </div>
         </div>
       </section>
 
       {/* ── En ce moment ────────────────────── */}
-      <ScrollReveal variant="scale">
-        <SeasonWidget />
-      </ScrollReveal>
+      <div className="mt-10 sm:mt-16">
+        <SectionLabel index="00" title="En ce moment" />
+        <ScrollReveal variant="up">
+          <SeasonWidget />
+        </ScrollReveal>
+      </div>
 
-      {/* ── Article à la une ─────────────────── */}
+      {/* ── À la une ─────────────────────────── */}
       {featured && (
-        <ScrollReveal variant="scale">
-          <div className="mb-6 flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-text-primary">À la une</h2>
+        <div className="mt-10 sm:mt-16">
+          <div className="flex items-end justify-between">
+            <SectionLabel index="" title="À la une" />
             <Link
               href="/articles"
-              className="group flex items-center gap-1.5 text-sm font-semibold text-accent transition-colors hover:text-accent-hover"
+              className="group mb-3 inline-flex items-center gap-1.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-accent-text transition-colors hover:text-accent"
             >
               Tous les articles
-              <ArrowRight size={14} strokeWidth={1.5} className="transition-transform duration-300 group-hover:translate-x-0.5" />
+              <ArrowRight size={13} strokeWidth={2} className="transition-transform duration-200 group-hover:translate-x-0.5" />
             </Link>
           </div>
 
-          <Link
-            href={`/articles/${featured.id}`}
-            className="group relative block overflow-hidden rounded-2xl border border-border-t bg-card transition-all duration-300 hover:border-border-hover hover:shadow-xl"
-          >
-            <div className="flex flex-col lg:flex-row">
-              {featured.image_url ? (
-                <div className="relative aspect-[16/9] w-full overflow-hidden bg-input lg:aspect-auto lg:w-1/2">
-                  <img
-                    src={featured.image_url}
-                    alt={featured.title}
-                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent lg:bg-gradient-to-r" />
-                </div>
-              ) : (
-                <div className="relative flex aspect-[16/9] w-full items-center justify-center overflow-hidden lg:aspect-auto lg:w-1/2">
-                  <img
-                    src="https://images.unsplash.com/photo-1529243856184-fd5465488984?w=800&q=80"
-                    alt=""
-                    className="h-full w-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-black/10" />
-                </div>
-              )}
-
-              <div className="flex flex-1 flex-col justify-center p-5 sm:p-8 lg:p-10">
-                <span className="inline-block w-fit rounded-full bg-accent-light px-3 py-1 text-xs font-semibold text-accent-text">
+          <ScrollReveal variant="up">
+            <Link
+              href={`/articles/${featured.id}`}
+              className="group grid grid-cols-1 overflow-hidden border border-rule bg-card transition-colors hover:border-border-hover lg:grid-cols-2"
+            >
+              <div className="relative aspect-[16/10] overflow-hidden bg-input lg:aspect-auto">
+                <img
+                  src={featured.image_url || "https://images.unsplash.com/photo-1529243856184-fd5465488984?w=800&q=80"}
+                  alt={featured.title}
+                  className="h-full w-full object-cover grayscale transition-all duration-700 group-hover:grayscale-0 group-hover:scale-[1.03]"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent mix-blend-multiply" />
+                <span className="absolute left-0 top-0 bg-accent px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-widest text-white">
                   {featured.tag}
                 </span>
-                <h3 className="mt-3 sm:mt-4 text-xl sm:text-2xl font-bold leading-snug text-text-primary transition-colors group-hover:text-accent-text lg:text-3xl">
+              </div>
+
+              <div className="flex flex-col justify-center p-6 sm:p-10">
+                <h3 className="font-display text-2xl leading-[1.02] text-text-primary transition-colors group-hover:text-accent-text sm:text-4xl">
                   {featured.title}
                 </h3>
-                <p className="mt-3 text-base leading-relaxed text-text-secondary line-clamp-3">
+                <p className="mt-4 leading-relaxed text-text-secondary line-clamp-3">
                   {featured.excerpt}
                 </p>
-                <div className="mt-4 sm:mt-6 flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-text-muted">
-                  <span className="font-medium text-text-secondary">{featured.author}</span>
-                  <span className="flex items-center gap-1">
-                    <BookOpen size={14} strokeWidth={1.5} />
-                    {featured.read_time}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Clock size={14} strokeWidth={1.5} />
-                    {formatDate(featured.created_at)}
-                  </span>
-                </div>
-                <div className="mt-5 flex items-center gap-1.5 text-sm font-semibold text-accent opacity-0 -translate-x-1 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0">
-                  Lire l&apos;article
-                  <ArrowRight size={14} strokeWidth={1.5} className="transition-transform duration-300 group-hover:translate-x-1" />
+                <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-rule pt-4 font-mono text-[11px] uppercase tracking-wider text-text-muted">
+                  <span className="font-semibold text-text-secondary">{featured.author}</span>
+                  <span>{featured.read_time}</span>
+                  <span>{formatDate(featured.created_at)}</span>
                 </div>
               </div>
-            </div>
-          </Link>
-        </ScrollReveal>
+            </Link>
+          </ScrollReveal>
+        </div>
       )}
 
       {/* ── Mon espace (favoris) ───────────── */}
-      <ScrollReveal variant="up">
-        <FavoriteDashboard />
-      </ScrollReveal>
-
-      {/* ── Bento Categories ────────────────────── */}
-      <section>
-        <ScrollReveal variant="left">
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-text-primary">Explorez la ligue</h2>
-          </div>
+      <div className="mt-10 sm:mt-16">
+        <ScrollReveal variant="up">
+          <FavoriteDashboard />
         </ScrollReveal>
+      </div>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {visibleCategories.map((cat, i) => {
-            const isXl = cat.size === "xl";
-            const isMd = cat.size === "md";
-            const isBanner = cat.size === "banner";
-            const minH = isXl ? "min-h-[240px]" : isMd ? "min-h-[110px]" : isBanner ? "min-h-[64px]" : "min-h-[100px]";
-
-            return (
-              <ScrollReveal key={cat.href} delay={i * 50} variant="scale" className={cat.cell}>
-                <Link
-                  href={cat.href}
-                  className={`group relative flex h-full overflow-hidden rounded-2xl border border-border-t bg-card transition-all duration-300 hover:-translate-y-1 active:translate-y-0 ${minH}`}
-                  style={{
-                    // @ts-expect-error CSS custom property
-                    "--cat-color": cat.color,
-                  }}
-                >
-                  {/* Colored background */}
-                  <div
-                    className="absolute inset-0 transition-opacity duration-500 opacity-95 group-hover:opacity-100"
-                    style={{ background: `linear-gradient(160deg, ${cat.color} 0%, ${cat.color}cc 50%, ${cat.color}80 100%)` }}
-                  />
-                  {/* Dark vignette for text readability */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />
-
-                  {/* Shine sweep on hover */}
-                  <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                    <div className="absolute inset-y-0 -left-1/2 w-1/3 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 group-hover:animate-[shine_0.7s_ease-out_forwards]" />
-                  </div>
-
-                  {/* Background icon watermark */}
-                  <div
-                    className={`absolute text-white/[0.08] transition-all duration-500 group-hover:text-white/[0.15] group-hover:scale-110 ${
-                      isBanner ? "right-5 top-1/2 -translate-y-1/2" : "right-4 bottom-4"
-                    }`}
-                  >
-                    {cat.iconBg}
-                  </div>
-
-                  {/* Content */}
-                  <div className={`relative flex w-full ${
-                    isBanner
-                      ? "flex-row items-center gap-4 px-5 py-3"
-                      : "flex-col justify-end p-5"
-                  } ${isXl ? "gap-3" : isMd ? "gap-1.5" : "gap-1"}`}>
-                    <div className="flex items-center gap-3">
-                      <span className="shrink-0 text-white/90 transition-transform duration-300 group-hover:scale-110">
-                        {cat.icon}
-                      </span>
-                      {isBanner && (
-                        <div className="flex-1 min-w-0">
-                          <span className="text-sm font-semibold text-white">{cat.title}</span>
-                          <span className="hidden sm:inline text-sm text-white/60 ml-2">{cat.tagline}</span>
-                        </div>
-                      )}
-                    </div>
-                    {!isBanner && (
-                      <>
-                        <h3 className={`font-bold text-white ${isXl ? "text-xl" : isMd ? "text-base" : "text-sm"}`}>
-                          {cat.title}
-                        </h3>
-                        {isXl && cat.description ? (
-                          <p className="text-sm leading-relaxed text-white/65 max-w-sm">{cat.description}</p>
-                        ) : (
-                          <p className={`text-white/50 ${isMd ? "text-sm" : "text-xs"}`}>{cat.tagline}</p>
-                        )}
-                      </>
-                    )}
-                  </div>
-
-                  {/* Arrow */}
-                  <div
-                    className={`absolute opacity-0 translate-x-1 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0 ${
-                      isBanner ? "right-5 top-1/2 -translate-y-1/2" : "top-4 right-4"
-                    }`}
-                  >
-                    <ArrowRight size={16} strokeWidth={1.5} className="text-white/80" />
-                  </div>
-                </Link>
-              </ScrollReveal>
-            );
-          })}
+      {/* ── Sommaire (rundown) ───────────────── */}
+      <section className="mt-10 sm:mt-16">
+        <SectionLabel index="" title="Le sommaire" />
+        <div className="border-t border-rule">
+          {visibleSections.map((s, i) => (
+            <Link
+              key={s.href}
+              href={s.href}
+              className="group relative flex items-center gap-4 border-b border-rule py-5 transition-colors duration-200 hover:bg-accent sm:gap-7 sm:py-6"
+            >
+              <span className="w-7 shrink-0 font-mono text-sm tabular-nums text-text-faint transition-colors group-hover:text-white/70 sm:w-10 sm:text-base">
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              <div className="min-w-0 flex-1">
+                <h3 className="font-display text-2xl leading-none text-text-primary transition-colors group-hover:text-white sm:text-4xl">
+                  {s.title}
+                </h3>
+                <p className="mt-1.5 font-mono text-[11px] uppercase tracking-wider text-text-muted transition-colors group-hover:text-white/70">
+                  {s.tagline}
+                </p>
+              </div>
+              <ArrowUpRight
+                size={22}
+                strokeWidth={1.75}
+                className="shrink-0 text-text-faint transition-all duration-200 group-hover:translate-x-1 group-hover:-translate-y-1 group-hover:text-white"
+              />
+            </Link>
+          ))}
         </div>
       </section>
 
-      {/* ── Le saviez-vous ───────────────────── */}
-      <ScrollReveal variant="right">
-        <section className="relative overflow-hidden rounded-2xl border border-accent/15 bg-gradient-to-r from-accent/8 via-card to-card p-5 sm:p-8">
-          <div className="flex items-start gap-4">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-light">
-              <Sparkles size={18} strokeWidth={1.5} className="text-accent" />
-            </div>
-            <div>
-              <h3 className="text-sm font-bold uppercase tracking-wide text-accent-text">
-                Le saviez-vous ?
-              </h3>
-              <p className="mt-1.5 text-base leading-relaxed text-text-secondary">
-                {funFact}
-              </p>
-            </div>
-          </div>
-        </section>
-      </ScrollReveal>
-
-      {/* ── Bottom CTA with photo ────────────── */}
-      <ScrollReveal variant="blur">
-        <section className="relative overflow-hidden rounded-2xl border border-border-t">
-          <div className="absolute inset-0">
-            <img
-              src="https://images.unsplash.com/photo-1659468711279-2857db123912?w=1200&q=80"
-              alt=""
-              className="h-full w-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/50 to-black/30" />
-          </div>
-          <div className="relative flex flex-col items-start gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:p-10">
-            <div>
-              <h3 className="text-xl font-bold text-white">
-                On joue ce soir ?
-              </h3>
-              <p className="mt-1.5 text-sm text-white/60">
-                Consultez le calendrier et ne ratez aucun tip-off.
-              </p>
-            </div>
-            <Link
-              href="/calendrier"
-              className="group inline-flex shrink-0 items-center gap-2 rounded-xl bg-accent px-6 py-3 text-sm font-bold text-white transition-all duration-300 hover:bg-accent-hover hover:shadow-lg hover:shadow-accent/25 hover:scale-[1.03] active:scale-[0.98]"
-            >
-              <Calendar size={16} strokeWidth={1.5} />
-              Matchs du jour
-              <ArrowRight size={14} strokeWidth={1.5} className="transition-transform duration-300 group-hover:translate-x-0.5" />
-            </Link>
-          </div>
-        </section>
-      </ScrollReveal>
-
-      {/* ── Footer ───────────────────────────── */}
+      {/* ── Data point (le saviez-vous) ──────── */}
       <ScrollReveal variant="up">
-        <p className="pb-4 text-center text-xs text-text-faint">
-          Fait par des passionnés, pour des passionnés.
-        </p>
+        <section className="mt-10 flex items-start gap-5 border border-rule bg-card p-6 sm:mt-16 sm:gap-7 sm:p-8">
+          <span className="font-display text-5xl leading-none text-accent sm:text-7xl">#</span>
+          <div className="min-w-0">
+            <p className="kicker text-accent-text">Le saviez-vous</p>
+            <p className="mt-2 text-base leading-relaxed text-text-secondary sm:text-lg">
+              {funFact}
+            </p>
+          </div>
+        </section>
       </ScrollReveal>
+
+      {/* ── Bottom CTA ───────────────────────── */}
+      <section className="relative mt-10 flex flex-col items-start gap-5 overflow-hidden border border-rule bg-accent p-6 sm:mt-16 sm:flex-row sm:items-center sm:justify-between sm:p-10">
+        <div>
+          <p className="kicker text-white/70">Ce soir</p>
+          <h3 className="mt-1 font-display text-3xl text-white sm:text-5xl">
+            On joue ce soir ?
+          </h3>
+          <p className="mt-2 font-mono text-xs uppercase tracking-wider text-white/80">
+            Consultez le calendrier et ne ratez aucun tip-off.
+          </p>
+        </div>
+        <Link
+          href="/calendrier"
+          className="group inline-flex shrink-0 items-center gap-2.5 border border-white/40 bg-black/10 px-6 py-3.5 font-mono text-xs font-bold uppercase tracking-widest text-white transition-colors hover:bg-black/25"
+        >
+          Matchs du jour
+          <ArrowRight size={15} strokeWidth={2} className="transition-transform duration-200 group-hover:translate-x-1" />
+        </Link>
+      </section>
+
+      {/* ── Footer colophon ──────────────────── */}
+      <div className="mt-10 flex items-center justify-between border-t border-rule py-6 sm:mt-16">
+        <span className="font-display text-lg tracking-tight text-text-primary">
+          HOOP<span className="text-accent">US</span>
+        </span>
+        <p className="kicker text-text-faint">Par des passionnés · pour des passionnés</p>
+      </div>
+    </div>
+  );
+}
+
+function SectionLabel({ index, title }: { index: string; title: string }) {
+  return (
+    <div className="mb-5 flex items-baseline gap-3">
+      {index && <span className="font-mono text-sm tabular-nums text-text-faint">{index}</span>}
+      <h2 className="font-display text-2xl text-text-primary sm:text-3xl">{title}</h2>
     </div>
   );
 }
