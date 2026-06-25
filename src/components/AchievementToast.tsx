@@ -29,12 +29,6 @@ const ICON_MAP: Record<string, React.ComponentType<{ size?: number; className?: 
   bolt: Bolt,
 };
 
-const CATEGORY_COLORS: Record<string, string> = {
-  games: "text-orange-400",
-  streaks: "text-violet-400",
-  mastery: "text-emerald-400",
-};
-
 interface AchievementToastProps {
   achievement: Achievement;
   index?: number;
@@ -50,7 +44,6 @@ export default function AchievementToast({
   const [exiting, setExiting] = useState(false);
 
   const Icon = ICON_MAP[achievement.icon] || Trophy;
-  const iconColor = CATEGORY_COLORS[achievement.category] || "text-accent-text";
 
   useEffect(() => {
     // Stagger entrance for multiple toasts
@@ -70,7 +63,7 @@ export default function AchievementToast({
 
   return (
     <div
-      className={`fixed z-50 rounded-xl border border-border-t bg-card shadow-xl p-4 transition-all duration-400 ease-out ${
+      className={`fixed z-50 overflow-hidden border border-rule bg-card shadow-xl p-4 transition-all duration-400 ease-out ${
         visible && !exiting
           ? "opacity-100 translate-y-0"
           : "opacity-0 translate-y-4"
@@ -81,15 +74,16 @@ export default function AchievementToast({
         maxWidth: "320px",
       }}
     >
+      <span className="absolute left-0 top-0 bottom-0 w-1 bg-accent" />
       <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/10">
-          <Icon size={20} className={iconColor} />
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center bg-accent">
+          <Icon size={20} className="text-white" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold text-text-faint uppercase tracking-wide">
+          <p className="kicker text-accent-text">
             Succès débloqué
           </p>
-          <p className="text-sm font-bold text-text-primary mt-0.5 truncate">
+          <p className="text-sm font-bold text-text-primary mt-1 truncate">
             {achievement.title}
           </p>
           <p className="text-xs text-text-muted mt-0.5 line-clamp-2">

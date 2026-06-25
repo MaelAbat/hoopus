@@ -46,9 +46,9 @@ export default function ThemePicker() {
   const { theme, setTheme } = useTheme();
 
   return (
-    <div className="rounded-2xl border p-6" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
-      <h3 className="flex items-center gap-2 font-bold mb-5" style={{ color: "var(--text)" }}>
-        <Palette size={16} style={{ color: "var(--accent)" }} />
+    <div className="border border-rule bg-card p-6">
+      <h3 className="kicker mb-5 flex items-center gap-2 text-text-faint">
+        <Palette size={13} className="text-accent" />
         Apparence
       </h3>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -58,19 +58,14 @@ export default function ThemePicker() {
             <button
               key={t.id}
               onClick={() => setTheme(t.id)}
-              className="relative rounded-xl p-4 text-left transition-all duration-200"
-              style={{
-                backgroundColor: isActive ? "var(--accent-light)" : "var(--bg-input)",
-                borderWidth: "1.5px",
-                borderStyle: "solid",
-                borderColor: isActive ? "var(--accent)" : "var(--border)",
-              }}
+              className={`relative border p-4 text-left transition-colors ${
+                isActive
+                  ? "border-accent bg-accent-light"
+                  : "border-rule bg-input hover:border-border-hover"
+              }`}
             >
               {isActive && (
-                <div
-                  className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full"
-                  style={{ backgroundColor: "var(--accent)" }}
-                >
+                <div className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center bg-accent">
                   <Check size={12} className="text-white" />
                 </div>
               )}
@@ -79,7 +74,7 @@ export default function ThemePicker() {
                 {t.colors.map((color, i) => (
                   <div
                     key={i}
-                    className="h-6 w-6 rounded-lg"
+                    className="h-6 w-6"
                     style={{
                       backgroundColor: color,
                       border: color === "#ffffff" || color === "#f8fafc" ? "1px solid #e2e8f0" : "none",
@@ -87,10 +82,10 @@ export default function ThemePicker() {
                   />
                 ))}
               </div>
-              <p className="text-sm font-semibold" style={{ color: isActive ? "var(--accent)" : "var(--text)" }}>
+              <p className={`font-mono text-xs font-bold uppercase tracking-wider ${isActive ? "text-accent" : "text-text-primary"}`}>
                 {t.name}
               </p>
-              <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
+              <p className="mt-0.5 text-xs text-text-muted">
                 {t.desc}
               </p>
             </button>

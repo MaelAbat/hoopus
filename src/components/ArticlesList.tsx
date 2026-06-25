@@ -40,7 +40,7 @@ export default function ArticlesList({ articles, isAdmin }: { articles: Article[
         <div className="flex justify-end">
           <button
             onClick={openCreate}
-            className="flex items-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white hover:bg-accent-hover transition-colors"
+            className="inline-flex items-center gap-2 bg-accent px-6 py-3.5 font-mono text-xs font-bold uppercase tracking-widest text-white transition-colors hover:bg-accent-hover"
           >
             <Plus size={16} />
             Ajouter
@@ -50,12 +50,12 @@ export default function ArticlesList({ articles, isAdmin }: { articles: Article[
 
       {/* Empty state */}
       {articles.length === 0 && (
-        <div className="rounded-2xl bg-card border border-border-t p-12 sm:p-16 text-center">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-input mb-5">
+        <div className="border border-rule bg-card p-12 sm:p-16 text-center">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center bg-input mb-5">
             <BookOpen size={28} className="text-text-faint" />
           </div>
-          <p className="text-lg font-semibold text-text-primary">Aucun article pour l&apos;instant</p>
-          <p className="mt-2 text-sm text-text-muted">Les analyses et articles de fond apparaîtront ici.</p>
+          <p className="font-display text-2xl text-text-primary">Aucun article pour l&apos;instant</p>
+          <p className="mt-2 font-mono text-[11px] uppercase tracking-wider text-text-muted">Les analyses et articles de fond apparaîtront ici.</p>
         </div>
       )}
 
@@ -64,25 +64,29 @@ export default function ArticlesList({ articles, isAdmin }: { articles: Article[
           <Link
             key={article.id}
             href={`/articles/${article.id}`}
-            className="group relative flex flex-col overflow-hidden rounded-2xl bg-card border border-border-t transition-all duration-300 hover:border-border-hover hover:shadow-lg hover:-translate-y-1"
+            className="group relative flex flex-col overflow-hidden border border-rule bg-card transition-colors hover:border-border-hover"
           >
-            <div className="aspect-[16/9] w-full overflow-hidden bg-input">
+            <div className="relative aspect-[16/9] w-full overflow-hidden bg-input">
               {article.image_url ? (
                 <img
                   src={article.image_url}
                   alt={article.title}
-                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  className="h-full w-full object-cover grayscale transition-all duration-700 group-hover:grayscale-0 group-hover:scale-[1.03]"
                 />
               ) : (
-                <div className="h-full w-full bg-gradient-to-br from-accent/10 via-card to-card flex items-center justify-center">
-                  <BookOpen size={32} className="text-text-faint/30" />
+                <div className="h-full w-full bg-input flex items-center justify-center">
+                  <BookOpen size={32} className="text-text-faint/40" />
                 </div>
               )}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent mix-blend-multiply" />
+              <span className="absolute left-0 top-0 bg-accent px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-widest text-white">
+                {article.tag}
+              </span>
             </div>
             <div className="flex flex-1 flex-col p-5 sm:p-6">
               {isAdmin && (
                 <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                  <button onClick={(e) => { e.preventDefault(); openEdit(article); }} className="rounded-lg p-2 bg-black/40 backdrop-blur-sm text-white hover:bg-black/60 transition-colors">
+                  <button onClick={(e) => { e.preventDefault(); openEdit(article); }} className="p-2 bg-black/50 text-white hover:bg-black/70 transition-colors">
                     <Pencil size={16} />
                   </button>
                   <span onClick={(e) => e.preventDefault()}>
@@ -90,29 +94,26 @@ export default function ArticlesList({ articles, isAdmin }: { articles: Article[
                   </span>
                 </div>
               )}
-              <span className="inline-block rounded-full bg-accent-light px-3 py-1 text-xs font-semibold text-accent-text">
-                {article.tag}
-              </span>
-              <h2 className="mt-3 text-lg sm:text-xl font-bold text-text-primary leading-snug transition-colors group-hover:text-accent-text">
+              <h2 className="font-display text-xl sm:text-2xl leading-[1.05] text-text-primary transition-colors group-hover:text-accent-text">
                 {article.title}
               </h2>
-              <p className="mt-2 text-sm text-text-secondary leading-relaxed line-clamp-3">
+              <p className="mt-3 text-sm text-text-secondary leading-relaxed line-clamp-3">
                 {article.excerpt}
               </p>
-              <div className="mt-auto pt-4 flex items-center justify-between border-t border-border-t">
-                <span className="text-sm font-medium text-text-secondary">{article.author}</span>
-                <div className="flex items-center gap-3 text-xs text-text-muted">
+              <div className="mt-auto pt-4 flex items-center justify-between border-t border-rule font-mono text-[11px] uppercase tracking-wider text-text-muted">
+                <span className="font-semibold text-text-secondary">{article.author}</span>
+                <div className="flex items-center gap-3">
                   <span className="flex items-center gap-1">
                     <BookOpen size={12} />
-                    {article.read_time}
+                    <span className="tnum">{article.read_time}</span>
                   </span>
                   <span className="flex items-center gap-1">
                     <Clock size={12} />
-                    {formatDate(article.created_at)}
+                    <span className="tnum">{formatDate(article.created_at)}</span>
                   </span>
                 </div>
               </div>
-              <div className="mt-3 flex items-center gap-1.5 text-sm font-semibold text-accent opacity-0 -translate-x-1 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0">
+              <div className="mt-3 flex items-center gap-1.5 font-mono text-[11px] font-bold uppercase tracking-widest text-accent-text opacity-0 -translate-x-1 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0">
                 Lire l&apos;article
                 <ArrowRight size={14} />
               </div>

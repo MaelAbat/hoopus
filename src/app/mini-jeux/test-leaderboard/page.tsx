@@ -45,30 +45,31 @@ function DemoLeaderboard({ title, userRank }: { title: string; userRank: number 
   const rows = computeVisibleLeaderboard(entries, userId);
 
   return (
-    <div className="rounded-2xl bg-card border border-border-t overflow-hidden">
-      <div className="px-4 py-3 border-b border-border-t">
-        <h2 className="text-sm font-bold text-text-primary flex items-center gap-2">
-          <Trophy size={16} className="text-accent-text" />
+    <div className="bg-card border border-rule overflow-hidden">
+      <div className="px-4 py-3 border-b border-rule">
+        <h2 className="font-mono text-[11px] font-semibold uppercase tracking-wider text-text-primary flex items-center gap-2">
+          <Trophy size={14} className="text-accent-text" />
           {title}
         </h2>
       </div>
-      <div className="divide-y divide-border-t/30">
+      <div className="divide-y divide-rule">
         {rows.map((row, i) =>
           row.type === "separator" ? (
             <div key="sep" className="flex items-center gap-3 px-4 py-1.5">
-              <div className="flex-1 border-t border-dashed border-border-t" />
-              <span className="text-[10px] text-text-faint">...</span>
-              <div className="flex-1 border-t border-dashed border-border-t" />
+              <div className="flex-1 border-t border-dashed border-rule" />
+              <span className="font-mono text-[10px] text-text-faint">...</span>
+              <div className="flex-1 border-t border-dashed border-rule" />
             </div>
           ) : (
             <div
               key={`${row.entry.display_name}-${row.rank}`}
-              className={`flex items-center gap-3 px-4 py-2.5 ${row.isUser ? "bg-accent/10 border-l-2 border-l-accent" : ""}`}
+              className={`relative flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-card-hover ${row.isUser ? "bg-accent-light" : ""}`}
             >
+              {row.isUser && <span className="absolute left-0 top-0 bottom-0 w-1 bg-accent" />}
               <span
-                className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[11px] font-bold ${
+                className={`tnum flex h-6 w-6 shrink-0 items-center justify-center text-[11px] font-bold ${
                   row.rank === 1
-                    ? "bg-accent/20 text-accent-text"
+                    ? "bg-accent text-white"
                     : row.rank <= 3
                     ? "bg-input text-text-primary"
                     : "text-text-faint"
@@ -88,10 +89,10 @@ function DemoLeaderboard({ title, userRank }: { title: string; userRank: number 
                 {row.entry.display_name}
                 {row.isUser ? " (toi)" : ""}
               </span>
-              <span className="text-xs text-text-muted tabular-nums font-bold">
+              <span className="tnum text-xs text-text-muted font-bold">
                 {row.entry.score}/500
               </span>
-              <span className="text-xs text-text-faint tabular-nums w-12 text-right">
+              <span className="tnum text-xs text-text-faint w-12 text-right">
                 {formatTime(row.entry.time_seconds)}
               </span>
             </div>
@@ -105,30 +106,33 @@ function DemoLeaderboard({ title, userRank }: { title: string; userRank: number 
 export default function TestLeaderboard() {
   return (
     <div className="mx-auto max-w-xl space-y-8 py-10 px-4">
-      <div>
-        <h1 className="text-2xl font-bold text-text-primary mb-1">Test classement intelligent</h1>
-        <p className="text-sm text-text-muted">
-          Visualisation des diff&eacute;rents cas de figure pour le classement avec focus sur le joueur.
-        </p>
+      <div className="flex items-baseline gap-3">
+        <span className="font-mono text-sm tabular-nums text-text-faint">00</span>
+        <div>
+          <h1 className="font-display text-2xl text-text-primary sm:text-3xl mb-1">Test classement intelligent</h1>
+          <p className="text-sm text-text-muted">
+            Visualisation des diff&eacute;rents cas de figure pour le classement avec focus sur le joueur.
+          </p>
+        </div>
       </div>
 
       <div className="space-y-2">
-        <h3 className="text-xs font-bold text-text-muted uppercase tracking-wider">Cas 1 : joueur dans le top 5</h3>
+        <h3 className="kicker text-text-faint">Cas 1 : joueur dans le top 5</h3>
         <DemoLeaderboard title="Joueur #3 sur 500" userRank={3} />
       </div>
 
       <div className="space-y-2">
-        <h3 className="text-xs font-bold text-text-muted uppercase tracking-wider">Cas 2 : joueur juste apr&egrave;s le top 5</h3>
+        <h3 className="kicker text-text-faint">Cas 2 : joueur juste apr&egrave;s le top 5</h3>
         <DemoLeaderboard title="Joueur #7 sur 500" userRank={7} />
       </div>
 
       <div className="space-y-2">
-        <h3 className="text-xs font-bold text-text-muted uppercase tracking-wider">Cas 3 : joueur loin dans le classement</h3>
+        <h3 className="kicker text-text-faint">Cas 3 : joueur loin dans le classement</h3>
         <DemoLeaderboard title="Joueur #47 sur 500" userRank={47} />
       </div>
 
       <div className="space-y-2">
-        <h3 className="text-xs font-bold text-text-muted uppercase tracking-wider">Cas 4 : joueur tr&egrave;s loin</h3>
+        <h3 className="kicker text-text-faint">Cas 4 : joueur tr&egrave;s loin</h3>
         <DemoLeaderboard title="Joueur #498 sur 500" userRank={498} />
       </div>
     </div>

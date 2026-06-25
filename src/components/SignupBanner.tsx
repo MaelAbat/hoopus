@@ -28,19 +28,21 @@ export default function SignupBanner({ show }: { show: boolean }) {
   if (!show || !isAnonymous) return null;
 
   return (
-    <div className="flex items-start gap-3 rounded-2xl border border-accent/20 bg-accent/5 px-4 py-3">
+    <div className="relative flex items-start gap-3 overflow-hidden border border-rule bg-card px-4 py-3.5 sm:px-5">
+      <span className="absolute left-0 top-0 bottom-0 w-1 bg-accent" />
       <UserPlus size={16} className="mt-0.5 shrink-0 text-accent-text" />
-      <p className="text-sm text-text-muted">
-        Tu joues en tant que{" "}
-        <span className="font-medium italic text-text-primary">{displayName}</span>.{" "}
+      <div className="flex-1">
+        <p className="text-sm text-text-muted">
+          Tu joues en tant que{" "}
+          <span className="font-semibold text-text-primary">{displayName}</span>. Crée un compte pour garder ton pseudo, tes scores et tes succès.
+        </p>
         <Link
           href="/auth/signup"
-          className="font-semibold text-accent hover:text-accent-hover transition-colors underline underline-offset-2"
+          className="mt-3 inline-flex items-center bg-accent px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-widest text-white transition-colors hover:bg-accent-hover"
         >
           Crée un compte
-        </Link>{" "}
-        pour garder ton pseudo, tes scores et tes succès.
-      </p>
+        </Link>
+      </div>
     </div>
   );
 }

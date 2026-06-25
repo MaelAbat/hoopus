@@ -9,17 +9,17 @@ export default function Loading() {
       </div>
 
       {/* Search bar */}
-      <div className="h-11 w-full animate-pulse rounded-xl bg-input" />
+      <div className="h-11 w-full animate-pulse bg-input" />
 
       {/* Quiz card grid */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="overflow-hidden rounded-2xl bg-card border border-border-t">
+          <div key={i} className="overflow-hidden bg-card border border-rule">
             <div className="h-32 w-full animate-pulse bg-input" />
             <div className="space-y-2 p-5">
-              <div className="h-5 w-3/4 animate-pulse rounded bg-input" />
-              <div className="h-3 w-full animate-pulse rounded bg-input" />
-              <div className="h-3 w-2/3 animate-pulse rounded bg-input" />
+              <div className="h-5 w-3/4 animate-pulse bg-input" />
+              <div className="h-3 w-full animate-pulse bg-input" />
+              <div className="h-3 w-2/3 animate-pulse bg-input" />
             </div>
           </div>
         ))}

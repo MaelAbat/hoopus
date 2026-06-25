@@ -21,13 +21,16 @@ export default function FloatingVideo({ videoId }: { videoId: string }) {
   }, [videoId, registerMatchVideo, unregisterMatchVideo]);
 
   return (
-    <div className="rounded-2xl bg-card border border-border-t overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4 border-b border-border-t/50">
-        <h2 className="text-sm font-semibold text-text-primary">Résumé du match</h2>
+    <div className="bg-card border border-rule overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4 border-b border-rule">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className="block h-3 w-1 bg-accent shrink-0" />
+          <h2 className="font-mono text-[11px] font-semibold uppercase tracking-wider text-text-primary">Résumé du match</h2>
+        </div>
         {!isActiveInPip && (
           <button
             onClick={detach}
-            className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-text-muted hover:text-text-primary hover:bg-input transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 font-mono text-[11px] uppercase tracking-wider text-text-muted hover:text-text-primary hover:bg-input transition-colors"
             title="Détacher la vidéo"
           >
             <PictureInPicture2 size={14} />
@@ -49,7 +52,7 @@ export default function FloatingVideo({ videoId }: { videoId: string }) {
           <div className="absolute inset-0 flex items-center justify-center bg-input/50">
             <button
               onClick={reattach}
-              className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-text-muted hover:text-text-primary hover:bg-card transition-colors border border-border-t"
+              className="flex items-center gap-2 border border-border-hover px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider text-text-primary hover:bg-input transition-colors"
             >
               <Undo2 size={14} />
               Rattacher la vidéo

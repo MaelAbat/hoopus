@@ -598,7 +598,7 @@ export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
       {/* Header */}
       <div className="pt-4 space-y-4">
         <div className="flex items-center justify-between">
-          <Link href="/mini-jeux" className="inline-flex items-center gap-2 sm:gap-1.5 rounded-lg bg-input px-4 py-2.5 text-sm sm:px-3 sm:py-1.5 sm:text-xs font-medium text-text-muted hover:text-text-primary hover:bg-card-hover transition-colors">
+          <Link href="/mini-jeux" className="inline-flex items-center gap-2 sm:gap-1.5 border border-rule bg-card px-4 py-2.5 sm:px-3 sm:py-1.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-text-muted transition-colors hover:border-border-hover hover:text-text-primary">
             <RotateCcw size={12} /> Tous les mini-jeux
           </Link>
           {isAdmin && (
@@ -606,7 +606,7 @@ export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
               <select
                 value={debugGridSize ?? ""}
                 onChange={(e) => { setDebugGridSize(e.target.value ? Number(e.target.value) : null); handleDebugNewGrid(); }}
-                className="rounded-lg bg-input px-2 py-1.5 text-xs font-medium text-text-muted outline-none"
+                className="border border-rule bg-card px-2 py-1.5 font-mono text-[11px] font-medium uppercase tracking-wider text-text-muted outline-none"
               >
                 <option value="">Auto</option>
                 {[7, 8, 9, 10, 11, 12].map((s) => (
@@ -615,7 +615,7 @@ export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
               </select>
               <button
                 onClick={handleDebugNewGrid}
-                className="inline-flex items-center gap-2 sm:gap-1.5 rounded-lg bg-input px-4 py-2.5 text-sm sm:px-3 sm:py-1.5 sm:text-xs font-medium text-text-muted hover:text-text-primary hover:bg-card-hover transition-colors"
+                className="inline-flex items-center gap-2 sm:gap-1.5 border border-rule bg-card px-4 py-2.5 sm:px-3 sm:py-1.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-text-muted transition-colors hover:border-border-hover hover:text-text-primary"
               >
                 <RotateCcw size={12} /> Nouvelle grille
               </button>
@@ -624,10 +624,10 @@ export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
         </div>
 
         <div className="text-center space-y-1">
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-text-primary tracking-tight">
+          <h1 className="font-display text-3xl sm:text-4xl text-text-primary">
             Hoop<span className="text-accent">Grid</span>
           </h1>
-          <p className="text-xs sm:text-sm text-text-muted">
+          <p className="font-mono text-[11px] uppercase tracking-wider text-text-muted">
             {gaveUp
               ? "Partie abandonn\u00e9e"
               : won
@@ -643,13 +643,13 @@ export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
         {/* Progress */}
         {loaded && (
           <div className="space-y-1.5">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-text-faint font-medium">{foundWords.length}/{words.length} mots</span>
+            <div className="flex items-center justify-between font-mono text-[11px] uppercase tracking-wider">
+              <span className="tnum text-text-faint">{foundWords.length}/{words.length} mots</span>
               <div className="flex items-center gap-1">
                 {!gameOver && (
                   <button
                     onClick={handleGiveUp}
-                    className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-text-faint hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                    className="flex items-center gap-1 px-2.5 py-1.5 text-text-faint transition-colors hover:text-red-300"
                   >
                     <Flag size={13} />
                     Abandonner
@@ -657,13 +657,13 @@ export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
                 )}
                 <span className="flex items-center gap-1 px-1.5 text-text-faint">
                   <Clock size={13} />
-                  {formatTime(elapsed)}
+                  <span className="tnum">{formatTime(elapsed)}</span>
                 </span>
               </div>
             </div>
-            <div className="h-1.5 rounded-full bg-input overflow-hidden">
+            <div className="h-1.5 bg-input overflow-hidden">
               <div
-                className={`h-full rounded-full transition-all duration-500 ${gaveUp ? "bg-red-500/60" : "bg-gradient-to-r from-accent to-accent-hover"}`}
+                className={`h-full transition-all duration-500 ${gaveUp ? "bg-red-600/60" : "bg-accent"}`}
                 style={{ width: `${(foundWords.length / words.length) * 100}%` }}
               />
             </div>
@@ -681,14 +681,14 @@ export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
           const found = foundWords.includes(i);
           return (
             <div
-              className={`flex items-center gap-1.5 rounded-lg border px-2 py-1.5 transition-all ${
-                found ? "bg-emerald-500/10 border-emerald-500/30" : "bg-input/50 border-border-t"
+              className={`flex items-center gap-1.5 border px-2 py-1.5 transition-colors ${
+                found ? "bg-emerald-600/10 border-emerald-600/40" : "bg-input/50 border-rule"
               }`}
             >
               {found ? (
                 <>
-                  <Check size={12} className="text-emerald-400 shrink-0" />
-                  <span className="text-xs font-bold text-emerald-400 truncate">{w.word}</span>
+                  <Check size={12} className="text-emerald-300 shrink-0" />
+                  <span className="text-xs font-bold text-emerald-300 truncate">{w.word}</span>
                   <img src={teamLogoUrl(w.team)} alt="" className="h-3.5 w-3.5 object-contain ml-auto" />
                 </>
               ) : (
@@ -706,7 +706,7 @@ export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
           <div className="flex flex-col lg:flex-row gap-3 items-start">
             {/* Left word list — desktop only */}
             <div className="hidden lg:flex flex-col gap-1.5 w-44 shrink-0">
-              <span className="text-[10px] font-bold text-text-faint uppercase tracking-wider px-1 mb-1">
+              <span className="kicker text-text-faint px-1 mb-1">
                 <Search size={10} className="inline mr-1 -mt-0.5" />Mots &agrave; barrer
               </span>
               {leftWords.map((w, i) => (
@@ -718,7 +718,7 @@ export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
             <div className="flex-1 min-w-0 w-full lg:w-auto">
               <div
                 ref={gridRef}
-                className="rounded-2xl bg-card border border-border-t p-2 sm:p-3 select-none touch-none"
+                className="border border-rule bg-card p-2 sm:p-3 select-none touch-none"
                 onMouseDown={handleStart}
                 onMouseMove={handleMove}
                 onMouseUp={handleEnd}
@@ -742,13 +742,13 @@ export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
                       return (
                         <div
                           key={key}
-                          className={`flex items-center justify-center aspect-square rounded-md sm:rounded-lg text-[11px] sm:text-sm font-bold transition-all duration-300 select-none ${
+                          className={`font-display flex items-center justify-center aspect-square text-[13px] sm:text-base transition-all duration-300 select-none ${
                             isSelecting
-                              ? "bg-accent/50 text-accent-text scale-110 z-10 ring-1 ring-accent"
+                              ? "bg-accent text-white scale-110 z-10"
                               : revealMystery
-                                ? "bg-accent/25 text-accent-text ring-1 ring-accent/40"
+                                ? "bg-accent-light text-accent-text ring-1 ring-accent/40"
                                 : isFound
-                                  ? "bg-emerald-500/20 text-emerald-400/60"
+                                  ? "bg-emerald-600/20 text-emerald-300/70"
                                   : "bg-input text-text-primary hover:bg-card-hover"
                           }`}
                         >
@@ -773,10 +773,10 @@ export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
       })()}
 
       {/* Mobile word list — below grid */}
-      <div className="lg:hidden rounded-2xl bg-card border border-border-t p-3">
+      <div className="lg:hidden border border-rule bg-card p-3">
         <div className="flex items-center gap-2 mb-2">
           <Search size={12} className="text-text-faint" />
-          <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Mots &agrave; barrer</span>
+          <span className="kicker text-text-muted">Mots &agrave; barrer</span>
         </div>
         <div className="grid grid-cols-2 gap-1.5">
           {words.map((w, i) => {
@@ -784,14 +784,14 @@ export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
             return (
               <div
                 key={i}
-                className={`flex items-center gap-1.5 rounded-lg border px-2 py-1.5 transition-all ${
-                  found ? "bg-emerald-500/10 border-emerald-500/30" : "bg-input/50 border-border-t"
+                className={`flex items-center gap-1.5 border px-2 py-1.5 transition-colors ${
+                  found ? "bg-emerald-600/10 border-emerald-600/40" : "bg-input/50 border-rule"
                 }`}
               >
                 {found ? (
                   <>
-                    <Check size={12} className="text-emerald-400 shrink-0" />
-                    <span className="text-xs font-bold text-emerald-400 truncate">{w.word}</span>
+                    <Check size={12} className="text-emerald-300 shrink-0" />
+                    <span className="text-xs font-bold text-emerald-300 truncate">{w.word}</span>
                     <img src={teamLogoUrl(w.team)} alt="" className="h-3.5 w-3.5 object-contain ml-auto" />
                   </>
                 ) : (
@@ -809,9 +809,9 @@ export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
 
       {/* Mystery hint */}
       {mystery && !mysteryFound && !allWordsFound && !gaveUp && (
-        <div className="rounded-xl bg-accent/10 border border-accent/20 px-4 py-3 text-center">
+        <div className="border border-accent/20 bg-accent-light px-4 py-3 text-center">
           <p className="text-xs text-text-muted">
-            Joueur myst&egrave;re : <span className="font-bold text-accent-text">{mystery.name.length} lettres</span>
+            Joueur myst&egrave;re : <span className="tnum font-bold text-accent-text">{mystery.name.length} lettres</span>
             <span className="text-text-faint"> — les lettres restantes forment son nom</span>
           </p>
         </div>
@@ -819,14 +819,15 @@ export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
 
       {/* Mystery guess input — appears when all words are found */}
       {allWordsFound && !mysteryFound && !gaveUp && mystery && (
-        <div className="rounded-2xl bg-accent/10 border border-accent/30 p-5 space-y-3">
-          <p className="text-center text-sm font-bold text-accent-text">
+        <div className="relative overflow-hidden border border-accent/30 bg-card p-5 space-y-3">
+          <span className="absolute left-0 top-0 bottom-0 w-1 bg-accent" />
+          <p className="text-center font-display text-xl text-accent-text">
             Devine le joueur myst&egrave;re !
           </p>
           <div className="flex justify-center">
             <div className="flex gap-1">
               {mystery.name.split("").map((_, i) => (
-                <span key={i} className="flex h-8 w-6 sm:h-9 sm:w-7 items-center justify-center rounded-md bg-accent/20 text-sm font-bold text-accent-text border border-accent/30">
+                <span key={i} className="font-display flex h-8 w-6 sm:h-9 sm:w-7 items-center justify-center bg-accent-light text-base text-accent-text border border-accent/30">
                   {mysteryGuess.toUpperCase()[i] || ""}
                 </span>
               ))}
@@ -840,20 +841,20 @@ export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
               onChange={(e) => setMysteryGuess(e.target.value)}
               maxLength={mystery.name.length}
               placeholder={`${mystery.name.length} lettres...`}
-              className={`flex-1 min-w-0 rounded-xl bg-card border pl-4 pr-4 py-3 text-base font-bold text-text-primary placeholder:text-text-faint outline-none uppercase tracking-widest text-center transition-colors ${
-                mysteryWrong ? "border-red-500 bg-red-500/10" : "border-border-t focus:border-accent"
+              className={`flex-1 min-w-0 bg-input border pl-4 pr-4 py-3 text-base font-bold text-text-primary placeholder:text-text-faint outline-none uppercase tracking-widest text-center transition-colors ${
+                mysteryWrong ? "border-red-600 bg-red-600/10" : "border-rule focus:border-accent"
               }`}
             />
             <button
               type="submit"
               aria-label="Valider"
-              className="flex items-center justify-center shrink-0 rounded-xl bg-accent px-5 py-3 text-sm font-bold text-white hover:bg-accent-hover active:scale-95 transition-all"
+              className="flex items-center justify-center shrink-0 bg-accent px-5 py-3 font-mono text-xs font-bold uppercase tracking-widest text-white transition-colors hover:bg-accent-hover active:scale-95"
             >
               <Check size={20} />
             </button>
           </form>
           {mysteryWrong && (
-            <p className="text-center text-xs text-red-400 font-medium animate-[fadeIn_0.2s_ease-out]">
+            <p className="text-center text-xs text-red-300 font-medium animate-[fadeIn_0.2s_ease-out]">
               Ce n'est pas le bon joueur !
             </p>
           )}
@@ -862,28 +863,27 @@ export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
 
       {/* Reveal mystery player — win or give up */}
       {gameOver && mystery && (
-        <div className={`rounded-2xl overflow-hidden border p-5 sm:p-6 text-center space-y-3 ${
-          gaveUp
-            ? "border-red-500/30 bg-gradient-to-r from-red-500/10 via-red-500/5 to-card"
-            : "border-accent/30 bg-gradient-to-r from-accent/10 via-accent/5 to-card"
+        <div className={`relative overflow-hidden border p-5 sm:p-6 text-center space-y-3 ${
+          gaveUp ? "border-red-600/30 bg-card" : "border-accent/30 bg-card"
         }`}>
-          <p className={`text-xs font-bold uppercase tracking-wider ${gaveUp ? "text-red-400" : "text-accent-text"}`}>
+          <span className={`absolute left-0 top-0 bottom-0 w-1 ${gaveUp ? "bg-red-600" : "bg-accent"}`} />
+          <p className={`kicker ${gaveUp ? "text-red-300" : "text-accent-text"}`}>
             {gaveUp ? "Joueur myst\u00e8re" : "Joueur myst\u00e8re"}
           </p>
           <div className="flex items-center justify-center gap-3">
             <img src={teamLogoUrl(mystery.team)} alt="" className="h-8 w-8 object-contain" />
-            <p className="text-2xl sm:text-3xl font-extrabold text-text-primary tracking-wide">
+            <p className="font-display text-3xl sm:text-4xl text-text-primary">
               {mystery.name}
             </p>
           </div>
           <div className="flex items-center justify-center gap-3 mt-2">
-            <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
-              gaveUp ? "bg-red-500/15 text-red-400" : "bg-emerald-500/15 text-emerald-400"
+            <span className={`inline-flex items-center gap-1 border px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider ${
+              gaveUp ? "border-red-600/40 bg-red-600/15 text-red-300" : "border-emerald-600/40 bg-emerald-600/15 text-emerald-300"
             }`}>
-              {gaveUp ? <><Flag size={11} /> Abandonn&eacute;</> : <><Trophy size={11} /> {words.length} mots</>}
+              {gaveUp ? <><Flag size={11} /> Abandonn&eacute;</> : <><Trophy size={11} /> <span className="tnum">{words.length}</span> mots</>}
             </span>
-            <span className="inline-flex items-center gap-1 rounded-full bg-accent/15 px-2.5 py-0.5 text-[11px] font-bold text-accent-text">
-              <Clock size={11} /> {formatTime(elapsed)}
+            <span className="inline-flex items-center gap-1 border border-accent/40 bg-accent-light px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-accent-text">
+              <Clock size={11} /> <span className="tnum">{formatTime(elapsed)}</span>
             </span>
           </div>
         </div>
@@ -892,12 +892,12 @@ export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
       {/* Share */}
       {gameOver && (
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2 sm:gap-3">
-          <button onClick={handleShare} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1DA1F2] px-5 py-3 text-sm font-bold text-white transition-all hover:bg-[#1a8cd8] hover:scale-[1.03] active:scale-[0.98]">
+          <button onClick={handleShare} className="inline-flex items-center justify-center gap-2 bg-accent px-6 py-3.5 font-mono text-xs font-bold uppercase tracking-widest text-white transition-colors hover:bg-accent-hover">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
             Partager
           </button>
-          <button onClick={() => { navigator.clipboard.writeText(buildShareText()); setCopied(true); setTimeout(() => setCopied(false), 2000); }} className="inline-flex items-center justify-center gap-2 rounded-xl bg-input border border-border-t px-5 py-3 text-sm font-bold text-text-primary transition-all hover:bg-card-hover hover:scale-[1.03] active:scale-[0.98]">
-            {copied ? <><Check size={14} className="text-emerald-400" /> Copi&eacute; !</> : "Copier"}
+          <button onClick={() => { navigator.clipboard.writeText(buildShareText()); setCopied(true); setTimeout(() => setCopied(false), 2000); }} className="inline-flex items-center justify-center gap-2 border border-border-hover bg-card px-6 py-3.5 font-mono text-xs font-bold uppercase tracking-widest text-text-primary transition-colors hover:bg-input">
+            {copied ? <><Check size={14} className="text-emerald-300" /> Copi&eacute; !</> : "Copier"}
           </button>
         </div>
       )}
@@ -906,31 +906,32 @@ export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
       {leaderboard.length > 0 && (() => {
         const rows = computeVisibleLeaderboard(leaderboard, userId);
         return (
-          <div className="rounded-2xl bg-card border border-border-t overflow-hidden">
-            <div className="px-4 py-3 border-b border-border-t">
-              <h2 className="text-sm font-bold text-text-primary flex items-center gap-2">
+          <div className="border border-rule bg-card overflow-hidden">
+            <div className="px-4 py-3 border-b border-rule">
+              <h2 className="font-display text-lg text-text-primary flex items-center gap-2">
                 <Trophy size={16} className="text-accent-text" />
                 Classement du jour
               </h2>
             </div>
-            <div className="divide-y divide-border-t/30">
+            <div className="divide-y divide-rule">
               {rows.map((row, i) =>
                 row.type === "separator" ? (
                   <div key="sep" className="flex items-center gap-3 px-4 py-1.5">
-                    <div className="flex-1 border-t border-dashed border-border-t" />
+                    <div className="flex-1 border-t border-dashed border-rule" />
                     <span className="text-[10px] text-text-faint">...</span>
-                    <div className="flex-1 border-t border-dashed border-border-t" />
+                    <div className="flex-1 border-t border-dashed border-rule" />
                   </div>
                 ) : (
-                  <div key={`${row.entry.display_name}-${row.rank}`} className={`flex items-center gap-3 px-4 py-2.5 ${row.isUser ? "bg-accent/10 border-l-2 border-l-accent" : ""}`}>
-                    <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[11px] font-bold ${
-                      row.rank === 1 ? "bg-accent/20 text-accent-text" : row.rank <= 3 ? "bg-input text-text-primary" : "text-text-faint"
+                  <div key={`${row.entry.display_name}-${row.rank}`} className={`flex items-center gap-3 px-4 py-2.5 ${row.isUser ? "relative bg-accent-light" : ""}`}>
+                    {row.isUser && <span className="absolute left-0 top-0 bottom-0 w-1 bg-accent" />}
+                    <span className={`tnum flex h-6 w-6 shrink-0 items-center justify-center text-[11px] font-bold ${
+                      row.rank === 1 ? "bg-accent text-white" : row.rank <= 3 ? "bg-input text-text-primary" : "text-text-faint"
                     }`}>{row.rank}</span>
                     <span className={`flex-1 text-sm truncate ${row.isUser ? "font-bold text-accent-text" : isAnonymousName(row.entry.display_name) ? "italic text-text-muted" : "font-medium text-text-primary"}`}>
                       {row.entry.display_name}{row.isUser ? " (toi)" : ""}
                     </span>
-                    <span className="text-xs text-text-faint tabular-nums w-12 text-right">{formatTime(row.entry.time_seconds)}</span>
-                    <span className="text-xs text-text-muted tabular-nums">{row.entry.words_found}/{row.entry.total_words}</span>
+                    <span className="tnum text-xs text-text-faint w-12 text-right">{formatTime(row.entry.time_seconds)}</span>
+                    <span className="tnum text-xs text-text-muted">{row.entry.words_found}/{row.entry.total_words}</span>
                   </div>
                 )
               )}

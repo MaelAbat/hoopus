@@ -83,33 +83,33 @@ export default function TeamStatsTable({ teams }: { teams: TeamRow[] }) {
 
   if (teams.length === 0) {
     return (
-      <div className="rounded-2xl bg-card border border-border-t px-6 py-12 text-center text-text-muted">
+      <div className="border border-rule bg-card px-6 py-12 text-center text-text-muted">
         Aucune donnée disponible
       </div>
     );
   }
 
   return (
-    <div className="rounded-2xl bg-card border border-border-t overflow-hidden flex flex-col">
+    <div className="border border-rule bg-card overflow-hidden flex flex-col">
       <div className="overflow-auto">
         <table className="w-full text-sm">
           <thead className="sticky top-0 z-10 bg-card">
-            <tr className="border-b border-border-t/50">
-              <th className="text-left px-3 py-2.5 text-xs font-medium text-text-muted uppercase tracking-wider w-8">
+            <tr className="border-b border-rule">
+              <th className="text-left px-3 py-2.5 kicker text-text-faint w-8">
                 #
               </th>
-              <th className="text-left px-3 py-2.5 text-xs font-medium text-text-muted uppercase tracking-wider min-w-[160px]">
+              <th className="text-left px-3 py-2.5 kicker text-text-faint min-w-[160px]">
                 Équipe
               </th>
               {COLUMNS.map((col) => (
                 <th
                   key={col.key}
                   onClick={() => handleSort(col)}
-                  className="px-2 py-2.5 text-right text-xs font-medium uppercase tracking-wider cursor-pointer select-none whitespace-nowrap transition-colors hover:text-text-primary"
+                  className="px-2 py-2.5 text-right cursor-pointer select-none whitespace-nowrap transition-colors"
                   title={col.label}
                 >
-                  <span className={`inline-flex items-center gap-0.5 ${
-                    sortKey === col.key ? "text-accent" : "text-text-muted"
+                  <span className={`inline-flex items-center gap-0.5 kicker ${
+                    sortKey === col.key ? "text-accent" : "text-text-faint hover:text-text-primary"
                   }`}>
                     {col.short}
                     {sortKey === col.key && (
@@ -127,12 +127,12 @@ export default function TeamStatsTable({ teams }: { teams: TeamRow[] }) {
               <tr
                 key={team.team_tricode}
                 onClick={() => router.push(`/equipes?team=${team.team_tricode}`)}
-                className="border-b border-border-t/30 transition-all duration-150 hover:bg-card-hover cursor-pointer"
+                className="border-b border-rule transition-colors duration-150 hover:bg-card-hover cursor-pointer"
               >
                 <td className="px-3 py-2.5">
-                  <span className={`inline-flex h-6 w-6 items-center justify-center rounded text-xs font-bold ${
+                  <span className={`inline-flex h-6 w-6 items-center justify-center tnum text-xs font-bold ${
                     i === 0
-                      ? "bg-accent/20 text-accent-text"
+                      ? "bg-accent text-white"
                       : i < 3
                         ? "bg-input text-text-primary"
                         : "text-text-muted"
@@ -148,7 +148,7 @@ export default function TeamStatsTable({ teams }: { teams: TeamRow[] }) {
                       className="h-6 w-6 shrink-0 object-contain"
                     />
                     <div className="min-w-0">
-                      <p className="font-semibold text-text-primary truncate text-sm">
+                      <p className="font-display text-sm uppercase text-text-primary truncate">
                         {team.team_name}
                       </p>
                     </div>
@@ -159,7 +159,7 @@ export default function TeamStatsTable({ teams }: { teams: TeamRow[] }) {
                     return (
                       <td
                         key={col.key}
-                        className={`px-2 py-2.5 text-right tabular-nums text-sm whitespace-nowrap ${
+                        className={`px-2 py-2.5 text-right tnum text-sm whitespace-nowrap ${
                           sortKey === col.key ? "text-accent font-bold" : "text-text-primary"
                         }`}
                       >
@@ -171,7 +171,7 @@ export default function TeamStatsTable({ teams }: { teams: TeamRow[] }) {
                   return (
                     <td
                       key={col.key}
-                      className={`px-2 py-2.5 text-right tabular-nums text-sm ${
+                      className={`px-2 py-2.5 text-right tnum text-sm ${
                         sortKey === col.key ? "text-accent font-bold" : "text-text-primary"
                       }`}
                     >

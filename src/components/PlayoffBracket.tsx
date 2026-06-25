@@ -75,22 +75,22 @@ function TeamRow({ tricode, seed, wins, isWinner, record }: {
   record?: string;
 }) {
   return (
-    <div className={`flex items-center gap-2 px-2.5 py-1.5 ${isWinner ? "bg-accent/5" : ""}`}>
-      <span className="w-4 text-center text-[10px] font-bold text-text-faint">{seed ?? ""}</span>
+    <div className={`flex items-center gap-2 px-2.5 py-1.5 ${isWinner ? "bg-accent-light" : ""}`}>
+      <span className="tnum w-4 text-center text-[10px] font-bold text-text-faint">{seed ?? ""}</span>
       {tricode ? (
         <>
           <img src={teamLogoUrl(tricode)} alt={tricode} className="h-5 w-5 shrink-0 object-contain" />
-          <span className={`text-xs font-semibold flex-1 ${isWinner ? "text-accent" : "text-text-primary"}`}>{tricode}</span>
+          <span className={`flex-1 text-xs font-bold uppercase tracking-wide ${isWinner ? "text-text-primary" : "text-text-secondary"}`}>{tricode}</span>
           {wins !== undefined ? (
-            <span className={`text-[10px] font-bold tabular-nums ${isWinner ? "text-accent" : "text-text-muted"}`}>
+            <span className={`tnum text-[11px] font-bold ${isWinner ? "text-accent-text" : "text-text-muted"}`}>
               {wins}
             </span>
           ) : record ? (
-            <span className="text-[10px] tabular-nums text-text-muted">{record}</span>
+            <span className="tnum text-[10px] text-text-muted">{record}</span>
           ) : null}
         </>
       ) : (
-        <span className="text-[10px] text-text-faint italic">TBD</span>
+        <span className="font-mono text-[10px] uppercase tracking-wider text-text-faint">TBD</span>
       )}
     </div>
   );
@@ -103,36 +103,36 @@ function GamesPopover({ series, flipUp }: { series: PlayoffSeries; flipUp?: bool
 
   return (
     <div
-      className={`absolute z-50 left-1/2 -translate-x-1/2 w-48 rounded-lg border border-border-hover bg-card-hover shadow-2xl p-2 space-y-0.5 ${
+      className={`absolute z-50 left-1/2 -translate-x-1/2 w-48 border border-border-hover bg-card-hover shadow-2xl p-2 space-y-0.5 ${
         flipUp ? "bottom-full" : "top-full"
       }`}
     >
-      <p className="text-[9px] font-semibold text-text-secondary uppercase tracking-wider text-center mb-1">
+      <p className="kicker text-text-faint text-center mb-1">
         Détail de la série
       </p>
       {finishedGames.map((g) => {
         const awayWon = g.away_score > g.home_score;
         const homeWon = g.home_score > g.away_score;
         const row = (
-          <div className="flex items-center gap-1.5 text-[10px] px-1 py-0.5 rounded">
-            <span className="text-text-muted w-5 shrink-0">G{g.game_number}</span>
-            <span className={`flex-1 text-right ${awayWon ? "font-semibold text-text-primary" : "text-text-muted"}`}>
+          <div className="flex items-center gap-1.5 text-[10px] px-1 py-0.5">
+            <span className="tnum text-text-faint w-5 shrink-0">G{g.game_number}</span>
+            <span className={`flex-1 text-right ${awayWon ? "font-bold text-text-primary" : "text-text-muted"}`}>
               {g.away_team}
             </span>
-            <span className={`w-5 text-center tabular-nums ${awayWon ? "font-bold text-text-primary" : "text-text-muted"}`}>
+            <span className={`tnum w-5 text-center ${awayWon ? "font-bold text-text-primary" : "text-text-muted"}`}>
               {g.away_score}
             </span>
-            <span className="text-text-muted">-</span>
-            <span className={`w-5 text-center tabular-nums ${homeWon ? "font-bold text-text-primary" : "text-text-muted"}`}>
+            <span className="text-text-faint">-</span>
+            <span className={`tnum w-5 text-center ${homeWon ? "font-bold text-text-primary" : "text-text-muted"}`}>
               {g.home_score}
             </span>
-            <span className={`flex-1 ${homeWon ? "font-semibold text-text-primary" : "text-text-muted"}`}>
+            <span className={`flex-1 ${homeWon ? "font-bold text-text-primary" : "text-text-muted"}`}>
               {g.home_team}
             </span>
           </div>
         );
         return g.game_id ? (
-          <Link key={g.game_number} href={`/match/${g.game_id}`} className="block hover:bg-input/50 rounded transition-colors">
+          <Link key={g.game_number} href={`/match/${g.game_id}`} className="block hover:bg-input/50 transition-colors">
             {row}
           </Link>
         ) : (
@@ -140,7 +140,7 @@ function GamesPopover({ series, flipUp }: { series: PlayoffSeries; flipUp?: bool
         );
       })}
       {series.status !== "completed" && series.games.some(g => g.status === 1) && (
-        <p className="text-[9px] text-text-muted text-center pt-1 mt-1 border-t border-border-hover">
+        <p className="font-mono text-[9px] uppercase tracking-wider text-text-muted text-center pt-1 mt-1 border-t border-rule">
           {series.games.filter(g => g.status === 1).length} match(s) à venir
         </p>
       )}
@@ -172,31 +172,30 @@ function MatchupBox({ series, topTeam, bottomTeam, seedTop, seedBottom, accent, 
 
     return (
       <div
-        className={`relative rounded-lg overflow-visible shadow-sm shrink-0 ${
+        className={`relative overflow-visible shrink-0 transition-colors ${
           hasGames ? "cursor-pointer" : ""
         } ${
           showGames ? "z-50" : ""
         } ${
           hasFav
-            ? "border-2 border-accent/60 bg-card ring-2 ring-accent/20 shadow-[0_0_12px_rgba(var(--accent-rgb,249,115,22),0.15)]"
+            ? "border border-accent bg-card"
             : accent
-              ? "border-2 border-accent/40 bg-card"
-              : isCompleted
-                ? "border border-border-t/60 bg-card/80"
-                : "border border-border-t bg-card"
+              ? "border border-accent bg-card"
+              : "border border-rule bg-card hover:border-border-hover"
         }`}
         style={{ width: BOX_W, animation: `fadeSlideUp 0.4s ease-out ${animDelay}ms both` }}
         onMouseEnter={() => hasGames && setShowGames(true)}
         onMouseLeave={() => setShowGames(false)}
       >
-        <div className="rounded-lg overflow-hidden">
+        {(hasFav || accent) && <span className="absolute left-0 top-0 bottom-0 w-1 bg-accent" />}
+        <div className="overflow-hidden">
           <TeamRow
             tricode={series.team_top}
             seed={series.seed_top}
             wins={series.wins_top}
             isWinner={topWinner}
           />
-          <div className={`h-px ${accent ? "bg-accent/30" : "bg-border-t"}`} />
+          <div className="h-px bg-rule" />
           <TeamRow
             tricode={series.team_bottom}
             seed={series.seed_bottom}
@@ -216,21 +215,22 @@ function MatchupBox({ series, topTeam, bottomTeam, seedTop, seedBottom, accent, 
 
   return (
     <div
-      className={`rounded-lg overflow-hidden shadow-sm shrink-0 ${
+      className={`relative overflow-hidden shrink-0 transition-colors ${
         fallbackFav
-          ? "border-2 border-accent/60 bg-card ring-2 ring-accent/20 shadow-[0_0_12px_rgba(var(--accent-rgb,249,115,22),0.15)]"
+          ? "border border-accent bg-card"
           : accent
-            ? "border-2 border-accent/40 bg-card"
-            : "border border-border-t bg-card"
+            ? "border border-accent bg-card"
+            : "border border-rule bg-card hover:border-border-hover"
       }`}
       style={{ width: BOX_W, animation: `fadeSlideUp 0.4s ease-out ${animDelay}ms both` }}
     >
+      {(fallbackFav || accent) && <span className="absolute left-0 top-0 bottom-0 w-1 bg-accent" />}
       <TeamRow
         tricode={topTeam?.team_tricode || null}
         seed={seedTop}
         record={topTeam ? `${topTeam.wins}-${topTeam.losses}` : undefined}
       />
-      <div className={`h-px ${fallbackFav ? "bg-accent/30" : accent ? "bg-accent/30" : "bg-border-t"}`} />
+      <div className="h-px bg-rule" />
       <TeamRow
         tricode={bottomTeam?.team_tricode || null}
         seed={seedBottom}
@@ -272,7 +272,7 @@ function DualConnector({ inputPerConf, outputPerConf, animDelay = 300 }: { input
   return (
     <svg width={CONN_W} height={TOTAL_H} className="shrink-0">
       {paths.map((d, i) => (
-        <path key={i} d={d} fill="none" stroke="var(--border)" strokeWidth="1.5"
+        <path key={i} d={d} fill="none" stroke="var(--rule)" strokeWidth="1.5"
           strokeDasharray="1000" strokeDashoffset="1000"
           style={{ animation: `drawLine 0.8s ease-out ${animDelay}ms both` }} />
       ))}
@@ -289,10 +289,10 @@ function FinalsConnector({ animDelay = 700 }: { animDelay?: number }) {
 
   return (
     <svg width={CONN_W} height={TOTAL_H} className="shrink-0">
-      <path d={`M 0 ${eastY} H ${mid} V ${finalsY} H ${CONN_W}`} fill="none" stroke="var(--border)" strokeWidth="1.5"
+      <path d={`M 0 ${eastY} H ${mid} V ${finalsY} H ${CONN_W}`} fill="none" stroke="var(--rule)" strokeWidth="1.5"
         strokeDasharray="1000" strokeDashoffset="1000"
         style={{ animation: `drawLine 0.8s ease-out ${animDelay}ms both` }} />
-      <path d={`M 0 ${westY} H ${mid} V ${finalsY} H ${CONN_W}`} fill="none" stroke="var(--border)" strokeWidth="1.5"
+      <path d={`M 0 ${westY} H ${mid} V ${finalsY} H ${CONN_W}`} fill="none" stroke="var(--rule)" strokeWidth="1.5"
         strokeDasharray="1000" strokeDashoffset="1000"
         style={{ animation: `drawLine 0.8s ease-out ${animDelay}ms both` }} />
     </svg>
@@ -386,7 +386,7 @@ function FullBracket({ east, west, series }: { east: Standing[]; west: Standing[
             <div key={i} className="flex items-center shrink-0">
               {i > 0 && <div style={{ width: CONN_W }} className="shrink-0" />}
               <span
-                className="text-[10px] font-semibold uppercase tracking-wider text-accent text-center shrink-0"
+                className="kicker text-accent-text text-center shrink-0"
                 style={{ width: BOX_W }}
               >
                 {label}
@@ -399,19 +399,19 @@ function FullBracket({ east, west, series }: { east: Standing[]; west: Standing[
         <div className="relative flex items-stretch min-w-max">
           {/* Dashed separator between conferences */}
           <div
-            className="absolute left-0 right-0 border-t border-dashed border-accent/20"
+            className="absolute left-0 right-0 border-t border-dashed border-rule"
             style={{ top: HALF_H }}
           />
 
           {/* Conference labels (vertical text) */}
           <div className="shrink-0 flex flex-col" style={{ width: 28, height: TOTAL_H }}>
             <div className="flex-1 flex items-center justify-center">
-              <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest [writing-mode:vertical-lr] rotate-180">
+              <span className="kicker text-text-faint [writing-mode:vertical-lr] rotate-180">
                 Est
               </span>
             </div>
             <div className="flex-1 flex items-center justify-center">
-              <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest [writing-mode:vertical-lr] rotate-180">
+              <span className="kicker text-text-faint [writing-mode:vertical-lr] rotate-180">
                 Ouest
               </span>
             </div>
@@ -501,28 +501,29 @@ function PlayInMatchupBox({ game, topTeam, bottomTeam, seedTop, seedBottom, anim
 
     return (
       <div
-        className={`rounded-lg overflow-hidden shadow-sm shrink-0 ${
+        className={`relative overflow-hidden shrink-0 transition-colors ${
           hasFav
-            ? "border-2 border-accent/60 bg-card ring-2 ring-accent/20 shadow-[0_0_12px_rgba(var(--accent-rgb,249,115,22),0.15)]"
-            : finished ? "border border-border-t/60 bg-card/80" : "border border-border-t bg-card"
+            ? "border border-accent bg-card"
+            : "border border-rule bg-card hover:border-border-hover"
         }`}
         style={{ width: BOX_W, animation: `fadeSlideUp 0.4s ease-out ${animDelay}ms both` }}
       >
-        <div className={`flex items-center gap-2 px-2.5 py-1.5 ${topWon ? "bg-accent/5" : ""}`}>
-          <span className="w-4 text-center text-[10px] font-bold text-text-faint">{topSeed}</span>
+        {hasFav && <span className="absolute left-0 top-0 bottom-0 w-1 bg-accent" />}
+        <div className={`flex items-center gap-2 px-2.5 py-1.5 ${topWon ? "bg-accent-light" : ""}`}>
+          <span className="tnum w-4 text-center text-[10px] font-bold text-text-faint">{topSeed}</span>
           <img src={teamLogoUrl(topTricode)} alt={topTricode} className="h-5 w-5 shrink-0 object-contain" />
-          <span className={`text-xs font-semibold flex-1 ${topWon ? "text-accent" : "text-text-primary"}`}>{topTricode}</span>
+          <span className={`flex-1 text-xs font-bold uppercase tracking-wide ${topWon ? "text-text-primary" : "text-text-secondary"}`}>{topTricode}</span>
           {finished && (
-            <span className={`text-[10px] font-bold tabular-nums ${topWon ? "text-accent" : "text-text-faint"}`}>{topScore}</span>
+            <span className={`tnum text-[11px] font-bold ${topWon ? "text-accent-text" : "text-text-faint"}`}>{topScore}</span>
           )}
         </div>
-        <div className="h-px bg-border-t" />
-        <div className={`flex items-center gap-2 px-2.5 py-1.5 ${bottomWon ? "bg-accent/5" : ""}`}>
-          <span className="w-4 text-center text-[10px] font-bold text-text-faint">{bottomSeed}</span>
+        <div className="h-px bg-rule" />
+        <div className={`flex items-center gap-2 px-2.5 py-1.5 ${bottomWon ? "bg-accent-light" : ""}`}>
+          <span className="tnum w-4 text-center text-[10px] font-bold text-text-faint">{bottomSeed}</span>
           <img src={teamLogoUrl(bottomTricode)} alt={bottomTricode} className="h-5 w-5 shrink-0 object-contain" />
-          <span className={`text-xs font-semibold flex-1 ${bottomWon ? "text-accent" : "text-text-primary"}`}>{bottomTricode}</span>
+          <span className={`flex-1 text-xs font-bold uppercase tracking-wide ${bottomWon ? "text-text-primary" : "text-text-secondary"}`}>{bottomTricode}</span>
           {finished && (
-            <span className={`text-[10px] font-bold tabular-nums ${bottomWon ? "text-accent" : "text-text-faint"}`}>{bottomScore}</span>
+            <span className={`tnum text-[11px] font-bold ${bottomWon ? "text-accent-text" : "text-text-faint"}`}>{bottomScore}</span>
           )}
         </div>
       </div>
@@ -566,17 +567,17 @@ function PlayInConference({ teams, label, games }: { teams: Standing[]; label: s
 
   return (
     <div className="space-y-3">
-      <h3 className="text-sm font-bold text-text-primary text-center">{label}</h3>
+      <h3 className="font-display text-lg text-text-primary text-center">{label}</h3>
       <div className="flex items-center justify-center overflow-x-auto">
         <div className="shrink-0 flex flex-col items-center">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-accent mb-2">Tour 1</span>
+          <span className="kicker text-accent-text mb-2">Tour 1</span>
           <div className="flex flex-col justify-around" style={{ height: H }}>
             <div className="text-center">
-              <p className="text-[9px] text-text-faint mb-1">Vainqueur → 7e seed</p>
+              <p className="font-mono text-[9px] uppercase tracking-wider text-text-faint mb-1">Vainqueur → 7e seed</p>
               <PlayInMatchupBox game={game78} topTeam={byRank(7)} bottomTeam={byRank(8)} seedTop={7} seedBottom={8} animDelay={0} />
             </div>
             <div className="text-center">
-              <p className="text-[9px] text-text-faint mb-1">Perdant éliminé</p>
+              <p className="font-mono text-[9px] uppercase tracking-wider text-text-faint mb-1">Perdant éliminé</p>
               <PlayInMatchupBox game={game910} topTeam={byRank(9)} bottomTeam={byRank(10)} seedTop={9} seedBottom={10} animDelay={100} />
             </div>
           </div>
@@ -590,10 +591,10 @@ function PlayInConference({ teams, label, games }: { teams: Standing[]; label: s
             const mid = CONN_W / 2;
             return (
               <>
-                <path d={`M 0 ${inY1} H ${mid} V ${outY} H ${CONN_W}`} fill="none" stroke="var(--border)" strokeWidth="1.5"
+                <path d={`M 0 ${inY1} H ${mid} V ${outY} H ${CONN_W}`} fill="none" stroke="var(--rule)" strokeWidth="1.5"
                   strokeDasharray="1000" strokeDashoffset="1000"
                   style={{ animation: 'drawLine 0.8s ease-out 200ms both' }} />
-                <path d={`M 0 ${inY2} H ${mid} V ${outY} H ${CONN_W}`} fill="none" stroke="var(--border)" strokeWidth="1.5"
+                <path d={`M 0 ${inY2} H ${mid} V ${outY} H ${CONN_W}`} fill="none" stroke="var(--rule)" strokeWidth="1.5"
                   strokeDasharray="1000" strokeDashoffset="1000"
                   style={{ animation: 'drawLine 0.8s ease-out 200ms both' }} />
               </>
@@ -602,10 +603,10 @@ function PlayInConference({ teams, label, games }: { teams: Standing[]; label: s
         </svg>
 
         <div className="shrink-0 flex flex-col items-center">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-accent mb-2">8e place</span>
+          <span className="kicker text-accent-text mb-2">8e place</span>
           <div className="flex flex-col justify-center" style={{ height: H }}>
             <div className="text-center">
-              <p className="text-[9px] text-text-faint mb-1">Perdant 7-8 vs Vainqueur 9-10</p>
+              <p className="font-mono text-[9px] uppercase tracking-wider text-text-faint mb-1">Perdant 7-8 vs Vainqueur 9-10</p>
               <PlayInMatchupBox game={gameFinal} topTeam={finalTopTeam} bottomTeam={finalBottomTeam} seedTop={finalSeedTop} seedBottom={finalSeedBottom} animDelay={300} />
             </div>
           </div>
@@ -675,10 +676,10 @@ export default function PlayoffBracket({
             <button
               key={key}
               onClick={() => setView(key)}
-              className={`rounded-xl px-4 py-2 text-sm font-medium transition-all duration-200 ${
+              className={`px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-widest transition-colors ${
                 view === key
                   ? "bg-accent text-white"
-                  : "bg-input text-text-muted hover:bg-card-hover hover:text-text-primary"
+                  : "border border-rule text-text-muted hover:bg-input hover:text-text-primary"
               }`}
             >
               {label}
@@ -688,30 +689,30 @@ export default function PlayoffBracket({
       )}
 
       {!hasData ? (
-        <div className="rounded-2xl bg-card border border-border-t px-6 py-12 text-center text-sm text-text-muted">
+        <div className="border border-rule bg-card px-6 py-12 text-center text-sm text-text-muted">
           Aucune donnée disponible — synchronisez les classements d&apos;abord.
         </div>
       ) : view === "playin" ? (
         <div className="space-y-6">
-          <div className="rounded-2xl bg-card border border-border-t p-3 sm:p-6 overflow-x-auto">
+          <div className="border border-rule bg-card p-3 sm:p-6 overflow-x-auto">
             <PlayInConference teams={east} label="Play-In — Conférence Est" games={playinGames.filter(g => g.conference === "East")} />
           </div>
-          <div className="rounded-2xl bg-card border border-border-t p-3 sm:p-6 overflow-x-auto">
+          <div className="border border-rule bg-card p-3 sm:p-6 overflow-x-auto">
             <PlayInConference teams={west} label="Play-In — Conférence Ouest" games={playinGames.filter(g => g.conference === "West")} />
           </div>
-          <div className="rounded-xl border border-border-t bg-card/50 p-4 space-y-2">
-            <p className="text-xs font-semibold text-text-secondary">Comment fonctionne le Play-In ?</p>
+          <div className="border border-rule bg-card p-4 space-y-2">
+            <p className="kicker text-text-faint">Comment fonctionne le Play-In ?</p>
             <ul className="text-xs text-text-muted space-y-1 list-disc pl-4">
-              <li>Le <strong>7e</strong> affronte le <strong>8e</strong> — le vainqueur obtient la <strong>7e place</strong></li>
-              <li>Le <strong>9e</strong> affronte le <strong>10e</strong> — le perdant est <strong>éliminé</strong></li>
-              <li>Perdant du 7-8 vs vainqueur du 9-10 → <strong>8e place</strong></li>
+              <li>Le <strong className="text-text-primary">7e</strong> affronte le <strong className="text-text-primary">8e</strong> — le vainqueur obtient la <strong className="text-text-primary">7e place</strong></li>
+              <li>Le <strong className="text-text-primary">9e</strong> affronte le <strong className="text-text-primary">10e</strong> — le perdant est <strong className="text-text-primary">éliminé</strong></li>
+              <li>Perdant du 7-8 vs vainqueur du 9-10 → <strong className="text-text-primary">8e place</strong></li>
             </ul>
           </div>
         </div>
       ) : view === "stats" ? (
         <PlayoffStatsPanel leaders={playoffLeaders} teamStats={playoffTeamStats} />
       ) : (
-        <div className="rounded-2xl bg-card border border-border-t p-3 sm:p-6">
+        <div className="border border-rule bg-card p-3 sm:p-6">
           <FullBracket east={east} west={west} series={series} />
         </div>
       )}

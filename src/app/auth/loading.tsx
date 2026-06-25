@@ -1,17 +1,18 @@
 export default function Loading() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-bg">
-      <div className="w-full max-w-md space-y-8 rounded-2xl bg-card border border-border-t p-8">
+      <div className="relative w-full max-w-md overflow-hidden border border-rule bg-card p-6 sm:p-8">
+        <span className="absolute left-0 top-0 bottom-0 w-1 bg-accent" />
         {/* Title */}
-        <div className="space-y-2 text-center">
-          <div className="mx-auto h-7 w-40 animate-pulse rounded-lg bg-input" />
-          <div className="mx-auto h-4 w-56 animate-pulse rounded bg-input" />
+        <div className="space-y-2">
+          <div className="h-8 w-40 animate-pulse bg-input" />
+          <div className="h-3 w-56 animate-pulse bg-input/30" />
         </div>
         {/* Fields */}
-        <div className="space-y-4">
-          <div className="h-11 w-full animate-pulse rounded-xl bg-input" />
-          <div className="h-11 w-full animate-pulse rounded-xl bg-input" />
-          <div className="h-11 w-full animate-pulse rounded-xl bg-input" />
+        <div className="mt-8 space-y-5">
+          <div className="h-12 w-full animate-pulse bg-input" />
+          <div className="h-12 w-full animate-pulse bg-input" />
+          <div className="h-12 w-full animate-pulse bg-input" />
         </div>
       </div>
     </div>

@@ -65,15 +65,15 @@ export default function SeasonSelector({ current, available }: SeasonSelectorPro
       <select
         value={current}
         onChange={handleChange}
-        className="appearance-none rounded-lg bg-white/15 backdrop-blur-sm border border-white/20 pl-3 pr-8 py-1.5 text-sm font-medium text-white cursor-pointer outline-none hover:bg-white/25 transition-colors"
+        className="tnum appearance-none border border-border-hover bg-input pl-3 pr-8 py-1.5 font-mono text-xs font-bold uppercase tracking-wider text-text-primary cursor-pointer outline-none transition-colors hover:bg-card-hover focus:border-accent"
       >
         {available.map((s) => (
-          <option key={s} value={s} className="bg-neutral-900 text-white">
+          <option key={s} value={s} className="bg-card text-text-primary">
             {s}
           </option>
         ))}
       </select>
-      <ChevronDown size={14} className="absolute right-2 pointer-events-none text-white/70" />
+      <ChevronDown size={14} className="absolute right-2 pointer-events-none text-text-muted" />
     </div>
   );
 }

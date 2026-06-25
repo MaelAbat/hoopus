@@ -69,17 +69,17 @@ export default function ImageUpload({ name, defaultValue, onChange, hidePreview 
 
   return (
     <div>
-      <label className="block text-sm font-medium text-text-secondary mb-1">Image</label>
+      <label className="kicker mb-2 block text-text-faint">Image</label>
 
       {/* Mode toggle */}
       <div className="flex gap-1 mb-2">
         <button
           type="button"
           onClick={() => setMode("url")}
-          className={`flex items-center gap-1.5 rounded-lg px-3 py-1 text-xs font-medium transition-all ${
+          className={`inline-flex items-center gap-1.5 border px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-wider transition-colors ${
             mode === "url"
-              ? "bg-accent text-white"
-              : "bg-input text-text-muted hover:text-text-primary"
+              ? "border-accent bg-accent text-white"
+              : "border-rule text-text-muted hover:border-border-hover hover:text-text-primary"
           }`}
         >
           <LinkIcon size={12} />
@@ -88,10 +88,10 @@ export default function ImageUpload({ name, defaultValue, onChange, hidePreview 
         <button
           type="button"
           onClick={() => setMode("file")}
-          className={`flex items-center gap-1.5 rounded-lg px-3 py-1 text-xs font-medium transition-all ${
+          className={`inline-flex items-center gap-1.5 border px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-wider transition-colors ${
             mode === "file"
-              ? "bg-accent text-white"
-              : "bg-input text-text-muted hover:text-text-primary"
+              ? "border-accent bg-accent text-white"
+              : "border-rule text-text-muted hover:border-border-hover hover:text-text-primary"
           }`}
         >
           <Upload size={12} />
@@ -107,13 +107,13 @@ export default function ImageUpload({ name, defaultValue, onChange, hidePreview 
           type="text"
           value={imageUrl}
           onChange={(e) => { setImageUrl(e.target.value); onChange?.(e.target.value); }}
-          className="w-full rounded-xl bg-input border border-border-t px-4 py-2.5 text-text-primary placeholder-text-faint focus:border-accent/50 focus:outline-none transition-colors"
+          className="w-full border border-rule bg-input px-4 py-2.5 text-text-primary placeholder-text-faint transition-colors focus:border-accent focus:outline-none"
           placeholder="https://exemple.com/image.jpg"
         />
       ) : (
         <div
-          className={`relative rounded-xl border-2 border-dashed px-4 py-6 text-center transition-colors ${
-            uploading ? "border-accent/30 bg-accent-light" : "border-border-t hover:border-border-hover"
+          className={`relative border border-dashed px-4 py-6 text-center transition-colors ${
+            uploading ? "border-accent bg-accent-light" : "border-rule hover:border-border-hover"
           }`}
         >
           <input
@@ -125,17 +125,17 @@ export default function ImageUpload({ name, defaultValue, onChange, hidePreview 
             disabled={uploading}
           />
           {uploading ? (
-            <div className="flex items-center justify-center gap-2 text-sm text-accent">
+            <div className="flex items-center justify-center gap-2 font-mono text-xs uppercase tracking-wider text-accent-text">
               <Loader2 size={16} className="animate-spin" />
               Upload en cours...
             </div>
           ) : (
             <div>
               <Upload size={20} className="mx-auto text-text-faint" />
-              <p className="mt-1 text-xs text-text-muted">
+              <p className="mt-1.5 font-mono text-[11px] uppercase tracking-wider text-text-muted">
                 Cliquez ou glissez une image ici
               </p>
-              <p className="text-[10px] text-text-faint">PNG, JPG, WebP — 5 Mo max</p>
+              <p className="mt-0.5 font-mono text-[10px] uppercase tracking-wider text-text-faint">PNG, JPG, WebP — 5 Mo max</p>
             </div>
           )}
         </div>
@@ -147,13 +147,13 @@ export default function ImageUpload({ name, defaultValue, onChange, hidePreview 
           <img
             src={imageUrl}
             alt="Aperçu"
-            className="h-24 w-full rounded-lg object-cover border border-border-t"
+            className="h-24 w-full border border-rule object-cover"
             onError={() => setError("Impossible de charger l'image")}
           />
           <button
             type="button"
             onClick={clearImage}
-            className="absolute top-1 right-1 rounded-full bg-black/60 p-1 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/80"
+            className="absolute top-1 right-1 bg-black/60 p-1 text-white opacity-0 transition-opacity hover:bg-black/80 group-hover:opacity-100"
           >
             <X size={12} />
           </button>
@@ -161,7 +161,7 @@ export default function ImageUpload({ name, defaultValue, onChange, hidePreview 
       )}
 
       {error && (
-        <p className="mt-1 text-xs text-red-400">{error}</p>
+        <p className="mt-1.5 font-mono text-[11px] uppercase tracking-wider text-red-500">{error}</p>
       )}
     </div>
   );

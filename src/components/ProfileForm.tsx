@@ -24,11 +24,11 @@ export default function ProfileForm({ currentName }: { currentName: string }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-2xl bg-card border border-border-t p-6">
-      <h3 className="text-sm font-semibold text-text-secondary mb-4">Modifier le profil</h3>
+    <form onSubmit={handleSubmit} className="border border-rule bg-card p-6">
+      <h3 className="kicker mb-4 text-text-faint">Modifier le profil</h3>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
         <div className="flex-1">
-          <label htmlFor="display_name" className="block text-xs font-medium text-text-muted mb-1.5">
+          <label htmlFor="display_name" className="mb-1.5 block font-mono text-[11px] uppercase tracking-wider text-text-muted">
             Nom d&apos;affichage
           </label>
           <input
@@ -36,13 +36,13 @@ export default function ProfileForm({ currentName }: { currentName: string }) {
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full rounded-xl bg-input border border-border-t px-4 py-2.5 text-sm text-text-primary placeholder-text-faint outline-none transition-colors focus:border-accent/50"
+            className="w-full border border-rule bg-input px-4 py-2.5 text-sm text-text-primary placeholder-text-faint outline-none transition-colors focus:border-accent"
           />
         </div>
         <button
           type="submit"
           disabled={saving || name === currentName}
-          className="flex items-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
+          className="flex items-center justify-center gap-2 bg-accent px-6 py-3 font-mono text-xs font-bold uppercase tracking-widest text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
         >
           <Save size={14} />
           {saving ? "..." : saved ? "Sauvegardé" : "Sauvegarder"}

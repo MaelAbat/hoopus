@@ -13,9 +13,9 @@ import { ReactNode } from "react";
 function PreviewHoopl() {
   const cols = ["EQ", "CONF", "DIV", "POS", "PTS", "REB"];
   return (
-    <div className="flex items-center justify-center gap-1">
+    <div className="flex items-center justify-center gap-px">
       {cols.map((c, i) => (
-        <div key={c} className={`flex h-7 w-9 items-center justify-center rounded text-[7px] font-bold ${i < 3 ? "bg-emerald-500/30 text-emerald-300" : i < 5 ? "bg-amber-500/30 text-amber-300" : "bg-red-500/30 text-red-300"}`}>
+        <div key={c} className={`flex h-7 w-9 items-center justify-center font-mono text-[7px] font-bold uppercase tracking-wider ${i < 2 ? "bg-accent text-white" : "border border-rule text-text-faint"}`}>
           {c}
         </div>
       ))}
@@ -33,7 +33,7 @@ function PreviewHoopixl() {
           return (
             <div
               key={i}
-              className={`h-3 w-3 rounded-sm ${center.includes(i) ? "bg-violet-400/60" : mid.includes(i) ? "bg-violet-400/25" : "bg-violet-400/10"}`}
+              className={`h-3 w-3 ${center.includes(i) ? "bg-accent" : mid.includes(i) ? "bg-accent/40" : "bg-input"}`}
             />
           );
         })}
@@ -45,10 +45,10 @@ function PreviewHoopixl() {
 function PreviewHoopiz() {
   return (
     <div className="flex flex-col items-center gap-1.5">
-      <div className="h-2.5 w-28 rounded-full bg-white/10" />
-      <div className="flex gap-1.5">
+      <div className="h-2.5 w-28 bg-input" />
+      <div className="flex gap-px">
         {["A", "B", "C", "D"].map((l, i) => (
-          <div key={l} className={`flex h-6 w-10 items-center justify-center rounded text-[8px] font-bold ${i === 1 ? "bg-emerald-500/30 text-emerald-300 ring-1 ring-emerald-500/40" : "bg-white/5 text-white/30"}`}>
+          <div key={l} className={`flex h-6 w-10 items-center justify-center font-mono text-[8px] font-bold ${i === 1 ? "bg-accent text-white" : "border border-rule text-text-faint"}`}>
             {l}
           </div>
         ))}
@@ -63,7 +63,7 @@ function PreviewHoopGrid() {
     <div className="flex items-center justify-center">
       <div className="grid grid-cols-4 gap-px">
         {letters.map((l, i) => (
-          <div key={i} className={`flex h-6 w-6 items-center justify-center rounded-sm text-[9px] font-bold ${i < 3 ? "bg-sky-500/30 text-sky-300 line-through decoration-sky-400/60" : "bg-white/5 text-white/30"}`}>
+          <div key={i} className={`flex h-6 w-6 items-center justify-center font-mono text-[9px] font-bold ${i < 3 ? "bg-accent text-white line-through decoration-white/70" : "border border-rule text-text-faint"}`}>
             {l}
           </div>
         ))}
@@ -76,16 +76,16 @@ function PreviewHoopMore() {
   return (
     <div className="flex items-center gap-3 justify-center">
       <div className="flex flex-col items-center gap-1">
-        <div className="h-8 w-8 rounded-full bg-white/10" />
-        <div className="text-[9px] font-bold text-rose-300">27.4</div>
+        <div className="h-8 w-8 bg-input" />
+        <div className="tnum text-[9px] font-bold text-text-primary">27.4</div>
       </div>
-      <div className="flex flex-col gap-1">
-        <div className="flex h-4 w-8 items-center justify-center rounded bg-emerald-500/25 text-[7px] font-bold text-emerald-300">+</div>
-        <div className="flex h-4 w-8 items-center justify-center rounded bg-blue-500/25 text-[7px] font-bold text-blue-300">-</div>
+      <div className="flex flex-col gap-px">
+        <div className="flex h-4 w-8 items-center justify-center bg-accent font-mono text-[7px] font-bold text-white">+</div>
+        <div className="flex h-4 w-8 items-center justify-center border border-rule font-mono text-[7px] font-bold text-text-faint">-</div>
       </div>
       <div className="flex flex-col items-center gap-1">
-        <div className="h-8 w-8 rounded-full bg-white/10" />
-        <div className="text-[9px] font-bold text-white/30">?</div>
+        <div className="h-8 w-8 bg-input" />
+        <div className="tnum text-[9px] font-bold text-text-faint">?</div>
       </div>
     </div>
   );
@@ -96,9 +96,9 @@ function PreviewHoopRank() {
     <div className="flex flex-col gap-1 items-center">
       {[1, 2, 3].map((n) => (
         <div key={n} className="flex items-center gap-1.5">
-          <span className="text-[8px] font-bold text-amber-400/60 w-2.5">{n}</span>
-          <div className="h-4 w-4 rounded-full bg-white/10" />
-          <div className="h-1.5 rounded-full bg-white/10" style={{ width: `${60 - n * 12}px` }} />
+          <span className="tnum w-2.5 text-[8px] font-bold text-accent-text">{n}</span>
+          <div className="h-4 w-4 bg-input" />
+          <div className="h-1.5 bg-accent/40" style={{ width: `${60 - n * 12}px` }} />
         </div>
       ))}
     </div>
@@ -108,13 +108,13 @@ function PreviewHoopRank() {
 function PreviewHoopLink() {
   return (
     <div className="flex items-center gap-1.5 justify-center">
-      <div className="h-6 w-6 rounded-full bg-violet-400/30 ring-1 ring-violet-400/40" />
-      <div className="h-px w-4 bg-violet-400/30" />
-      <div className="h-5 w-5 rounded-full bg-white/10 ring-1 ring-white/10" />
-      <div className="h-px w-4 bg-white/10" />
-      <div className="h-5 w-5 rounded-full bg-white/10 ring-1 ring-white/10" />
-      <div className="h-px w-4 bg-violet-400/30" />
-      <div className="h-6 w-6 rounded-full bg-emerald-400/30 ring-1 ring-emerald-400/40" />
+      <div className="h-6 w-6 bg-accent" />
+      <div className="h-px w-4 bg-accent/50" />
+      <div className="h-5 w-5 border border-rule bg-input" />
+      <div className="h-px w-4 bg-rule" />
+      <div className="h-5 w-5 border border-rule bg-input" />
+      <div className="h-px w-4 bg-accent/50" />
+      <div className="h-6 w-6 bg-accent" />
     </div>
   );
 }
@@ -363,25 +363,19 @@ export default function MiniJeux() {
 
       {/* Daily challenge banner */}
       <ScrollReveal variant="scale">
-        <div className="relative overflow-hidden rounded-2xl border border-accent/20 bg-gradient-to-r from-accent/10 via-card to-card">
-          <div className="absolute top-0 right-0 w-40 h-40 opacity-[0.06]">
-            <svg viewBox="0 0 100 100" className="w-full h-full text-accent">
-              <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="3" />
-              <circle cx="50" cy="50" r="20" fill="none" stroke="currentColor" strokeWidth="2" />
-              <line x1="50" y1="5" x2="50" y2="95" stroke="currentColor" strokeWidth="2" />
-            </svg>
-          </div>
-          <div className="relative px-6 py-6 sm:px-8 sm:py-8 flex flex-col sm:flex-row sm:items-center gap-4">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-accent/15">
+        <div className="relative overflow-hidden border border-rule bg-card">
+          <span className="absolute left-0 top-0 bottom-0 w-1 bg-accent" />
+          <div className="relative flex flex-col gap-4 px-6 py-6 sm:flex-row sm:items-center sm:px-8 sm:py-8">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center border border-rule bg-input">
               <Sparkles size={26} className="text-accent-text" />
             </div>
             <div className="flex-1">
-              <h2 className="text-lg font-bold text-text-primary">Défi quotidien</h2>
-              <p className="text-sm text-text-muted mt-0.5">
+              <p className="kicker text-accent-text">Défi quotidien</p>
+              <p className="mt-2 text-sm text-text-muted">
                 Chaque jour à minuit, de nouveaux joueurs mystères t'attendent. Joue, compare ton score et défie tes amis !
               </p>
             </div>
-            <div className="flex items-center gap-4 text-xs text-text-faint">
+            <div className="flex items-center gap-4 font-mono text-[11px] uppercase tracking-wider text-text-faint">
               <div className="flex items-center gap-1.5">
                 <Clock size={14} className="text-accent-text" />
                 <span>Reset à minuit</span>
@@ -396,93 +390,80 @@ export default function MiniJeux() {
       </ScrollReveal>
 
       {/* Games grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-px bg-rule border border-rule">
         {games.map((game, i) => {
           const score = dailyScores[game.key];
           return (
             <ScrollReveal key={game.href} delay={i * 100} variant="up">
               <Link
                 href={game.href}
-                className="group relative flex flex-col overflow-hidden rounded-2xl border border-border-t bg-card transition-all duration-300 hover:shadow-xl hover:-translate-y-1.5 hover:border-border-hover active:translate-y-0 h-full"
+                className="group relative flex h-full flex-col bg-card transition-colors hover:bg-card-hover"
               >
                 {/* Preview area */}
-                <div
-                  className="relative flex items-center justify-center h-28 overflow-hidden"
-                  style={{ background: `linear-gradient(135deg, ${game.color}18, ${game.color}08)` }}
-                >
-                  <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: `radial-gradient(${game.color} 1px, transparent 1px)`, backgroundSize: "12px 12px" }} />
+                <div className="relative flex h-28 items-center justify-center overflow-hidden border-b border-rule bg-bg">
                   <div className="relative">{game.preview}</div>
-                  <div className="absolute bottom-0 left-0 right-0 h-px" style={{ background: `linear-gradient(90deg, transparent, ${game.color}30, transparent)` }} />
 
-                  {/* Score badge */}
+                  {/* Score badge — sober W/L semantic */}
                   {score && (
-                    <div className={`absolute top-2.5 right-2.5 flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold backdrop-blur-sm ${score.won ? "bg-emerald-500/20 text-emerald-300" : "bg-red-500/20 text-red-300"}`}>
-                      {score.won ? <Check size={12} /> : <X size={12} />}
-                      {score.won && score.rank > 0 ? `#${score.rank}` : "Terminé"}
+                    <div className={`absolute top-2.5 right-2.5 inline-flex items-center gap-1.5 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider ${score.won ? "bg-emerald-600 text-white" : "bg-red-600 text-white"}`}>
+                      {score.won ? <Check size={11} /> : <X size={11} />}
+                      <span className="tnum">{score.won && score.rank > 0 ? `#${score.rank}` : "Terminé"}</span>
                     </div>
                   )}
                 </div>
 
-                <div className="p-6 flex flex-col flex-1">
+                <div className="flex flex-1 flex-col p-6">
                   {/* Header */}
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="flex h-11 w-11 items-center justify-center rounded-xl text-white shadow-lg transition-transform duration-300 group-hover:scale-110"
-                        style={{ backgroundColor: game.color }}
-                      >
-                        {game.icon}
-                      </div>
-                      <div>
-                        <h2 className="text-lg font-extrabold text-text-primary group-hover:text-accent-text transition-colors tracking-tight">{game.title}</h2>
-                        <div className="flex flex-wrap gap-1.5 mt-0.5">
-                          {game.tags.map((tag) => (
-                            <span key={tag} className="inline-block rounded-full bg-input px-2 py-0.5 text-[11px] font-semibold text-text-faint">
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
+                  <div className="mb-3 flex items-center gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center border border-rule bg-input text-accent-text transition-colors group-hover:border-border-hover">
+                      {game.icon}
+                    </div>
+                    <div>
+                      <h2 className="font-display text-xl leading-none text-text-primary transition-colors group-hover:text-accent-text">{game.title}</h2>
+                      <div className="mt-1.5 flex flex-wrap gap-1.5">
+                        {game.tags.map((tag) => (
+                          <span key={tag} className="inline-block border border-rule px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-text-faint">
+                            {tag}
+                          </span>
+                        ))}
                       </div>
                     </div>
                   </div>
 
                   {/* User score result */}
                   {score && (
-                    <div className={`flex flex-wrap items-center gap-x-2 gap-y-0.5 rounded-lg px-3 py-1.5 mb-3 text-xs ${score.won ? "bg-emerald-500/10" : "bg-red-500/10"}`}>
+                    <div className="mb-3 flex flex-wrap items-center gap-x-2 gap-y-0.5 border-l-2 border-accent bg-input px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider">
                       {score.won ? (
                         <>
-                          <Trophy size={13} className="text-amber-400 shrink-0" />
+                          <Trophy size={12} className="shrink-0 text-accent-text" />
                           {score.rank > 0 && (
-                            <span className="font-extrabold text-emerald-300">#{score.rank}<span className="font-normal text-text-faint">/{score.total}</span></span>
+                            <span className="tnum font-bold text-text-primary">#{score.rank}<span className="font-normal text-text-faint">/{score.total}</span></span>
                           )}
                           <span className="text-text-faint">·</span>
-                          <span className="text-text-muted font-medium">{score.label}</span>
+                          <span className="text-text-muted">{score.label}</span>
                           <span className="text-text-faint">·</span>
-                          <span className="text-text-faint">{formatTime(score.time)}</span>
+                          <span className="tnum text-text-faint">{formatTime(score.time)}</span>
                         </>
                       ) : (
                         <>
-                          <X size={13} className="text-red-400 shrink-0" />
-                          <span className="font-bold text-red-300">{score.label}</span>
+                          <X size={12} className="shrink-0 text-text-muted" />
+                          <span className="text-text-primary">{score.label}</span>
                           <span className="text-text-faint">·</span>
-                          <span className="text-text-faint">{formatTime(score.time)}</span>
+                          <span className="tnum text-text-faint">{formatTime(score.time)}</span>
                         </>
                       )}
                     </div>
                   )}
 
                   {/* Description */}
-                  <p className="text-[13px] leading-relaxed text-text-muted flex-1 line-clamp-3">
+                  <p className="flex-1 text-[13px] leading-relaxed text-text-muted line-clamp-3">
                     {game.description}
                   </p>
 
                   {/* CTA — always visible on touch; arrow nudges on hover */}
-                  <div
-                    className="mt-4 flex items-center gap-1.5 text-sm font-bold"
-                    style={{ color: game.color }}
-                  >
+                  <div className="mt-4 inline-flex items-center gap-1.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-accent-text transition-colors group-hover:text-accent">
                     {score ? "Voir le classement" : "Jouer maintenant"}
-                    <ArrowRight size={14} className="transition-transform duration-300 group-hover:translate-x-1" />
+                    <ArrowRight size={13} strokeWidth={2} className="transition-transform duration-200 group-hover:translate-x-0.5" />
                   </div>
                 </div>
               </Link>
@@ -493,8 +474,8 @@ export default function MiniJeux() {
 
       {/* Coming soon teaser */}
       <ScrollReveal variant="blur">
-        <div className="rounded-2xl border border-dashed border-border-t bg-card/50 px-6 py-10 text-center">
-          <p className="text-sm font-medium text-text-faint">D'autres mini-jeux sont en préparation...</p>
+        <div className="border border-dashed border-rule bg-card px-6 py-10 text-center">
+          <p className="kicker text-text-faint">D'autres mini-jeux sont en préparation</p>
         </div>
       </ScrollReveal>
     </div>

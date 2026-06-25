@@ -66,14 +66,14 @@ export default async function HoopizPage() {
       <div className="pt-4 flex items-center justify-between">
         <Link
           href="/mini-jeux"
-          className="inline-flex items-center gap-2 sm:gap-1.5 rounded-lg bg-input px-4 py-2.5 text-sm sm:px-3 sm:py-1.5 sm:text-xs font-medium text-text-muted hover:text-text-primary hover:bg-card-hover transition-colors"
+          className="inline-flex items-center gap-2 sm:gap-1.5 border border-rule bg-card px-4 py-2.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-text-muted hover:border-border-hover hover:text-text-primary transition-colors"
         >
           <RotateCcw size={12} /> Tous les mini-jeux
         </Link>
         {admin && (
           <Link
             href="/mini-jeux/hoopiz/create"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-bold text-white hover:bg-accent-hover transition-colors"
+            className="inline-flex items-center gap-1.5 bg-accent px-4 py-2.5 font-mono text-[11px] font-bold uppercase tracking-widest text-white hover:bg-accent-hover transition-colors"
           >
             <Plus size={12} /> Nouveau quiz
           </Link>
@@ -81,10 +81,10 @@ export default async function HoopizPage() {
       </div>
 
       <div className="text-center space-y-2">
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-text-primary tracking-tight">
+        <h1 className="font-display text-3xl sm:text-4xl text-text-primary">
           Hoop<span className="text-accent">iz</span>
         </h1>
-        <p className="text-sm text-text-muted">Quiz de culture générale NBA</p>
+        <p className="kicker text-text-faint">Quiz de culture générale NBA</p>
       </div>
 
       <QuizGrid quizzes={visibleQuizzes} admin={admin} userScores={userScores} />

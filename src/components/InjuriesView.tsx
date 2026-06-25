@@ -28,9 +28,11 @@ const TEAM_NAMES: Record<string, string> = {
   UTA: "Jazz", WAS: "Wizards",
 };
 
-const STATUS_COLORS: Record<string, { bg: string; text: string; dot: string }> = {
-  Out: { bg: "bg-red-500/10", text: "text-red-400", dot: "bg-red-400" },
-  "Day-To-Day": { bg: "bg-yellow-500/10", text: "text-yellow-400", dot: "bg-yellow-400" },
+// One accent only — injury status is conveyed through text emphasis, not a
+// decorative rainbow. "Out" reads as primary/strong, "Day-To-Day" as muted.
+const STATUS_STYLES: Record<string, { text: string; bar: string }> = {
+  Out: { text: "text-text-primary", bar: "bg-accent" },
+  "Day-To-Day": { text: "text-text-muted", bar: "bg-text-faint" },
 };
 
 function formatReturnDate(dateStr: string | null): string | null {
@@ -107,8 +109,8 @@ export default function InjuriesView({ injuries }: { injuries: Injury[] }) {
       {/* Stats */}
       <div className="flex flex-wrap gap-3">
         <StatCard value={filtered.length} label="Joueurs blessés" />
-        <StatCard value={outCount} label="Indisponibles" color="text-red-400" />
-        <StatCard value={dtdCount} label="Day-to-Day" color="text-yellow-400" />
+        <StatCard value={outCount} label="Indisponibles" accent />
+        <StatCard value={dtdCount} label="Day-to-Day" />
         <StatCard value={groupedByTeam.length} label="Équipes touchées" />
       </div>
 
@@ -121,7 +123,7 @@ export default function InjuriesView({ injuries }: { injuries: Injury[] }) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Rechercher un joueur..."
-            className="w-full rounded-lg bg-input border border-border-t pl-9 pr-3 py-2 text-xs text-text-primary placeholder:text-text-faint outline-none focus:border-accent/50 transition-colors"
+            className="w-full bg-input border border-rule pl-9 pr-3 py-2 text-xs text-text-primary placeholder:text-text-faint outline-none focus:border-border-hover transition-colors"
           />
         </div>
 
@@ -145,7 +147,7 @@ export default function InjuriesView({ injuries }: { injuries: Injury[] }) {
 
       {/* Table */}
       {filtered.length === 0 ? (
-        <div className="rounded-2xl bg-card border border-border-t px-6 py-12 text-center text-sm text-text-muted">
+        <div className="border border-rule bg-card px-6 py-12 text-center text-sm text-text-muted">
           Aucune blessure trouvée
         </div>
       ) : (
@@ -153,29 +155,29 @@ export default function InjuriesView({ injuries }: { injuries: Injury[] }) {
           {groupedByTeam.map(([team, list]) => {
             const isCollapsed = collapsedTeams.has(team);
             return (
-              <div key={team} className="rounded-xl bg-card border border-border-t overflow-hidden">
+              <div key={team} className="border border-rule bg-card overflow-hidden">
                 {/* Team header */}
                 <button
                   onClick={() => toggleTeam(team)}
-                  className="flex w-full items-center gap-3 px-4 py-3 bg-input/50 hover:bg-input transition-colors"
+                  className="flex w-full items-center gap-3 border-b border-rule px-4 py-3 bg-input/50 hover:bg-input transition-colors"
                 >
                   <ChevronRight
                     size={14}
                     className={`text-text-faint transition-transform ${isCollapsed ? "" : "rotate-90"}`}
                   />
                   <img src={teamLogoUrl(team)} alt={team} className="h-6 w-6 object-contain" />
-                  <span className="text-sm font-bold text-text-primary">{TEAM_NAMES[team] || team}</span>
-                  <span className="text-[10px] text-text-faint ml-1">
+                  <span className="font-display text-base text-text-primary">{TEAM_NAMES[team] || team}</span>
+                  <span className="tnum font-mono text-[10px] text-text-faint ml-1">
                     {list.length} joueur{list.length > 1 ? "s" : ""}
                   </span>
                   <div className="ml-auto flex items-center gap-1.5">
                     {list.filter((i) => i.status === "Out").length > 0 && (
-                      <span className="rounded-full bg-red-500/10 px-2 py-0.5 text-[10px] font-bold text-red-400">
+                      <span className="tnum border border-rule px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-text-primary">
                         {list.filter((i) => i.status === "Out").length} Out
                       </span>
                     )}
                     {list.filter((i) => i.status === "Day-To-Day").length > 0 && (
-                      <span className="rounded-full bg-yellow-500/10 px-2 py-0.5 text-[10px] font-bold text-yellow-400">
+                      <span className="tnum border border-rule px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-text-muted">
                         {list.filter((i) => i.status === "Day-To-Day").length} DTD
                       </span>
                     )}
@@ -186,11 +188,11 @@ export default function InjuriesView({ injuries }: { injuries: Injury[] }) {
                 {!isCollapsed && (
                   <div>
                     {/* Column headers */}
-                    <div className="flex items-center gap-3 px-4 py-1.5 bg-input/30 border-y border-border-t/30">
-                      <span className="flex-1 text-[10px] font-medium text-text-faint uppercase tracking-wider pl-8">Joueur</span>
-                      <span className="w-28 text-[10px] font-medium text-text-faint uppercase tracking-wider hidden sm:block">Blessure</span>
-                      <span className="w-20 text-[10px] font-medium text-text-faint uppercase tracking-wider hidden sm:block text-right">Retour</span>
-                      <span className="w-20 text-[10px] font-medium text-text-faint uppercase tracking-wider text-right">Statut</span>
+                    <div className="flex items-center gap-3 px-4 py-1.5 bg-input/30 border-b border-rule">
+                      <span className="flex-1 kicker text-text-faint pl-8">Joueur</span>
+                      <span className="w-28 kicker text-text-faint hidden sm:block">Blessure</span>
+                      <span className="w-20 kicker text-text-faint hidden sm:block text-right">Retour</span>
+                      <span className="w-20 kicker text-text-faint text-right">Statut</span>
                     </div>
                     {list.map((injury) => (
                       <InjuryRow key={injury.id} injury={injury} />
@@ -209,26 +211,26 @@ export default function InjuriesView({ injuries }: { injuries: Injury[] }) {
 /* ─── Injury row ─── */
 
 function InjuryRow({ injury }: { injury: Injury }) {
-  const colors = STATUS_COLORS[injury.status] || { bg: "bg-text-faint/10", text: "text-text-muted", dot: "bg-text-faint" };
+  const style = STATUS_STYLES[injury.status] || { text: "text-text-muted", bar: "bg-text-faint" };
   const returnStr = formatReturnDate(injury.return_date);
 
   return (
-    <div className="flex items-center gap-3 px-4 py-2.5 border-t border-border-t/20 hover:bg-card-hover/50 transition-colors">
+    <div className="relative flex items-center gap-3 px-4 py-2.5 border-t border-rule hover:bg-card-hover transition-colors">
+      <span className={`absolute left-0 top-0 bottom-0 w-0.5 ${style.bar}`} />
       <div className="flex-1 min-w-0 pl-8">
         <div className="flex items-center gap-2">
-          <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${colors.dot}`} />
-          <span className="text-sm font-medium text-text-primary truncate">{injury.player_name}</span>
+          <span className="text-sm font-semibold text-text-primary truncate">{injury.player_name}</span>
           {injury.player_position && (
-            <span className="text-[10px] text-text-faint font-medium shrink-0">{injury.player_position}</span>
+            <span className="font-mono text-[10px] uppercase tracking-wider text-text-faint shrink-0">{injury.player_position}</span>
           )}
         </div>
         {/* Mobile: injury info under name */}
-        <p className="sm:hidden text-[11px] text-text-muted mt-0.5 pl-3.5">{injuryLabel(injury)}</p>
+        <p className="sm:hidden text-[11px] text-text-muted mt-0.5">{injuryLabel(injury)}</p>
       </div>
       <span className="w-28 text-[11px] text-text-muted truncate hidden sm:block">{injuryLabel(injury)}</span>
-      <span className="w-20 text-[11px] text-text-faint text-right hidden sm:block">{returnStr || "—"}</span>
-      <span className={`w-20 text-right shrink-0`}>
-        <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ${colors.bg} ${colors.text}`}>
+      <span className="w-20 tnum text-[11px] text-text-faint text-right hidden sm:block">{returnStr || "—"}</span>
+      <span className="w-20 text-right shrink-0">
+        <span className={`inline-block font-mono text-[10px] font-bold uppercase tracking-wider ${style.text}`}>
           {injury.status}
         </span>
       </span>
@@ -238,11 +240,12 @@ function InjuryRow({ injury }: { injury: Injury }) {
 
 /* ─── Stat card ─── */
 
-function StatCard({ value, label, color }: { value: number; label: string; color?: string }) {
+function StatCard({ value, label, accent }: { value: number; label: string; accent?: boolean }) {
   return (
-    <div className="rounded-xl bg-card border border-border-t px-4 py-3 flex-1 min-w-[130px]">
-      <p className={`text-2xl font-bold ${color || "text-text-primary"}`}>{value}</p>
-      <p className="text-xs text-text-muted">{label}</p>
+    <div className="relative overflow-hidden bg-card border border-rule px-4 py-3 flex-1 min-w-[130px]">
+      {accent && <span className="absolute left-0 top-0 bottom-0 w-1 bg-accent" />}
+      <p className={`tnum font-display text-3xl ${accent ? "text-accent-text" : "text-text-primary"}`}>{value}</p>
+      <p className="kicker mt-0.5 text-text-muted">{label}</p>
     </div>
   );
 }
@@ -275,10 +278,10 @@ function Dropdown({ value, onChange, placeholder, options }: DropdownProps) {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium transition-all ${
+        className={`flex items-center gap-1.5 border px-3 py-2 font-mono text-[11px] uppercase tracking-wider transition-colors ${
           value
-            ? "bg-accent/10 border-accent/30 text-accent"
-            : "bg-input border-border-t text-text-muted hover:text-text-primary"
+            ? "bg-accent-light border-accent text-accent"
+            : "bg-input border-rule text-text-muted hover:border-border-hover hover:text-text-primary"
         }`}
       >
         {selected?.label || placeholder}
@@ -286,11 +289,11 @@ function Dropdown({ value, onChange, placeholder, options }: DropdownProps) {
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 z-40 mt-1 min-w-[160px] max-h-64 overflow-y-auto rounded-xl bg-card border border-border-t shadow-xl">
+        <div className="absolute top-full left-0 z-40 mt-1 min-w-[160px] max-h-64 overflow-y-auto bg-card border border-rule shadow-xl">
           <button
             onClick={() => { onChange(""); setOpen(false); }}
-            className={`w-full text-left px-3 py-2 text-xs transition-colors ${
-              !value ? "text-accent font-semibold bg-accent/5" : "text-text-muted hover:bg-card-hover hover:text-text-primary"
+            className={`w-full text-left px-3 py-2 font-mono text-[11px] uppercase tracking-wider transition-colors ${
+              !value ? "text-accent font-semibold bg-accent-light" : "text-text-muted hover:bg-card-hover hover:text-text-primary"
             }`}
           >
             {placeholder} (tous)
@@ -301,7 +304,7 @@ function Dropdown({ value, onChange, placeholder, options }: DropdownProps) {
               onClick={() => { onChange(opt.value); setOpen(false); }}
               className={`w-full text-left px-3 py-2 text-xs transition-colors ${
                 value === opt.value
-                  ? "text-accent font-semibold bg-accent/5"
+                  ? "text-accent font-semibold bg-accent-light"
                   : "text-text-primary hover:bg-card-hover"
               }`}
             >

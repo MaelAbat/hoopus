@@ -61,9 +61,9 @@ export default async function Classement({ searchParams }: { searchParams: Promi
             <div className="flex flex-wrap items-center gap-3">
               <SeasonSelector current={season} available={availableSeasons} />
               {hasData ? (
-                <span className="text-xs text-text-faint">Mis à jour le {lastUpdate}</span>
+                <span className="font-mono text-[11px] uppercase tracking-wider text-text-faint">Mis à jour le {lastUpdate}</span>
               ) : (
-                <span className="inline-flex items-center rounded-full bg-yellow-500/20 px-2 py-0.5 text-xs text-yellow-300">
+                <span className="inline-flex items-center border border-rule px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-text-muted">
                   Synchronisation requise
                 </span>
               )}

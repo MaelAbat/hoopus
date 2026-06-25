@@ -137,22 +137,24 @@ function formatValue(val: number | undefined, format?: string): string {
   }
 }
 
+// 100 = league average. Above/below is a true +/- variation, so a sober
+// green/red is warranted per the design language; middle stays neutral ink.
 function getPlusColor(val: number | undefined): string {
   if (val == null) return "text-text-faint text-xs";
-  if (val >= 115) return "text-emerald-400 font-bold";
-  if (val >= 108) return "text-emerald-400/80";
+  if (val >= 115) return "text-emerald-500 font-bold";
+  if (val >= 108) return "text-emerald-500/80";
   if (val >= 102) return "text-text-primary";
   if (val >= 98) return "text-text-muted";
-  if (val >= 92) return "text-orange-400/80";
-  return "text-red-400 font-bold";
+  if (val >= 92) return "text-red-500/70";
+  return "text-red-500 font-bold";
 }
 
 function getPlusBg(val: number | undefined): string {
   if (val == null) return "";
-  if (val >= 115) return "bg-emerald-500/8";
+  if (val >= 115) return "bg-emerald-500/10";
   if (val >= 108) return "bg-emerald-500/5";
-  if (val < 92) return "bg-red-500/8";
-  if (val < 98) return "bg-orange-500/5";
+  if (val < 92) return "bg-red-500/10";
+  if (val < 98) return "bg-red-500/5";
   return "";
 }
 
@@ -256,31 +258,31 @@ export default function AdvancedStatsTable({ players }: { players: PlayerRow[] }
   const hasActiveFilters = activeFilterCount > 0;
 
   return (
-    <div className="rounded-2xl bg-card border border-border-t overflow-hidden flex flex-col sm:h-[calc(100vh-14rem)]">
+    <div className="bg-card border border-rule overflow-hidden flex flex-col sm:h-[calc(100vh-14rem)]">
 
       {/* ── Group tabs ── */}
-      <div ref={groupTabsRef} className="flex items-center gap-1 px-4 py-2.5 border-b border-border-t/50 overflow-x-auto no-scrollbar">
+      <div ref={groupTabsRef} className="flex items-center gap-1 px-4 py-2.5 border-b border-rule overflow-x-auto no-scrollbar">
         {COLUMN_GROUPS.map((g) => (
           <button
             key={g.id}
             onClick={() => { setActiveGroup(g.id); setPage(0); }}
             {...(activeGroup === g.id ? { "data-active-group": true } : {})}
-            className={`whitespace-nowrap rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all ${
+            className={`whitespace-nowrap px-3.5 py-1.5 font-mono text-[11px] font-bold uppercase tracking-wider transition-colors ${
               activeGroup === g.id
-                ? "bg-accent text-white shadow-sm"
+                ? "bg-accent text-white"
                 : "text-text-muted hover:bg-input hover:text-text-primary"
             }`}
           >
             {g.label}
           </button>
         ))}
-        <div className="w-px h-5 bg-border-t/40 mx-1" />
+        <div className="w-px h-5 bg-rule mx-1" />
         <button
           onClick={() => { setActiveGroup("all"); setPage(0); }}
           {...(isAllView ? { "data-active-group": true } : {})}
-          className={`whitespace-nowrap rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all ${
+          className={`whitespace-nowrap px-3.5 py-1.5 font-mono text-[11px] font-bold uppercase tracking-wider transition-colors ${
             isAllView
-              ? "bg-accent text-white shadow-sm"
+              ? "bg-accent text-white"
               : "text-text-muted hover:bg-input hover:text-text-primary"
           }`}
         >
@@ -289,19 +291,19 @@ export default function AdvancedStatsTable({ players }: { players: PlayerRow[] }
       </div>
 
       {/* ── Toolbar: filters + search ── */}
-      <div className="flex flex-wrap items-center gap-2 px-4 py-2 border-b border-border-t/50">
+      <div className="flex flex-wrap items-center gap-2 px-4 py-2 border-b border-rule">
         <button
           onClick={() => setShowFilters((v) => !v)}
-          className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all border ${
+          className={`flex items-center gap-1.5 px-3 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-wider transition-colors border ${
             showFilters || hasActiveFilters
-              ? "bg-accent/10 border-accent/30 text-accent"
-              : "bg-input border-border-t text-text-muted hover:text-text-primary"
+              ? "bg-accent-light border-accent text-accent"
+              : "bg-input border-rule text-text-muted hover:border-border-hover hover:text-text-primary"
           }`}
         >
           <SlidersHorizontal size={13} />
           Filtres
           {hasActiveFilters && (
-            <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-accent text-[9px] text-white font-bold px-1">
+            <span className="tnum flex h-4 min-w-[16px] items-center justify-center bg-accent text-[9px] text-white font-bold px-1">
               {activeFilterCount}
             </span>
           )}
@@ -311,36 +313,36 @@ export default function AdvancedStatsTable({ players }: { players: PlayerRow[] }
         {hasActiveFilters && !showFilters && (
           <div className="flex items-center gap-1.5 flex-wrap">
             {minGP > 0 && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2.5 py-0.5 text-[11px] font-medium text-accent">
-                GP {minGP}+
-                <button type="button" aria-label="Retirer le filtre GP" onClick={() => { setMinGP(0); setPage(0); }} className="hover:text-white"><X size={10} /></button>
+              <span className="inline-flex items-center gap-1 bg-accent-light px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-accent">
+                GP <span className="tnum">{minGP}+</span>
+                <button type="button" aria-label="Retirer le filtre GP" onClick={() => { setMinGP(0); setPage(0); }} className="hover:text-accent-text"><X size={10} /></button>
               </span>
             )}
             {minMPG > 0 && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2.5 py-0.5 text-[11px] font-medium text-accent">
-                MPG {minMPG}+
-                <button type="button" aria-label="Retirer le filtre MPG" onClick={() => { setMinMPG(0); setPage(0); }} className="hover:text-white"><X size={10} /></button>
+              <span className="inline-flex items-center gap-1 bg-accent-light px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-accent">
+                MPG <span className="tnum">{minMPG}+</span>
+                <button type="button" aria-label="Retirer le filtre MPG" onClick={() => { setMinMPG(0); setPage(0); }} className="hover:text-accent-text"><X size={10} /></button>
               </span>
             )}
             {minUSG > 0 && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2.5 py-0.5 text-[11px] font-medium text-accent">
-                USG% {minUSG}+
-                <button type="button" aria-label="Retirer le filtre USG" onClick={() => { setMinUSG(0); setPage(0); }} className="hover:text-white"><X size={10} /></button>
+              <span className="inline-flex items-center gap-1 bg-accent-light px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-accent">
+                USG% <span className="tnum">{minUSG}+</span>
+                <button type="button" aria-label="Retirer le filtre USG" onClick={() => { setMinUSG(0); setPage(0); }} className="hover:text-accent-text"><X size={10} /></button>
               </span>
             )}
             {Object.entries(minAttempts).filter(([, v]) => v > 0).map(([key, val]) => {
               const af = ATTEMPT_FILTERS.find((f) => f.statKey === key);
               return (
-                <span key={key} className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2.5 py-0.5 text-[11px] font-medium text-accent">
-                  {af?.label ?? key} {val}+
-                  <button type="button" aria-label={`Retirer le filtre ${af?.label ?? key}`} onClick={() => setAttempt(key, 0)} className="hover:text-white"><X size={10} /></button>
+                <span key={key} className="inline-flex items-center gap-1 bg-accent-light px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-accent">
+                  {af?.label ?? key} <span className="tnum">{val}+</span>
+                  <button type="button" aria-label={`Retirer le filtre ${af?.label ?? key}`} onClick={() => setAttempt(key, 0)} className="hover:text-accent-text"><X size={10} /></button>
                 </span>
               );
             })}
           </div>
         )}
 
-        <span className="text-[11px] text-text-faint tabular-nums ml-auto mr-2">
+        <span className="tnum font-mono text-[11px] uppercase tracking-wider text-text-faint ml-auto mr-2">
           {filtered.length} joueur{filtered.length > 1 ? "s" : ""}
         </span>
 
@@ -350,23 +352,23 @@ export default function AdvancedStatsTable({ players }: { players: PlayerRow[] }
           onChange={(e) => { setSearch(e.target.value); setPage(0); }}
           placeholder="Rechercher..."
           aria-label="Rechercher un joueur"
-          className="rounded-lg bg-input border border-border-t px-3 py-1.5 text-xs text-text-primary placeholder:text-text-faint outline-none focus:border-accent w-44"
+          className="bg-input border border-rule px-3 py-1.5 font-mono text-xs text-text-primary placeholder:text-text-faint outline-none focus:border-accent w-44"
         />
       </div>
 
       {/* ── Group description ── */}
       {currentGroup?.description && !isAllView && (
-        <div className="px-4 py-1.5 border-b border-border-t/30 bg-card-hover/30">
-          <p className="text-[11px] text-text-faint">{currentGroup.description}</p>
+        <div className="px-4 py-1.5 border-b border-rule bg-card-hover/30">
+          <p className="font-mono text-[11px] uppercase tracking-wider text-text-faint">{currentGroup.description}</p>
         </div>
       )}
 
       {/* ── Filters panel ── */}
       {showFilters && (
-        <div className="border-b border-border-t/50 bg-card-hover/30 px-5 py-3 space-y-3">
+        <div className="border-b border-rule bg-card-hover/30 px-5 py-3 space-y-3">
           {/* Section: Temps de jeu */}
           <div className="space-y-1.5">
-            <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Temps de jeu</p>
+            <p className="kicker text-text-faint">Temps de jeu</p>
             <div className="flex flex-wrap items-center gap-3">
               <FilterRow label="GP" value={minGP} presets={GP_PRESETS}
                 onChange={(v) => { setMinGP(v); setPage(0); }} />
@@ -377,11 +379,11 @@ export default function AdvancedStatsTable({ players }: { players: PlayerRow[] }
             </div>
           </div>
 
-          <div className="h-px bg-border-t/20" />
+          <div className="h-px bg-rule" />
 
           {/* Section: Tentatives */}
           <div className="space-y-1.5">
-            <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Tentatives saison</p>
+            <p className="kicker text-text-faint">Tentatives saison</p>
             <div className="flex flex-wrap items-center gap-3">
               {ATTEMPT_FILTERS.map((af) => (
                 <FilterRow key={af.statKey} label={af.label} value={minAttempts[af.statKey] || 0}
@@ -393,10 +395,10 @@ export default function AdvancedStatsTable({ players }: { players: PlayerRow[] }
 
           {hasActiveFilters && (
             <>
-              <div className="h-px bg-border-t/20" />
+              <div className="h-px bg-rule" />
               <button
                 onClick={() => { setMinGP(0); setMinMPG(0); setMinUSG(0); setMinAttempts({}); setPage(0); }}
-                className="text-[11px] text-accent hover:underline"
+                className="font-mono text-[11px] uppercase tracking-wider text-accent-text hover:text-accent transition-colors"
               >
                 Réinitialiser tous les filtres
               </button>
@@ -407,21 +409,21 @@ export default function AdvancedStatsTable({ players }: { players: PlayerRow[] }
 
       {/* ── Pagination top ── */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-3 py-2 border-b border-border-t/50">
+        <div className="flex items-center justify-center gap-3 py-2 border-b border-rule">
           <button
             onClick={() => setPage((p) => Math.max(0, p - 1))}
             disabled={page === 0}
-            className="rounded-md px-2 py-1 text-xs font-medium text-text-muted hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed"
+            className="px-2 py-1 text-text-muted hover:bg-input hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
             <ChevronLeft size={16} />
           </button>
-          <span className="text-xs text-text-muted tabular-nums">
+          <span className="tnum font-mono text-[11px] uppercase tracking-wider text-text-muted">
             {page * PAGE_SIZE + 1} -- {Math.min((page + 1) * PAGE_SIZE, sorted.length)} sur {sorted.length}
           </span>
           <button
             onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
             disabled={page >= totalPages - 1}
-            className="rounded-md px-2 py-1 text-xs font-medium text-text-muted hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed"
+            className="px-2 py-1 text-text-muted hover:bg-input hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
             <ChevronRight size={16} />
           </button>
@@ -434,14 +436,14 @@ export default function AdvancedStatsTable({ players }: { players: PlayerRow[] }
           <thead className="sticky top-0 z-20">
             {/* All-view group headers */}
             {isAllView && (
-              <tr className="bg-card border-b border-border-t/30">
+              <tr className="bg-card border-b border-rule">
                 <th className="sm:sticky sm:left-0 sm:z-30 bg-card w-10" />
                 <th className="sm:sticky sm:left-10 sm:z-30 bg-card" style={{ minWidth: 140 }} />
                 {COLUMN_GROUPS.map((group) => (
                   <th
                     key={group.id}
                     colSpan={group.columns.length}
-                    className="px-2 py-1.5 text-center text-[10px] font-bold text-accent/80 uppercase tracking-wider bg-card border-l border-border-t/60 first:border-l-0"
+                    className="kicker px-2 py-1.5 text-center text-accent-text bg-card border-l border-rule first:border-l-0"
                   >
                     {group.label}
                   </th>
@@ -449,11 +451,11 @@ export default function AdvancedStatsTable({ players }: { players: PlayerRow[] }
               </tr>
             )}
             {/* Column headers */}
-            <tr className="bg-card border-b border-border-t/50">
-              <th className="sm:sticky sm:left-0 sm:z-30 text-left pl-4 pr-2 py-3 text-[11px] font-medium text-text-muted uppercase tracking-wider w-10 bg-card">
+            <tr className="bg-card border-b border-rule">
+              <th className="kicker sm:sticky sm:left-0 sm:z-30 text-left pl-4 pr-2 py-3 text-text-faint w-10 bg-card">
                 #
               </th>
-              <th className="sm:sticky sm:left-10 sm:z-30 text-left px-3 py-3 text-[11px] font-medium text-text-muted uppercase tracking-wider bg-card sm:after:absolute sm:after:right-0 sm:after:top-0 sm:after:bottom-0 sm:after:w-px sm:after:bg-border-t/40" style={{ minWidth: 140 }}>
+              <th className="kicker sm:sticky sm:left-10 sm:z-30 text-left px-3 py-3 text-text-faint bg-card sm:after:absolute sm:after:right-0 sm:after:top-0 sm:after:bottom-0 sm:after:w-px sm:after:bg-rule" style={{ minWidth: 140 }}>
                 Joueur
               </th>
               {visibleColumns.map((col, ci) => {
@@ -462,13 +464,13 @@ export default function AdvancedStatsTable({ players }: { players: PlayerRow[] }
                   <th
                     key={col.key}
                     onClick={() => handleSort(col.key)}
-                    className={`px-3 py-3 text-right text-[11px] font-medium uppercase tracking-wider cursor-pointer select-none whitespace-nowrap transition-colors hover:text-text-primary bg-card ${
-                      isGroupStart && ci > 0 ? "border-l border-border-t/60" : ""
+                    className={`px-3 py-3 text-right cursor-pointer select-none whitespace-nowrap transition-colors hover:text-text-primary bg-card ${
+                      isGroupStart && ci > 0 ? "border-l border-rule" : ""
                     }`}
                     title={col.label}
                   >
-                    <span className={`inline-flex items-center gap-0.5 ${
-                      sortKey === col.key ? "text-accent" : "text-text-muted"
+                    <span className={`kicker inline-flex items-center gap-0.5 ${
+                      sortKey === col.key ? "text-accent" : "text-text-faint"
                     }`}>
                       {col.short}
                       {sortKey === col.key && (
@@ -493,12 +495,12 @@ export default function AdvancedStatsTable({ players }: { players: PlayerRow[] }
                 return (
                   <tr
                     key={`${player.name}-${player.team}`}
-                    className="border-b border-border-t/20 transition-all duration-150 hover:bg-card-hover cursor-pointer group"
+                    className="border-b border-rule transition-colors duration-150 hover:bg-card-hover cursor-pointer group"
                   >
                     <td className="sm:sticky sm:left-0 sm:z-10 bg-card pl-4 pr-2 py-3 group-hover:bg-card-hover">
-                      <span className={`inline-flex h-6 w-6 items-center justify-center rounded-md text-[11px] font-bold ${
+                      <span className={`tnum inline-flex h-6 w-6 items-center justify-center text-[11px] font-bold ${
                         rank === 1
-                          ? "bg-accent/15 text-accent"
+                          ? "bg-accent text-white"
                           : rank <= 3
                             ? "bg-input text-text-primary"
                             : "text-text-faint"
@@ -506,13 +508,13 @@ export default function AdvancedStatsTable({ players }: { players: PlayerRow[] }
                         {rank}
                       </span>
                     </td>
-                    <td className="sm:sticky sm:left-10 sm:z-10 bg-card px-3 py-3 group-hover:bg-card-hover sm:after:absolute sm:after:right-0 sm:after:top-0 sm:after:bottom-0 sm:after:w-px sm:after:bg-border-t/40">
-                      <Link href={`/joueurs/${player.playerId}`} className="flex items-center gap-3">
+                    <td className="sm:sticky sm:left-10 sm:z-10 bg-card px-3 py-3 group-hover:bg-card-hover sm:after:absolute sm:after:right-0 sm:after:top-0 sm:after:bottom-0 sm:after:w-px sm:after:bg-rule">
+                      <Link href={`/joueurs/${player.playerId}`} className="flex items-center gap-3 group/link">
                         <div className="relative h-9 w-9 shrink-0">
                           <img
                             src={playerPhotoUrl(player.playerId)}
                             alt=""
-                            className="h-9 w-9 rounded-full object-cover bg-input ring-1 ring-border-t/30"
+                            className="h-9 w-9 object-cover bg-input"
                             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                           />
                           <img
@@ -522,8 +524,8 @@ export default function AdvancedStatsTable({ players }: { players: PlayerRow[] }
                           />
                         </div>
                         <div className="min-w-0">
-                          <p className="font-semibold text-text-primary truncate text-[13px] leading-tight hover:text-accent transition-colors">{player.name}</p>
-                          <p className="text-[10px] text-text-faint mt-0.5">{player.team}</p>
+                          <p className="font-semibold text-text-primary truncate text-[13px] leading-tight transition-colors group-hover/link:text-accent-text">{player.name}</p>
+                          <p className="font-mono text-[10px] uppercase tracking-wider text-text-faint mt-0.5">{player.team}</p>
                         </div>
                       </Link>
                     </td>
@@ -535,8 +537,8 @@ export default function AdvancedStatsTable({ players }: { players: PlayerRow[] }
                       return (
                         <td
                           key={col.key}
-                          className={`px-3 py-3 text-right tabular-nums text-[13px] ${
-                            isGroupStart && ci > 0 ? "border-l border-border-t/60" : ""
+                          className={`tnum px-3 py-3 text-right text-[13px] ${
+                            isGroupStart && ci > 0 ? "border-l border-rule" : ""
                           } ${
                             isPlus
                               ? `${getPlusColor(val)} ${getPlusBg(val)}`
@@ -559,21 +561,21 @@ export default function AdvancedStatsTable({ players }: { players: PlayerRow[] }
 
       {/* ── Pagination ── */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-3 py-2.5 border-t border-border-t/50">
+        <div className="flex items-center justify-center gap-3 py-2.5 border-t border-rule">
           <button
             onClick={() => setPage((p) => Math.max(0, p - 1))}
             disabled={page === 0}
-            className="rounded-md px-2 py-1 text-xs font-medium text-text-muted hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed"
+            className="px-2 py-1 text-text-muted hover:bg-input hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
             <ChevronLeft size={16} />
           </button>
-          <span className="text-xs text-text-muted tabular-nums">
+          <span className="tnum font-mono text-[11px] uppercase tracking-wider text-text-muted">
             {page * PAGE_SIZE + 1} -- {Math.min((page + 1) * PAGE_SIZE, sorted.length)} sur {sorted.length}
           </span>
           <button
             onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
             disabled={page >= totalPages - 1}
-            className="rounded-md px-2 py-1 text-xs font-medium text-text-muted hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed"
+            className="px-2 py-1 text-text-muted hover:bg-input hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
             <ChevronRight size={16} />
           </button>
@@ -594,17 +596,17 @@ function FilterRow({ label, value, presets, onChange }: {
   const isActive = value > 0;
   return (
     <div className="flex items-center gap-2">
-      <span className={`text-[11px] font-semibold tabular-nums ${isActive ? "text-accent" : "text-text-muted"}`}>
+      <span className={`font-mono text-[11px] font-semibold uppercase tracking-wider ${isActive ? "text-accent" : "text-text-muted"}`}>
         {label}
       </span>
-      <div className="inline-flex rounded-lg bg-input p-0.5">
+      <div className="inline-flex border border-rule bg-input">
         {presets.map((v) => (
           <button
             key={v}
             onClick={() => onChange(v)}
-            className={`rounded-md min-w-[34px] py-1 text-[10px] font-medium text-center transition-all ${
+            className={`tnum min-w-[34px] py-1 text-[10px] font-medium text-center transition-colors ${
               value === v
-                ? "bg-card text-text-primary shadow-sm"
+                ? "bg-card text-text-primary"
                 : "text-text-faint hover:text-text-muted"
             }`}
           >
@@ -619,7 +621,7 @@ function FilterRow({ label, value, presets, onChange }: {
         value={value || ""}
         onChange={(e) => onChange(Number(e.target.value.replace(/\D/g, "")) || 0)}
         placeholder="..."
-        className="w-11 rounded-md bg-input border border-border-t/40 px-1 py-1 text-[10px] text-text-primary text-center outline-none focus:border-accent placeholder:text-text-faint/50"
+        className="tnum w-11 bg-input border border-rule px-1 py-1 text-[10px] text-text-primary text-center outline-none focus:border-accent placeholder:text-text-faint/50"
       />
     </div>
   );

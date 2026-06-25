@@ -49,7 +49,7 @@ export default function SyncButton() {
       <button
         onClick={handleSync}
         disabled={loading}
-        className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-accent transition-colors hover:bg-accent-light disabled:opacity-50 disabled:cursor-not-allowed"
+        className="flex w-full items-center gap-2 border border-rule px-3 py-2 font-mono text-[11px] font-bold uppercase tracking-wider text-accent-text transition-colors hover:border-border-hover hover:bg-input disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
         {loading
@@ -57,7 +57,7 @@ export default function SyncButton() {
           : "Synchroniser les données"}
       </button>
       {results.length > 0 && !loading && (
-        <p className={`mt-1 px-3 text-[10px] ${failed.length === 0 ? "text-emerald-400" : "text-amber-400"}`}>
+        <p className={`mt-1 px-3 font-mono text-[10px] uppercase tracking-wider ${failed.length === 0 ? "text-accent-text" : "text-text-muted"}`}>
           {failed.length === 0
             ? "Synchronisation réussie !"
             : `${results.length - failed.length}/${results.length} OK — Échec: ${failed.map((f) => f.label).join(", ")}`}

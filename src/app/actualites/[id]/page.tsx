@@ -99,7 +99,7 @@ export default async function NewsDetail({ params }: { params: Promise<{ id: str
       <JsonLd data={jsonLd} />
       <Link
         href="/actualites"
-        className="inline-flex items-center gap-1 rounded-xl px-3 py-2 text-sm font-medium text-text-muted transition-colors hover:bg-input hover:text-text-primary"
+        className="inline-flex items-center gap-1.5 font-mono text-[11px] font-bold uppercase tracking-widest text-text-muted transition-colors hover:text-text-primary"
       >
         <ChevronLeft size={16} />
         Toutes les actus
@@ -107,32 +107,32 @@ export default async function NewsDetail({ params }: { params: Promise<{ id: str
 
       {/* Hero image */}
       <ScrollReveal variant="scale">
-        <div className="relative overflow-hidden rounded-2xl border border-border-t">
+        <div className="relative overflow-hidden border border-rule bg-input">
           {newsItem.image_url ? (
-            <div className="aspect-[21/9] w-full overflow-hidden bg-input">
+            <div className="aspect-[21/9] w-full overflow-hidden">
               <img
                 src={newsItem.image_url}
                 alt={newsItem.title}
-                className="h-full w-full object-cover"
+                className="h-full w-full object-cover grayscale"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
             </div>
           ) : (
             <div className="aspect-[21/9] w-full overflow-hidden">
               <img
                 src="https://images.unsplash.com/photo-1527261834078-9b37d35a4a32?w=1200&q=80"
                 alt=""
-                className="h-full w-full object-cover"
+                className="h-full w-full object-cover grayscale"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
             </div>
           )}
 
           <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-8">
-            <span className="inline-block rounded-full bg-accent px-3 py-1 text-xs font-semibold text-white">
+            <span className="inline-block bg-accent px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-widest text-white">
               {newsItem.category}
             </span>
-            <h1 className="mt-3 text-2xl sm:text-3xl lg:text-4xl font-extrabold leading-tight text-white">
+            <h1 className="mt-4 font-display text-3xl sm:text-4xl lg:text-5xl leading-[1.02] text-white">
               {newsItem.title}
             </h1>
           </div>
@@ -140,16 +140,16 @@ export default async function NewsDetail({ params }: { params: Promise<{ id: str
       </ScrollReveal>
 
       {/* Date */}
-      <div className="flex items-center gap-2 text-sm text-text-muted">
+      <div className="flex items-center gap-2 border-y border-rule py-3 font-mono text-[11px] uppercase tracking-wider text-text-muted">
         <Clock size={14} className="text-accent" />
-        <span>{formatRelative(newsItem.created_at)}</span>
+        <span className="tnum">{formatRelative(newsItem.created_at)}</span>
         <span className="text-text-faint">--</span>
-        <span className="text-text-faint">{formatDate(newsItem.created_at)}</span>
+        <span className="tnum text-text-faint">{formatDate(newsItem.created_at)}</span>
       </div>
 
       {/* Content */}
       <ScrollReveal variant="up" delay={100}>
-        <div className="rounded-2xl bg-card border border-border-t p-5 sm:p-8 lg:p-10">
+        <div className="border border-rule bg-card p-5 sm:p-8 lg:p-10">
           <p className="text-base sm:text-lg leading-relaxed text-text-secondary">
             {newsItem.excerpt}
           </p>
@@ -160,29 +160,31 @@ export default async function NewsDetail({ params }: { params: Promise<{ id: str
       {otherNews && otherNews.length > 0 && (
         <ScrollReveal variant="up" delay={200}>
           <div className="space-y-4">
-            <h2 className="text-lg font-bold text-text-primary">Autres actualités</h2>
+            <div className="flex items-baseline gap-3">
+              <h2 className="font-display text-2xl text-text-primary sm:text-3xl">Autres actualités</h2>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {otherNews.map((item) => (
                 <Link
                   key={item.id}
                   href={`/actualites/${item.id}`}
-                  className="group flex gap-3 rounded-xl bg-card border border-border-t p-3 transition-all duration-200 hover:border-border-hover hover:shadow-lg"
+                  className="group flex gap-3 border border-rule bg-card p-3 transition-colors hover:border-border-hover"
                 >
                   {item.image_url && (
-                    <div className="h-16 w-20 shrink-0 overflow-hidden rounded-lg bg-input">
+                    <div className="h-16 w-20 shrink-0 overflow-hidden bg-input">
                       <img
                         src={item.image_url}
                         alt=""
-                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        className="h-full w-full object-cover grayscale transition-all duration-500 group-hover:grayscale-0"
                       />
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <span className="text-[10px] font-semibold text-accent uppercase">{item.category}</span>
-                    <p className="mt-0.5 text-sm font-semibold text-text-primary leading-snug line-clamp-2 group-hover:text-accent-text transition-colors">
+                    <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-accent-text">{item.category}</span>
+                    <p className="mt-1 font-display text-sm leading-snug text-text-primary line-clamp-2 group-hover:text-accent-text transition-colors sm:text-base">
                       {item.title}
                     </p>
-                    <p className="mt-1 text-[10px] text-text-faint">{formatRelative(item.created_at)}</p>
+                    <p className="mt-1 font-mono text-[10px] uppercase tracking-wider tnum text-text-faint">{formatRelative(item.created_at)}</p>
                   </div>
                 </Link>
               ))}
@@ -195,7 +197,7 @@ export default async function NewsDetail({ params }: { params: Promise<{ id: str
       <div className="pb-8 text-center">
         <Link
           href="/actualites"
-          className="inline-flex items-center gap-2 rounded-xl bg-input px-5 py-2.5 text-sm font-medium text-text-muted transition-colors hover:bg-card-hover hover:text-text-primary"
+          className="inline-flex items-center gap-2 border border-border-hover px-6 py-3.5 font-mono text-xs font-bold uppercase tracking-widest text-text-primary transition-colors hover:bg-input"
         >
           <ChevronLeft size={14} />
           Retour aux actualités

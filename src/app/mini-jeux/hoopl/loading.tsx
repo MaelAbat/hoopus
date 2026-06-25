@@ -8,7 +8,7 @@ export default function Loading() {
         <SkeletonGameBanner />
       </div>
       {/* Search input */}
-      <div className="h-12 w-full animate-pulse rounded-xl bg-input" />
+      <div className="h-12 w-full animate-pulse bg-input" />
     </div>
   );
 }

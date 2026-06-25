@@ -17,9 +17,9 @@ export default function LogoutButton() {
   return (
     <button
       onClick={handleLogout}
-      className="flex items-center gap-2 rounded-xl bg-input border border-border-t px-4 py-2.5 text-sm font-medium text-text-muted transition-colors hover:bg-card-hover hover:text-text-primary"
+      className="flex items-center gap-2 border border-rule px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-text-muted transition-colors hover:border-border-hover hover:text-text-primary"
     >
-      <LogOut size={16} />
+      <LogOut size={14} />
       Déconnexion
     </button>
   );

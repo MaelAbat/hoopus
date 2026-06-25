@@ -109,9 +109,9 @@ export default async function ComparerPage({
       <ScrollReveal variant="up" delay={100}>
         <Link
           href="/joueurs"
-          className="inline-flex items-center gap-1 rounded-xl px-3 py-2 text-sm font-medium text-text-muted transition-colors hover:bg-input hover:text-text-primary"
+          className="inline-flex items-center gap-1.5 px-3 py-2 font-mono text-[11px] font-semibold uppercase tracking-wider text-text-muted transition-colors hover:bg-input hover:text-text-primary"
         >
-          <ChevronLeft size={16} /> Tous les joueurs
+          <ChevronLeft size={14} /> Tous les joueurs
         </Link>
       </ScrollReveal>
 

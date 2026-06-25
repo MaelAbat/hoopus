@@ -14,7 +14,7 @@ function SubmitButton() {
       type="submit"
       disabled={pending}
       aria-busy={pending}
-      className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-accent-hover disabled:cursor-wait disabled:opacity-80"
+      className="flex w-full items-center justify-center gap-2 bg-accent px-6 py-3.5 font-mono text-xs font-bold uppercase tracking-widest text-white transition-colors hover:bg-accent-hover disabled:cursor-wait disabled:opacity-80"
     >
       {pending ? <Loader2 size={16} className="animate-spin" /> : <LogIn size={16} />}
       {pending ? "Connexion en cours…" : "Se connecter"}
@@ -35,24 +35,26 @@ function LoginForm() {
   }
 
   return (
-    <div className="w-full max-w-md space-y-8 rounded-2xl bg-card border border-border-t p-8">
+    <div className="relative w-full max-w-md overflow-hidden border border-rule bg-card p-6 sm:p-8">
+      <span className="absolute left-0 top-0 bottom-0 w-1 bg-accent" />
       {/* Logo */}
-      <div className="flex flex-col items-center gap-3">
-        <h1 className="text-2xl font-bold text-text-primary">
-          Hoop<span className="text-accent">us</span>
+      <div className="space-y-2">
+        <h1 className="font-display text-3xl tracking-tight text-text-primary">
+          HOOP<span className="text-accent">US</span>
         </h1>
-        <p className="text-sm text-text-muted">Connectez-vous à votre compte</p>
+        <p className="kicker text-text-faint">Connectez-vous à votre compte</p>
       </div>
 
       {error && (
-        <div className="rounded-xl bg-red-500/10 border border-red-500/20 px-4 py-3 text-sm text-red-400">
+        <div className="relative mt-6 border border-rule bg-card py-3 pl-4 pr-4 text-sm text-text-primary">
+          <span className="absolute left-0 top-0 bottom-0 w-1 bg-red-500" />
           {error}
         </div>
       )}
 
-      <form action={handleSubmit} className="space-y-5">
+      <form action={handleSubmit} className="mt-8 space-y-5">
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-text-muted mb-2">
+          <label htmlFor="email" className="kicker mb-2 block text-text-faint">
             Email
           </label>
           <input
@@ -61,13 +63,13 @@ function LoginForm() {
             type="email"
             required
             autoComplete="email"
-            className="w-full rounded-xl bg-input border border-border-t px-4 py-3 text-sm text-text-primary placeholder-text-faint outline-none transition-colors focus:border-accent/50 focus:ring-1 focus:ring-accent/50"
+            className="w-full border border-rule bg-input px-4 py-3 text-sm text-text-primary placeholder-text-faint outline-none transition-colors focus:border-accent"
             placeholder="votre@email.com"
           />
         </div>
 
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-text-muted mb-2">
+          <label htmlFor="password" className="kicker mb-2 block text-text-faint">
             Mot de passe
           </label>
           <input
@@ -76,7 +78,7 @@ function LoginForm() {
             type="password"
             required
             autoComplete="current-password"
-            className="w-full rounded-xl bg-input border border-border-t px-4 py-3 text-sm text-text-primary placeholder-text-faint outline-none transition-colors focus:border-accent/50 focus:ring-1 focus:ring-accent/50"
+            className="w-full border border-rule bg-input px-4 py-3 text-sm text-text-primary placeholder-text-faint outline-none transition-colors focus:border-accent"
             placeholder="••••••••"
           />
           <p className="mt-2 text-xs text-text-muted">
@@ -87,7 +89,7 @@ function LoginForm() {
         <SubmitButton />
       </form>
 
-      <p className="text-center text-sm text-text-muted">
+      <p className="mt-8 text-center text-sm text-text-muted">
         Pas encore de compte ?{" "}
         <Link href={`/auth/signup${redirectTo ? `?redirect=${encodeURIComponent(redirectTo)}` : ""}`} className="font-medium text-accent hover:text-accent-hover transition-colors">
           S&apos;inscrire

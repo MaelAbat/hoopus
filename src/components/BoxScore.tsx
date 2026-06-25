@@ -93,23 +93,24 @@ function TeamTable({
   );
 
   return (
-    <div className="rounded-xl bg-card border border-border-t overflow-hidden">
-      {/* Team header */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-border-t/50">
+    <div className="bg-card border border-rule overflow-hidden">
+      {/* Team header — lower-third */}
+      <div className="flex items-center gap-3 border-b border-rule px-4 py-3">
+        <span className="block h-4 w-1 bg-accent shrink-0" />
         <img src={teamLogoUrl(team)} alt={team} className="h-6 w-6 object-contain" />
-        <span className="text-sm font-bold text-text-primary">{teamName}</span>
-        <span className="text-xs text-text-faint">({team})</span>
+        <span className="font-display text-lg text-text-primary">{teamName}</span>
+        <span className="kicker text-text-faint">{team}</span>
       </div>
 
       <div className="overflow-x-auto scrollbar-visible">
         <table className="w-full text-[12px]">
           <thead>
-            <tr className="border-b border-border-t/50 bg-card">
-              <th className="sticky left-0 z-10 bg-card text-left px-3 py-2 font-medium text-text-muted uppercase tracking-wider min-w-[130px] sm:min-w-[180px]">
+            <tr className="border-b border-rule bg-card">
+              <th className="sticky left-0 z-10 bg-card text-left px-3 py-2 kicker text-text-faint min-w-[130px] sm:min-w-[180px]">
                 Joueur
               </th>
               {STAT_COLS.map((col) => (
-                <th key={col.key} className="px-2 py-2 text-center font-medium text-text-muted uppercase tracking-wider whitespace-nowrap">
+                <th key={col.key} className="px-2 py-2 text-center kicker text-text-faint whitespace-nowrap">
                   {col.label}
                 </th>
               ))}
@@ -119,7 +120,7 @@ function TeamTable({
             {/* Starters */}
             {starters.length > 0 && (
               <tr>
-                <td colSpan={STAT_COLS.length + 1} className="px-3 py-1.5 text-[10px] font-bold text-accent uppercase tracking-widest bg-accent/5">
+                <td colSpan={STAT_COLS.length + 1} className="px-3 py-1.5 kicker text-accent-text bg-accent-light">
                   Titulaires
                 </td>
               </tr>
@@ -131,7 +132,7 @@ function TeamTable({
             {/* Bench */}
             {bench.length > 0 && (
               <tr>
-                <td colSpan={STAT_COLS.length + 1} className="px-3 py-1.5 text-[10px] font-bold text-text-muted uppercase tracking-widest bg-card-hover/30">
+                <td colSpan={STAT_COLS.length + 1} className="px-3 py-1.5 kicker text-text-muted bg-input/40">
                   Remplacants
                 </td>
               </tr>
@@ -141,23 +142,23 @@ function TeamTable({
             ))}
 
             {/* Totals */}
-            <tr className="border-t-2 border-border-t/60 bg-card-hover/20">
-              <td className="sticky left-0 z-10 bg-card-hover/20 px-3 py-2.5 font-bold text-text-primary text-[11px] uppercase">
+            <tr className="border-t-2 border-border-hover bg-input/30">
+              <td className="sticky left-0 z-10 bg-input/30 px-3 py-2.5 kicker text-text-primary">
                 Total
               </td>
               <td className="px-2 py-2.5 text-center text-text-faint">-</td>
-              <td className="px-2 py-2.5 text-center font-bold text-text-primary">{totals.pts}</td>
-              <td className="px-2 py-2.5 text-center font-bold text-text-primary">{totals.reb}</td>
-              <td className="px-2 py-2.5 text-center font-bold text-text-primary">{totals.ast}</td>
-              <td className="px-2 py-2.5 text-center text-text-primary">{totals.stl}</td>
-              <td className="px-2 py-2.5 text-center text-text-primary">{totals.blk}</td>
-              <td className="px-2 py-2.5 text-center text-text-primary">{totals.tov}</td>
-              <td className="px-2 py-2.5 text-center text-text-primary">{totals.pf}</td>
-              <td className="px-2 py-2.5 text-center text-text-primary">{totals.fgm}-{totals.fga}</td>
-              <td className="px-2 py-2.5 text-center text-text-primary">{totals.fg3m}-{totals.fg3a}</td>
-              <td className="px-2 py-2.5 text-center text-text-primary">{totals.ftm}-{totals.fta}</td>
-              <td className="px-2 py-2.5 text-center text-text-primary">{totals.oreb}</td>
-              <td className="px-2 py-2.5 text-center text-text-primary">{totals.dreb}</td>
+              <td className="px-2 py-2.5 text-center tnum font-bold text-text-primary">{totals.pts}</td>
+              <td className="px-2 py-2.5 text-center tnum font-bold text-text-primary">{totals.reb}</td>
+              <td className="px-2 py-2.5 text-center tnum font-bold text-text-primary">{totals.ast}</td>
+              <td className="px-2 py-2.5 text-center tnum text-text-primary">{totals.stl}</td>
+              <td className="px-2 py-2.5 text-center tnum text-text-primary">{totals.blk}</td>
+              <td className="px-2 py-2.5 text-center tnum text-text-primary">{totals.tov}</td>
+              <td className="px-2 py-2.5 text-center tnum text-text-primary">{totals.pf}</td>
+              <td className="px-2 py-2.5 text-center tnum text-text-primary">{totals.fgm}-{totals.fga}</td>
+              <td className="px-2 py-2.5 text-center tnum text-text-primary">{totals.fg3m}-{totals.fg3a}</td>
+              <td className="px-2 py-2.5 text-center tnum text-text-primary">{totals.ftm}-{totals.fta}</td>
+              <td className="px-2 py-2.5 text-center tnum text-text-primary">{totals.oreb}</td>
+              <td className="px-2 py-2.5 text-center tnum text-text-primary">{totals.dreb}</td>
               <td className="px-2 py-2.5 text-center text-text-faint">-</td>
             </tr>
           </tbody>
@@ -169,14 +170,14 @@ function TeamTable({
 
 function PlayerRow({ player: p }: { player: PlayerLine }) {
   return (
-    <tr className="border-b border-border-t/20 hover:bg-card-hover/40 transition-all duration-150 cursor-pointer">
-      <td className="sticky left-0 z-10 bg-card hover:bg-card-hover/40 px-3 py-2">
+    <tr className="border-b border-rule hover:bg-card-hover transition-colors duration-150 cursor-pointer">
+      <td className="sticky left-0 z-10 bg-card hover:bg-card-hover px-3 py-2">
         <Link href={`/joueurs/${p.player_id}`} className="flex items-center gap-2 group">
           <div className="relative h-7 w-7 shrink-0">
             <img
               src={playerPhotoUrl(p.player_id)}
               alt=""
-              className="h-7 w-7 rounded-full object-cover bg-input ring-1 ring-border-t/30"
+              className="h-7 w-7 object-cover bg-input"
               onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
             />
           </div>
@@ -184,9 +185,9 @@ function PlayerRow({ player: p }: { player: PlayerLine }) {
             <p className="font-semibold text-text-primary truncate text-[12px] group-hover:text-accent transition-colors">
               {p.player_name}
             </p>
-            <p className="text-[9px] text-text-faint">
+            <p className="font-mono text-[9px] uppercase tracking-wider text-text-faint">
               {p.position && <span>{p.position}</span>}
-              {p.jersey && <span> #{p.jersey}</span>}
+              {p.jersey && <span className="tnum"> #{p.jersey}</span>}
             </p>
           </div>
         </Link>
@@ -198,14 +199,14 @@ function PlayerRow({ player: p }: { player: PlayerLine }) {
         return (
           <td
             key={col.key}
-            className={`px-2 py-2 text-center tabular-nums whitespace-nowrap ${
+            className={`px-2 py-2 text-center tnum whitespace-nowrap ${
               col.key === "pts" && p.pts >= 20
-                ? "font-bold text-accent"
+                ? "font-bold text-accent-text"
                 : isPM
                   ? num > 0
-                    ? "text-emerald-400"
+                    ? "text-emerald-500"
                     : num < 0
-                      ? "text-red-400"
+                      ? "text-red-500"
                       : "text-text-muted"
                   : "text-text-primary"
             }`}
@@ -238,13 +239,13 @@ export default function BoxScore({
   return (
     <div className="space-y-4">
       {/* Tab toggle */}
-      <div className="flex rounded-xl bg-card border border-border-t p-1 w-fit max-w-full overflow-x-auto">
+      <div className="flex border border-rule bg-card w-fit max-w-full overflow-x-auto">
         <button
           onClick={() => setActiveTab("away")}
-          className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all ${
+          className={`flex items-center gap-2 px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider transition-colors ${
             activeTab === "away"
-              ? "bg-accent text-white shadow-md"
-              : "text-text-muted hover:text-text-primary"
+              ? "bg-accent text-white"
+              : "text-text-muted hover:bg-input hover:text-text-primary"
           }`}
         >
           <img src={teamLogoUrl(awayTeam)} alt={awayTeam} className="h-4 w-4 object-contain" />
@@ -252,10 +253,10 @@ export default function BoxScore({
         </button>
         <button
           onClick={() => setActiveTab("home")}
-          className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all ${
+          className={`flex items-center gap-2 px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider transition-colors ${
             activeTab === "home"
-              ? "bg-accent text-white shadow-md"
-              : "text-text-muted hover:text-text-primary"
+              ? "bg-accent text-white"
+              : "text-text-muted hover:bg-input hover:text-text-primary"
           }`}
         >
           <img src={teamLogoUrl(homeTeam)} alt={homeTeam} className="h-4 w-4 object-contain" />

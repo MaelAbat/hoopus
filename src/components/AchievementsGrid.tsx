@@ -40,12 +40,12 @@ export default function AchievementsGrid() {
 
   if (loading) {
     return (
-      <div className="rounded-2xl border border-border-t bg-card p-6">
+      <div className="border border-rule bg-card p-6">
         <div className="animate-pulse space-y-4">
-          <div className="h-5 w-32 rounded bg-white/5" />
+          <div className="h-6 w-32 bg-input/30" />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-16 rounded-xl bg-white/5" />
+              <div key={i} className="h-16 bg-input/30" />
             ))}
           </div>
         </div>
@@ -63,12 +63,13 @@ export default function AchievementsGrid() {
   }, {});
 
   return (
-    <div className="rounded-2xl border border-border-t bg-card p-6 space-y-6">
+    <div className="border border-rule bg-card p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-extrabold text-text-primary">Succès</h2>
-        <span className="text-sm font-bold text-text-muted">
-          {unlockedCount}/{totalCount} débloqués
+      <div className="flex items-baseline justify-between">
+        <h2 className="font-display text-2xl text-text-primary sm:text-3xl">Succès</h2>
+        <span className="font-mono text-xs uppercase tracking-wider text-text-muted">
+          <span className="tnum font-bold text-text-primary">{unlockedCount}</span>
+          <span className="text-text-faint">/{totalCount}</span> débloqués
         </span>
       </div>
 
@@ -79,7 +80,7 @@ export default function AchievementsGrid() {
 
         return (
           <div key={category} className="space-y-3">
-            <h3 className="text-xs font-bold text-text-faint uppercase tracking-wide">
+            <h3 className="kicker text-text-faint">
               {CATEGORY_LABELS[category] || category}
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">

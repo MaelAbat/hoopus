@@ -14,13 +14,13 @@ export default function FollowPlayerButton({ playerId }: { playerId: number }) {
       type="button"
       onClick={() => togglePlayer(playerId)}
       aria-pressed={followed}
-      className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-semibold transition-all ${
+      className={`inline-flex items-center gap-1.5 px-3.5 py-2 font-mono text-[11px] font-bold uppercase tracking-wider transition-colors ${
         followed
-          ? "bg-accent/15 text-accent border border-accent/30"
-          : "bg-input text-text-muted border border-border-t hover:text-text-primary hover:border-border-hover"
+          ? "bg-accent border border-accent text-white"
+          : "bg-input text-text-muted border border-rule hover:text-text-primary hover:border-border-hover"
       }`}
     >
-      <Heart size={14} className={followed ? "fill-accent" : ""} />
+      <Heart size={14} className={followed ? "fill-white" : ""} />
       {followed ? "Suivi" : "Suivre"}
     </button>
   );

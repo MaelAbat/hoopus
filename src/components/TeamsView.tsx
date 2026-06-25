@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { teamLogoUrl, playerPhotoUrl } from "@/lib/nba-teams";
+import { useFavorites } from "@/context/FavoritesContext";
 
 interface Player {
   id: string;
@@ -36,26 +37,34 @@ function draftLabel(p: Player): string {
 
 /* ─── Team grid ─── */
 function TeamGrid({ teams, onSelect }: { teams: { tricode: string; city: string; name: string; count: number }[]; onSelect: (tricode: string) => void }) {
+  const { isTeamFavorite } = useFavorites();
+
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6 gap-3">
-      {teams.map((t) => (
-        <button
-          key={t.tricode}
-          onClick={() => onSelect(t.tricode)}
-          className="group flex flex-col items-center gap-2 rounded-2xl bg-card border border-border-t p-4 transition-all duration-200 hover:border-border-hover hover:shadow-lg hover:-translate-y-1"
-        >
-          <img
-            src={teamLogoUrl(t.tricode)}
-            alt={t.tricode}
-            className="h-12 w-12 object-contain transition-transform duration-200 group-hover:scale-110"
-          />
-          <div className="text-center">
-            <p className="text-xs font-semibold text-text-primary">{t.city}</p>
-            <p className="text-xs font-bold text-text-primary">{t.name}</p>
-            <p className="text-[10px] text-text-faint mt-0.5">{t.count} joueurs</p>
-          </div>
-        </button>
-      ))}
+      {teams.map((t) => {
+        const fav = isTeamFavorite(t.tricode);
+        return (
+          <button
+            key={t.tricode}
+            onClick={() => onSelect(t.tricode)}
+            className={`group relative flex flex-col items-center gap-2 overflow-hidden border bg-card p-4 transition-colors duration-150 ${
+              fav ? "border-accent" : "border-rule hover:border-border-hover"
+            }`}
+          >
+            {fav && <span className="absolute left-0 top-0 bottom-0 w-1 bg-accent" />}
+            <img
+              src={teamLogoUrl(t.tricode)}
+              alt={t.tricode}
+              className="h-12 w-12 object-contain"
+            />
+            <div className="text-center">
+              <p className="font-mono text-[10px] uppercase tracking-wider text-text-muted">{t.city}</p>
+              <p className="font-display text-base uppercase leading-none text-text-primary">{t.tricode}</p>
+              <p className="kicker mt-1 text-text-faint"><span className="tnum">{t.count}</span> joueurs</p>
+            </div>
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -71,63 +80,63 @@ function RosterTable({ players, tricode, onBack }: { players: Player[]; tricode:
       <div className="flex items-center gap-4">
         <button
           onClick={onBack}
-          className="flex items-center gap-1 rounded-xl px-3 py-2 text-sm font-medium text-text-muted transition-colors hover:bg-input hover:text-text-primary"
+          className="flex items-center gap-1 border border-rule px-3 py-2 font-mono text-[11px] font-semibold uppercase tracking-wider text-text-muted transition-colors hover:border-border-hover hover:text-text-primary"
         >
           <ChevronLeft size={16} />
           Retour
         </button>
         <img src={teamLogoUrl(tricode)} alt={tricode} className="h-10 w-10 object-contain" />
         <div>
-          <h2 className="text-lg font-bold text-text-primary">{team.team_city} {team.team_name}</h2>
-          <p className="text-xs text-text-muted">{players.length} joueurs</p>
+          <h2 className="font-display text-2xl uppercase leading-none text-text-primary">{team.team_city} {team.team_name}</h2>
+          <p className="kicker mt-1 text-text-faint"><span className="tnum">{players.length}</span> joueurs</p>
         </div>
       </div>
 
       {/* Table */}
-      <div className="rounded-2xl bg-card border border-border-t overflow-hidden">
+      <div className="border border-rule bg-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="sticky top-0 z-10 bg-card">
-              <tr className="border-b border-border-t text-text-muted">
-                <th className="sticky left-0 z-20 bg-card px-2 sm:px-3 py-3 text-left font-medium min-w-[100px] sm:min-w-[160px]">Joueur</th>
-                <th className="px-2 py-3 text-center font-medium">#</th>
-                <th className="px-2 py-3 text-center font-medium">Pos</th>
-                <th className="px-2 py-3 text-center font-medium whitespace-nowrap">Taille</th>
-                <th className="px-2 py-3 text-center font-medium whitespace-nowrap">Poids</th>
-                <th className="px-2 py-3 text-center font-medium">Age</th>
-                <th className="px-2 py-3 text-left font-medium whitespace-nowrap">Origine</th>
-                <th className="px-2 py-3 text-center font-medium whitespace-nowrap">Draft</th>
-                <th className="px-2 py-3 text-right font-medium whitespace-nowrap">Salaire</th>
-                <th className="px-2 py-3 text-center font-medium">PTS</th>
-                <th className="px-2 py-3 text-center font-medium">REB</th>
-                <th className="px-2 py-3 text-center font-medium">AST</th>
+              <tr className="border-b border-rule">
+                <th className="sticky left-0 z-20 bg-card px-2 sm:px-3 py-3 text-left kicker text-text-faint min-w-[100px] sm:min-w-[160px]">Joueur</th>
+                <th className="px-2 py-3 text-center kicker text-text-faint">#</th>
+                <th className="px-2 py-3 text-center kicker text-text-faint">Pos</th>
+                <th className="px-2 py-3 text-center kicker text-text-faint whitespace-nowrap">Taille</th>
+                <th className="px-2 py-3 text-center kicker text-text-faint whitespace-nowrap">Poids</th>
+                <th className="px-2 py-3 text-center kicker text-text-faint">Age</th>
+                <th className="px-2 py-3 text-left kicker text-text-faint whitespace-nowrap">Origine</th>
+                <th className="px-2 py-3 text-center kicker text-text-faint whitespace-nowrap">Draft</th>
+                <th className="px-2 py-3 text-right kicker text-text-faint whitespace-nowrap">Salaire</th>
+                <th className="px-2 py-3 text-center kicker text-text-faint">PTS</th>
+                <th className="px-2 py-3 text-center kicker text-text-faint">REB</th>
+                <th className="px-2 py-3 text-center kicker text-text-faint">AST</th>
               </tr>
             </thead>
             <tbody>
               {players.map((p) => (
-                <tr key={p.player_id} className="group border-b border-border-t/50 transition-colors hover:bg-card-hover">
+                <tr key={p.player_id} className="group border-b border-rule transition-colors hover:bg-card-hover">
                   <td className="sticky left-0 z-10 bg-card group-hover:bg-card-hover px-2 sm:px-3 py-1.5 sm:py-2">
                     <Link href={`/joueurs/${p.player_id}`} className="flex items-center gap-1.5 sm:gap-2 font-medium text-text-primary hover:text-accent-text transition-colors whitespace-nowrap">
                       <img
                         src={playerPhotoUrl(p.player_id)}
                         alt=""
-                        className="h-6 w-6 sm:h-8 sm:w-8 shrink-0 rounded-full object-cover bg-input"
-                        onError={(e) => { (e.target as HTMLImageElement).src = ""; (e.target as HTMLImageElement).className = "h-6 w-6 sm:h-8 sm:w-8 shrink-0 rounded-full bg-input"; }}
+                        className="h-6 w-6 sm:h-8 sm:w-8 shrink-0 object-cover bg-input"
+                        onError={(e) => { (e.target as HTMLImageElement).src = ""; (e.target as HTMLImageElement).className = "h-6 w-6 sm:h-8 sm:w-8 shrink-0 bg-input"; }}
                       />
                       <span className="text-xs sm:text-sm">{p.first_name.charAt(0)}. <strong>{p.last_name}</strong></span>
                     </Link>
                   </td>
-                  <td className="px-2 py-2 text-center text-text-muted">{p.jersey_number}</td>
+                  <td className="px-2 py-2 text-center tnum text-text-muted">{p.jersey_number}</td>
                   <td className="px-2 py-2 text-center">
-                    <span className="inline-block rounded bg-input px-1.5 py-0.5 text-[10px] font-semibold text-text-secondary">
+                    <span className="inline-block border border-rule px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-text-secondary">
                       {p.position || "N/A"}
                     </span>
                   </td>
-                  <td className="px-2 py-2 text-center text-text-muted whitespace-nowrap">{p.height || "N/A"}</td>
-                  <td className="px-2 py-2 text-center text-text-muted whitespace-nowrap">
+                  <td className="px-2 py-2 text-center tnum text-text-muted whitespace-nowrap">{p.height || "N/A"}</td>
+                  <td className="px-2 py-2 text-center tnum text-text-muted whitespace-nowrap">
                     {p.weight ? `${p.weight} lbs` : "N/A"}
                   </td>
-                  <td className="px-2 py-2 text-center text-text-muted">{p.age ?? "N/A"}</td>
+                  <td className="px-2 py-2 text-center tnum text-text-muted">{p.age ?? "N/A"}</td>
                   <td className="px-2 py-2 text-text-muted">
                     <div className="flex flex-col whitespace-nowrap">
                       <span className="text-xs">{p.college || "N/A"}</span>
@@ -136,13 +145,13 @@ function RosterTable({ players, tricode, onBack }: { players: Player[]; tricode:
                       )}
                     </div>
                   </td>
-                  <td className="px-2 py-2 text-center text-text-muted text-xs whitespace-nowrap">{draftLabel(p)}</td>
-                  <td className="px-2 py-2 text-right text-xs text-text-muted whitespace-nowrap">
+                  <td className="px-2 py-2 text-center tnum text-text-muted text-xs whitespace-nowrap">{draftLabel(p)}</td>
+                  <td className="px-2 py-2 text-right tnum text-xs text-text-muted whitespace-nowrap">
                     {p.salary || "N/A"}
                   </td>
-                  <td className="px-2 py-2 text-center font-semibold text-text-primary">{p.pts?.toFixed(1) ?? "N/A"}</td>
-                  <td className="px-2 py-2 text-center text-text-muted">{p.reb?.toFixed(1) ?? "N/A"}</td>
-                  <td className="px-2 py-2 text-center text-text-muted">{p.ast?.toFixed(1) ?? "N/A"}</td>
+                  <td className="px-2 py-2 text-center tnum font-semibold text-text-primary">{p.pts?.toFixed(1) ?? "N/A"}</td>
+                  <td className="px-2 py-2 text-center tnum text-text-muted">{p.reb?.toFixed(1) ?? "N/A"}</td>
+                  <td className="px-2 py-2 text-center tnum text-text-muted">{p.ast?.toFixed(1) ?? "N/A"}</td>
                 </tr>
               ))}
             </tbody>
@@ -213,12 +222,12 @@ function SalaryCapView({ players, payrolls }: { players: Player[]; payrolls: Tea
 
   const maxTotal = Math.max(...teamSalaries.map(t => t.total), CAP_THRESHOLDS.secondApron * 1.1);
 
-  function getStatus(total: number): { label: string; color: string; barBg: string; barFill: string; badgeBg: string } {
-    if (total >= CAP_THRESHOLDS.secondApron) return { label: "2nd Apron", color: "text-red-400", barBg: "bg-red-500/30", barFill: "bg-red-500/60", badgeBg: "bg-red-500/10" };
-    if (total >= CAP_THRESHOLDS.firstApron) return { label: "1er Apron", color: "text-orange-400", barBg: "bg-orange-500/30", barFill: "bg-orange-500/60", badgeBg: "bg-orange-500/10" };
-    if (total >= CAP_THRESHOLDS.luxuryTax) return { label: "Luxury Tax", color: "text-yellow-400", barBg: "bg-yellow-500/30", barFill: "bg-yellow-500/60", badgeBg: "bg-yellow-500/10" };
-    if (total >= CAP_THRESHOLDS.salaryCap) return { label: "Over Cap", color: "text-text-secondary", barBg: "bg-accent/30", barFill: "bg-accent/60", badgeBg: "bg-accent/10" };
-    return { label: "Under Cap", color: "text-emerald-400", barBg: "bg-emerald-500/30", barFill: "bg-emerald-500/60", badgeBg: "bg-emerald-500/10" };
+  function getStatus(total: number): { label: string; color: string; barFill: string; badge: string } {
+    if (total >= CAP_THRESHOLDS.secondApron) return { label: "2nd Apron", color: "text-red-500", barFill: "bg-red-500", badge: "border-red-500 text-red-500" };
+    if (total >= CAP_THRESHOLDS.firstApron) return { label: "1er Apron", color: "text-accent-text", barFill: "bg-accent", badge: "border-accent text-accent-text" };
+    if (total >= CAP_THRESHOLDS.luxuryTax) return { label: "Luxury Tax", color: "text-text-primary", barFill: "bg-accent/70", badge: "border-rule text-text-primary" };
+    if (total >= CAP_THRESHOLDS.salaryCap) return { label: "Over Cap", color: "text-text-secondary", barFill: "bg-text-muted", badge: "border-rule text-text-secondary" };
+    return { label: "Under Cap", color: "text-text-muted", barFill: "bg-text-faint", badge: "border-rule text-text-muted" };
   }
 
   const capPct = (CAP_THRESHOLDS.salaryCap / maxTotal) * 100;
@@ -229,37 +238,32 @@ function SalaryCapView({ players, payrolls }: { players: Player[]; payrolls: Tea
   return (
     <div className="space-y-4">
       {/* Legend */}
-      <div className="rounded-2xl bg-card border border-border-t p-4">
-        <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs">
-          <div className="flex items-center gap-2">
-            <div className="h-3 w-3 rounded-sm bg-emerald-500" />
-            <span className="text-text-muted">Salary Cap — {formatMoney(CAP_THRESHOLDS.salaryCap)}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="h-3 w-3 rounded-sm bg-yellow-500" />
-            <span className="text-text-muted">Luxury Tax — {formatMoney(CAP_THRESHOLDS.luxuryTax)}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="h-3 w-3 rounded-sm bg-orange-500" />
-            <span className="text-text-muted">1er Apron — {formatMoney(CAP_THRESHOLDS.firstApron)}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="h-3 w-3 rounded-sm bg-red-500" />
-            <span className="text-text-muted">2nd Apron — {formatMoney(CAP_THRESHOLDS.secondApron)}</span>
-          </div>
+      <div className="border border-rule bg-card p-4">
+        <div className="flex flex-wrap gap-x-6 gap-y-2">
+          {[
+            { label: "Salary Cap", val: CAP_THRESHOLDS.salaryCap },
+            { label: "Luxury Tax", val: CAP_THRESHOLDS.luxuryTax },
+            { label: "1er Apron", val: CAP_THRESHOLDS.firstApron },
+            { label: "2nd Apron", val: CAP_THRESHOLDS.secondApron },
+          ].map((item) => (
+            <div key={item.label} className="flex items-baseline gap-2">
+              <span className="kicker text-text-faint">{item.label}</span>
+              <span className="tnum text-xs font-semibold text-text-primary">{formatMoney(item.val)}</span>
+            </div>
+          ))}
         </div>
       </div>
 
       {/* Team bars */}
-      <div className="rounded-2xl bg-card border border-border-t overflow-hidden">
+      <div className="border border-rule bg-card overflow-hidden">
         <div className="overflow-x-auto">
           <div className="min-w-[600px]">
             {/* Threshold headers */}
             <div className="relative h-6 mx-4 mt-3 mb-1">
-              <span className="absolute text-[9px] text-emerald-400 font-semibold" style={{ left: `${capPct}%`, transform: "translateX(-50%)" }}>Cap</span>
-              <span className="absolute text-[9px] text-yellow-400 font-semibold" style={{ left: `${taxPct}%`, transform: "translateX(-50%)" }}>Tax</span>
-              <span className="absolute text-[9px] text-orange-400 font-semibold" style={{ left: `${apron1Pct}%`, transform: "translateX(-50%)" }}>1st</span>
-              <span className="absolute text-[9px] text-red-400 font-semibold" style={{ left: `${apron2Pct}%`, transform: "translateX(-50%)" }}>2nd</span>
+              <span className="absolute kicker text-text-faint" style={{ left: `${capPct}%`, transform: "translateX(-50%)" }}>Cap</span>
+              <span className="absolute kicker text-text-faint" style={{ left: `${taxPct}%`, transform: "translateX(-50%)" }}>Tax</span>
+              <span className="absolute kicker text-text-faint" style={{ left: `${apron1Pct}%`, transform: "translateX(-50%)" }}>1st</span>
+              <span className="absolute kicker text-accent-text" style={{ left: `${apron2Pct}%`, transform: "translateX(-50%)" }}>2nd</span>
             </div>
 
             {teamSalaries.map((team) => {
@@ -267,40 +271,38 @@ function SalaryCapView({ players, payrolls }: { players: Player[]; payrolls: Tea
               const status = getStatus(team.total);
 
               return (
-                <div key={team.tricode} className="group flex items-center gap-2 pr-4 hover:bg-card-hover transition-colors">
+                <div key={team.tricode} className="group flex items-center gap-2 pr-4 border-t border-rule hover:bg-card-hover transition-colors">
                   {/* Team info */}
                   <div className="sticky left-0 z-10 flex items-center gap-2 w-28 shrink-0 pl-4 py-1.5 bg-card group-hover:bg-card-hover transition-colors">
                     <img src={teamLogoUrl(team.tricode)} alt={team.tricode} className="h-5 w-5 object-contain" />
-                    <span className="text-xs font-semibold text-text-primary">{team.tricode}</span>
+                    <span className="font-display text-sm uppercase text-text-primary">{team.tricode}</span>
                   </div>
 
                   {/* Bar */}
-                  <div className="flex-1 relative h-6 bg-input rounded overflow-visible">
+                  <div className="flex-1 relative h-6 bg-input overflow-visible">
                     {/* Threshold lines */}
-                    <div className="absolute top-0 bottom-0 w-px bg-emerald-500/40" style={{ left: `${capPct}%` }} />
-                    <div className="absolute top-0 bottom-0 w-px bg-yellow-500/40" style={{ left: `${taxPct}%` }} />
-                    <div className="absolute top-0 bottom-0 w-px bg-orange-500/40" style={{ left: `${apron1Pct}%` }} />
-                    <div className="absolute top-0 bottom-0 w-px bg-red-500/40" style={{ left: `${apron2Pct}%` }} />
+                    <div className="absolute top-0 bottom-0 w-px bg-border-hover" style={{ left: `${capPct}%` }} />
+                    <div className="absolute top-0 bottom-0 w-px bg-border-hover" style={{ left: `${taxPct}%` }} />
+                    <div className="absolute top-0 bottom-0 w-px bg-border-hover" style={{ left: `${apron1Pct}%` }} />
+                    <div className="absolute top-0 bottom-0 w-px bg-accent" style={{ left: `${apron2Pct}%` }} />
 
                     {/* Fill */}
                     <div
-                      className={`absolute top-0.5 bottom-0.5 left-0 rounded ${status.barBg}`}
+                      className={`absolute top-0.5 bottom-0.5 left-0 ${status.barFill}`}
                       style={{ width: `${Math.min(pct, 100)}%` }}
-                    >
-                      <div className={`h-full rounded ${status.barFill}`} />
-                    </div>
+                    />
                   </div>
 
                   {/* Total */}
                   <div className="w-20 shrink-0 text-right">
-                    <span className={`text-[11px] font-bold tabular-nums ${status.color}`}>
+                    <span className={`tnum text-[11px] font-bold ${status.color}`}>
                       {formatMoney(team.total)}
                     </span>
                   </div>
 
                   {/* Status badge */}
                   <div className="w-20 shrink-0">
-                    <span className={`inline-block rounded-full px-1.5 py-0.5 text-[9px] font-semibold ${status.badgeBg} ${status.color}`}>
+                    <span className={`inline-block border px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider ${status.badge}`}>
                       {status.label}
                     </span>
                   </div>
@@ -313,21 +315,21 @@ function SalaryCapView({ players, payrolls }: { players: Player[]; payrolls: Tea
 
       {/* Summary stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="rounded-xl bg-card border border-border-t p-3 text-center">
-          <p className="text-[10px] text-text-faint uppercase tracking-wider">Over 2nd Apron</p>
-          <p className="text-lg font-bold text-red-400">{teamSalaries.filter(t => t.total >= CAP_THRESHOLDS.secondApron).length}</p>
+        <div className="border border-rule bg-card p-3 text-center">
+          <p className="kicker text-text-faint">Over 2nd Apron</p>
+          <p className="font-display text-2xl tnum text-text-primary">{teamSalaries.filter(t => t.total >= CAP_THRESHOLDS.secondApron).length}</p>
         </div>
-        <div className="rounded-xl bg-card border border-border-t p-3 text-center">
-          <p className="text-[10px] text-text-faint uppercase tracking-wider">Over 1er Apron</p>
-          <p className="text-lg font-bold text-orange-400">{teamSalaries.filter(t => t.total >= CAP_THRESHOLDS.firstApron && t.total < CAP_THRESHOLDS.secondApron).length}</p>
+        <div className="border border-rule bg-card p-3 text-center">
+          <p className="kicker text-text-faint">Over 1er Apron</p>
+          <p className="font-display text-2xl tnum text-text-primary">{teamSalaries.filter(t => t.total >= CAP_THRESHOLDS.firstApron && t.total < CAP_THRESHOLDS.secondApron).length}</p>
         </div>
-        <div className="rounded-xl bg-card border border-border-t p-3 text-center">
-          <p className="text-[10px] text-text-faint uppercase tracking-wider">En Luxury Tax</p>
-          <p className="text-lg font-bold text-yellow-400">{teamSalaries.filter(t => t.total >= CAP_THRESHOLDS.luxuryTax && t.total < CAP_THRESHOLDS.firstApron).length}</p>
+        <div className="border border-rule bg-card p-3 text-center">
+          <p className="kicker text-text-faint">En Luxury Tax</p>
+          <p className="font-display text-2xl tnum text-text-primary">{teamSalaries.filter(t => t.total >= CAP_THRESHOLDS.luxuryTax && t.total < CAP_THRESHOLDS.firstApron).length}</p>
         </div>
-        <div className="rounded-xl bg-card border border-border-t p-3 text-center">
-          <p className="text-[10px] text-text-faint uppercase tracking-wider">Under Cap</p>
-          <p className="text-lg font-bold text-emerald-400">{teamSalaries.filter(t => t.total < CAP_THRESHOLDS.salaryCap).length}</p>
+        <div className="border border-rule bg-card p-3 text-center">
+          <p className="kicker text-text-faint">Under Cap</p>
+          <p className="font-display text-2xl tnum text-text-primary">{teamSalaries.filter(t => t.total < CAP_THRESHOLDS.salaryCap).length}</p>
         </div>
       </div>
     </div>
@@ -376,7 +378,7 @@ export default function TeamsView({ players, payrolls }: { players: Player[]; pa
 
   if (players.length === 0) {
     return (
-      <div className="rounded-2xl bg-card border border-border-t px-6 py-12 text-center text-sm text-text-muted">
+      <div className="border border-rule bg-card px-6 py-12 text-center text-sm text-text-muted">
         Aucune donnée disponible — synchronisez les effectifs d&apos;abord.
       </div>
     );
@@ -394,10 +396,10 @@ export default function TeamsView({ players, payrolls }: { players: Player[]; pa
           <button
             key={key}
             onClick={() => setView(key)}
-            className={`rounded-xl px-4 py-2 text-sm font-medium transition-all duration-200 ${
+            className={`border px-4 py-2 font-mono text-xs font-bold uppercase tracking-widest transition-colors ${
               view === key
-                ? "bg-accent text-white"
-                : "bg-input text-text-muted hover:bg-card-hover hover:text-text-primary"
+                ? "border-accent bg-accent text-white"
+                : "border-rule text-text-muted hover:border-border-hover hover:text-text-primary"
             }`}
           >
             {label}

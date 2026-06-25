@@ -100,7 +100,7 @@ function RadarChart({
             points={guidePolygon(pct)}
             fill="none"
             stroke="currentColor"
-            className="text-border-t"
+            className="text-rule"
             strokeWidth={0.5}
             opacity={0.5}
           />
@@ -119,7 +119,7 @@ function RadarChart({
               x2={x2}
               y2={y2}
               stroke="currentColor"
-              className="text-border-t"
+              className="text-rule"
               strokeWidth={0.5}
               opacity={0.3}
             />
@@ -163,7 +163,7 @@ function RadarChart({
             y={labelOffsets[i].y}
             textAnchor="middle"
             dominantBaseline="middle"
-            className="fill-text-muted text-[10px] font-semibold"
+            className="fill-text-faint font-mono text-[10px] font-semibold uppercase tracking-wider"
           >
             {STAT_LABELS[key]}
           </text>
@@ -182,35 +182,38 @@ function StatBars({
   stats: Record<number, Record<string, number>>;
 }) {
   return (
-    <div className="space-y-5">
+    <div className="divide-y divide-rule">
       {STAT_KEYS.map((key) => {
         const values = players.map((p) => stats[p.player.player_id]?.[key] ?? 0);
         const max = Math.max(1, ...values);
+        const best = Math.max(...values);
         return (
-          <div key={key}>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-text-muted">
+          <div key={key} className="py-4 first:pt-0 last:pb-0">
+            <p className="kicker mb-2.5 text-text-faint">
               {STAT_LABELS_FR[key]}
             </p>
             <div className="space-y-1.5">
               {players.map((p, idx) => {
                 const val = stats[p.player.player_id]?.[key] ?? 0;
                 const pct = (val / max) * 100;
+                const isBest = val > 0 && val === best;
                 const display = key === "fg_pct" ? `${(val * 100).toFixed(1)}%` : val.toFixed(1);
                 return (
                   <div key={p.player.player_id} className="flex items-center gap-3">
-                    <span className="w-24 truncate text-xs font-medium text-text-primary sm:w-32">
+                    <span className={`w-24 truncate text-xs uppercase tracking-wide sm:w-32 ${isBest ? "font-bold text-text-primary" : "font-medium text-text-muted"}`}>
                       {p.player.last_name}
                     </span>
-                    <div className="flex-1 h-5 rounded-full bg-input overflow-hidden">
+                    <div className="flex-1 h-4 bg-input overflow-hidden">
                       <div
-                        className="h-full rounded-full transition-all duration-700 ease-out"
+                        className="h-full transition-all duration-700 ease-out"
                         style={{
                           width: `${pct}%`,
                           backgroundColor: PLAYER_COLORS[idx],
+                          opacity: isBest ? 1 : 0.55,
                         }}
                       />
                     </div>
-                    <span className="w-14 text-right text-xs font-bold tabular-nums" style={{ color: PLAYER_COLORS[idx] }}>
+                    <span className={`tnum w-14 text-right text-sm ${isBest ? "font-bold text-text-primary" : "font-semibold text-text-muted"}`}>
                       {display}
                     </span>
                   </div>
@@ -250,50 +253,71 @@ function CareerTable({ players }: { players: CompareData[] }) {
     { key: "ft_pct", label: "FT%" },
   ] as const;
 
+  // Best value per numeric column, to highlight the leader on each stat row.
+  const numericKeys = ["gp", "min", "pts", "reb", "ast", "stl", "blk", "fg_pct", "fg3_pct", "ft_pct"] as const;
+  const bests: Record<string, number> = {};
+  for (const k of numericKeys) {
+    bests[k] = Math.max(
+      0,
+      ...latestSeasons.map((s) => (s ? Number(s[k]) : Number.NEGATIVE_INFINITY))
+    );
+  }
+  const cell = (key: string, value: number, text: string) => {
+    const isBest = value > 0 && value === bests[key];
+    return (
+      <td
+        key={key}
+        className={`tnum px-3 py-2.5 text-right whitespace-nowrap ${isBest ? "bg-accent-light font-bold text-text-primary" : "text-text-muted"}`}
+      >
+        {text}
+      </td>
+    );
+  };
+
   return (
-    <div className="overflow-x-auto rounded-2xl border border-border-t bg-card">
+    <div className="overflow-x-auto border border-rule bg-card">
       <table className="w-full text-xs">
         <thead>
-          <tr className="border-b border-border-t">
-            <th className="sticky left-0 bg-card px-4 py-3 text-left font-semibold text-text-muted">
+          <tr className="border-b border-rule">
+            <th className="kicker sticky left-0 bg-card px-4 py-3 text-left text-text-faint">
               Joueur
             </th>
             {columns.map((col) => (
-              <th key={col.key} className="px-3 py-3 text-center font-semibold text-text-muted whitespace-nowrap">
+              <th key={col.key} className="kicker px-3 py-3 text-right text-text-faint whitespace-nowrap">
                 {col.label}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody>
+        <tbody className="divide-y divide-rule">
           {players.map((p, idx) => {
             const s = latestSeasons[idx];
             return (
               <tr
                 key={p.player.player_id}
-                className="border-b border-border-t/50 last:border-0"
+                className="transition-colors hover:bg-card-hover"
               >
-                <td className="sticky left-0 bg-card px-4 py-3 font-medium text-text-primary whitespace-nowrap">
-                  <span className="inline-block h-2 w-2 rounded-full mr-2" style={{ backgroundColor: PLAYER_COLORS[idx] }} />
+                <td className="sticky left-0 bg-card px-4 py-2.5 font-semibold uppercase tracking-wide text-text-primary whitespace-nowrap">
+                  <span className="inline-block h-2 w-2 mr-2" style={{ backgroundColor: PLAYER_COLORS[idx] }} />
                   {p.player.first_name} {p.player.last_name}
                 </td>
                 {s ? (
                   <>
-                    <td className="px-3 py-3 text-center text-text-primary">{s.season}</td>
-                    <td className="px-3 py-3 text-center text-text-primary">{s.team}</td>
-                    <td className="px-3 py-3 text-center text-text-primary">{s.gp}</td>
-                    <td className="px-3 py-3 text-center text-text-primary">{Number(s.min).toFixed(1)}</td>
-                    <td className="px-3 py-3 text-center font-bold text-text-primary">{Number(s.pts).toFixed(1)}</td>
-                    <td className="px-3 py-3 text-center text-text-primary">{Number(s.reb).toFixed(1)}</td>
-                    <td className="px-3 py-3 text-center text-text-primary">{Number(s.ast).toFixed(1)}</td>
-                    <td className="px-3 py-3 text-center text-text-primary">{Number(s.stl).toFixed(1)}</td>
-                    <td className="px-3 py-3 text-center text-text-primary">{Number(s.blk).toFixed(1)}</td>
-                    <td className="px-3 py-3 text-center text-text-primary">{(Number(s.fg_pct) * 100).toFixed(1)}</td>
-                    <td className="px-3 py-3 text-center text-text-primary">{(Number(s.fg3_pct) * 100).toFixed(1)}</td>
-                    <td className="px-3 py-3 text-center text-text-primary">{(Number(s.ft_pct) * 100).toFixed(1)}</td>
+                    <td className="tnum px-3 py-2.5 text-right text-text-muted whitespace-nowrap">{s.season}</td>
+                    <td className="px-3 py-2.5 text-right font-mono text-[11px] uppercase tracking-wider text-text-muted whitespace-nowrap">{s.team}</td>
+                    {cell("gp", Number(s.gp), String(s.gp))}
+                    {cell("min", Number(s.min), Number(s.min).toFixed(1))}
+                    {cell("pts", Number(s.pts), Number(s.pts).toFixed(1))}
+                    {cell("reb", Number(s.reb), Number(s.reb).toFixed(1))}
+                    {cell("ast", Number(s.ast), Number(s.ast).toFixed(1))}
+                    {cell("stl", Number(s.stl), Number(s.stl).toFixed(1))}
+                    {cell("blk", Number(s.blk), Number(s.blk).toFixed(1))}
+                    {cell("fg_pct", Number(s.fg_pct), (Number(s.fg_pct) * 100).toFixed(1))}
+                    {cell("fg3_pct", Number(s.fg3_pct), (Number(s.fg3_pct) * 100).toFixed(1))}
+                    {cell("ft_pct", Number(s.ft_pct), (Number(s.ft_pct) * 100).toFixed(1))}
                   </>
                 ) : (
-                  <td colSpan={columns.length} className="px-3 py-3 text-center text-text-faint">
+                  <td colSpan={columns.length} className="px-3 py-2.5 text-center text-text-faint">
                     Aucune donnée disponible
                   </td>
                 )}
@@ -430,12 +454,12 @@ export default function PlayerCompare({ initialData }: { initialData: CompareDat
   return (
     <div className="space-y-8">
       {/* Player selector */}
-      <div className="rounded-2xl border border-border-t bg-card p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-text-primary">
+      <div className="border border-rule bg-card p-6 sm:p-8">
+        <div className="mb-5 flex items-center justify-between">
+          <h2 className="font-display text-2xl text-text-primary sm:text-3xl">
             Sélectionner des joueurs
           </h2>
-          <span className="text-xs text-text-faint">
+          <span className="tnum font-mono text-[11px] font-semibold uppercase tracking-wider text-text-faint">
             {players.length}/3 joueurs
           </span>
         </div>
@@ -445,9 +469,9 @@ export default function PlayerCompare({ initialData }: { initialData: CompareDat
           {players.map((p, idx) => (
             <div
               key={p.player.player_id}
-              className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium"
-              style={{ backgroundColor: PLAYER_BG[idx], color: PLAYER_COLORS[idx] }}
+              className="relative flex items-center gap-2 border border-rule bg-card px-3 py-2 text-sm font-semibold uppercase tracking-wide text-text-primary"
             >
+              <span className="absolute left-0 top-0 bottom-0 w-1" style={{ backgroundColor: PLAYER_COLORS[idx] }} />
               {p.player.team_tricode && teamLogoUrl(p.player.team_tricode) && (
                 <img
                   src={teamLogoUrl(p.player.team_tricode)}
@@ -458,7 +482,7 @@ export default function PlayerCompare({ initialData }: { initialData: CompareDat
               {p.player.first_name} {p.player.last_name}
               <button
                 onClick={() => removePlayer(p.player.player_id)}
-                className="ml-1 rounded-full p-0.5 transition-colors hover:bg-black/10"
+                className="ml-1 p-0.5 text-text-muted transition-colors hover:bg-input hover:text-text-primary"
               >
                 <X size={14} />
               </button>
@@ -472,14 +496,14 @@ export default function PlayerCompare({ initialData }: { initialData: CompareDat
                   setShowSearch(true);
                   setTimeout(() => inputRef.current?.focus(), 50);
                 }}
-                className="flex items-center gap-2 rounded-xl border border-dashed border-border-t bg-input px-3 py-2 text-sm text-text-muted transition-colors hover:border-accent/50 hover:text-text-primary"
+                className="flex items-center gap-2 border border-dashed border-border-hover bg-input px-3 py-2 font-mono text-[11px] font-semibold uppercase tracking-wider text-text-muted transition-colors hover:border-accent hover:text-text-primary"
               >
                 <Plus size={14} />
                 Ajouter un joueur
               </button>
 
               {showSearch && (
-                <div className="absolute left-0 top-full z-50 mt-2 w-72 rounded-xl border border-border-t bg-card shadow-xl">
+                <div className="absolute left-0 top-full z-50 mt-2 w-72 border border-rule bg-card shadow-xl">
                   <div className="relative p-2">
                     <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-faint" />
                     <input
@@ -488,16 +512,16 @@ export default function PlayerCompare({ initialData }: { initialData: CompareDat
                       value={searchQuery}
                       onChange={(e) => handleSearchChange(e.target.value)}
                       placeholder="Rechercher un joueur..."
-                      className="w-full rounded-lg bg-input border border-border-t pl-8 pr-3 py-2 text-sm text-text-primary placeholder-text-faint focus:border-accent/50 focus:outline-none transition-colors"
+                      className="w-full bg-input border border-rule pl-8 pr-3 py-2 text-sm text-text-primary placeholder-text-faint focus:border-border-hover focus:outline-none transition-colors"
                     />
                   </div>
 
                   {isSearching && (
-                    <p className="px-4 py-3 text-xs text-text-faint">Recherche en cours...</p>
+                    <p className="px-4 py-3 font-mono text-[11px] uppercase tracking-wider text-text-faint">Recherche en cours...</p>
                   )}
 
                   {!isSearching && searchResults.length > 0 && (
-                    <div className="max-h-64 overflow-y-auto border-t border-border-t">
+                    <div className="max-h-64 overflow-y-auto border-t border-rule">
                       {searchResults.map((r) => {
                         const alreadySelected = selectedIds.has(r.player_id);
                         return (
@@ -519,11 +543,11 @@ export default function PlayerCompare({ initialData }: { initialData: CompareDat
                               />
                             )}
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-text-primary truncate">
+                              <p className="text-sm font-semibold uppercase tracking-wide text-text-primary truncate">
                                 {r.first_name} {r.last_name}
                               </p>
-                              <p className="text-[10px] text-text-faint">
-                                {r.position} {r.team_tricode ? `- ${r.team_tricode}` : ""}
+                              <p className="font-mono text-[10px] uppercase tracking-wider text-text-faint">
+                                {r.position} {r.team_tricode ? `· ${r.team_tricode}` : ""}
                               </p>
                             </div>
                           </button>
@@ -533,7 +557,7 @@ export default function PlayerCompare({ initialData }: { initialData: CompareDat
                   )}
 
                   {!isSearching && searchQuery.length >= 2 && searchResults.length === 0 && (
-                    <p className="px-4 py-3 text-xs text-text-faint">Aucun joueur trouvé</p>
+                    <p className="px-4 py-3 font-mono text-[11px] uppercase tracking-wider text-text-faint">Aucun joueur trouvé</p>
                   )}
                 </div>
               )}
@@ -542,7 +566,7 @@ export default function PlayerCompare({ initialData }: { initialData: CompareDat
         </div>
 
         {!canCompare && (
-          <p className="text-xs text-text-faint">
+          <p className="font-mono text-[11px] uppercase tracking-wider text-text-faint">
             Sélectionnez au moins 2 joueurs pour lancer la comparaison.
           </p>
         )}
@@ -556,14 +580,14 @@ export default function PlayerCompare({ initialData }: { initialData: CompareDat
             {players.map((p, idx) => (
               <div
                 key={p.player.player_id}
-                className="overflow-hidden rounded-2xl border border-border-t bg-card"
+                className="group relative overflow-hidden border border-rule bg-card transition-colors hover:border-border-hover"
               >
-                <div
-                  className="h-1"
+                <span
+                  className="absolute left-0 top-0 bottom-0 z-10 w-1"
                   style={{ backgroundColor: PLAYER_COLORS[idx] }}
                 />
                 <div className="flex items-center gap-4 p-5">
-                  <div className="relative h-20 w-24 shrink-0 overflow-hidden rounded-xl bg-gradient-to-b from-accent/10 to-transparent">
+                  <div className="relative h-20 w-24 shrink-0 overflow-hidden bg-input">
                     <img
                       src={`https://cdn.nba.com/headshots/nba/latest/260x190/${p.player.player_id}.png`}
                       alt={`${p.player.first_name} ${p.player.last_name}`}
@@ -571,9 +595,9 @@ export default function PlayerCompare({ initialData }: { initialData: CompareDat
                     />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm text-text-muted">{p.player.first_name}</p>
-                    <p className="text-lg font-bold text-text-primary truncate">{p.player.last_name}</p>
-                    <div className="mt-1 flex items-center gap-2">
+                    <p className="kicker text-text-faint">{p.player.first_name}</p>
+                    <p className="font-display text-2xl text-text-primary truncate">{p.player.last_name}</p>
+                    <div className="mt-1.5 flex items-center gap-2">
                       {p.player.team_tricode && teamLogoUrl(p.player.team_tricode) && (
                         <img
                           src={teamLogoUrl(p.player.team_tricode)}
@@ -582,7 +606,7 @@ export default function PlayerCompare({ initialData }: { initialData: CompareDat
                         />
                       )}
                       {p.player.position && (
-                        <span className="rounded-full bg-input px-2 py-0.5 text-[10px] font-semibold text-text-secondary">
+                        <span className="border border-rule px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-text-secondary">
                           {p.player.position}
                         </span>
                       )}
@@ -594,20 +618,18 @@ export default function PlayerCompare({ initialData }: { initialData: CompareDat
           </div>
 
           {/* Radar Chart */}
-          <div className="rounded-2xl border border-border-t bg-card p-6">
-            <h3 className="mb-4 text-center text-sm font-bold uppercase tracking-wider text-text-muted">
-              Vue d&apos;ensemble
-            </h3>
+          <div className="border border-rule bg-card p-6 sm:p-8">
+            <p className="kicker mb-5 text-text-faint">Vue d&apos;ensemble</p>
             <RadarChart players={players} stats={latestStats} />
             {/* Legend */}
-            <div className="mt-4 flex flex-wrap items-center justify-center gap-4">
+            <div className="mt-5 flex flex-wrap items-center justify-center gap-4">
               {players.map((p, idx) => (
                 <div key={p.player.player_id} className="flex items-center gap-2">
                   <span
-                    className="inline-block h-3 w-3 rounded-full"
+                    className="inline-block h-3 w-3"
                     style={{ backgroundColor: PLAYER_COLORS[idx] }}
                   />
-                  <span className="text-xs font-medium text-text-primary">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-text-primary">
                     {p.player.first_name} {p.player.last_name}
                   </span>
                 </div>
@@ -616,18 +638,18 @@ export default function PlayerCompare({ initialData }: { initialData: CompareDat
           </div>
 
           {/* Stat Bars */}
-          <div className="rounded-2xl border border-border-t bg-card p-6">
-            <h3 className="mb-6 text-center text-sm font-bold uppercase tracking-wider text-text-muted">
-              Comparaison détaillée
-            </h3>
+          <div className="border border-rule bg-card p-6 sm:p-8">
+            <p className="kicker mb-5 text-text-faint">Comparaison détaillée</p>
             <StatBars players={players} stats={latestStats} />
           </div>
 
           {/* Career Table */}
           <div>
-            <h3 className="mb-4 text-center text-sm font-bold uppercase tracking-wider text-text-muted">
-              Statistiques de la dernière saison
-            </h3>
+            <div className="mb-5 flex items-baseline gap-3">
+              <h3 className="font-display text-2xl text-text-primary sm:text-3xl">
+                Statistiques de la dernière saison
+              </h3>
+            </div>
             <CareerTable players={players} />
           </div>
         </>
@@ -635,12 +657,12 @@ export default function PlayerCompare({ initialData }: { initialData: CompareDat
 
       {/* Empty state */}
       {!canCompare && players.length === 0 && (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border-t bg-card/50 py-16">
+        <div className="flex flex-col items-center justify-center border border-dashed border-rule bg-card py-16">
           <Users size={48} className="mb-4 text-text-faint" />
-          <p className="text-lg font-semibold text-text-primary">
+          <p className="font-display text-2xl text-text-primary sm:text-3xl">
             Comparez vos joueurs préférés
           </p>
-          <p className="mt-1 text-sm text-text-muted">
+          <p className="mt-2 font-mono text-[11px] uppercase tracking-wider text-text-muted">
             Ajoutez 2 ou 3 joueurs pour découvrir leurs statistiques côte à côte.
           </p>
         </div>

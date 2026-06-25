@@ -25,36 +25,37 @@ export default function ArticleForm({ article, onClose }: ArticleFormProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-card border border-border-hover p-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+      <div className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto overflow-x-hidden border border-rule bg-card p-6 sm:p-8">
+        <span className="absolute left-0 top-0 bottom-0 w-1 bg-accent" />
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-text-primary">
+          <h2 className="font-display text-2xl text-text-primary">
             {article ? "Modifier l'article" : "Nouvel article"}
           </h2>
-          <button onClick={onClose} className="text-text-muted hover:text-text-primary transition-colors">
+          <button onClick={onClose} className="p-1 text-text-muted transition-colors hover:bg-input hover:text-text-primary">
             <X size={20} />
           </button>
         </div>
 
-        <form ref={formRef} action={handleSubmit} className="space-y-4">
+        <form ref={formRef} action={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-text-secondary mb-1">Titre</label>
+            <label className="kicker mb-2 block text-text-faint">Titre</label>
             <input
               name="title"
               defaultValue={article?.title}
               required
-              className="w-full rounded-xl bg-input border border-border-t px-4 py-2.5 text-text-primary placeholder-text-faint focus:border-accent/50 focus:outline-none transition-colors"
+              className="w-full border border-rule bg-input px-4 py-2.5 text-text-primary placeholder-text-faint transition-colors focus:border-accent focus:outline-none"
               placeholder="Titre de l'article"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Tag</label>
+              <label className="kicker mb-2 block text-text-faint">Tag</label>
               <select
                 name="tag"
                 defaultValue={article?.tag || "Analyse"}
-                className="w-full rounded-xl bg-input border border-border-t px-4 py-2.5 text-text-primary focus:border-accent/50 focus:outline-none transition-colors"
+                className="w-full border border-rule bg-input px-4 py-2.5 text-text-primary transition-colors focus:border-accent focus:outline-none"
               >
                 {["Analyse", "Histoire", "Tactique", "Portrait", "Opinion"].map((tag) => (
                   <option key={tag} value={tag} className="bg-card">{tag}</option>
@@ -62,24 +63,24 @@ export default function ArticleForm({ article, onClose }: ArticleFormProps) {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Temps de lecture</label>
+              <label className="kicker mb-2 block text-text-faint">Temps de lecture</label>
               <input
                 name="read_time"
                 defaultValue={article?.read_time}
                 required
-                className="w-full rounded-xl bg-input border border-border-t px-4 py-2.5 text-text-primary placeholder-text-faint focus:border-accent/50 focus:outline-none transition-colors"
+                className="w-full border border-rule bg-input px-4 py-2.5 text-text-primary placeholder-text-faint transition-colors focus:border-accent focus:outline-none"
                 placeholder="8 min"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-text-secondary mb-1">Auteur</label>
+            <label className="kicker mb-2 block text-text-faint">Auteur</label>
             <input
               name="author"
               defaultValue={article?.author}
               required
-              className="w-full rounded-xl bg-input border border-border-t px-4 py-2.5 text-text-primary placeholder-text-faint focus:border-accent/50 focus:outline-none transition-colors"
+              className="w-full border border-rule bg-input px-4 py-2.5 text-text-primary placeholder-text-faint transition-colors focus:border-accent focus:outline-none"
               placeholder="Nom de l'auteur"
             />
           </div>
@@ -87,13 +88,13 @@ export default function ArticleForm({ article, onClose }: ArticleFormProps) {
           <ImageUpload name="image_url" defaultValue={article?.image_url} />
 
           <div>
-            <label className="block text-sm font-medium text-text-secondary mb-1">Résumé</label>
+            <label className="kicker mb-2 block text-text-faint">Résumé</label>
             <textarea
               name="excerpt"
               defaultValue={article?.excerpt}
               required
               rows={2}
-              className="w-full rounded-xl bg-input border border-border-t px-4 py-2.5 text-text-primary placeholder-text-faint focus:border-accent/50 focus:outline-none transition-colors resize-none"
+              className="w-full resize-none border border-rule bg-input px-4 py-2.5 text-text-primary placeholder-text-faint transition-colors focus:border-accent focus:outline-none"
               placeholder="Résumé de l'article"
             />
           </div>
@@ -108,14 +109,14 @@ export default function ArticleForm({ article, onClose }: ArticleFormProps) {
           <div className="flex gap-3 pt-2">
             <button
               type="submit"
-              className="flex-1 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white hover:bg-accent-hover transition-colors"
+              className="flex-1 bg-accent px-6 py-3.5 font-mono text-xs font-bold uppercase tracking-widest text-white transition-colors hover:bg-accent-hover"
             >
               {article ? "Modifier" : "Créer"}
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl bg-input px-4 py-2.5 text-sm font-medium text-text-muted hover:bg-card-hover hover:text-text-primary transition-colors"
+              className="border border-border-hover px-6 py-3.5 font-mono text-xs font-bold uppercase tracking-widest text-text-primary transition-colors hover:bg-input"
             >
               Annuler
             </button>
