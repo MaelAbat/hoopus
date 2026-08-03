@@ -23,10 +23,13 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import { fetchLeagueSchedule, readSeasonYear } from "@/lib/nba-schedule";
+import { fetchCapHistory } from "@/lib/br-cap-history";
 import { isCronAuthorized } from "@/lib/cron-auth";
 import {
+  FIRST_APRON_SEASON_START_YEAR,
   KNOWN_THRESHOLDS,
   resolveThresholds,
+  thresholdsFromCap,
   type CapThresholds,
 } from "@/lib/salary-cap";
 import {
@@ -142,46 +145,77 @@ export async function GET(request: NextRequest) {
     );
     if (upsertError) throw new Error(`league_state upsert failed: ${upsertError.message}`);
 
-    // ── Seuils de masse salariale de la saison courante ──
-    // La ligue publie ses montants début juillet. D'ici là, on insère une
-    // projection marquée « estimée » pour que la trade machine reste utilisable
-    // sans intervention. La ligne se corrige ensuite par un simple UPDATE.
-    let capLevels: string | null = null;
+    // ── Seuils de masse salariale ──
+    // Le plafond vient de Basketball Reference, qui le publie saison à venir
+    // comprise ; les trois autres seuils s'en déduisent par les rapports fixes de
+    // la convention. Ce n'est donc pas une estimation, contrairement à la
+    // projection à +10 % qui servait avant et qui surestimait 2026-27 de 5,2 M$.
+    //
+    // Les lignes déjà marquées comme officielles ne sont jamais touchées : une
+    // valeur saisie à la main reste prioritaire sur un calcul.
+    const capLevelsWritten: string[] = [];
     const { data: existingLevels } = await supabase
       .from("salary_cap_levels")
       .select("season, salary_cap, luxury_tax, first_apron, second_apron, is_estimated");
 
-    if (existingLevels && !existingLevels.some((r) => r.season === currentSeason)) {
-      const known: Record<string, CapThresholds> = { ...KNOWN_THRESHOLDS };
-      for (const r of existingLevels) {
-        if (r.is_estimated) continue; // ne pas projeter depuis une projection
-        known[r.season] = {
-          salaryCap: r.salary_cap,
-          luxuryTax: r.luxury_tax,
-          firstApron: r.first_apron,
-          secondApron: r.second_apron,
-        };
+    const official = new Set(
+      (existingLevels || []).filter((r) => !r.is_estimated).map((r) => r.season)
+    );
+
+    const capHistory = await fetchCapHistory();
+    for (const [season, cap] of capHistory) {
+      // Avant la convention 2023, il n'y avait pas de second apron : en déduire
+      // un n'aurait aucun sens.
+      if (seasonStartYear(season) < FIRST_APRON_SEASON_START_YEAR) continue;
+      if (official.has(season)) continue;
+
+      const derived = thresholdsFromCap(cap);
+      const { error: levelsError } = await supabase.from("salary_cap_levels").upsert(
+        {
+          season,
+          salary_cap: derived.salaryCap,
+          luxury_tax: derived.luxuryTax,
+          first_apron: derived.firstApron,
+          second_apron: derived.secondApron,
+          // Le plafond est officiel, les aprons en découlent par calcul.
+          is_estimated: false,
+          updated_at: now,
+        },
+        { onConflict: "season" }
+      );
+      if (levelsError) {
+        console.error(`[SYNC-SEASON] Seuils ${season} non écrits:`, levelsError.message);
+      } else {
+        capLevelsWritten.push(season);
       }
+    }
+
+    // Aucun plafond publié pour la saison courante : on retombe sur la
+    // projection, cette fois explicitement marquée comme estimée.
+    if (!capHistory.has(currentSeason) && !official.has(currentSeason)) {
+      const known: Record<string, CapThresholds> = { ...KNOWN_THRESHOLDS };
+      for (const [season, cap] of capHistory) known[season] = thresholdsFromCap(cap);
 
       const projected = resolveThresholds(currentSeason, known);
       if (projected.salaryCap > 0) {
-        const { error: levelsError } = await supabase.from("salary_cap_levels").insert({
-          season: currentSeason,
-          salary_cap: projected.salaryCap,
-          luxury_tax: projected.luxuryTax,
-          first_apron: projected.firstApron,
-          second_apron: projected.secondApron,
-          is_estimated: projected.isEstimated,
-          updated_at: now,
-        });
-        if (levelsError) {
-          console.error("[SYNC-SEASON] Seuils non insérés:", levelsError.message);
-        } else {
-          capLevels = `${currentSeason} projeté (cap ${(projected.salaryCap / 1e6).toFixed(1)} M$)`;
-          console.log(`[SYNC-SEASON] Seuils projetés pour ${currentSeason} — à corriger dès l'annonce officielle`);
-        }
+        await supabase.from("salary_cap_levels").upsert(
+          {
+            season: currentSeason,
+            salary_cap: projected.salaryCap,
+            luxury_tax: projected.luxuryTax,
+            first_apron: projected.firstApron,
+            second_apron: projected.secondApron,
+            is_estimated: true,
+            updated_at: now,
+          },
+          { onConflict: "season" }
+        );
+        capLevelsWritten.push(`${currentSeason} (projeté)`);
       }
     }
+
+    const capLevels = capLevelsWritten.length > 0 ? capLevelsWritten.join(", ") : null;
+    if (capLevels) console.log(`[SYNC-SEASON] Seuils écrits : ${capLevels}`);
 
     // ── Nettoyage des matchs jamais joués d'une saison terminée ──
     // Une saison dont les Finales sont jouées ne peut plus contenir de match

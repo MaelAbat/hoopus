@@ -50,6 +50,41 @@ export const KNOWN_THRESHOLDS: Record<string, CapThresholds> = {
 };
 
 /**
+ * Rapports des trois seuils au plafond salarial.
+ *
+ * La convention collective ne fixe pas ces montants indépendamment : ce sont des
+ * pourcentages du plafond. Vérifié sur les trois saisons dont la ligue a publié
+ * les quatre valeurs (2023-24, 2024-25, 2025-26), les rapports sont constants à
+ * la cinquième décimale.
+ *
+ * Conséquence pratique : il suffit de connaître le plafond — que Basketball
+ * Reference publie, saison à venir comprise — pour en déduire le reste. Ce n'est
+ * donc pas une estimation mais un calcul.
+ */
+export const CAP_RATIOS = {
+  luxuryTax: 1.215,
+  firstApron: 1.26705,
+  secondApron: 1.343863,
+} as const;
+
+/** Les quatre seuils déduits d'un plafond, arrondis au millier. */
+export function thresholdsFromCap(salaryCap: number): CapThresholds {
+  const round = (n: number) => Math.round(n / 1000) * 1000;
+  return {
+    salaryCap: round(salaryCap),
+    luxuryTax: round(salaryCap * CAP_RATIOS.luxuryTax),
+    firstApron: round(salaryCap * CAP_RATIOS.firstApron),
+    secondApron: round(salaryCap * CAP_RATIOS.secondApron),
+  };
+}
+
+/**
+ * Première saison dotée d'un second apron (convention 2023). Avant elle, déduire
+ * un apron du plafond n'aurait aucun sens.
+ */
+export const FIRST_APRON_SEASON_START_YEAR = 2023;
+
+/**
  * Hausse annuelle retenue pour projeter une saison inconnue.
  *
  * La convention collective plafonne la progression du cap à 10 % par an, et les
