@@ -3,12 +3,21 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import { seasonBefore } from "@/lib/season";
-import { BR_TEAMS, fetchAllSalaries, normalizeName } from "@/lib/br-salaries";
+import { brTeamFor, fetchAllSalaries, normalizeName } from "@/lib/br-salaries";
 import { fetchLeagueState } from "@/lib/league-season";
 import { isCronAuthorized } from "@/lib/cron-auth";
 
 // Saison résolue par requête depuis league_state (voir /api/sync-season).
 const BATCH_SIZE = 200;
+/**
+ * Équipes interrogées chez Basketball Reference à chaque passage.
+ *
+ * Huit requêtes espacées de 3,2 s tiennent sous la limite de débit de BR et
+ * sous la durée maximale de la fonction. Les 30 équipes se rafraîchissent donc
+ * en quatre jours, ce qui suffit pour des salaires qui bougent rarement — et
+ * les salaires connus sont conservés entre-temps.
+ */
+const TEAMS_PER_RUN = 8;
 
 const NBA_HEADERS: Record<string, string> = {
   Accept: "application/json, text/plain, */*",
@@ -130,26 +139,60 @@ export async function GET(request: NextRequest) {
     }
     console.log(`[SYNC-ROSTERS] Found ${dbPlayers.length} active players in database`);
 
+    // ── Choix des équipes à interroger ──
+    // Basketball Reference limite le débit : on ne balaie pas les 30 équipes à
+    // chaque passage. Priorité aux équipes sans aucun salaire, puis aux plus
+    // anciennement rafraîchies. Combiné à la conservation des salaires connus,
+    // la base converge en quelques jours et ne perd jamais rien.
+    const { data: salaryState } = await supabase
+      .from("rosters")
+      .select("team_tricode, salary, updated_at")
+      .eq("season", SEASON);
+
+    const perTeam = new Map<string, { withSalary: number; oldest: string }>();
+    for (const row of salaryState || []) {
+      const entry = perTeam.get(row.team_tricode) ?? { withSalary: 0, oldest: row.updated_at };
+      if (row.salary) entry.withSalary++;
+      if (row.updated_at < entry.oldest) entry.oldest = row.updated_at;
+      perTeam.set(row.team_tricode, entry);
+    }
+
+    const allTeams = [...new Set(dbPlayers.map((p) => p.team_tricode).filter(Boolean))] as string[];
+    const priority = allTeams.sort((a, b) => {
+      const ea = perTeam.get(a);
+      const eb = perTeam.get(b);
+      const aEmpty = (ea?.withSalary ?? 0) === 0 ? 0 : 1;
+      const bEmpty = (eb?.withSalary ?? 0) === 0 ? 0 : 1;
+      if (aEmpty !== bEmpty) return aEmpty - bEmpty; // les vides d'abord
+      return (ea?.oldest ?? "").localeCompare(eb?.oldest ?? ""); // puis les plus anciennes
+    });
+
+    const targets = priority.slice(0, TEAMS_PER_RUN).map(brTeamFor);
+    console.log(
+      `[SYNC-ROSTERS] ${targets.length} équipe(s) interrogée(s) sur ${allTeams.length} : ` +
+        priority.slice(0, TEAMS_PER_RUN).join(", ")
+    );
+
     // Fetch bio stats (ages) and salaries in parallel
     console.log("[SYNC-ROSTERS] Fetching from NBA API and Basketball Reference...");
     const [ageMap, salaryResult] = await Promise.all([
       fetchAllBioStats(SEASON),
       (async () => {
         try {
-          return await fetchAllSalaries(SEASON);
+          return await fetchAllSalaries(SEASON, targets);
         } catch (err) {
-          console.error("Salary/payroll scraping failed (non-fatal):", err);
+          console.error("Salary scraping failed (non-fatal):", err);
           return {
             salaryMap: new Map<string, string>(),
-            payrollMap: new Map<string, number>(),
+            fetched: [] as string[],
             failed: [] as string[],
           };
         }
       })(),
     ]);
 
-    const { salaryMap, payrollMap, failed } = salaryResult;
-    console.log(`[SYNC-ROSTERS] Fetched ${ageMap.size} ages, ${salaryMap.size} salaries, ${payrollMap.size} payrolls`);
+    const { salaryMap, failed } = salaryResult;
+    console.log(`[SYNC-ROSTERS] Fetched ${ageMap.size} ages, ${salaryMap.size} salaries`);
 
     // ── Salaires déjà connus ──
     // Une synchronisation ne doit jamais détruire de données valides. Sans ce
@@ -228,19 +271,31 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Store team payroll totals
     // ── Masses salariales ──
-    // On n'écrit que si les 30 équipes ont répondu. Une série partielle est
-    // pire que rien : les pages compareraient des totaux officiels pour
-    // certaines équipes à des sommes de contrats pour les autres. En cas de
-    // scraping incomplet, les valeurs précédentes restent en place.
-    if (payrollMap.size < BR_TEAMS.length) {
+    // Dérivées des salaires que l'on vient d'attribuer, et de rien d'autre : le
+    // total affiché est donc toujours exactement la somme des contrats affichés.
+    // Un accumulateur séparé avait produit des totaux au double du réel sans que
+    // les salaires individuels, eux, soient faux.
+    //
+    // `players` couvre les 30 équipes — y compris celles non interrogées ce
+    // coup-ci, dont les salaires ont été conservés — donc le calcul est complet
+    // même sur un balayage partiel. On n'écrit que si chaque équipe a un total,
+    // pour ne pas mélanger des équipes chiffrées et des équipes à zéro.
+    const payrollByTeam = new Map<string, number>();
+    for (const p of players) {
+      const amount = p.salary ? Number(p.salary.replace(/[$,]/g, "")) || 0 : 0;
+      payrollByTeam.set(p.team_tricode, (payrollByTeam.get(p.team_tricode) ?? 0) + amount);
+    }
+    const complete = [...payrollByTeam.values()].every((v) => v > 0);
+
+    if (!complete) {
+      const missing = [...payrollByTeam.entries()].filter(([, v]) => v === 0).map(([t]) => t);
       console.warn(
-        `[SYNC-ROSTERS] Masses salariales incomplètes (${payrollMap.size}/${BR_TEAMS.length}` +
-          `${failed.length > 0 ? `, échecs : ${failed.join(", ")}` : ""}) — écriture ignorée`
+        `[SYNC-ROSTERS] Masses salariales incomplètes — ${missing.length} équipe(s) sans contrat : ` +
+          `${missing.join(", ")} — écriture ignorée`
       );
     } else {
-      const payrollRows = Array.from(payrollMap.entries()).map(([tricode, payroll]) => ({
+      const payrollRows = [...payrollByTeam.entries()].map(([tricode, payroll]) => ({
         season: SEASON,
         team_tricode: tricode,
         payroll,
@@ -251,6 +306,7 @@ export async function GET(request: NextRequest) {
         onConflict: "team_tricode,season",
       });
       if (payrollError) console.error("Payroll upsert error:", payrollError);
+      else console.log(`[SYNC-ROSTERS] ${payrollRows.length} masses salariales écrites`);
     }
 
     // ── Purge des joueurs sortis de la ligue ──
@@ -301,7 +357,9 @@ export async function GET(request: NextRequest) {
       pruned,
       preserved,
       salaries: salaryMap.size,
-      payrolls: payrollMap.size,
+      teamsFetched: salaryResult.fetched,
+      teamsFailed: failed,
+      payrolls: complete ? payrollByTeam.size : 0,
       timestamp: now,
     });
   } catch (err) {

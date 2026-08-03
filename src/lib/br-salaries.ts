@@ -35,10 +35,19 @@ export const BR_TEAMS = [
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-/** Nombre de pages sollicitées en parallèle. Volontairement bas : BR renvoie 429. */
-const CONCURRENCY = 3;
-/** Pause entre deux lots. */
-const BATCH_DELAY_MS = 2500;
+/**
+ * Intervalle entre deux requêtes, en séquentiel.
+ *
+ * Basketball Reference tolère une vingtaine de requêtes par minute. 3,2 s
+ * laisse environ 18/min, sous le seuil, marges comprises.
+ */
+const REQUEST_INTERVAL_MS = 3200;
+/**
+ * Temps maximal accordé à un balayage.
+ * La fonction serverless est plafonnée à 60 s : on garde de la marge pour les
+ * écritures en base qui suivent.
+ */
+const DEFAULT_BUDGET_MS = 38_000;
 /** Tentatives par page, en cas de limitation. */
 const ATTEMPTS = 3;
 
@@ -226,60 +235,77 @@ export async function fetchTeamSalaries(
 export interface SalaryScrape {
   /** Clé `nom normalisé|TRICODE NBA` → salaire formaté (« $54,126,450 »). */
   salaryMap: Map<string, string>;
-  /** Tricode NBA → masse salariale de l'équipe. */
-  payrollMap: Map<string, number>;
+  /** Équipes NBA effectivement récupérées. */
+  fetched: string[];
   /** Équipes pour lesquelles aucune source n'a abouti. */
   failed: string[];
 }
 
-/**
- * Salaires individuels et masses salariales des 30 équipes.
- *
- * Les deux sortent du même tableau par équipe, donc les totaux restent
- * cohérents avec les contrats affichés. Nuance : une page de saison recense
- * tous les joueurs payés par la franchise sur l'année, un joueur échangé en
- * cours de saison peut donc être compté par ses deux équipes.
- */
-export async function fetchAllSalaries(season: string): Promise<SalaryScrape> {
-  const salaryMap = new Map<string, string>();
-  const payrollMap = new Map<string, number>();
-  const failed: string[] = [];
+/** Identifiant Basketball Reference d'une équipe, depuis son tricode NBA. */
+export function brTeamFor(nbaTricode: string): string {
+  const inverted = Object.entries(BR_TRICODE_MAP).find(([, nba]) => nba === nbaTricode);
+  return inverted ? inverted[0] : nbaTricode;
+}
 
-  for (let i = 0; i < BR_TEAMS.length; i += CONCURRENCY) {
-    const batch = BR_TEAMS.slice(i, i + CONCURRENCY);
-    await Promise.all(
-      batch.map(async (brTeam) => {
-        const nbaTeam = BR_TRICODE_MAP[brTeam] || brTeam;
-        try {
-          const result = await fetchTeamSalaries(brTeam, season);
-          if (!result) {
-            failed.push(nbaTeam);
-            return;
-          }
-          let total = 0;
-          for (const [name, salary] of result.salaries) {
-            salaryMap.set(`${name}|${nbaTeam}`, salary);
-            total += Number(salary.replace(/[$,]/g, "")) || 0;
-          }
-          if (total > 0) payrollMap.set(nbaTeam, total);
-          console.log(
-            `[BR] ${nbaTeam}: ${result.salaries.size} salaires (${result.source}), ` +
-              `${(total / 1e6).toFixed(1)} M$`
-          );
-        } catch (err) {
-          console.error(`[BR] ${nbaTeam} échec:`, (err as Error).message);
-          failed.push(nbaTeam);
+/**
+ * Salaires individuels des équipes demandées.
+ *
+ * Volontairement séquentiel et espacé : Basketball Reference limite à une
+ * vingtaine de requêtes par minute et répond 429 au-delà, avec un blocage qui
+ * dure. Trois requêtes en parallèle toutes les 2,5 s dépassaient largement ce
+ * seuil et faisaient échouer la moitié de la ligue.
+ *
+ * Aucune masse salariale n'est calculée ici. Le total est dérivé une seule fois,
+ * dans sync-rosters, à partir des salaires réellement attribués aux joueurs —
+ * garantissant que le total affiché est bien la somme des contrats affichés.
+ */
+export async function fetchAllSalaries(
+  season: string,
+  teams: string[] = BR_TEAMS,
+  budgetMs = DEFAULT_BUDGET_MS
+): Promise<SalaryScrape> {
+  const salaryMap = new Map<string, string>();
+  const fetched: string[] = [];
+  const failed: string[] = [];
+  const deadline = Date.now() + budgetMs;
+
+  for (const [i, brTeam] of teams.entries()) {
+    const nbaTeam = BR_TRICODE_MAP[brTeam] || brTeam;
+
+    // Borne de temps : une série de 429 déclenche des reprises qui feraient
+    // dépasser la durée maximale de la fonction. Les équipes non traitées sont
+    // reprises au passage suivant, la priorisation les remettant en tête.
+    if (Date.now() > deadline) {
+      const remaining = teams.slice(i).map((t) => BR_TRICODE_MAP[t] || t);
+      console.warn(
+        `[BR] Budget de temps atteint — ${remaining.length} équipe(s) reportée(s) : ${remaining.join(", ")}`
+      );
+      break;
+    }
+
+    try {
+      const result = await fetchTeamSalaries(brTeam, season);
+      if (!result) {
+        failed.push(nbaTeam);
+      } else {
+        for (const [name, salary] of result.salaries) {
+          salaryMap.set(`${name}|${nbaTeam}`, salary);
         }
-      })
-    );
-    // Un peu d'air entre les lots, pour rester courtois avec BR.
-    if (i + CONCURRENCY < BR_TEAMS.length) await delay(BATCH_DELAY_MS);
+        fetched.push(nbaTeam);
+        console.log(`[BR] ${nbaTeam}: ${result.salaries.size} salaires (${result.source})`);
+      }
+    } catch (err) {
+      console.error(`[BR] ${nbaTeam} échec:`, (err as Error).message);
+      failed.push(nbaTeam);
+    }
+
+    if (i < teams.length - 1) await delay(REQUEST_INTERVAL_MS);
   }
 
   console.log(
-    `[BR] ${salaryMap.size} salaires, ${payrollMap.size} masses salariales` +
-      (failed.length > 0 ? `, ${failed.length} équipe(s) en échec : ${failed.join(", ")}` : "")
+    `[BR] ${salaryMap.size} salaires sur ${fetched.length}/${teams.length} équipe(s)` +
+      (failed.length > 0 ? `, échecs : ${failed.join(", ")}` : "")
   );
 
-  return { salaryMap, payrollMap, failed };
+  return { salaryMap, fetched, failed };
 }
