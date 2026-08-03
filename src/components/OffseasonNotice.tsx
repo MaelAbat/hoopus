@@ -3,12 +3,17 @@ import { ArrowRight } from "lucide-react";
 import { teamLogoUrl } from "@/lib/nba-teams";
 import { getLeagueState } from "@/lib/league-season";
 
-/** Ce qui est déjà à jour pour la nouvelle saison. */
+/**
+ * Ce qui porte déjà les données de la nouvelle saison.
+ *
+ * Les mini-jeux n'y figurent pas : ils ne dépendent d'aucune saison et ont leur
+ * propre bandeau. Les ranger ici laissait entendre qu'ils basculaient avec le
+ * reste, ce qui est faux.
+ */
 const LIVE_NOW = [
   { href: "/equipes", label: "Effectifs" },
   { href: "/trades", label: "Trade Machine" },
   { href: "/blessures", label: "Infirmerie" },
-  { href: "/mini-jeux", label: "Mini-jeux" },
 ];
 
 /**
@@ -145,6 +150,33 @@ export default async function OffseasonNotice({
             Consultables normalement : elles basculeront sur {currentSeason} au premier match.
           </p>
         </div>
+      </div>
+
+      {/* Mini-jeux — la seule rubrique qui ne dépend d'aucune saison, donc la
+          seule à offrir du neuf chaque jour d'ici au coup d'envoi. C'est le seul
+          bouton plein de la carte : pendant l'intersaison, c'est l'action la plus
+          utile qu'on puisse proposer. */}
+      <div className="flex flex-wrap items-center justify-between gap-4 border-t border-rule bg-input/40 px-6 py-5 sm:px-9">
+        <div className="min-w-0">
+          <p className="kicker text-accent-text">Indépendant de la saison</p>
+          <p className="mt-1.5 font-display text-lg uppercase leading-none text-text-primary sm:text-xl">
+            Sept défis quotidiens
+          </p>
+          <p className="mt-1.5 text-xs text-text-muted">
+            Un nouveau joueur à trouver chaque jour, intersaison comprise.
+          </p>
+        </div>
+        <Link
+          href="/mini-jeux"
+          className="group inline-flex shrink-0 items-center gap-2 bg-accent px-5 py-3 font-mono text-xs font-bold uppercase tracking-widest text-white transition-colors hover:bg-accent-hover"
+        >
+          Jouer
+          <ArrowRight
+            size={14}
+            strokeWidth={2}
+            className="transition-transform duration-200 group-hover:translate-x-0.5"
+          />
+        </Link>
       </div>
     </div>
   );
