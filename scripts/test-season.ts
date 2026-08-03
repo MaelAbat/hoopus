@@ -23,7 +23,9 @@ import {
   KNOWN_THRESHOLDS,
   projectThresholds,
   resolveThresholds,
+  thresholdsFromCap,
 } from "../src/lib/salary-cap";
+import { parseCapHistory } from "../src/lib/br-cap-history";
 
 let pass = 0;
 let fail = 0;
@@ -249,6 +251,67 @@ for (const [season, years] of [
     projectThresholds(known["2026-27"], 1).salaryCap
   );
 }
+
+console.log("\n--- seuils déduits du plafond officiel ---");
+
+// La ligue ne publie que le plafond à l'avance ; les trois autres seuils en
+// découlent par des rapports fixes. On valide la déduction contre les trois
+// saisons dont les quatre montants sont connus.
+{
+  const officiel = {
+    "2023-24": { cap: 136_021_000, tax: 165_294_000, a1: 172_346_000, a2: 182_794_000 },
+    "2024-25": { cap: 140_588_000, tax: 170_814_000, a1: 178_132_000, a2: 188_931_000 },
+    "2025-26": { cap: 154_647_000, tax: 187_895_000, a1: 195_945_000, a2: 207_824_000 },
+  };
+
+  // Tolérance de 50 k$ : les montants publiés sont arrondis, donc la déduction
+  // ne peut pas tomber au dollar. 50 k$ sur ~200 M$, soit 0,025 %.
+  const TOLERANCE = 50_000;
+  for (const [season, v] of Object.entries(officiel)) {
+    const d = thresholdsFromCap(v.cap);
+    check(`${season} — plafond inchangé`, d.salaryCap, v.cap);
+    check(`  ${season} — luxury tax`, Math.abs(d.luxuryTax - v.tax) <= TOLERANCE, true);
+    check(`  ${season} — 1er apron`, Math.abs(d.firstApron - v.a1) <= TOLERANCE, true);
+    check(`  ${season} — 2nd apron`, Math.abs(d.secondApron - v.a2) <= TOLERANCE, true);
+  }
+}
+
+// Le plafond 2026-27 publié par Basketball Reference. La projection a +10 %
+// donnait 170,1 M$ : elle surestimait de plus de 5 M$, d'où l'abandon.
+{
+  const d = thresholdsFromCap(164_961_000);
+  check("2026-27 — plafond réel", d.salaryCap, 164_961_000);
+  check("  ordre des seuils respecté",
+    d.salaryCap < d.luxuryTax && d.luxuryTax < d.firstApron && d.firstApron < d.secondApron,
+    true
+  );
+  check("  projection à +10 % nettement plus haute",
+    projectThresholds(KNOWN_THRESHOLDS["2025-26"], 1).salaryCap > d.salaryCap + 4_000_000,
+    true
+  );
+}
+
+console.log("\n--- lecture de l'historique des plafonds ---");
+{
+  // Forme réelle d'une ligne de /contracts/salary-cap-history.html.
+  const html =
+    '<tr><th data-stat="year_id" ><a href="/leagues/NBA_2027.html">2026-27</a></th>' +
+    '<td data-stat="cap" >$164,961,000</td><td data-stat="cap2022" ></td></tr>' +
+    '<tr><th data-stat="year_id" >2025-26</th>' +
+    '<td data-stat="cap" >$154,647,000</td><td data-stat="cap2022" ></td></tr>';
+  const caps = parseCapHistory(html);
+  check("deux saisons lues", caps.size, 2);
+  check("plafond 2026-27", caps.get("2026-27"), 164_961_000);
+  check("plafond 2025-26", caps.get("2025-26"), 154_647_000);
+}
+{
+  // La colonne corrigée de l'inflation ne doit jamais être prise pour le plafond.
+  const html =
+    '<tr><th data-stat="year_id" >2019-20</th>' +
+    '<td data-stat="cap2022" >$123,384,194</td><td data-stat="cap" >$109,140,000</td></tr>';
+  check("colonne d'inflation ignorée", parseCapHistory(html).get("2019-20"), 109_140_000);
+}
+check("en-tête sans saison ignoré", parseCapHistory('<tr><th data-stat="year_id" >Year</th></tr>').size, 0);
 
 console.log(`\n${pass} réussis, ${fail} échoués`);
 process.exit(fail > 0 ? 1 : 0);
