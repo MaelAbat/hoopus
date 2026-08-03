@@ -1,4 +1,4 @@
-import https from "node:https";
+import { fetchLeagueSchedule } from "@/lib/nba-schedule";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
@@ -33,38 +33,6 @@ interface NbaSchedule {
   };
 }
 
-function fetchSchedule(): Promise<NbaSchedule> {
-  return new Promise((resolve, reject) => {
-    const req = https.get(
-      "https://cdn.nba.com/static/json/staticData/scheduleLeagueV2.json",
-      {
-        headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-          Referer: "https://www.nba.com/",
-        },
-      },
-      (res) => {
-        const chunks: Buffer[] = [];
-        res.on("data", (chunk: Buffer) => chunks.push(chunk));
-        res.on("end", () => {
-          if (res.statusCode !== 200) {
-            reject(new Error(`CDN error: ${res.statusCode}`));
-            return;
-          }
-          try {
-            resolve(JSON.parse(Buffer.concat(chunks).toString("utf-8")));
-          } catch {
-            reject(new Error("Failed to parse schedule"));
-          }
-        });
-      }
-    );
-    req.on("error", reject);
-    req.setTimeout(600000, () => { req.destroy(); reject(new Error("CDN timeout after 10min")); });
-  });
-}
-
 export async function GET(request: NextRequest) {
   if (!isCronAuthorized(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -80,7 +48,10 @@ export async function GET(request: NextRequest) {
   try {
     console.log("[SYNC-GAMES] Starting sync...");
     console.log("[SYNC-GAMES] Fetching from NBA CDN...");
-    const schedule = await fetchSchedule();
+    // Repli sur stats.nba.com si le CDN nous bloque. La saison de chaque match
+    // reste lue dans son identifiant, donc la source ne change pas le rangement.
+    const SEASON = (await fetchLeagueState()).currentSeason;
+    const schedule = await fetchLeagueSchedule<NbaSchedule>({ fallbackSeason: SEASON });
     const gameDates = schedule.leagueSchedule.gameDates;
 
     let totalInserted = 0;

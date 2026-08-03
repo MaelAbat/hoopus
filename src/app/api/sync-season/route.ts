@@ -19,10 +19,10 @@
  * finie — personne ne peut donc plus les corriger.
  */
 
-import https from "node:https";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
+import { fetchLeagueSchedule, readSeasonYear } from "@/lib/nba-schedule";
 import { isCronAuthorized } from "@/lib/cron-auth";
 import {
   getCurrentSeason,
@@ -45,49 +45,22 @@ const REVALIDATED_PATHS = [
   "/mini-jeux",
 ];
 
-function fetchScheduleSeasonYear(): Promise<string | null> {
-  return new Promise((resolve) => {
-    const req = https.get(
-      "https://cdn.nba.com/static/json/staticData/scheduleLeagueV2.json",
-      {
-        headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-          Accept: "*/*",
-          "Accept-Encoding": "identity",
-          Referer: "https://www.nba.com/",
-          Origin: "https://www.nba.com",
-        },
-      },
-      (res) => {
-        const chunks: Buffer[] = [];
-        res.on("data", (c: Buffer) => chunks.push(c));
-        res.on("end", () => {
-          if (res.statusCode !== 200) {
-            console.error(`[SYNC-SEASON] CDN status ${res.statusCode}`);
-            resolve(null);
-            return;
-          }
-          try {
-            const json = JSON.parse(Buffer.concat(chunks).toString("utf-8"));
-            const year = json?.leagueSchedule?.seasonYear;
-            resolve(typeof year === "string" && /^\d{4}-\d{2}$/.test(year) ? year : null);
-          } catch {
-            resolve(null);
-          }
-        });
-      }
-    );
-    // Signal non essentiel : en cas d'échec on se rabat sur les Finales.
-    req.on("error", (err) => {
-      console.error("[SYNC-SEASON] CDN fetch failed:", err.message);
-      resolve(null);
-    });
-    req.setTimeout(30000, () => {
-      req.destroy();
-      resolve(null);
-    });
-  });
+/**
+ * `seasonYear` tel que le CDN l'annonce, ou `null` s'il est injoignable.
+ *
+ * Volontairement sans repli sur stats.nba.com : ce repli exige de nommer une
+ * saison, or c'est précisément ce qu'on cherche à déterminer. Le signal serait
+ * circulaire. Les Finales en base restent la règle principale — le CDN ne fait
+ * que confirmer.
+ */
+async function fetchScheduleSeasonYear(): Promise<string | null> {
+  try {
+    const schedule = await fetchLeagueSchedule({ attempts: 2 });
+    return readSeasonYear(schedule);
+  } catch (err) {
+    console.error("[SYNC-SEASON] Signal CDN indisponible:", (err as Error).message);
+    return null;
+  }
 }
 
 export async function GET(request: NextRequest) {

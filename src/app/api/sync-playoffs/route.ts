@@ -1,8 +1,8 @@
-import https from "node:https";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import { fetchLeagueState } from "@/lib/league-season";
+import { fetchLeagueSchedule } from "@/lib/nba-schedule";
 import { isCronAuthorized } from "@/lib/cron-auth";
 
 // Saison résolue par requête depuis league_state (voir /api/sync-season).
@@ -50,38 +50,6 @@ interface NbaSchedule {
       games: NbaGame[];
     }[];
   };
-}
-
-function fetchSchedule(): Promise<NbaSchedule> {
-  return new Promise((resolve, reject) => {
-    const req = https.get(
-      "https://cdn.nba.com/static/json/staticData/scheduleLeagueV2.json",
-      {
-        headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-          Referer: "https://www.nba.com/",
-        },
-      },
-      (res) => {
-        const chunks: Buffer[] = [];
-        res.on("data", (chunk: Buffer) => chunks.push(chunk));
-        res.on("end", () => {
-          if (res.statusCode !== 200) {
-            reject(new Error(`CDN error: ${res.statusCode}`));
-            return;
-          }
-          try {
-            resolve(JSON.parse(Buffer.concat(chunks).toString("utf-8")));
-          } catch {
-            reject(new Error("Failed to parse schedule"));
-          }
-        });
-      }
-    );
-    req.on("error", reject);
-    req.setTimeout(600000, () => { req.destroy(); reject(new Error("CDN timeout after 10min")); });
-  });
 }
 
 function getRound(gameId: string): number {
@@ -178,7 +146,7 @@ export async function GET(request: NextRequest) {
     const now = new Date().toISOString();
     await fetchConferenceTeams(supabase, SEASON);
     console.log("[SYNC-PLAYOFFS] Fetching from NBA CDN...");
-    const schedule = await fetchSchedule();
+    const schedule = await fetchLeagueSchedule<NbaSchedule>({ fallbackSeason: SEASON });
     const gameDates = schedule.leagueSchedule.gameDates;
 
     // Collect all playoff and play-in games
