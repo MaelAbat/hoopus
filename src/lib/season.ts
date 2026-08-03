@@ -145,3 +145,55 @@ export function resolveLeagueSeason({
   const ceiling = seasonAfter(calendarSeason);
   return isSeasonAfter(candidate, ceiling) ? ceiling : candidate;
 }
+
+/* ─── Statut d'une saison ─── */
+
+export type SeasonStatus = "upcoming" | "current" | "completed";
+
+/** Libellé court d'un statut, pour les listes déroulantes et les bandeaux. */
+export function seasonStatusLabel(status: SeasonStatus): string {
+  switch (status) {
+    case "upcoming":
+      return "à venir";
+    case "current":
+      return "en cours";
+    case "completed":
+      return "terminée";
+  }
+}
+
+/**
+ * Situe une saison par rapport à l'état de la ligue.
+ *
+ * Une saison postérieure à la dernière saison jouée n'a pas commencé. Celle qui
+ * porte les matchs les plus récents est « en cours » seulement si la ligue s'y
+ * trouve encore : après les Finales, elle devient « terminée » alors que la
+ * ligue est déjà passée à la suivante.
+ */
+export function seasonStatus(
+  season: string,
+  state: { currentSeason: string; statsSeason: string }
+): SeasonStatus {
+  if (isSeasonAfter(season, state.statsSeason)) return "upcoming";
+  if (season === state.statsSeason && season === state.currentSeason) return "current";
+  return "completed";
+}
+
+/**
+ * Liste de saisons pour un sélecteur : dédoublonnée et triée de la plus récente
+ * à la plus ancienne.
+ *
+ * Les saisons supplémentaires permettent d'ajouter la saison de la ligue même
+ * quand elle n'a encore aucune donnée — sans quoi elle n'apparaîtrait dans aucun
+ * menu jusqu'au premier match.
+ */
+export function buildSeasonOptions(
+  available: (string | null | undefined)[],
+  ...extra: (string | null | undefined)[]
+): string[] {
+  const set = new Set<string>();
+  for (const s of [...available, ...extra]) {
+    if (s && Number.isFinite(seasonStartYear(s))) set.add(s);
+  }
+  return [...set].sort((a, b) => seasonStartYear(b) - seasonStartYear(a));
+}

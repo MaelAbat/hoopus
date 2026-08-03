@@ -6,6 +6,7 @@
  * trades de l'intersaison atterrissaient donc dans la saison terminée.
  */
 import {
+  buildSeasonOptions,
   gameTypeFromGameId,
   isSeasonAfter,
   latestSeason,
@@ -15,6 +16,8 @@ import {
   seasonFromDate,
   seasonFromGameId,
   seasonFromStartYear,
+  seasonStatus,
+  seasonStatusLabel,
 } from "../src/lib/season";
 
 let pass = 0;
@@ -129,6 +132,57 @@ check(
     scheduleSeason: "2031-32",
     finalsCompletedSeason: "2030-31",
   }),
+  "2026-27"
+);
+
+console.log("\n--- statut d'une saison ---");
+
+// Saison en cours : la ligue et les matchs joués sont sur la même saison. Ce
+// bloc protège le comportement en pleine saison des ajouts d'intersaison.
+{
+  const inSeason = { currentSeason: "2026-27", statsSeason: "2026-27" };
+  check("saison en cours", seasonStatus("2026-27", inSeason), "current");
+  check("saison précédente terminée", seasonStatus("2025-26", inSeason), "completed");
+  check("saison future à venir", seasonStatus("2027-28", inSeason), "upcoming");
+}
+
+// Intersaison : la ligue a basculé, aucun match joué.
+{
+  const offSeason = { currentSeason: "2026-27", statsSeason: "2025-26" };
+  check("saison de ligue à venir", seasonStatus("2026-27", offSeason), "upcoming");
+  check("saison écoulée terminée", seasonStatus("2025-26", offSeason), "completed");
+  check("saison ancienne terminée", seasonStatus("2019-20", offSeason), "completed");
+}
+
+check("libellé à venir", seasonStatusLabel("upcoming"), "à venir");
+check("libellé en cours", seasonStatusLabel("current"), "en cours");
+check("libellé terminée", seasonStatusLabel("completed"), "terminée");
+
+console.log("\n--- listes de saisons ---");
+check(
+  "tri décroissant et dédoublonnage",
+  buildSeasonOptions(["2023-24", "2025-26", "2023-24"], "2026-27"),
+  ["2026-27", "2025-26", "2023-24"]
+);
+check("valeurs vides ignorées", buildSeasonOptions(["2025-26", null, undefined, ""], null), [
+  "2025-26",
+]);
+check(
+  "saison de ligue ajoutée même sans données",
+  buildSeasonOptions(["2025-26"], "2026-27").includes("2026-27"),
+  true
+);
+check(
+  "en pleine saison, aucune entrée superflue",
+  buildSeasonOptions(["2026-27", "2025-26"], "2026-27"),
+  ["2026-27", "2025-26"]
+);
+// Le premier élément est la saison la plus récente, qui n'est pas le défaut
+// d'une page de statistiques à l'intersaison — d'où `defaultSeason` dans
+// SeasonSelector, sans quoi choisir la saison à venir renverrait ailleurs.
+check(
+  "le plus récent n'est pas le défaut des stats",
+  buildSeasonOptions(["2025-26", "2024-25"], "2026-27")[0],
   "2026-27"
 );
 

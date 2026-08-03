@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { OG_IMAGE } from "@/lib/seo";
+import { buildSeasonOptions, seasonStatus, seasonStatusLabel } from "@/lib/season";
 import { getLeagueState } from "@/lib/league-season";
 import { NBA_TEAM_COUNT, parseSalaryOrNull } from "@/lib/salary-cap";
 import { decodeTrade, type TradeRosterPlayer } from "@/lib/trade-rules";
@@ -43,7 +44,8 @@ export default async function TradesPage({
   searchParams: Promise<{ season?: string; teams?: string; moves?: string }>;
 }) {
   const params = await searchParams;
-  const { currentSeason, statsSeason } = await getLeagueState();
+  const leagueState = await getLeagueState();
+  const { currentSeason, statsSeason } = leagueState;
   const season = params.season || currentSeason;
   const supabase = await createClient();
 
@@ -58,8 +60,15 @@ export default async function TradesPage({
     supabase.from("team_payrolls").select("team_tricode, payroll").eq("season", season),
   ]);
 
-  const availableSeasons = [...new Set((seasonRows || []).map((r: { season: string }) => r.season))];
-  if (!availableSeasons.includes(season)) availableSeasons.unshift(season);
+  const availableSeasons = buildSeasonOptions(
+    (seasonRows || []).map((r: { season: string }) => r.season),
+    currentSeason,
+    season
+  );
+  const statuses = Object.fromEntries(
+    availableSeasons.map((s) => [s, seasonStatusLabel(seasonStatus(s, leagueState))])
+  );
+  const status = seasonStatus(season, leagueState);
 
   const roster: TradeRosterPlayer[] = ((rows || []) as RosterRow[]).map((r) => ({
     player_id: r.player_id,
@@ -133,7 +142,21 @@ export default async function TradesPage({
           variant="teams"
           extra={
             <div className="flex flex-wrap items-center gap-3">
-              <SeasonSelector current={season} available={availableSeasons} />
+              <SeasonSelector
+                current={season}
+                available={availableSeasons}
+                defaultSeason={currentSeason}
+                statuses={statuses}
+              />
+              <span
+                className={`inline-flex items-center border px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider ${
+                  status === "upcoming"
+                    ? "border-accent text-accent-text"
+                    : "border-rule text-text-muted"
+                }`}
+              >
+                {seasonStatusLabel(status)}
+              </span>
               {missingSalaries > 0 && (
                 <span className="inline-flex items-center border border-amber-500 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-amber-500">
                   <span className="tnum">{missingSalaries}</span>&nbsp;contrats manquants

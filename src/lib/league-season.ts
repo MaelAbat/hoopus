@@ -27,6 +27,11 @@ export interface LeagueState {
   scheduleSeason: string;
   lastCompletedSeason: string | null;
   finalsChampion: string | null;
+  /**
+   * Vrai entre deux saisons : la ligue a basculé mais aucun match n'a encore été
+   * joué. C'est la condition qui déclenche les repères d'intersaison à l'écran.
+   */
+  isOffseason: boolean;
 }
 
 /**
@@ -56,6 +61,7 @@ async function loadLeagueState(): Promise<LeagueState> {
     scheduleSeason: fallbackSeason,
     lastCompletedSeason: null,
     finalsChampion: null,
+    isOffseason: false,
   };
 
   try {
@@ -68,12 +74,16 @@ async function loadLeagueState(): Promise<LeagueState> {
 
     if (error || !data) return fallback;
 
+    const currentSeason = data.current_season || fallbackSeason;
+    const statsSeason = data.stats_season || currentSeason;
+
     return {
-      currentSeason: data.current_season || fallbackSeason,
-      statsSeason: data.stats_season || data.current_season || fallbackSeason,
-      scheduleSeason: data.schedule_season || data.current_season || fallbackSeason,
+      currentSeason,
+      statsSeason,
+      scheduleSeason: data.schedule_season || currentSeason,
       lastCompletedSeason: data.last_completed_season ?? null,
       finalsChampion: data.finals_champion ?? null,
+      isOffseason: currentSeason !== statsSeason,
     };
   } catch {
     return fallback;

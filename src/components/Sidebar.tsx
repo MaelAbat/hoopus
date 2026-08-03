@@ -49,9 +49,14 @@ interface UserProfile {
 export default function Sidebar({
   hasNews = true,
   hasArticles = true,
+  seasonLabel,
+  isOffseason = false,
 }: {
   hasNews?: boolean;
   hasArticles?: boolean;
+  /** Saison de la ligue, affichée sous le titre. */
+  seasonLabel?: string;
+  isOffseason?: boolean;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -138,9 +143,18 @@ export default function Sidebar({
             <X size={20} />
           </button>
         </div>
+        {/* Repère de saison — visible depuis n'importe quelle page, pour qu'on
+            sache toujours de quelle saison parle le site. */}
         <div className="mt-2 flex items-center gap-2.5">
           <span className="block h-[2px] w-7 bg-accent" />
-          <span className="kicker text-text-faint">NBA · France</span>
+          {seasonLabel ? (
+            <span className="kicker text-text-faint">
+              <span className="tnum text-text-muted">{seasonLabel}</span>
+              {isOffseason && <span className="text-accent-text"> · Intersaison</span>}
+            </span>
+          ) : (
+            <span className="kicker text-text-faint">NBA · France</span>
+          )}
         </div>
       </div>
 
