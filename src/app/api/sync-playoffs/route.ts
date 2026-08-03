@@ -1,11 +1,11 @@
-import https from "node:https";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentSeason } from "@/lib/season";
+import { fetchLeagueState } from "@/lib/league-season";
+import { fetchLeagueSchedule } from "@/lib/nba-schedule";
 import { isCronAuthorized } from "@/lib/cron-auth";
 
-const SEASON = getCurrentSeason();
+// Saison résolue par requête depuis league_state (voir /api/sync-season).
 
 /*
   NBA gameId format for playoffs: "004XXYYZZ"
@@ -52,38 +52,6 @@ interface NbaSchedule {
   };
 }
 
-function fetchSchedule(): Promise<NbaSchedule> {
-  return new Promise((resolve, reject) => {
-    const req = https.get(
-      "https://cdn.nba.com/static/json/staticData/scheduleLeagueV2.json",
-      {
-        headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-          Referer: "https://www.nba.com/",
-        },
-      },
-      (res) => {
-        const chunks: Buffer[] = [];
-        res.on("data", (chunk: Buffer) => chunks.push(chunk));
-        res.on("end", () => {
-          if (res.statusCode !== 200) {
-            reject(new Error(`CDN error: ${res.statusCode}`));
-            return;
-          }
-          try {
-            resolve(JSON.parse(Buffer.concat(chunks).toString("utf-8")));
-          } catch {
-            reject(new Error("Failed to parse schedule"));
-          }
-        });
-      }
-    );
-    req.on("error", reject);
-    req.setTimeout(600000, () => { req.destroy(); reject(new Error("CDN timeout after 10min")); });
-  });
-}
-
 function getRound(gameId: string): number {
   // gameId format: 004XXYYZZ... → chars at index 6-7 are the round
   const roundStr = gameId.substring(6, 8);
@@ -126,11 +94,11 @@ interface StandingRow {
 const TEAM_SEEDS = new Map<string, { conference: string; seed: number }>();
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function fetchConferenceTeams(supabase: any) {
+async function fetchConferenceTeams(supabase: any, season: string) {
   const { data } = await supabase
     .from("standings")
     .select("team_tricode, conference, conference_rank")
-    .eq("season", SEASON);
+    .eq("season", season);
 
   const standings = data as StandingRow[] | null;
   if (standings) {
@@ -170,12 +138,15 @@ export async function GET(request: NextRequest) {
 
   const startTime = Date.now();
 
+  const SEASON = (await fetchLeagueState()).currentSeason;
+  console.log(`[SYNC-PLAYOFFS] Saison ${SEASON}`);
+
   try {
     console.log("[SYNC-PLAYOFFS] Starting sync...");
     const now = new Date().toISOString();
-    await fetchConferenceTeams(supabase);
+    await fetchConferenceTeams(supabase, SEASON);
     console.log("[SYNC-PLAYOFFS] Fetching from NBA CDN...");
-    const schedule = await fetchSchedule();
+    const schedule = await fetchLeagueSchedule<NbaSchedule>({ fallbackSeason: SEASON });
     const gameDates = schedule.leagueSchedule.gameDates;
 
     // Collect all playoff and play-in games

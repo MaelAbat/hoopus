@@ -1,11 +1,10 @@
-import https from "node:https";
+import { fetchLeagueSchedule } from "@/lib/nba-schedule";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentSeason } from "@/lib/season";
+import { seasonFromGameId } from "@/lib/season";
+import { fetchLeagueState } from "@/lib/league-season";
 import { isCronAuthorized } from "@/lib/cron-auth";
-
-const SEASON = getCurrentSeason();
 
 interface NbaTeam {
   teamTricode: string;
@@ -34,38 +33,6 @@ interface NbaSchedule {
   };
 }
 
-function fetchSchedule(): Promise<NbaSchedule> {
-  return new Promise((resolve, reject) => {
-    const req = https.get(
-      "https://cdn.nba.com/static/json/staticData/scheduleLeagueV2.json",
-      {
-        headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-          Referer: "https://www.nba.com/",
-        },
-      },
-      (res) => {
-        const chunks: Buffer[] = [];
-        res.on("data", (chunk: Buffer) => chunks.push(chunk));
-        res.on("end", () => {
-          if (res.statusCode !== 200) {
-            reject(new Error(`CDN error: ${res.statusCode}`));
-            return;
-          }
-          try {
-            resolve(JSON.parse(Buffer.concat(chunks).toString("utf-8")));
-          } catch {
-            reject(new Error("Failed to parse schedule"));
-          }
-        });
-      }
-    );
-    req.on("error", reject);
-    req.setTimeout(600000, () => { req.destroy(); reject(new Error("CDN timeout after 10min")); });
-  });
-}
-
 export async function GET(request: NextRequest) {
   if (!isCronAuthorized(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -81,7 +48,10 @@ export async function GET(request: NextRequest) {
   try {
     console.log("[SYNC-GAMES] Starting sync...");
     console.log("[SYNC-GAMES] Fetching from NBA CDN...");
-    const schedule = await fetchSchedule();
+    // Repli sur stats.nba.com si le CDN nous bloque. La saison de chaque match
+    // reste lue dans son identifiant, donc la source ne change pas le rangement.
+    const SEASON = (await fetchLeagueState()).currentSeason;
+    const schedule = await fetchLeagueSchedule<NbaSchedule>({ fallbackSeason: SEASON });
     const gameDates = schedule.leagueSchedule.gameDates;
 
     let totalInserted = 0;
@@ -113,6 +83,17 @@ export async function GET(request: NextRequest) {
 
         const gameDate = game.gameDateEst.split("T")[0];
 
+        // La saison est lue dans l'identifiant du match, pas calculée à côté.
+        // Le calendrier du CDN bascule sur la saison suivante à l'intersaison :
+        // étiqueter son contenu avec une saison globale y verserait les matchs
+        // de l'année N+1. Un identifiant illisible est ignoré plutôt que rangé
+        // dans la mauvaise saison.
+        const gameSeason = seasonFromGameId(game.gameId);
+        if (!gameSeason) {
+          console.warn(`[SYNC-GAMES] Identifiant illisible, match ignoré : ${game.gameId}`);
+          continue;
+        }
+
         allGames.push({
           game_id: game.gameId,
           game_date: gameDate,
@@ -127,7 +108,7 @@ export async function GET(request: NextRequest) {
           away_score: game.awayTeam?.score || 0,
           arena: game.arenaName || "",
           arena_city: game.arenaCity || "",
-          season: SEASON,
+          season: gameSeason,
           updated_at: now,
         });
       }
@@ -154,6 +135,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       ok: true,
+      // Les saisons réellement écrites, pour vérifier la bascule d'un coup d'œil.
+      seasons: [...new Set(allGames.map((g) => g.season))].sort(),
       totalGames: allGames.length,
       inserted: totalInserted,
       timestamp: now,

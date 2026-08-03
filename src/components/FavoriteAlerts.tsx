@@ -5,7 +5,7 @@ import Link from "next/link";
 import { X } from "lucide-react";
 import { useFavorites } from "@/context/FavoritesContext";
 import { createClient } from "@/lib/supabase/client";
-import { getCurrentSeason } from "@/lib/season";
+
 import { teamLogoUrl } from "@/lib/nba-teams";
 
 interface GameAlert {
@@ -29,7 +29,7 @@ interface InjuryAlert {
 
 type Alert = GameAlert | InjuryAlert;
 
-export default function FavoriteAlerts() {
+export default function FavoriteAlerts({ season }: { season: string }) {
   const { favoriteTeams, loaded } = useFavorites();
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
@@ -42,7 +42,7 @@ export default function FavoriteAlerts() {
     }
 
     const supabase = createClient();
-    const season = getCurrentSeason();
+
 
     async function fetchAlerts() {
       const results: Alert[] = [];
@@ -104,7 +104,7 @@ export default function FavoriteAlerts() {
     }
 
     fetchAlerts();
-  }, [loaded, favoriteTeams]);
+  }, [loaded, favoriteTeams, season]);
 
   const visibleAlerts = alerts.filter((a) => !dismissed.has(a.id));
 

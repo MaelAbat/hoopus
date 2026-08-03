@@ -22,6 +22,16 @@
 .DS_Store
 *.pem
 
+# Documents et médias déposés à la racine du projet : dépôt public, donc rien
+# de personnel ne doit pouvoir y arriver par inadvertance. Les visuels du site
+# vivent dans public/ ou passent par l'upload Supabase.
+/*.pdf
+/*.jpg
+/*.jpeg
+/*.png
+/*.heic
+/*.webp
+
 # debug
 npm-debug.log*
 yarn-debug.log*

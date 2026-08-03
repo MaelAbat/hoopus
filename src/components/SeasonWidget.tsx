@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentSeason } from "@/lib/season";
+import { getLeagueState } from "@/lib/league-season";
+import OffseasonNotice from "./OffseasonNotice";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { teamLogoUrl } from "@/lib/nba-teams";
@@ -27,7 +28,12 @@ function MoreLink({ href, label }: { href: string; label: string }) {
 }
 
 export default async function SeasonWidget() {
-  const season = getCurrentSeason();
+  const { statsSeason: season, isOffseason } = await getLeagueState();
+
+  // Entre deux saisons, « Course aux playoffs » désignerait une course déjà
+  // terminée. On annonce l'intersaison à la place.
+  if (isOffseason) return <OffseasonNotice />;
+
   const supabase = await createClient();
 
   /* ── 1. Check active playoff series ────────── */

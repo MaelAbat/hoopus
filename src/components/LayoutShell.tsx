@@ -20,11 +20,16 @@ export default function LayoutShell({
   ticker,
   hasNews = true,
   hasArticles = true,
+  seasonLabel,
+  isOffseason = false,
 }: {
   children: React.ReactNode;
   ticker?: React.ReactNode;
   hasNews?: boolean;
   hasArticles?: boolean;
+  /** Saison de la ligue, relayée à la barre latérale. */
+  seasonLabel?: string;
+  isOffseason?: boolean;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -63,7 +68,12 @@ export default function LayoutShell({
       <FavoritesProvider>
         <VideoProvider>
           <div onClickCapture={handleClickCapture}>
-            <Sidebar hasNews={hasNews} hasArticles={hasArticles} />
+            <Sidebar
+              hasNews={hasNews}
+              hasArticles={hasArticles}
+              seasonLabel={seasonLabel}
+              isOffseason={isOffseason}
+            />
             <main className="min-h-screen pt-14 px-3 pb-4 sm:px-6 sm:pb-6 lg:ml-64 lg:pt-0 lg:p-8">
               {ticker && (
                 <div className="sticky top-14 lg:top-0 z-30 mb-2 pt-3 lg:pt-4">

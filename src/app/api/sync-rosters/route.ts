@@ -2,10 +2,12 @@ import https from "node:https";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentSeason } from "@/lib/season";
+import { seasonBefore } from "@/lib/season";
+import { BR_TEAMS, fetchAllSalaries, normalizeName } from "@/lib/br-salaries";
+import { fetchLeagueState } from "@/lib/league-season";
 import { isCronAuthorized } from "@/lib/cron-auth";
 
-const SEASON = getCurrentSeason();
+// Saison résolue par requête depuis league_state (voir /api/sync-season).
 const BATCH_SIZE = 200;
 
 const NBA_HEADERS: Record<string, string> = {
@@ -27,131 +29,6 @@ interface NbaResponse {
     headers: string[];
     rowSet: (string | number | null)[][];
   }[];
-}
-
-/* ─── Salary scraping from Basketball Reference ─── */
-function fetchHtml(url: string, redirects = 0): Promise<string> {
-  if (redirects > 5) return Promise.reject(new Error("Too many redirects"));
-  return new Promise((resolve, reject) => {
-    try {
-      const req = https.get(url, {
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-          "Accept": "text/html,application/xhtml+xml",
-          "Accept-Language": "en-US,en;q=0.9",
-        },
-      }, (res) => {
-        if ((res.statusCode === 301 || res.statusCode === 302) && res.headers.location) {
-          let location = res.headers.location;
-          // Handle relative redirects
-          if (location.startsWith("/")) {
-            const parsed = new URL(url);
-            location = `${parsed.protocol}//${parsed.host}${location}`;
-          }
-          res.resume(); // drain the response
-          fetchHtml(location, redirects + 1).then(resolve).catch(reject);
-          return;
-        }
-        const chunks: Buffer[] = [];
-        res.on("data", (chunk: Buffer) => chunks.push(chunk));
-        res.on("end", () => {
-          if (res.statusCode !== 200) {
-            reject(new Error(`HTML fetch error: ${res.statusCode}`));
-            return;
-          }
-          resolve(Buffer.concat(chunks).toString("utf-8"));
-        });
-      });
-      req.on("error", reject);
-      req.setTimeout(600000, () => { req.destroy(); reject(new Error("timeout after 10min")); });
-    } catch (err) {
-      reject(err);
-    }
-  });
-}
-
-function normalizeName(name: string): string {
-  return name
-    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // remove accents
-    .toLowerCase()
-    .replace(/[^a-z ]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-// Basketball Reference tricode mapping (some differ from NBA)
-const BR_TRICODE_MAP: Record<string, string> = {
-  PHO: "PHX",
-  BRK: "BKN",
-  CHO: "CHA",
-};
-
-// All 30 BR team slugs
-const BR_TEAMS = [
-  "ATL", "BOS", "BRK", "CHI", "CHO", "CLE", "DAL", "DEN", "DET", "GSW",
-  "HOU", "IND", "LAC", "LAL", "MEM", "MIA", "MIL", "MIN", "NOP", "NYK",
-  "OKC", "ORL", "PHI", "PHO", "POR", "SAC", "SAS", "TOR", "UTA", "WAS",
-];
-
-function delay(ms: number) { return new Promise(r => setTimeout(r, ms)); }
-
-async function fetchTeamSalaries(brTeam: string, salaryMap: Map<string, string>) {
-  const html = await fetchHtml(`https://www.basketball-reference.com/contracts/${brTeam}.html`);
-  const nbaTeam = BR_TRICODE_MAP[brTeam] || brTeam;
-  const rows = html.match(/<tr\s*>[\s\S]*?<\/tr>/g) || [];
-
-  for (const row of rows) {
-    const playerMatch = row.match(/data-stat="player"[^>]*>.*?<a[^>]*>([^<]+)<\/a>/);
-    if (!playerMatch) continue;
-    const salaryMatch = row.match(/data-stat="y1"[^>]*>(\$[\d,]+)/);
-    if (!salaryMatch) continue;
-
-    const key = normalizeName(playerMatch[1].trim()) + "|" + nbaTeam;
-    salaryMap.set(key, salaryMatch[1]);
-  }
-}
-
-async function fetchTeamPayrolls(): Promise<Map<string, number>> {
-  const payrollMap = new Map<string, number>();
-  try {
-    const html = await fetchHtml("https://www.basketball-reference.com/contracts/");
-    const rows = html.match(/<tr[^>]*>[\s\S]*?<\/tr>/g) || [];
-    for (const row of rows) {
-      const tricodeMatch = row.match(/\/contracts\/([A-Z]{3})\.html/);
-      if (!tricodeMatch) continue;
-      const payrollMatch = row.match(/data-stat="y1"[^>]*>(\$[\d,]+)/);
-      if (!payrollMatch) continue;
-      let tri = tricodeMatch[1];
-      tri = BR_TRICODE_MAP[tri] || tri;
-      const amount = Number(payrollMatch[1].replace(/[$,]/g, "")) || 0;
-      payrollMap.set(tri, amount);
-    }
-    console.log(`Payroll scraping: found ${payrollMap.size} team totals`);
-  } catch (err) {
-    console.error("Error scraping payrolls:", err);
-  }
-  return payrollMap;
-}
-
-async function fetchSalaries(): Promise<Map<string, string>> {
-  const salaryMap = new Map<string, string>();
-
-  try {
-    // Fetch team pages in batches of 5 to avoid rate limiting
-    for (let i = 0; i < BR_TEAMS.length; i += 5) {
-      const batch = BR_TEAMS.slice(i, i + 5);
-      await Promise.all(batch.map(team => fetchTeamSalaries(team, salaryMap).catch(err => {
-        console.error(`Salary scrape failed for ${team}:`, err.message);
-      })));
-      // Small delay between batches to be polite
-      if (i + 5 < BR_TEAMS.length) await delay(1000);
-    }
-    console.log(`Salary scraping: found ${salaryMap.size} salaries from ${BR_TEAMS.length} team pages`);
-  } catch (err) {
-    console.error("Error scraping salaries:", err);
-  }
-
-  return salaryMap;
 }
 
 function fetchNba(url: string, timeoutMs = 300000): Promise<NbaResponse> {
@@ -176,19 +53,19 @@ function fetchNba(url: string, timeoutMs = 300000): Promise<NbaResponse> {
   });
 }
 
-/** Fetch biostats for all players in a single call */
-async function fetchAllBioStats(): Promise<Map<number, number>> {
+/** Fetch biostats for one season in a single call. */
+async function fetchBioStatsForSeason(season: string): Promise<Map<number, number>> {
   const ageMap = new Map<number, number>();
 
   try {
-    console.log("[SYNC-ROSTERS] Fetching bio stats from stats.nba.com (timeout 10min)...");
+    console.log(`[SYNC-ROSTERS] Fetching bio stats for ${season} (timeout 10min)...`);
     const bioData = await fetchNba(
       "https://stats.nba.com/stats/leaguedashplayerbiostats?" +
         "College=&Conference=&Country=&DateFrom=&DateTo=&Division=" +
         "&DraftPick=&DraftYear=&GameScope=&GameSegment=&Height=" +
         "&ISTRound=&LastNGames=0&LeagueID=00&Location=&Month=0" +
         "&OpponentTeamID=0&Outcome=&PORound=0&PerMode=PerGame" +
-        "&Period=0&PlayerExperience=&PlayerPosition=&Season=" + SEASON +
+        "&Period=0&PlayerExperience=&PlayerPosition=&Season=" + season +
         "&SeasonSegment=&SeasonType=Regular+Season" +
         "&ShotClockRange=&StarterBench=&TeamID=0" +
         "&VsConference=&VsDivision=&Weight="
@@ -202,12 +79,28 @@ async function fetchAllBioStats(): Promise<Map<number, number>> {
       const age = row[ageIdx] != null ? Number(row[ageIdx]) : null;
       if (pid && age) ageMap.set(pid, age);
     }
-    console.log(`[SYNC-ROSTERS] Got ages for ${ageMap.size} players`);
+    console.log(`[SYNC-ROSTERS] Got ages for ${ageMap.size} players (${season})`);
   } catch (err) {
     console.error("[SYNC-ROSTERS] Bio stats fetch failed (non-fatal):", (err as Error).message);
   }
 
   return ageMap;
+}
+
+/**
+ * Âges des joueurs, avec repli sur la saison précédente.
+ *
+ * Les bio stats d'une saison qui n'a pas commencé sont vides. Sans repli, tous
+ * les effectifs de l'intersaison perdraient l'âge de leurs joueurs. Les valeurs
+ * reprises accusent alors jusqu'à un an de retard, jusqu'au coup d'envoi.
+ */
+async function fetchAllBioStats(season: string): Promise<Map<number, number>> {
+  const ages = await fetchBioStatsForSeason(season);
+  if (ages.size > 0) return ages;
+
+  const previous = seasonBefore(season);
+  console.log(`[SYNC-ROSTERS] Aucune bio stat pour ${season}, repli sur ${previous}`);
+  return fetchBioStatsForSeason(previous);
 }
 
 export async function GET(request: NextRequest) {
@@ -224,6 +117,8 @@ export async function GET(request: NextRequest) {
 
   try {
     console.log("[SYNC-ROSTERS] Starting sync...");
+    const SEASON = (await fetchLeagueState()).currentSeason;
+    console.log(`[SYNC-ROSTERS] Saison ${SEASON}`);
     // Read active players from Supabase (already synced by sync-players)
     const { data: dbPlayers, error: dbError } = await supabase
       .from("players")
@@ -238,33 +133,58 @@ export async function GET(request: NextRequest) {
     // Fetch bio stats (ages) and salaries in parallel
     console.log("[SYNC-ROSTERS] Fetching from NBA API and Basketball Reference...");
     const [ageMap, salaryResult] = await Promise.all([
-      fetchAllBioStats(),
+      fetchAllBioStats(SEASON),
       (async () => {
-        let salaryMap = new Map<string, string>();
-        let payrollMap = new Map<string, number>();
         try {
-          [salaryMap, payrollMap] = await Promise.all([
-            fetchSalaries(),
-            fetchTeamPayrolls(),
-          ]);
+          return await fetchAllSalaries(SEASON);
         } catch (err) {
           console.error("Salary/payroll scraping failed (non-fatal):", err);
+          return {
+            salaryMap: new Map<string, string>(),
+            payrollMap: new Map<string, number>(),
+            failed: [] as string[],
+          };
         }
-        return { salaryMap, payrollMap };
       })(),
     ]);
 
-    const { salaryMap, payrollMap } = salaryResult;
+    const { salaryMap, payrollMap, failed } = salaryResult;
     console.log(`[SYNC-ROSTERS] Fetched ${ageMap.size} ages, ${salaryMap.size} salaries, ${payrollMap.size} payrolls`);
+
+    // ── Salaires déjà connus ──
+    // Une synchronisation ne doit jamais détruire de données valides. Sans ce
+    // repli, un incident chez Basketball Reference (429, coupure) rendait un
+    // `salaryMap` vide et remettait toute la colonne salaires à null. On
+    // conserve donc la valeur déjà en base pour les joueurs que le scraping
+    // n'a pas couverts.
+    const { data: knownRows } = await supabase
+      .from("rosters")
+      .select("player_id, salary")
+      .eq("season", SEASON)
+      .not("salary", "is", null);
+    const knownSalaries = new Map<number, string>(
+      (knownRows || []).map((r) => [r.player_id, r.salary as string])
+    );
+    if (knownSalaries.size > 0) {
+      console.log(`[SYNC-ROSTERS] ${knownSalaries.size} salaires déjà en base, conservés à défaut`);
+    }
 
     const now = new Date().toISOString();
     const players = [];
+    let preserved = 0;
 
     for (const p of dbPlayers) {
       if (!p.team_tricode) continue;
 
       const salaryKey = normalizeName(`${p.first_name} ${p.last_name}`) + "|" + p.team_tricode;
-      const salary = salaryMap.get(salaryKey) || null;
+      let salary = salaryMap.get(salaryKey) ?? null;
+      if (!salary) {
+        const known = knownSalaries.get(p.player_id);
+        if (known) {
+          salary = known;
+          preserved++;
+        }
+      }
 
       players.push({
         season: SEASON,
@@ -309,7 +229,17 @@ export async function GET(request: NextRequest) {
     }
 
     // Store team payroll totals
-    if (payrollMap.size > 0) {
+    // ── Masses salariales ──
+    // On n'écrit que si les 30 équipes ont répondu. Une série partielle est
+    // pire que rien : les pages compareraient des totaux officiels pour
+    // certaines équipes à des sommes de contrats pour les autres. En cas de
+    // scraping incomplet, les valeurs précédentes restent en place.
+    if (payrollMap.size < BR_TEAMS.length) {
+      console.warn(
+        `[SYNC-ROSTERS] Masses salariales incomplètes (${payrollMap.size}/${BR_TEAMS.length}` +
+          `${failed.length > 0 ? `, échecs : ${failed.join(", ")}` : ""}) — écriture ignorée`
+      );
+    } else {
       const payrollRows = Array.from(payrollMap.entries()).map(([tricode, payroll]) => ({
         season: SEASON,
         team_tricode: tricode,
@@ -323,14 +253,54 @@ export async function GET(request: NextRequest) {
       if (payrollError) console.error("Payroll upsert error:", payrollError);
     }
 
+    // ── Purge des joueurs sortis de la ligue ──
+    // L'upsert n'enlève rien : les joueurs présents lors d'une synchronisation
+    // précédente mais absents de celle-ci restaient dans l'effectif de la
+    // saison. Après l'intersaison 2026, 30 partants figuraient encore dans les
+    // effectifs 2026-27 avec leur ancienne équipe.
+    let pruned = 0;
+    if (players.length > 0) {
+      const keptIds = players.map((p) => p.player_id);
+      const { data: removed, error: pruneError } = await supabase
+        .from("rosters")
+        .delete()
+        .eq("season", SEASON)
+        .not("player_id", "in", `(${keptIds.join(",")})`)
+        .select("player_id, first_name, last_name, team_tricode");
+
+      if (pruneError) {
+        console.error("[SYNC-ROSTERS] Purge échouée:", pruneError.message);
+      } else {
+        pruned = removed?.length ?? 0;
+        if (pruned > 0) {
+          const names = (removed ?? [])
+            .slice(0, 10)
+            .map((p) => `${p.first_name} ${p.last_name} (${p.team_tricode})`)
+            .join(", ");
+          console.log(
+            `[SYNC-ROSTERS] ${pruned} joueur(s) retiré(s) de l'effectif ${SEASON} : ${names}` +
+              (pruned > 10 ? ", ..." : "")
+          );
+        }
+      }
+    }
+
+    if (preserved > 0) {
+      console.log(`[SYNC-ROSTERS] ${preserved} salaire(s) repris de la base, source incomplète`);
+    }
     console.log(`[SYNC-ROSTERS] Upserted ${inserted} rows successfully`);
     revalidatePath("/equipes");
+    revalidatePath("/trades");
     const duration = ((Date.now() - startTime) / 1000).toFixed(1);
     console.log(`[SYNC-ROSTERS] Completed at ${now} (took ${duration}s)`);
 
     return NextResponse.json({
       ok: true,
+      season: SEASON,
       players: inserted,
+      pruned,
+      preserved,
+      salaries: salaryMap.size,
       payrolls: payrollMap.size,
       timestamp: now,
     });

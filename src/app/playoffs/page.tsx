@@ -1,9 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { OG_IMAGE } from "@/lib/seo";
-import { getCurrentSeason } from "@/lib/season";
+import { buildSeasonOptions, seasonStatus, seasonStatusLabel } from "@/lib/season";
+import { getLeagueState } from "@/lib/league-season";
 import PlayoffBracket from "@/components/PlayoffBracket";
 import PageBanner from "@/components/PageBanner";
 import ScrollReveal from "@/components/ScrollReveal";
+import OffseasonNotice from "@/components/OffseasonNotice";
 import SeasonSelector, { SeasonTransitionProvider, SeasonContent } from "@/components/SeasonSelector";
 
 export const revalidate = 3600;
@@ -22,7 +24,10 @@ export const metadata = {
 
 export default async function Playoffs({ searchParams }: { searchParams: Promise<{ season?: string }> }) {
   const { season: seasonParam } = await searchParams;
-  const season = seasonParam || getCurrentSeason();
+  const leagueState = await getLeagueState();
+  // Le bracket concerne une saison jouée : défaut sur la dernière.
+  const defaultSeason = leagueState.statsSeason;
+  const season = seasonParam || defaultSeason;
   const supabase = await createClient();
 
   const PLAYOFF_STAT_CATEGORIES = ["PTS", "REB", "AST", "STL", "BLK", "FG_PCT", "FG3_PCT", "TS_PCT"];
@@ -66,8 +71,15 @@ export default async function Playoffs({ searchParams }: { searchParams: Promise
       .eq("season_type", "playoffs")
       .order("net_rating", { ascending: false }),
   ]);
-  const availableSeasons = [...new Set((seasonRows || []).map((r: { season: string }) => r.season))];
-  if (!availableSeasons.includes(season)) availableSeasons.unshift(season);
+  const availableSeasons = buildSeasonOptions(
+    (seasonRows || []).map((r: { season: string }) => r.season),
+    leagueState.currentSeason,
+    season
+  );
+  const statuses = Object.fromEntries(
+    availableSeasons.map((s) => [s, seasonStatusLabel(seasonStatus(s, leagueState))])
+  );
+  const status = seasonStatus(season, leagueState);
 
   // Enrich each series game with its game_id by looking up (date, home, away)
   // in the games table — avoids needing the playoff sync to store it.
@@ -116,17 +128,29 @@ export default async function Playoffs({ searchParams }: { searchParams: Promise
           variant="playoffs"
           extra={
             <div className="flex flex-wrap items-center gap-3">
-              <SeasonSelector current={season} available={availableSeasons} />
-              {hasData ? (
+              <SeasonSelector
+                current={season}
+                available={availableSeasons}
+                defaultSeason={defaultSeason}
+                statuses={statuses}
+              />
+              <span
+                className={`inline-flex items-center border px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider ${
+                  status === "current"
+                    ? "border-accent text-accent-text"
+                    : "border-rule text-text-muted"
+                }`}
+              >
+                {seasonStatusLabel(status)}
+              </span>
+              {hasData && (
                 <span className="tnum text-xs text-text-faint">Basé sur le classement du {lastUpdate}</span>
-              ) : (
-                <span className="inline-flex items-center border border-rule px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-text-muted">
-                  Synchronisation requise
-                </span>
               )}
             </div>
           }
         />
+
+        {status === "completed" && <OffseasonNotice variant="compact" />}
 
         <SeasonContent>
           <ScrollReveal variant="up" delay={100}>

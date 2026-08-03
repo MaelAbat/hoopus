@@ -2,10 +2,10 @@ import https from "node:https";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentSeason } from "@/lib/season";
+import { fetchLeagueState } from "@/lib/league-season";
 import { isCronAuthorized } from "@/lib/cron-auth";
 
-const SEASON = getCurrentSeason();
+// Saison résolue par requête depuis league_state (voir /api/sync-season).
 
 // ESPN team abbreviations for all 30 teams
 const ESPN_TEAMS = [
@@ -83,6 +83,8 @@ export async function GET(request: NextRequest) {
   const startTime = Date.now();
   const now = new Date().toISOString();
   console.log("[SYNC-INJURIES] Starting sync...");
+  const SEASON = (await fetchLeagueState()).currentSeason;
+  console.log(`[SYNC-INJURIES] Saison ${SEASON}`);
 
   try {
     // Fetch all 30 teams in batches of 6 to avoid overwhelming ESPN

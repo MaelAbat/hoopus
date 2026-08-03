@@ -29,6 +29,7 @@ import LayoutShell from "@/components/LayoutShell";
 import ScoresTickerServer from "@/components/ScoresTickerServer";
 import { hasNews } from "@/lib/actions/news";
 import { hasArticles } from "@/lib/actions/articles";
+import { getLeagueState } from "@/lib/league-season";
 import JsonLd from "@/components/JsonLd";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://hoopus.fr";
@@ -121,7 +122,11 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [newsExists, articlesExist] = await Promise.all([hasNews(), hasArticles()]);
+  const [newsExists, articlesExist, leagueState] = await Promise.all([
+    hasNews(),
+    hasArticles(),
+    getLeagueState(),
+  ]);
 
   return (
     <html
@@ -142,6 +147,8 @@ export default async function RootLayout({
             <LayoutShell
               hasNews={newsExists}
               hasArticles={articlesExist}
+              seasonLabel={leagueState.currentSeason}
+              isOffseason={leagueState.isOffseason}
               ticker={
                 <Suspense fallback={null}>
                   <ScoresTickerServer />

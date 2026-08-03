@@ -1,12 +1,15 @@
 import { createClient } from "@/lib/supabase/server";
 import { OG_IMAGE } from "@/lib/seo";
-import { getCurrentSeason, seasonLabel } from "@/lib/season";
+import { buildSeasonOptions, seasonLabel, seasonStatus, seasonStatusLabel } from "@/lib/season";
+import { getLeagueState } from "@/lib/league-season";
 import type { PlayerStatLeader, StatCategory } from "@/lib/nba-api";
 import StatsView from "@/components/StatsView";
 import type { PlayerRow } from "@/components/StatsTable";
 import type { TeamRow } from "@/components/TeamStatsTable";
 import PageBanner from "@/components/PageBanner";
 import ScrollReveal from "@/components/ScrollReveal";
+import SeasonEmptyState from "@/components/SeasonEmptyState";
+import OffseasonNotice from "@/components/OffseasonNotice";
 import SeasonSelector, { SeasonTransitionProvider, SeasonContent } from "@/components/SeasonSelector";
 
 export const revalidate = 3600;
@@ -57,7 +60,10 @@ const GP_CATEGORIES = new Set(["PTS", "REB", "AST", "BLK", "STL", "EFF", "TOV", 
 
 export default async function Statistiques({ searchParams }: { searchParams: Promise<{ season?: string }> }) {
   const { season: seasonParam } = await searchParams;
-  const season = seasonParam || getCurrentSeason();
+  const leagueState = await getLeagueState();
+  // Les leaders portent sur des matchs joués : défaut sur la dernière saison jouée.
+  const defaultSeason = leagueState.statsSeason;
+  const season = seasonParam || defaultSeason;
   const supabase = await createClient();
 
   // Fetch season list and stat leaders in parallel
@@ -75,8 +81,15 @@ export default async function Statistiques({ searchParams }: { searchParams: Pro
         .range(i * 1000, (i + 1) * 1000 - 1)
     ),
   ]);
-  const availableSeasons = [...new Set((seasonRows || []).map((r: { season: string }) => r.season))];
-  if (!availableSeasons.includes(season)) availableSeasons.unshift(season);
+  const availableSeasons = buildSeasonOptions(
+    (seasonRows || []).map((r: { season: string }) => r.season),
+    leagueState.currentSeason,
+    season
+  );
+  const statuses = Object.fromEntries(
+    availableSeasons.map((s) => [s, seasonStatusLabel(seasonStatus(s, leagueState))])
+  );
+  const status = seasonStatus(season, leagueState);
 
   const allLeaders = pages.flatMap((p) => p.data || []);
   const hasData = allLeaders.length > 0;
@@ -196,23 +209,44 @@ export default async function Statistiques({ searchParams }: { searchParams: Pro
           variant="stats"
           extra={
             <div className="flex flex-wrap items-center gap-3">
-              <SeasonSelector current={season} available={availableSeasons} />
-              {hasData ? (
+              <SeasonSelector
+                current={season}
+                available={availableSeasons}
+                defaultSeason={defaultSeason}
+                statuses={statuses}
+              />
+              <span
+                className={`inline-flex items-center border px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider ${
+                  status === "current"
+                    ? "border-accent text-accent-text"
+                    : "border-rule text-text-muted"
+                }`}
+              >
+                {seasonStatusLabel(status)}
+              </span>
+              {hasData && (
                 <span className="font-mono text-[11px] uppercase tracking-wider text-text-faint">
                   <span className="tnum">Mis à jour le {lastUpdate}</span>
-                </span>
-              ) : (
-                <span className="inline-flex items-center border border-rule px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-text-muted">
-                  Synchronisation requise
                 </span>
               )}
             </div>
           }
         />
 
+        {status === "completed" && <OffseasonNotice variant="compact" />}
+
         <SeasonContent>
           <ScrollReveal variant="up" delay={100}>
-            <StatsView boards={boardsData} tableData={tableData} teamData={teamData} />
+            {hasData ? (
+              <StatsView boards={boardsData} tableData={tableData} teamData={teamData} />
+            ) : (
+              <SeasonEmptyState
+                season={season}
+                status={status}
+                what="Les statistiques et les leaders"
+                fallbackSeason={season !== defaultSeason ? defaultSeason : null}
+              />
+            )}
           </ScrollReveal>
         </SeasonContent>
       </div>

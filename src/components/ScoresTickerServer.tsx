@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentSeason } from "@/lib/season";
+import { getStatsSeason } from "@/lib/league-season";
 import { decidedSeriesKeysFromSeries, filterScheduledByDecidedSeries } from "@/lib/playoff-utils";
 import ScoresTicker from "./ScoresTicker";
 
@@ -18,7 +18,7 @@ export default async function ScoresTickerServer() {
       const { data } = await supabase
         .from("playoff_series")
         .select("round, team_top, team_bottom, wins_top, wins_bottom, status")
-        .eq("season", getCurrentSeason())
+        .eq("season", await getStatsSeason())
         .eq("status", "completed");
       decidedKeys = decidedSeriesKeysFromSeries(data || []);
     }

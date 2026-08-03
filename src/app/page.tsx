@@ -2,7 +2,8 @@ import Link from "next/link";
 import { ArrowRight, ArrowUpRight } from "lucide-react";
 import { getArticles } from "@/lib/actions/articles";
 import { hasNews } from "@/lib/actions/news";
-import { getCurrentSeason, seasonLabel } from "@/lib/season";
+import { seasonLabel } from "@/lib/season";
+import { getLeagueState } from "@/lib/league-season";
 import ScrollReveal from "@/components/ScrollReveal";
 import SeasonWidget from "@/components/SeasonWidget";
 import FavoriteDashboard from "@/components/FavoriteDashboard";
@@ -58,7 +59,7 @@ function formatDate(dateStr: string) {
 }
 
 export default async function Home() {
-  const season = getCurrentSeason();
+  const { currentSeason: season, isOffseason } = await getLeagueState();
   const [articles, newsExists] = await Promise.all([getArticles(), hasNews()]);
   const featured = articles[0] ?? null;
   const funFact = getDaily(funFacts);
@@ -73,7 +74,7 @@ export default async function Home() {
   return (
     <div className="mx-auto max-w-6xl">
       {/* ── Favorite Alerts ──────────────────── */}
-      <FavoriteAlerts />
+      <FavoriteAlerts season={season} />
 
       {/* ── Masthead ─────────────────────────── */}
       <section className="relative overflow-hidden border border-rule bg-card">
@@ -95,14 +96,23 @@ export default async function Home() {
 
         {/* Top status rail */}
         <div className="flex items-center justify-between border-b border-rule px-5 py-2.5 sm:px-8">
-          <span className="kicker text-text-muted">Saison {seasonLabel(season)}</span>
-          <span className="inline-flex items-center gap-2">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
+          <span className="kicker text-text-muted">{seasonLabel(season)}</span>
+          {/* Le témoin « En direct » n'a pas de sens quand aucun match n'est
+              programmé : entre deux saisons, on annonce l'intersaison. */}
+          {isOffseason ? (
+            <span className="inline-flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-text-faint" />
+              <span className="kicker text-text-muted">Intersaison</span>
             </span>
-            <span className="kicker text-accent-text">En direct</span>
-          </span>
+          ) : (
+            <span className="inline-flex items-center gap-2">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
+              </span>
+              <span className="kicker text-accent-text">En direct</span>
+            </span>
+          )}
         </div>
 
         <div className="relative px-5 py-10 sm:px-8 sm:py-16">
@@ -148,7 +158,7 @@ export default async function Home() {
 
       {/* ── En ce moment ────────────────────── */}
       <div className="mt-10 sm:mt-16">
-        <SectionLabel index="00" title="En ce moment" />
+        <SectionLabel index="00" title={isOffseason ? "Où en est la ligue" : "En ce moment"} />
         <ScrollReveal variant="up">
           <SeasonWidget />
         </ScrollReveal>
@@ -206,7 +216,7 @@ export default async function Home() {
       {/* ── Mon espace (favoris) ───────────── */}
       <div className="mt-10 sm:mt-16">
         <ScrollReveal variant="up">
-          <FavoriteDashboard />
+          <FavoriteDashboard season={season} />
         </ScrollReveal>
       </div>
 

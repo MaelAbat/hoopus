@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentSeason } from "@/lib/season";
+import { getStatsSeason } from "@/lib/league-season";
 import HooplGame from "@/components/HooplGame";
 import { OG_IMAGE } from "@/lib/seo";
 
@@ -16,7 +16,9 @@ export const metadata = {
 };
 
 export default async function HooplPage() {
-  const season = getCurrentSeason();
+  // Les jeux reposent sur des moyennes par match : il faut la dernière saison
+  // réellement jouée, sinon le vivier est vide pendant toute l'intersaison.
+  const season = await getStatsSeason();
   const supabase = await createClient();
 
   // Fetch active players with stats from rosters

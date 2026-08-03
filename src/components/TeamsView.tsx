@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { teamLogoUrl, playerPhotoUrl } from "@/lib/nba-teams";
 import { useFavorites } from "@/context/FavoritesContext";
+import { CAP_THRESHOLDS, NBA_TEAM_COUNT, capStatus, formatMoney, parseSalary } from "@/lib/salary-cap";
 
 interface Player {
   id: string;
@@ -70,7 +71,17 @@ function TeamGrid({ teams, onSelect }: { teams: { tricode: string; city: string;
 }
 
 /* ─── Roster table for a single team ─── */
-function RosterTable({ players, tricode, onBack }: { players: Player[]; tricode: string; onBack: () => void }) {
+function RosterTable({
+  players,
+  tricode,
+  onBack,
+  statsFromSeason,
+}: {
+  players: Player[];
+  tricode: string;
+  onBack: () => void;
+  statsFromSeason?: string | null;
+}) {
   const team = players[0];
   if (!team) return null;
 
@@ -91,6 +102,13 @@ function RosterTable({ players, tricode, onBack }: { players: Player[]; tricode:
           <p className="kicker mt-1 text-text-faint"><span className="tnum">{players.length}</span> joueurs</p>
         </div>
       </div>
+
+      {statsFromSeason && (
+        <p className="border border-rule bg-input/30 px-4 py-2.5 text-xs text-text-muted">
+          La saison n&apos;a pas encore débuté : les colonnes PTS, REB et AST reprennent les moyennes
+          de la saison <strong className="text-text-secondary">{statsFromSeason}</strong>.
+        </p>
+      )}
 
       {/* Table */}
       <div className="border border-rule bg-card overflow-hidden">
@@ -162,25 +180,6 @@ function RosterTable({ players, tricode, onBack }: { players: Player[]; tricode:
   );
 }
 
-/* ─── Salary Cap thresholds 2025-26 ─── */
-const CAP_THRESHOLDS = {
-  salaryCap: 154_647_000,
-  luxuryTax: 188_931_000,
-  firstApron: 196_581_000,
-  secondApron: 204_231_000,
-};
-
-function parseSalary(salary: string | null): number {
-  if (!salary) return 0;
-  return Number(salary.replace(/[$,]/g, "")) || 0;
-}
-
-function formatMoney(n: number): string {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `$${(n / 1_000).toFixed(0)}K`;
-  return `$${n}`;
-}
-
 interface TeamPayroll {
   team_tricode: string;
   payroll: number;
@@ -197,8 +196,10 @@ function SalaryCapView({ players, payrolls }: { players: Player[]; payrolls: Tea
       }
     }
 
-    // Use scraped payroll totals from BR (accurate with dead money, cap holds)
-    if (payrolls.length > 0) {
+    // Totaux officiels de BR (qui incluent dead money et cap holds), mais
+    // seulement s'ils couvrent les 30 équipes : une série partielle comparerait
+    // des totaux officiels à des sommes de contrats selon l'équipe.
+    if (payrolls.filter((p) => p.payroll > 0).length >= NBA_TEAM_COUNT) {
       return payrolls
         .map(p => ({
           tricode: p.team_tricode,
@@ -222,13 +223,7 @@ function SalaryCapView({ players, payrolls }: { players: Player[]; payrolls: Tea
 
   const maxTotal = Math.max(...teamSalaries.map(t => t.total), CAP_THRESHOLDS.secondApron * 1.1);
 
-  function getStatus(total: number): { label: string; color: string; barFill: string; badge: string } {
-    if (total >= CAP_THRESHOLDS.secondApron) return { label: "2nd Apron", color: "text-red-500", barFill: "bg-red-500", badge: "border-red-500 text-red-500" };
-    if (total >= CAP_THRESHOLDS.firstApron) return { label: "1er Apron", color: "text-accent-text", barFill: "bg-accent", badge: "border-accent text-accent-text" };
-    if (total >= CAP_THRESHOLDS.luxuryTax) return { label: "Luxury Tax", color: "text-text-primary", barFill: "bg-accent/70", badge: "border-rule text-text-primary" };
-    if (total >= CAP_THRESHOLDS.salaryCap) return { label: "Over Cap", color: "text-text-secondary", barFill: "bg-text-muted", badge: "border-rule text-text-secondary" };
-    return { label: "Under Cap", color: "text-text-muted", barFill: "bg-text-faint", badge: "border-rule text-text-muted" };
-  }
+  const getStatus = capStatus;
 
   const capPct = (CAP_THRESHOLDS.salaryCap / maxTotal) * 100;
   const taxPct = (CAP_THRESHOLDS.luxuryTax / maxTotal) * 100;
@@ -337,7 +332,16 @@ function SalaryCapView({ players, payrolls }: { players: Player[]; payrolls: Tea
 }
 
 /* ─── Main component ─── */
-export default function TeamsView({ players, payrolls }: { players: Player[]; payrolls: TeamPayroll[] }) {
+export default function TeamsView({
+  players,
+  payrolls,
+  statsFromSeason,
+}: {
+  players: Player[];
+  payrolls: TeamPayroll[];
+  /** Saison d'où viennent les moyennes, si ce n'est pas celle affichée. */
+  statsFromSeason?: string | null;
+}) {
   const [view, setView] = useState<"rosters" | "cap">("rosters");
   const searchParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
   const [selectedTeam, setSelectedTeam] = useState<string | null>(searchParams?.get("team") || null);
@@ -385,7 +389,14 @@ export default function TeamsView({ players, payrolls }: { players: Player[]; pa
   }
 
   if (selectedTeam) {
-    return <RosterTable players={teamPlayers} tricode={selectedTeam} onBack={() => { setSelectedTeam(null); }} />;
+    return (
+      <RosterTable
+        players={teamPlayers}
+        tricode={selectedTeam}
+        onBack={() => { setSelectedTeam(null); }}
+        statsFromSeason={statsFromSeason}
+      />
+    );
   }
 
   return (

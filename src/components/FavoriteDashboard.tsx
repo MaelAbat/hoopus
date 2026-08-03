@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useFavorites } from "@/context/FavoritesContext";
 import { createClient } from "@/lib/supabase/client";
-import { getCurrentSeason } from "@/lib/season";
+
 import { teamLogoUrl, playerPhotoUrl } from "@/lib/nba-teams";
 
 interface Game {
@@ -132,7 +132,7 @@ function LoadingSkeleton() {
   );
 }
 
-export default function FavoriteDashboard() {
+export default function FavoriteDashboard({ season }: { season: string }) {
   const { favoriteTeams, followedPlayers, loaded } = useFavorites();
   const [recentGames, setRecentGames] = useState<Game[]>([]);
   const [upcomingGames, setUpcomingGames] = useState<Game[]>([]);
@@ -147,7 +147,7 @@ export default function FavoriteDashboard() {
     }
 
     const supabase = createClient();
-    const season = getCurrentSeason();
+
 
     async function fetchData() {
       const promises: Promise<void>[] = [];
@@ -200,7 +200,7 @@ export default function FavoriteDashboard() {
     }
 
     fetchData();
-  }, [loaded, favoriteTeams, followedPlayers]);
+  }, [loaded, favoriteTeams, followedPlayers, season]);
 
   if (!loaded || (favoriteTeams.length === 0 && followedPlayers.length === 0)) {
     return null;

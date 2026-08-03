@@ -1,9 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 import { OG_IMAGE } from "@/lib/seo";
-import { getCurrentSeason, seasonLabel } from "@/lib/season";
+import { buildSeasonOptions, seasonLabel, seasonStatus, seasonStatusLabel } from "@/lib/season";
+import { getLeagueState } from "@/lib/league-season";
 import StandingsView from "@/components/StandingsView";
 import PageBanner from "@/components/PageBanner";
 import ScrollReveal from "@/components/ScrollReveal";
+import SeasonEmptyState from "@/components/SeasonEmptyState";
+import OffseasonNotice from "@/components/OffseasonNotice";
 import SeasonSelector, { SeasonTransitionProvider, SeasonContent } from "@/components/SeasonSelector";
 
 export const revalidate = 3600;
@@ -22,15 +25,28 @@ export const metadata = {
 
 export default async function Classement({ searchParams }: { searchParams: Promise<{ season?: string }> }) {
   const { season: seasonParam } = await searchParams;
-  const season = seasonParam || getCurrentSeason();
+  const leagueState = await getLeagueState();
+  // Le classement s'ouvre sur la dernière saison jouée : celle à venir est vide.
+  const defaultSeason = leagueState.statsSeason;
+  const season = seasonParam || defaultSeason;
   const supabase = await createClient();
 
   const [{ data: seasonRows }, { data: standings, error }] = await Promise.all([
     supabase.from("standings").select("season").order("season", { ascending: false }).limit(1000),
     supabase.from("standings").select("*").eq("season", season).order("conference_rank", { ascending: true }),
   ]);
-  const availableSeasons = [...new Set((seasonRows || []).map((r: { season: string }) => r.season))];
-  if (!availableSeasons.includes(season)) availableSeasons.unshift(season);
+
+  // La saison de la ligue figure dans la liste même sans données, pour qu'elle
+  // soit atteignable dès sa bascule.
+  const availableSeasons = buildSeasonOptions(
+    (seasonRows || []).map((r: { season: string }) => r.season),
+    leagueState.currentSeason,
+    season
+  );
+  const statuses = Object.fromEntries(
+    availableSeasons.map((s) => [s, seasonStatusLabel(seasonStatus(s, leagueState))])
+  );
+  const status = seasonStatus(season, leagueState);
 
   const hasData = !error && standings && standings.length > 0;
 
@@ -55,25 +71,46 @@ export default async function Classement({ searchParams }: { searchParams: Promi
       <div className="mx-auto max-w-6xl space-y-8">
         <PageBanner
           title="Classement"
-          subtitle={`${seasonLabel(season)} -- saison régulière`}
+          subtitle={`${seasonLabel(season)} — saison régulière`}
           variant="standings"
           extra={
             <div className="flex flex-wrap items-center gap-3">
-              <SeasonSelector current={season} available={availableSeasons} />
-              {hasData ? (
+              <SeasonSelector
+                current={season}
+                available={availableSeasons}
+                defaultSeason={defaultSeason}
+                statuses={statuses}
+              />
+              <span
+                className={`inline-flex items-center border px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider ${
+                  status === "current"
+                    ? "border-accent text-accent-text"
+                    : "border-rule text-text-muted"
+                }`}
+              >
+                {seasonStatusLabel(status)}
+              </span>
+              {hasData && (
                 <span className="font-mono text-[11px] uppercase tracking-wider text-text-faint">Mis à jour le {lastUpdate}</span>
-              ) : (
-                <span className="inline-flex items-center border border-rule px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-text-muted">
-                  Synchronisation requise
-                </span>
               )}
             </div>
           }
         />
 
+        {status === "completed" && <OffseasonNotice variant="compact" />}
+
         <SeasonContent>
           <ScrollReveal variant="up" delay={100}>
-            <StandingsView east={east} west={west} />
+            {hasData ? (
+              <StandingsView east={east} west={west} />
+            ) : (
+              <SeasonEmptyState
+                season={season}
+                status={status}
+                what="Le classement et les bilans"
+                fallbackSeason={season !== defaultSeason ? defaultSeason : null}
+              />
+            )}
           </ScrollReveal>
         </SeasonContent>
       </div>

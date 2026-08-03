@@ -1,9 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 import { OG_IMAGE } from "@/lib/seo";
-import { getCurrentSeason, seasonLabel } from "@/lib/season";
+import { buildSeasonOptions, seasonLabel, seasonStatus, seasonStatusLabel } from "@/lib/season";
+import { getLeagueState } from "@/lib/league-season";
 import CalendarView from "@/components/CalendarView";
 import PageBanner from "@/components/PageBanner";
 import ScrollReveal from "@/components/ScrollReveal";
+import SeasonEmptyState from "@/components/SeasonEmptyState";
+import OffseasonNotice from "@/components/OffseasonNotice";
 import SeasonSelector, { SeasonTransitionProvider, SeasonContent } from "@/components/SeasonSelector";
 
 export const revalidate = 3600;
@@ -22,7 +25,11 @@ export const metadata = {
 
 export default async function Calendrier({ searchParams }: { searchParams: Promise<{ season?: string }> }) {
   const { season: seasonParam } = await searchParams;
-  const season = seasonParam || getCurrentSeason();
+  const leagueState = await getLeagueState();
+  // Le calendrier suit le programme publié, pas la dernière saison jouée : le
+  // nouveau calendrier doit apparaître dès sa parution.
+  const defaultSeason = leagueState.scheduleSeason;
+  const season = seasonParam || defaultSeason;
   const supabase = await createClient();
 
   // Fetch one game per potential season to discover available seasons
@@ -61,8 +68,15 @@ export default async function Calendrier({ searchParams }: { searchParams: Promi
       .order("game_date", { ascending: true })
       .range(2000, 2999),
   ]);
-  const availableSeasons = seasonChecks.filter((s): s is string => s !== null);
-  if (!availableSeasons.includes(season)) availableSeasons.unshift(season);
+  const availableSeasons = buildSeasonOptions(
+    seasonChecks.filter((s): s is string => s !== null),
+    leagueState.currentSeason,
+    season
+  );
+  const statuses = Object.fromEntries(
+    availableSeasons.map((s) => [s, seasonStatusLabel(seasonStatus(s, leagueState))])
+  );
+  const status = seasonStatus(season, leagueState);
 
   const games = [...(page1 || []), ...(page2 || []), ...(page3 || [])];
 
@@ -71,13 +85,43 @@ export default async function Calendrier({ searchParams }: { searchParams: Promi
       <div className="mx-auto max-w-6xl space-y-8">
         <PageBanner
           title="Calendrier"
-          subtitle={`${seasonLabel(season)} -- saison régulière`}
+          subtitle={`${seasonLabel(season)} — saison régulière`}
           variant="calendar"
-          extra={<SeasonSelector current={season} available={availableSeasons} />}
+          extra={
+            <div className="flex flex-wrap items-center gap-3">
+              <SeasonSelector
+                current={season}
+                available={availableSeasons}
+                defaultSeason={defaultSeason}
+                statuses={statuses}
+              />
+              <span
+                className={`inline-flex items-center border px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider ${
+                  status === "current"
+                    ? "border-accent text-accent-text"
+                    : "border-rule text-text-muted"
+                }`}
+              >
+                {seasonStatusLabel(status)}
+              </span>
+            </div>
+          }
         />
+
+        {status === "completed" && <OffseasonNotice variant="compact" />}
+
         <SeasonContent>
           <ScrollReveal variant="up" delay={100}>
-            <CalendarView games={games || []} initialSeason={season} />
+            {games.length > 0 ? (
+              <CalendarView games={games} initialSeason={season} />
+            ) : (
+              <SeasonEmptyState
+                season={season}
+                status={status}
+                what="Le calendrier et les résultats"
+                fallbackSeason={season !== defaultSeason ? defaultSeason : null}
+              />
+            )}
           </ScrollReveal>
         </SeasonContent>
       </div>

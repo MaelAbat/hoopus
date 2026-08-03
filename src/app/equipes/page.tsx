@@ -1,9 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { OG_IMAGE } from "@/lib/seo";
-import { getCurrentSeason } from "@/lib/season";
+import { buildSeasonOptions, seasonStatus, seasonStatusLabel } from "@/lib/season";
+import { getLeagueState } from "@/lib/league-season";
 import TeamsView from "@/components/TeamsView";
 import PageBanner from "@/components/PageBanner";
 import ScrollReveal from "@/components/ScrollReveal";
+import OffseasonNotice from "@/components/OffseasonNotice";
 import SeasonSelector, { SeasonTransitionProvider, SeasonContent } from "@/components/SeasonSelector";
 
 export const revalidate = 3600;
@@ -22,7 +24,10 @@ export const metadata = {
 
 export default async function Equipes({ searchParams }: { searchParams: Promise<{ season?: string }> }) {
   const { season: seasonParam } = await searchParams;
-  const season = seasonParam || getCurrentSeason();
+  const leagueState = await getLeagueState();
+  const { currentSeason, statsSeason } = leagueState;
+  // Les effectifs suivent la ligue : ils basculent dès la fin des Finales.
+  const season = seasonParam || currentSeason;
   const supabase = await createClient();
 
   const [{ data: seasonRows }, { data: players, error }, { data: payrolls }] = await Promise.all([
@@ -38,10 +43,41 @@ export default async function Equipes({ searchParams }: { searchParams: Promise<
       .select("*")
       .eq("season", season),
   ]);
-  const availableSeasons = [...new Set((seasonRows || []).map((r: { season: string }) => r.season))];
-  if (!availableSeasons.includes(season)) availableSeasons.unshift(season);
+  const availableSeasons = buildSeasonOptions(
+    (seasonRows || []).map((r: { season: string }) => r.season),
+    currentSeason,
+    season
+  );
+  const statuses = Object.fromEntries(
+    availableSeasons.map((s) => [s, seasonStatusLabel(seasonStatus(s, leagueState))])
+  );
+  const status = seasonStatus(season, leagueState);
 
   const hasData = !error && players && players.length > 0;
+
+  // ── Statistiques de référence ──
+  // Les effectifs d'une saison qui n'a pas commencé n'ont aucune moyenne par
+  // match. Plutôt que des colonnes vides pendant toute l'intersaison, on reprend
+  // les moyennes de la dernière saison jouée, en l'indiquant clairement.
+  let statsFromSeason: string | null = null;
+  if (hasData && statsSeason !== season && !players.some((p) => p.pts != null && p.pts > 0)) {
+    const { data: refRows } = await supabase
+      .from("rosters")
+      .select("player_id, pts, reb, ast")
+      .eq("season", statsSeason);
+
+    const ref = new Map((refRows || []).map((r) => [r.player_id, r]));
+    let matched = 0;
+    for (const p of players) {
+      const r = ref.get(p.player_id);
+      if (!r) continue;
+      p.pts = r.pts;
+      p.reb = r.reb;
+      p.ast = r.ast;
+      matched++;
+    }
+    if (matched > 0) statsFromSeason = statsSeason;
+  }
 
   const lastUpdate = hasData
     ? new Date(players[0].updated_at).toLocaleString("fr-FR", {
@@ -61,7 +97,21 @@ export default async function Equipes({ searchParams }: { searchParams: Promise<
           variant="teams"
           extra={
             <div className="flex flex-wrap items-center gap-3">
-              <SeasonSelector current={season} available={availableSeasons} />
+              <SeasonSelector
+                current={season}
+                available={availableSeasons}
+                defaultSeason={currentSeason}
+                statuses={statuses}
+              />
+              <span
+                className={`inline-flex items-center border px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider ${
+                  status === "upcoming"
+                    ? "border-accent text-accent-text"
+                    : "border-rule text-text-muted"
+                }`}
+              >
+                {seasonStatusLabel(status)}
+              </span>
               {hasData ? (
                 <span className="font-mono text-[11px] uppercase tracking-wider text-text-faint">Mis à jour le {lastUpdate}</span>
               ) : (
@@ -75,7 +125,7 @@ export default async function Equipes({ searchParams }: { searchParams: Promise<
 
         <SeasonContent>
           <ScrollReveal variant="up" delay={100}>
-            <TeamsView players={players || []} payrolls={payrolls || []} />
+            <TeamsView players={players || []} payrolls={payrolls || []} statsFromSeason={statsFromSeason} />
           </ScrollReveal>
         </SeasonContent>
       </div>

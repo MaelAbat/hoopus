@@ -10,6 +10,10 @@
 
 const BASE_URL = "http://localhost:3002";
 
+// La bascule de saison passe en premier : les autres endpoints lisent
+// league_state pour savoir dans quelle saison ecrire.
+const SEASON_ENDPOINT = { key: "season", label: "Saison" };
+
 // Endpoints rapides (CDN/ESPN, pas de rate limit) — peuvent tourner en parallele
 const PARALLEL_ENDPOINTS = [
   { key: "games", label: "Matchs" },
@@ -27,7 +31,7 @@ const SEQUENTIAL_ENDPOINTS = [
   { key: "career", label: "Carrieres" },
 ];
 
-const ALL_ENDPOINTS = [...PARALLEL_ENDPOINTS, ...SEQUENTIAL_ENDPOINTS];
+const ALL_ENDPOINTS = [SEASON_ENDPOINT, ...PARALLEL_ENDPOINTS, ...SEQUENTIAL_ENDPOINTS];
 
 async function main() {
   const { config } = await import("dotenv");
@@ -76,6 +80,14 @@ async function main() {
       console.log(` FAIL ${(err as Error).message} (${duration}s)`);
       results.push({ label: endpoint.label, ok: false, duration, detail: (err as Error).message });
     }
+  }
+
+  // Phase 0: bascule de saison, avant tout le reste
+  const seasonToRun = selectedEndpoints.filter((e) => e.key === SEASON_ENDPOINT.key);
+  if (seasonToRun.length > 0) {
+    console.log("  --- Saison ---");
+    await runEndpoint(SEASON_ENDPOINT);
+    console.log("");
   }
 
   // Phase 1: endpoints rapides en parallele (CDN/ESPN)

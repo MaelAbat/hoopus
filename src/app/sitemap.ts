@@ -29,6 +29,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: "/joueurs", changeFrequency: "weekly", priority: 0.8 },
     { path: "/joueurs/comparer", changeFrequency: "weekly", priority: 0.6 },
     { path: "/equipes", changeFrequency: "weekly", priority: 0.8 },
+    { path: "/trades", changeFrequency: "weekly", priority: 0.6 },
     { path: "/blessures", changeFrequency: "daily", priority: 0.7 },
     { path: "/playoffs", changeFrequency: "daily", priority: 0.7 },
     { path: "/actualites", changeFrequency: "daily", priority: 0.8 },
