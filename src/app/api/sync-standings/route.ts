@@ -93,11 +93,14 @@ export async function GET(request: NextRequest) {
     const response = await fetchStandings(SEASON);
     const now = new Date().toISOString();
 
-    const standings = response.children.flatMap((conference) => {
+    // Une saison qui n'a pas commencé renvoie bien les deux conférences, mais
+    // sans `entries` : ESPN ne publie le classement qu'au premier match. Ce
+    // n'est pas une erreur, simplement zéro ligne à écrire.
+    const standings = (response.children ?? []).flatMap((conference) => {
       const confName =
         conference.abbreviation === "East" ? "East" : "West";
 
-      return conference.standings.entries.map((entry) => {
+      return (conference.standings?.entries ?? []).map((entry) => {
         const { team, stats } = entry;
 
         return {
@@ -120,6 +123,18 @@ export async function GET(request: NextRequest) {
     });
 
     console.log(`[SYNC-STANDINGS] Fetched ${standings.length} rows from API`);
+
+    if (standings.length === 0) {
+      console.log(`[SYNC-STANDINGS] Aucun classement publié pour ${SEASON} — rien à écrire`);
+      return NextResponse.json({
+        ok: true,
+        teams: 0,
+        season: SEASON,
+        message: "Classement pas encore publié pour cette saison",
+        timestamp: now,
+      });
+    }
+
     console.log(`[SYNC-STANDINGS] Upserting ${standings.length} rows into standings...`);
     const { error } = await supabase.from("standings").upsert(standings, { onConflict: "team_tricode,season" });
     if (error) {
