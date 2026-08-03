@@ -26,8 +26,8 @@ interface Game {
 }
 
 const MONTHS_FR = [
-  "Janvier", "F\u00E9vrier", "Mars", "Avril", "Mai", "Juin",
-  "Juillet", "Ao\u00FBt", "Septembre", "Octobre", "Novembre", "D\u00E9cembre",
+  "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
+  "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre",
 ];
 
 const DAYS_FR = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
@@ -78,8 +78,8 @@ function getGameLabel(gameId: string): string | null {
   if (gameId.startsWith("004")) {
     const round = gameId.substring(6, 8);
     if (round === "01") return "1er tour";
-    if (round === "02") return "Demi-finale de conf\u00E9rence";
-    if (round === "03") return "Finale de conf\u00E9rence";
+    if (round === "02") return "Demi-finale de conférence";
+    if (round === "03") return "Finale de conférence";
     if (round === "04") return "Finales NBA";
     return "Playoffs";
   }
@@ -115,7 +115,7 @@ function GameCard({ game }: { game: Game }) {
             Live
           </span>
         ) : isFinal ? (
-          <span className="font-mono text-[10px] font-semibold uppercase tracking-wider text-text-faint">Termin\u00E9</span>
+          <span className="font-mono text-[10px] font-semibold uppercase tracking-wider text-text-faint">Terminé</span>
         ) : (
           <span className="tnum font-mono text-[10px] uppercase tracking-wider text-text-muted">
             {toParisTime(game.game_date, game.game_time) || game.status_text}
@@ -138,7 +138,7 @@ function GameCard({ game }: { game: Game }) {
             ) : (
               <img src={teamLogoUrl(game.away_team)} alt={game.away_team} className="h-5 w-5 shrink-0 object-contain" />
             )}
-            <span className={`text-xs font-bold uppercase ${game.away_team === "TBD" ? "text-text-faint italic" : ""}`}>{game.away_team === "TBD" ? "\u00C0 d\u00E9terminer" : game.away_team}</span>
+            <span className={`text-xs font-bold uppercase ${game.away_team === "TBD" ? "text-text-faint italic" : ""}`}>{game.away_team === "TBD" ? "À déterminer" : game.away_team}</span>
             {game.away_team !== "TBD" && <span className="text-xs hidden sm:inline">{game.away_team_name}</span>}
           </div>
           {(isFinal || isLive) && (
@@ -154,7 +154,7 @@ function GameCard({ game }: { game: Game }) {
             ) : (
               <img src={teamLogoUrl(game.home_team)} alt={game.home_team} className="h-5 w-5 shrink-0 object-contain" />
             )}
-            <span className={`text-xs font-bold uppercase ${game.home_team === "TBD" ? "text-text-faint italic" : ""}`}>{game.home_team === "TBD" ? "\u00C0 d\u00E9terminer" : game.home_team}</span>
+            <span className={`text-xs font-bold uppercase ${game.home_team === "TBD" ? "text-text-faint italic" : ""}`}>{game.home_team === "TBD" ? "À déterminer" : game.home_team}</span>
             {game.home_team !== "TBD" && <span className="text-xs hidden sm:inline">{game.home_team_name}</span>}
           </div>
           {(isFinal || isLive) && (

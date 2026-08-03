@@ -384,10 +384,10 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
     const today = new Date();
     const dateStr = today.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
     const result = won
-      ? `Trouv\u00e9 en ${guessIds.length} essai${guessIds.length > 1 ? "s" : ""} (${formatTime(Math.floor(elapsed))})`
-      : gaveUp ? "Abandonn\u00e9" : `Pas trouv\u00e9 en ${MAX_GUESSES} essais`;
+      ? `Trouvé en ${guessIds.length} essai${guessIds.length > 1 ? "s" : ""} (${formatTime(Math.floor(elapsed))})`
+      : gaveUp ? "Abandonné" : `Pas trouvé en ${MAX_GUESSES} essais`;
     const clarity = won ? Math.round((1 - Math.pow(Math.max(0, 1 - elapsed / REVEAL_DURATION), 2)) * 100) : 100;
-    return `Hoopixl \u{1F5BC}\u{FE0F} ${dateStr}\n\n\u{1F50D} Clart\u00e9 : ${clarity}%\n${result}\n\nhttps://www.hoopus.fr/mini-jeux/hoopixl`;
+    return `Hoopixl \u{1F5BC}\u{FE0F} ${dateStr}\n\n\u{1F50D} Clarté : ${clarity}%\n${result}\n\nhttps://www.hoopus.fr/mini-jeux/hoopixl`;
   }
 
   function handleShare() {
@@ -427,7 +427,7 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
             Hoop<span className="text-accent">ixl</span>
           </h1>
           <p className="font-mono text-[11px] uppercase tracking-wider text-text-muted">
-            {gameOver ? (won ? `Trouv\u00e9 en ${formatTime(Math.floor(elapsed))} !` : gaveUp ? "Abandonn\u00e9" : "Partie termin\u00e9e") : "Qui se cache derri\u00e8re les pixels ?"}
+            {gameOver ? (won ? `Trouvé en ${formatTime(Math.floor(elapsed))} !` : gaveUp ? "Abandonné" : "Partie terminée") : "Qui se cache derrière les pixels ?"}
           </p>
         </div>
 
@@ -548,7 +548,7 @@ export default function HoopixlGame({ players }: { players: HoopixlPlayer[] }) {
               <img src={teamLogoUrl(target.team)} alt="" className="absolute -bottom-1 -right-1 h-7 w-7 object-contain bg-card p-0.5" />
             </div>
             <div className="min-w-0">
-              <p className="kicker text-red-300">{gaveUp ? "Abandonn\u00e9" : "Perdu !"}</p>
+              <p className="kicker text-red-300">{gaveUp ? "Abandonné" : "Perdu !"}</p>
               <p className="font-display text-2xl sm:text-3xl text-text-primary mt-0.5">{target.name}</p>
               <p className="text-sm text-text-muted">{target.teamName} -- {target.position}</p>
             </div>

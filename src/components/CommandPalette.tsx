@@ -278,7 +278,7 @@ export default function CommandPalette() {
             className="flex-1 bg-transparent text-lg text-text-primary placeholder:text-text-faint outline-none"
           />
           <kbd className="hidden sm:inline-flex items-center gap-0.5 border border-rule px-1.5 py-0.5 text-[10px] font-mono text-text-faint">
-            {isMac ? "\u2318" : "Ctrl+"}K
+            {isMac ? "⌘" : "Ctrl+"}K
           </kbd>
         </div>
 
