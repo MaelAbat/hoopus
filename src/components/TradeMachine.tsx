@@ -695,12 +695,7 @@ function BalanceTable({
       <p className="border-t border-rule px-4 py-2.5 text-[11px] leading-snug text-text-faint">
         PTS / REB / AST : variation du total des moyennes par match des joueurs échangés. Indice de
         production = PTS + 1,2 × REB + 1,5 × AST — repère indicatif, pas une valeur de marché.
-        {statsFromSeason && (
-          <>
-            {" "}Moyennes issues de la saison {statsFromSeason}, la saison en cours n&apos;ayant pas
-            encore débuté.
-          </>
-        )}
+        {statsFromSeason && <> Moyennes {statsFromSeason}.</>}
       </p>
     </div>
   );

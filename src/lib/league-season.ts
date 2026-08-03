@@ -27,6 +27,8 @@ export interface LeagueState {
   scheduleSeason: string;
   lastCompletedSeason: string | null;
   finalsChampion: string | null;
+  /** Ville et nom du champion, pour l'afficher en entier plutôt qu'en tricode. */
+  finalsChampionTeam: { city: string; name: string } | null;
   /**
    * Vrai entre deux saisons : la ligue a basculé mais aucun match n'a encore été
    * joué. C'est la condition qui déclenche les repères d'intersaison à l'écran.
@@ -61,6 +63,7 @@ async function loadLeagueState(): Promise<LeagueState> {
     scheduleSeason: fallbackSeason,
     lastCompletedSeason: null,
     finalsChampion: null,
+    finalsChampionTeam: null,
     isOffseason: false,
   };
 
@@ -76,13 +79,32 @@ async function loadLeagueState(): Promise<LeagueState> {
 
     const currentSeason = data.current_season || fallbackSeason;
     const statsSeason = data.stats_season || currentSeason;
+    const finalsChampion = data.finals_champion ?? null;
+
+    // Ville et nom du champion, résolus ici pour que l'affichage puisse écrire
+    // « New York Knicks » plutôt qu'un tricode. Une seule lecture indexée, et
+    // uniquement si un champion est connu.
+    let finalsChampionTeam: { city: string; name: string } | null = null;
+    if (finalsChampion && data.last_completed_season) {
+      const { data: team } = await supabase
+        .from("standings")
+        .select("team_city, team_name")
+        .eq("season", data.last_completed_season)
+        .eq("team_tricode", finalsChampion)
+        .limit(1)
+        .maybeSingle();
+      if (team?.team_city && team?.team_name) {
+        finalsChampionTeam = { city: team.team_city, name: team.team_name };
+      }
+    }
 
     return {
       currentSeason,
       statsSeason,
       scheduleSeason: data.schedule_season || currentSeason,
       lastCompletedSeason: data.last_completed_season ?? null,
-      finalsChampion: data.finals_champion ?? null,
+      finalsChampion,
+      finalsChampionTeam,
       isOffseason: currentSeason !== statsSeason,
     };
   } catch {

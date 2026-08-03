@@ -3,98 +3,65 @@ import { ArrowRight } from "lucide-react";
 import { teamLogoUrl } from "@/lib/nba-teams";
 import { getLeagueState } from "@/lib/league-season";
 
-/** Ce qui reste vivant entre deux saisons. */
-const OFFSEASON_LINKS = [
-  { href: "/equipes", label: "Effectifs" },
-  { href: "/trades", label: "Trade Machine" },
-  { href: "/blessures", label: "Infirmerie" },
-  { href: "/mini-jeux", label: "Mini-jeux" },
-];
-
 /**
- * Repère d'intersaison.
+ * État de la ligue entre deux saisons, sur l'accueil.
  *
- * Sans lui, une page de classement ou de statistiques affiche la saison écoulée
- * sans rien dire — le visiteur croit consulter des données du moment. Le bandeau
- * énonce donc les trois faits utiles : la saison est finie, qui l'a gagnée, et
- * ce qui est déjà consultable pour la suivante.
+ * Le parti pris est de le faire comprendre sans le dire. Un champion couronné et
+ * une saison suivante nommée suffisent : personne n'a besoin qu'on lui annonce
+ * « intersaison ». Une version précédente le répétait sur cinq écrans, avec deux
+ * colonnes expliquant quelles rubriques avaient basculé — c'était documenter le
+ * fonctionnement du site plutôt que le rendre lisible.
  *
- * Ne rend rien hors intersaison, il n'y a alors rien à signaler.
+ * Le détail par rubrique est porté là où il compte : le statut de la saison à
+ * côté de chaque sélecteur, et la provenance des chiffres au pied des tableaux
+ * concernés.
+ *
+ * Ne rend rien hors intersaison.
  */
-export default async function OffseasonNotice({
-  variant = "full",
-}: {
-  /** `compact` : une seule ligne, pour coiffer une page de saison écoulée. */
-  variant?: "full" | "compact";
-}) {
-  const { isOffseason, currentSeason, statsSeason, finalsChampion } = await getLeagueState();
-  if (!isOffseason) return null;
-
-  if (variant === "compact") {
-    return (
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border border-rule bg-input/30 px-4 py-2.5">
-        <span className="kicker shrink-0 text-accent-text">Intersaison</span>
-        <p className="text-xs text-text-muted">
-          Saison <span className="tnum text-text-secondary">{statsSeason}</span> terminée. La saison{" "}
-          <span className="tnum text-text-secondary">{currentSeason}</span> n&apos;a pas encore
-          commencé — ces données sont les dernières disponibles.
-        </p>
-      </div>
-    );
-  }
+export default async function OffseasonNotice() {
+  const { isOffseason, currentSeason, statsSeason, finalsChampion, finalsChampionTeam } =
+    await getLeagueState();
+  if (!isOffseason || !finalsChampion) return null;
 
   return (
     <div className="relative overflow-hidden border border-rule bg-card">
       <div className="absolute left-0 top-0 bottom-0 w-1 bg-accent" />
-      <div className="px-6 py-6 sm:px-8 sm:py-7">
-        <p className="kicker text-accent-text">Intersaison</p>
 
-        <div className="mt-3 flex flex-wrap items-baseline gap-x-4 gap-y-2">
-          <h2 className="font-display text-2xl uppercase leading-none text-text-primary sm:text-3xl">
-            Cap sur <span className="tnum">{currentSeason}</span>
-          </h2>
-          <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-text-muted">
-            Saison <span className="tnum">{statsSeason}</span> terminée
-          </span>
+      {/* Le champion, seul et en grand. Un titre qui vient d'être remporté dit à
+          lui seul que la saison est derrière nous. */}
+      <div className="flex items-center gap-5 px-6 py-6 sm:gap-7 sm:px-9 sm:py-8">
+        <img
+          src={teamLogoUrl(finalsChampion)}
+          alt=""
+          className="h-16 w-16 shrink-0 object-contain sm:h-20 sm:w-20"
+        />
+        <div className="min-w-0">
+          <p className="kicker text-accent-text">Champion {statsSeason}</p>
+          <p className="mt-2 font-display text-2xl uppercase leading-none text-text-primary sm:text-3xl">
+            {finalsChampionTeam
+              ? `${finalsChampionTeam.city} ${finalsChampionTeam.name}`
+              : finalsChampion}
+          </p>
         </div>
+      </div>
 
-        {finalsChampion && (
-          <div className="mt-4 flex items-center gap-3 border-t border-rule pt-4">
-            <img
-              src={teamLogoUrl(finalsChampion)}
-              alt=""
-              className="h-9 w-9 shrink-0 object-contain"
+      {/* Une ligne de pied : ce qui vient, et la seule chose à faire d'ici là.
+          Nommer la saison suivante suffit à situer où l'on se trouve. */}
+      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-t border-rule bg-input/40 px-6 py-4 sm:px-9">
+        <p className="kicker text-text-faint">Prochaine saison · {currentSeason}</p>
+        <div className="flex items-center gap-4">
+          <span className="hidden text-xs text-text-muted sm:inline">Sept défis quotidiens</span>
+          <Link
+            href="/mini-jeux"
+            className="group inline-flex shrink-0 items-center gap-2 bg-accent px-5 py-2.5 font-mono text-xs font-bold uppercase tracking-widest text-white transition-colors hover:bg-accent-hover"
+          >
+            Jouer
+            <ArrowRight
+              size={14}
+              strokeWidth={2}
+              className="transition-transform duration-200 group-hover:translate-x-0.5"
             />
-            <div>
-              <p className="kicker text-text-faint">Champion {statsSeason}</p>
-              <p className="font-display text-lg uppercase leading-none text-text-primary">
-                {finalsChampion}
-              </p>
-            </div>
-          </div>
-        )}
-
-        <p className="mt-4 max-w-2xl text-sm leading-relaxed text-text-muted">
-          Les statistiques et le classement restent ceux de la saison écoulée jusqu&apos;au premier
-          match. Les effectifs, les salaires et les échanges, eux, sont déjà ceux de{" "}
-          <span className="tnum text-text-secondary">{currentSeason}</span>.
-        </p>
-
-        <div className="mt-5 flex flex-wrap gap-2">
-          {OFFSEASON_LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="group inline-flex items-center gap-1.5 border border-rule px-3 py-2 font-mono text-[11px] font-bold uppercase tracking-wider text-text-muted transition-colors hover:border-border-hover hover:text-text-primary"
-            >
-              {link.label}
-              <ArrowRight
-                size={12}
-                strokeWidth={2}
-                className="transition-transform duration-200 group-hover:translate-x-0.5"
-              />
-            </Link>
-          ))}
+          </Link>
         </div>
       </div>
     </div>

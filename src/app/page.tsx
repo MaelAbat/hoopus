@@ -97,14 +97,10 @@ export default async function Home() {
         {/* Top status rail */}
         <div className="flex items-center justify-between border-b border-rule px-5 py-2.5 sm:px-8">
           <span className="kicker text-text-muted">{seasonLabel(season)}</span>
-          {/* Le témoin « En direct » n'a pas de sens quand aucun match n'est
-              programmé : entre deux saisons, on annonce l'intersaison. */}
-          {isOffseason ? (
-            <span className="inline-flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-text-faint" />
-              <span className="kicker text-text-muted">Intersaison</span>
-            </span>
-          ) : (
+          {/* Le témoin « En direct » n'apparaît que lorsqu'il y a effectivement du
+              direct. Entre deux saisons il disparaît, tout simplement : son
+              absence se comprend mieux qu'une étiquette annonçant l'inverse. */}
+          {!isOffseason && (
             <span className="inline-flex items-center gap-2">
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-75" />
