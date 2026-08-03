@@ -2,7 +2,8 @@ import https from "node:https";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
-import { seasonBefore, seasonStartYear } from "@/lib/season";
+import { seasonBefore } from "@/lib/season";
+import { fetchAllSalaries, normalizeName } from "@/lib/br-salaries";
 import { fetchLeagueState } from "@/lib/league-season";
 import { isCronAuthorized } from "@/lib/cron-auth";
 
@@ -28,171 +29,6 @@ interface NbaResponse {
     headers: string[];
     rowSet: (string | number | null)[][];
   }[];
-}
-
-/* ─── Salary scraping from Basketball Reference ─── */
-function fetchHtml(url: string, redirects = 0): Promise<string> {
-  if (redirects > 5) return Promise.reject(new Error("Too many redirects"));
-  return new Promise((resolve, reject) => {
-    try {
-      const req = https.get(url, {
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-          "Accept": "text/html,application/xhtml+xml",
-          "Accept-Language": "en-US,en;q=0.9",
-        },
-      }, (res) => {
-        if ((res.statusCode === 301 || res.statusCode === 302) && res.headers.location) {
-          let location = res.headers.location;
-          // Handle relative redirects
-          if (location.startsWith("/")) {
-            const parsed = new URL(url);
-            location = `${parsed.protocol}//${parsed.host}${location}`;
-          }
-          res.resume(); // drain the response
-          fetchHtml(location, redirects + 1).then(resolve).catch(reject);
-          return;
-        }
-        const chunks: Buffer[] = [];
-        res.on("data", (chunk: Buffer) => chunks.push(chunk));
-        res.on("end", () => {
-          if (res.statusCode !== 200) {
-            reject(new Error(`HTML fetch error: ${res.statusCode}`));
-            return;
-          }
-          resolve(Buffer.concat(chunks).toString("utf-8"));
-        });
-      });
-      req.on("error", reject);
-      req.setTimeout(600000, () => { req.destroy(); reject(new Error("timeout after 10min")); });
-    } catch (err) {
-      reject(err);
-    }
-  });
-}
-
-function normalizeName(name: string): string {
-  return name
-    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // remove accents
-    .toLowerCase()
-    .replace(/[^a-z ]/g, "")
-    .replace(/\s+/g, " ")
-    .trim()
-    // BR's per-season salary tables drop generational suffixes ("Kevin Porter"
-    // vs the NBA's "Kevin Porter Jr."), so strip them on both sides.
-    .replace(/ (jr|sr|ii|iii|iv|v)$/, "")
-    .trim();
-}
-
-// Basketball Reference tricode mapping (some differ from NBA)
-const BR_TRICODE_MAP: Record<string, string> = {
-  PHO: "PHX",
-  BRK: "BKN",
-  CHO: "CHA",
-};
-
-// All 30 BR team slugs
-const BR_TEAMS = [
-  "ATL", "BOS", "BRK", "CHI", "CHO", "CLE", "DAL", "DEN", "DET", "GSW",
-  "HOU", "IND", "LAC", "LAL", "MEM", "MIA", "MIL", "MIN", "NOP", "NYK",
-  "OKC", "ORL", "PHI", "PHO", "POR", "SAC", "SAS", "TOR", "UTA", "WAS",
-];
-
-function delay(ms: number) { return new Promise(r => setTimeout(r, ms)); }
-
-/**
- * Isole la table « Salaries » d'une page équipe-saison de Basketball
- * Reference. BR la sert à l'intérieur d'un commentaire HTML (rendu côté
- * client), donc on découpe la section au lieu de parser le DOM.
- */
-function extractSalariesSection(html: string): string {
-  const start = html.indexOf('id="all_salaries');
-  if (start === -1) return "";
-  const end = html.indexOf("</table>", start);
-  return end === -1 ? html.slice(start) : html.slice(start, end);
-}
-
-/**
- * Salaires d'une équipe pour UNE saison donnée.
- *
- * On lit `/teams/{TRI}/{année}.html`, dont la table de salaires est verrouillée
- * sur la saison demandée. Les pages `/contracts/` ne conviennent pas : leur
- * colonne `y1` bascule sur la saison suivante dès l'intersaison, ce qui
- * associait des salaires de l'année N+1 à des effectifs de l'année N.
- *
- * Renvoie le total de la masse salariale de l'équipe pour la saison.
- */
-async function fetchTeamSalaries(
-  brTeam: string,
-  seasonEndYear: number,
-  salaryMap: Map<string, string>
-): Promise<number> {
-  const html = await fetchHtml(
-    `https://www.basketball-reference.com/teams/${brTeam}/${seasonEndYear}.html`
-  );
-  const nbaTeam = BR_TRICODE_MAP[brTeam] || brTeam;
-  const section = extractSalariesSection(html);
-  if (!section) {
-    console.error(`No salaries table found for ${brTeam} ${seasonEndYear}`);
-    return 0;
-  }
-
-  const rows = section.match(/<tr[^>]*>[\s\S]*?<\/tr>/g) || [];
-  let total = 0;
-
-  for (const row of rows) {
-    const playerMatch = row.match(/data-stat="player"[^>]*>(?:<a[^>]*>)?([^<]+)/);
-    if (!playerMatch) continue;
-    const salaryMatch = row.match(/data-stat="salary"[^>]*>(\$[\d,]+)/);
-    if (!salaryMatch) continue;
-
-    const key = normalizeName(playerMatch[1].trim()) + "|" + nbaTeam;
-    salaryMap.set(key, salaryMatch[1]);
-    total += Number(salaryMatch[1].replace(/[$,]/g, "")) || 0;
-  }
-
-  return total;
-}
-
-/**
- * Salaires individuels + masse salariale par équipe, pour la saison courante.
- *
- * Les deux sortent de la même table, donc les totaux restent cohérents avec les
- * contrats affichés. Nuance : la table recense tous les joueurs payés par la
- * franchise sur la saison, un joueur échangé en cours d'année peut donc être
- * compté par ses deux équipes.
- */
-async function fetchSalaries(
-  seasonEndYear: number
-): Promise<{ salaryMap: Map<string, string>; payrollMap: Map<string, number> }> {
-  const salaryMap = new Map<string, string>();
-  const payrollMap = new Map<string, number>();
-
-  try {
-    // Fetch team pages in batches of 5 to avoid rate limiting
-    for (let i = 0; i < BR_TEAMS.length; i += 5) {
-      const batch = BR_TEAMS.slice(i, i + 5);
-      await Promise.all(
-        batch.map(async (team) => {
-          try {
-            const total = await fetchTeamSalaries(team, seasonEndYear, salaryMap);
-            if (total > 0) payrollMap.set(BR_TRICODE_MAP[team] || team, total);
-          } catch (err) {
-            console.error(`Salary scrape failed for ${team}:`, (err as Error).message);
-          }
-        })
-      );
-      // Small delay between batches to be polite
-      if (i + 5 < BR_TEAMS.length) await delay(1000);
-    }
-    console.log(
-      `Salary scraping: found ${salaryMap.size} salaries and ${payrollMap.size} payrolls from ${BR_TEAMS.length} team pages`
-    );
-  } catch (err) {
-    console.error("Error scraping salaries:", err);
-  }
-
-  return { salaryMap, payrollMap };
 }
 
 function fetchNba(url: string, timeoutMs = 300000): Promise<NbaResponse> {
@@ -300,10 +136,14 @@ export async function GET(request: NextRequest) {
       fetchAllBioStats(SEASON),
       (async () => {
         try {
-          return await fetchSalaries(seasonStartYear(SEASON) + 1);
+          return await fetchAllSalaries(SEASON);
         } catch (err) {
           console.error("Salary/payroll scraping failed (non-fatal):", err);
-          return { salaryMap: new Map<string, string>(), payrollMap: new Map<string, number>() };
+          return {
+            salaryMap: new Map<string, string>(),
+            payrollMap: new Map<string, number>(),
+            failed: [] as string[],
+          };
         }
       })(),
     ]);
@@ -377,14 +217,50 @@ export async function GET(request: NextRequest) {
       if (payrollError) console.error("Payroll upsert error:", payrollError);
     }
 
+    // ── Purge des joueurs sortis de la ligue ──
+    // L'upsert n'enlève rien : les joueurs présents lors d'une synchronisation
+    // précédente mais absents de celle-ci restaient dans l'effectif de la
+    // saison. Après l'intersaison 2026, 30 partants figuraient encore dans les
+    // effectifs 2026-27 avec leur ancienne équipe.
+    let pruned = 0;
+    if (players.length > 0) {
+      const keptIds = players.map((p) => p.player_id);
+      const { data: removed, error: pruneError } = await supabase
+        .from("rosters")
+        .delete()
+        .eq("season", SEASON)
+        .not("player_id", "in", `(${keptIds.join(",")})`)
+        .select("player_id, first_name, last_name, team_tricode");
+
+      if (pruneError) {
+        console.error("[SYNC-ROSTERS] Purge échouée:", pruneError.message);
+      } else {
+        pruned = removed?.length ?? 0;
+        if (pruned > 0) {
+          const names = (removed ?? [])
+            .slice(0, 10)
+            .map((p) => `${p.first_name} ${p.last_name} (${p.team_tricode})`)
+            .join(", ");
+          console.log(
+            `[SYNC-ROSTERS] ${pruned} joueur(s) retiré(s) de l'effectif ${SEASON} : ${names}` +
+              (pruned > 10 ? ", ..." : "")
+          );
+        }
+      }
+    }
+
     console.log(`[SYNC-ROSTERS] Upserted ${inserted} rows successfully`);
     revalidatePath("/equipes");
+    revalidatePath("/trades");
     const duration = ((Date.now() - startTime) / 1000).toFixed(1);
     console.log(`[SYNC-ROSTERS] Completed at ${now} (took ${duration}s)`);
 
     return NextResponse.json({
       ok: true,
+      season: SEASON,
       players: inserted,
+      pruned,
+      salaries: salaryMap.size,
       payrolls: payrollMap.size,
       timestamp: now,
     });

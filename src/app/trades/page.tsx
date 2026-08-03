@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { OG_IMAGE } from "@/lib/seo";
-import { getLeagueSeason } from "@/lib/league-season";
+import { getLeagueState } from "@/lib/league-season";
 import { parseSalaryOrNull } from "@/lib/salary-cap";
 import { decodeTrade, type TradeRosterPlayer } from "@/lib/trade-rules";
 import PageBanner from "@/components/PageBanner";
@@ -43,7 +43,8 @@ export default async function TradesPage({
   searchParams: Promise<{ season?: string; teams?: string; moves?: string }>;
 }) {
   const params = await searchParams;
-  const season = params.season || (await getLeagueSeason());
+  const { currentSeason, statsSeason } = await getLeagueState();
+  const season = params.season || currentSeason;
   const supabase = await createClient();
 
   const [{ data: seasonRows }, { data: rows }, { data: payrolls }] = await Promise.all([
@@ -74,6 +75,31 @@ export default async function TradesPage({
     reb: r.reb,
     ast: r.ast,
   }));
+
+  // ── Statistiques de référence ──
+  // Une saison qui n'a pas commencé n'a aucune moyenne par match : la balance
+  // sportive de l'échange serait à zéro pendant toute l'intersaison. On reprend
+  // donc les moyennes de la dernière saison jouée, en l'affichant clairement.
+  let statsFromSeason: string | null = null;
+  const hasOwnStats = roster.some((p) => p.pts != null && p.pts > 0);
+  if (!hasOwnStats && statsSeason !== season) {
+    const { data: refRows } = await supabase
+      .from("rosters")
+      .select("player_id, pts, reb, ast")
+      .eq("season", statsSeason);
+
+    const ref = new Map((refRows || []).map((r) => [r.player_id, r]));
+    let matched = 0;
+    for (const p of roster) {
+      const r = ref.get(p.player_id);
+      if (!r) continue;
+      p.pts = r.pts;
+      p.reb = r.reb;
+      p.ast = r.ast;
+      matched++;
+    }
+    if (matched > 0) statsFromSeason = statsSeason;
+  }
 
   // Masse salariale de départ : le total officiel quand il existe (il inclut le
   // dead money et les cap holds), sinon la somme des contrats de l'effectif.
@@ -122,6 +148,7 @@ export default async function TradesPage({
               payrollBase={payrollBase}
               initialTeams={initialTeams}
               initialMoves={initialMoves}
+              statsFromSeason={statsFromSeason}
             />
           </ScrollReveal>
         </SeasonContent>

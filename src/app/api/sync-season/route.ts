@@ -84,10 +84,13 @@ export async function GET(request: NextRequest) {
         .from("playoff_series")
         .select("season, team_top, team_bottom, wins_top, wins_bottom")
         .eq("round", 4),
-      // Dernière saison avec au moins un match terminé.
-      supabase.from("games").select("season").eq("status", 3),
-      // Dernière saison avec au moins un match programmé.
-      supabase.from("games").select("season"),
+      // Dernière saison avec au moins un match de saison régulière terminé.
+      // Le préfixe 002 exclut la présaison : un match amical joué début octobre
+      // ferait sinon basculer les pages de statistiques sur une saison encore
+      // dépourvue de données.
+      supabase.from("games").select("season").eq("status", 3).like("game_id", "002%"),
+      // Dernière saison avec au moins un match de saison régulière programmé.
+      supabase.from("games").select("season").like("game_id", "002%"),
     ]);
 
     // ── Finales décidées ──

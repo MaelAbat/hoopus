@@ -71,7 +71,17 @@ function TeamGrid({ teams, onSelect }: { teams: { tricode: string; city: string;
 }
 
 /* ─── Roster table for a single team ─── */
-function RosterTable({ players, tricode, onBack }: { players: Player[]; tricode: string; onBack: () => void }) {
+function RosterTable({
+  players,
+  tricode,
+  onBack,
+  statsFromSeason,
+}: {
+  players: Player[];
+  tricode: string;
+  onBack: () => void;
+  statsFromSeason?: string | null;
+}) {
   const team = players[0];
   if (!team) return null;
 
@@ -92,6 +102,13 @@ function RosterTable({ players, tricode, onBack }: { players: Player[]; tricode:
           <p className="kicker mt-1 text-text-faint"><span className="tnum">{players.length}</span> joueurs</p>
         </div>
       </div>
+
+      {statsFromSeason && (
+        <p className="border border-rule bg-input/30 px-4 py-2.5 text-xs text-text-muted">
+          La saison n&apos;a pas encore débuté : les colonnes PTS, REB et AST reprennent les moyennes
+          de la saison <strong className="text-text-secondary">{statsFromSeason}</strong>.
+        </p>
+      )}
 
       {/* Table */}
       <div className="border border-rule bg-card overflow-hidden">
@@ -313,7 +330,16 @@ function SalaryCapView({ players, payrolls }: { players: Player[]; payrolls: Tea
 }
 
 /* ─── Main component ─── */
-export default function TeamsView({ players, payrolls }: { players: Player[]; payrolls: TeamPayroll[] }) {
+export default function TeamsView({
+  players,
+  payrolls,
+  statsFromSeason,
+}: {
+  players: Player[];
+  payrolls: TeamPayroll[];
+  /** Saison d'où viennent les moyennes, si ce n'est pas celle affichée. */
+  statsFromSeason?: string | null;
+}) {
   const [view, setView] = useState<"rosters" | "cap">("rosters");
   const searchParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
   const [selectedTeam, setSelectedTeam] = useState<string | null>(searchParams?.get("team") || null);
@@ -361,7 +387,14 @@ export default function TeamsView({ players, payrolls }: { players: Player[]; pa
   }
 
   if (selectedTeam) {
-    return <RosterTable players={teamPlayers} tricode={selectedTeam} onBack={() => { setSelectedTeam(null); }} />;
+    return (
+      <RosterTable
+        players={teamPlayers}
+        tricode={selectedTeam}
+        onBack={() => { setSelectedTeam(null); }}
+        statsFromSeason={statsFromSeason}
+      />
+    );
   }
 
   return (

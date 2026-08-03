@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { OG_IMAGE } from "@/lib/seo";
-import { getLeagueSeason } from "@/lib/league-season";
+import { getLeagueState } from "@/lib/league-season";
 import TeamsView from "@/components/TeamsView";
 import PageBanner from "@/components/PageBanner";
 import ScrollReveal from "@/components/ScrollReveal";
@@ -22,7 +22,8 @@ export const metadata = {
 
 export default async function Equipes({ searchParams }: { searchParams: Promise<{ season?: string }> }) {
   const { season: seasonParam } = await searchParams;
-  const season = seasonParam || (await getLeagueSeason());
+  const { currentSeason, statsSeason } = await getLeagueState();
+  const season = seasonParam || currentSeason;
   const supabase = await createClient();
 
   const [{ data: seasonRows }, { data: players, error }, { data: payrolls }] = await Promise.all([
@@ -42,6 +43,30 @@ export default async function Equipes({ searchParams }: { searchParams: Promise<
   if (!availableSeasons.includes(season)) availableSeasons.unshift(season);
 
   const hasData = !error && players && players.length > 0;
+
+  // ── Statistiques de référence ──
+  // Les effectifs d'une saison qui n'a pas commencé n'ont aucune moyenne par
+  // match. Plutôt que des colonnes vides pendant toute l'intersaison, on reprend
+  // les moyennes de la dernière saison jouée, en l'indiquant clairement.
+  let statsFromSeason: string | null = null;
+  if (hasData && statsSeason !== season && !players.some((p) => p.pts != null && p.pts > 0)) {
+    const { data: refRows } = await supabase
+      .from("rosters")
+      .select("player_id, pts, reb, ast")
+      .eq("season", statsSeason);
+
+    const ref = new Map((refRows || []).map((r) => [r.player_id, r]));
+    let matched = 0;
+    for (const p of players) {
+      const r = ref.get(p.player_id);
+      if (!r) continue;
+      p.pts = r.pts;
+      p.reb = r.reb;
+      p.ast = r.ast;
+      matched++;
+    }
+    if (matched > 0) statsFromSeason = statsSeason;
+  }
 
   const lastUpdate = hasData
     ? new Date(players[0].updated_at).toLocaleString("fr-FR", {
@@ -75,7 +100,7 @@ export default async function Equipes({ searchParams }: { searchParams: Promise<
 
         <SeasonContent>
           <ScrollReveal variant="up" delay={100}>
-            <TeamsView players={players || []} payrolls={payrolls || []} />
+            <TeamsView players={players || []} payrolls={payrolls || []} statsFromSeason={statsFromSeason} />
           </ScrollReveal>
         </SeasonContent>
       </div>

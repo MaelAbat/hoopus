@@ -137,6 +137,44 @@ export async function GET(request: NextRequest) {
     }
 
     console.log(`[SYNC-PLAYERS] Upserted ${inserted} rows successfully`);
+
+    // ── Sortie de ligue ──
+    // L'upsert ne fait qu'ajouter : un joueur qui quitte la NBA restait
+    // `is_active = true` avec sa dernière équipe, indéfiniment. sync-rosters
+    // lisant les joueurs actifs, ces partants se retrouvaient dans les
+    // effectifs de la nouvelle saison — 85 fantômes constatés à l'intersaison
+    // 2026, dont DeRozan, Rozier et Caldwell-Pope.
+    //
+    // Tout joueur absent de l'index de la ligue est donc désactivé. On ne
+    // désactive que ce qui était actif : les joueurs historiques restent
+    // inchangés, et leurs statistiques de carrière sont conservées.
+    let deactivated = 0;
+    if (players.length > 0) {
+      const activeIds = players.map((p) => p.player_id);
+      const { data: departed, error: deactivateError } = await supabase
+        .from("players")
+        .update({ is_active: false, updated_at: now })
+        .eq("is_active", true)
+        .not("player_id", "in", `(${activeIds.join(",")})`)
+        .select("player_id, first_name, last_name");
+
+      if (deactivateError) {
+        console.error("[SYNC-PLAYERS] Deactivation failed:", deactivateError.message);
+      } else {
+        deactivated = departed?.length ?? 0;
+        if (deactivated > 0) {
+          const names = (departed ?? [])
+            .slice(0, 10)
+            .map((p) => `${p.first_name} ${p.last_name}`)
+            .join(", ");
+          console.log(
+            `[SYNC-PLAYERS] ${deactivated} joueur(s) sorti(s) de la ligue, désactivé(s) : ${names}` +
+              (deactivated > 10 ? ", ..." : "")
+          );
+        }
+      }
+    }
+
     const duration = ((Date.now() - startTime) / 1000).toFixed(1);
     console.log(`[SYNC-PLAYERS] Completed at ${now} (took ${duration}s)`);
 
@@ -144,6 +182,7 @@ export async function GET(request: NextRequest) {
       ok: true,
       total: players.length,
       inserted,
+      deactivated,
       active: players.filter(p => p.is_active).length,
       historical: players.filter(p => !p.is_active).length,
       timestamp: now,

@@ -41,6 +41,8 @@ interface Props {
   payrollBase: Record<string, number>;
   initialTeams: string[];
   initialMoves: TradeMove[];
+  /** Saison d'où viennent les moyennes affichées, si ce n'est pas celle de l'échange. */
+  statsFromSeason?: string | null;
 }
 
 /* ─────────────────────────── Helpers ─────────────────────────── */
@@ -591,7 +593,13 @@ function TeamPanel({
 
 /* ─────────────────────── Balance table ─────────────────────── */
 
-function BalanceTable({ summaries }: { summaries: TeamTradeSummary[] }) {
+function BalanceTable({
+  summaries,
+  statsFromSeason,
+}: {
+  summaries: TeamTradeSummary[];
+  statsFromSeason?: string | null;
+}) {
   return (
     <div className="border border-rule bg-card">
       <p className="kicker border-b border-rule px-4 py-3 text-text-faint">Bilan de l&apos;échange</p>
@@ -684,6 +692,12 @@ function BalanceTable({ summaries }: { summaries: TeamTradeSummary[] }) {
       <p className="border-t border-rule px-4 py-2.5 text-[11px] leading-snug text-text-faint">
         PTS / REB / AST : variation du total des moyennes par match des joueurs échangés. Indice de
         production = PTS + 1,2 × REB + 1,5 × AST — repère indicatif, pas une valeur de marché.
+        {statsFromSeason && (
+          <>
+            {" "}Moyennes issues de la saison {statsFromSeason}, la saison en cours n&apos;ayant pas
+            encore débuté.
+          </>
+        )}
       </p>
     </div>
   );
@@ -792,6 +806,7 @@ export default function TradeMachine({
   payrollBase,
   initialTeams,
   initialMoves,
+  statsFromSeason,
 }: Props) {
   const [teams, setTeams] = useState<string[]>(initialTeams);
   const [moves, setMoves] = useState<TradeMove[]>(initialMoves);
@@ -1011,7 +1026,9 @@ export default function TradeMachine({
       )}
 
       {/* Balance */}
-      {moves.length > 0 && <BalanceTable summaries={evaluation.teams} />}
+      {moves.length > 0 && (
+        <BalanceTable summaries={evaluation.teams} statsFromSeason={statsFromSeason} />
+      )}
 
       {/* Rules */}
       <RulesPanel season={season} thresholds={evaluation.thresholds} />
