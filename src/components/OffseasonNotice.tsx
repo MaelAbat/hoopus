@@ -110,10 +110,16 @@ export default async function OffseasonNotice({
 
         <div className="bg-card px-6 py-5 sm:px-9">
           <p className="kicker text-text-faint">Encore en {statsSeason}</p>
-          <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5">
+          {/* Même géométrie que les pastilles de gauche, mais éteintes : c'est le
+              contraste de traitement qui dit « celles-ci sont à jour, celles-là
+              attendent ». Une liste à puces face à des boutons ne créait aucune
+              parallèle, et des puces de 1 px passaient pour des poussières. */}
+          <ul className="mt-3 flex flex-wrap gap-2">
             {FROZEN.map((item) => (
-              <li key={item} className="flex items-center gap-2 text-sm text-text-muted">
-                <span className="h-1 w-1 shrink-0 bg-text-faint" />
+              <li
+                key={item}
+                className="inline-flex items-center border border-dashed border-rule px-3 py-2 font-mono text-[11px] font-bold uppercase tracking-wider text-text-faint"
+              >
                 {item}
               </li>
             ))}
