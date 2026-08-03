@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { OG_IMAGE } from "@/lib/seo";
-import { getCurrentSeason } from "@/lib/season";
+import { getStatsSeason } from "@/lib/league-season";
 import PlayoffBracket from "@/components/PlayoffBracket";
 import PageBanner from "@/components/PageBanner";
 import ScrollReveal from "@/components/ScrollReveal";
@@ -22,7 +22,7 @@ export const metadata = {
 
 export default async function Playoffs({ searchParams }: { searchParams: Promise<{ season?: string }> }) {
   const { season: seasonParam } = await searchParams;
-  const season = seasonParam || getCurrentSeason();
+  const season = seasonParam || (await getStatsSeason());
   const supabase = await createClient();
 
   const PLAYOFF_STAT_CATEGORIES = ["PTS", "REB", "AST", "STL", "BLK", "FG_PCT", "FG3_PCT", "TS_PCT"];

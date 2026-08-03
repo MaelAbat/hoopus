@@ -2,10 +2,10 @@ import https from "node:https";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentSeason } from "@/lib/season";
+import { fetchLeagueState } from "@/lib/league-season";
 import { isCronAuthorized } from "@/lib/cron-auth";
 
-const SEASON = getCurrentSeason();
+// Saison résolue par requête depuis league_state (voir /api/sync-season).
 
 // stats.nba.com rate-limits aggressively — sleep between Regular and Playoffs.
 const SEASON_TYPE_DELAY_MS = 3000;
@@ -45,13 +45,13 @@ const TRICODE_MAP: Record<number, string> = {
   1610612762: "UTA", 1610612764: "WAS",
 };
 
-function fetchTeamStats(seasonType: NbaSeasonType, measureType: "Base" | "Advanced"): Promise<NbaDashResponse> {
+function fetchTeamStats(season: string, seasonType: NbaSeasonType, measureType: "Base" | "Advanced"): Promise<NbaDashResponse> {
   const url =
     "https://stats.nba.com/stats/leaguedashteamstats?" +
     "Conference=&DateFrom=&DateTo=&Division=&GameScope=&GameSegment=&Height=&ISTRound=" +
     "&LastNGames=0&LeagueID=00&Location=&MeasureType=" + measureType +
     "&Month=0&OpponentTeamID=0&Outcome=&PORound=0&PaceAdjust=N&PerMode=PerGame&Period=0" +
-    "&PlayerExperience=&PlayerPosition=&PlusMinus=N&Rank=N&Season=" + SEASON +
+    "&PlayerExperience=&PlayerPosition=&PlusMinus=N&Rank=N&Season=" + season +
     "&SeasonSegment=&SeasonType=" + encodeURIComponent(seasonType) + "&ShotClockRange=&StarterBench=" +
     "&TeamID=0&TwoWay=0&VsConference=&VsDivision=";
 
@@ -77,13 +77,14 @@ function fetchTeamStats(seasonType: NbaSeasonType, measureType: "Base" | "Advanc
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function syncSeasonType(supabase: any, seasonType: NbaSeasonType, now: string): Promise<number> {
+async function syncSeasonType(supabase: any, season: string, seasonType: NbaSeasonType, now: string): Promise<number> {
+  const SEASON = season;
   const dbType: DbSeasonType = seasonType === "Playoffs" ? "playoffs" : "regular";
 
   console.log(`[SYNC-TEAM-STATS] [${seasonType}] Fetching from stats.nba.com (2 parallel calls, timeout 10min each)...`);
   const [baseData, advData] = await Promise.all([
-    fetchTeamStats(seasonType, "Base"),
-    fetchTeamStats(seasonType, "Advanced"),
+    fetchTeamStats(season, seasonType, "Base"),
+    fetchTeamStats(season, seasonType, "Advanced"),
   ]);
 
   const baseH = baseData.resultSets[0].headers;
@@ -177,14 +178,16 @@ export async function GET(request: NextRequest) {
 
   try {
     console.log("[SYNC-TEAM-STATS] Starting sync (Regular Season then Playoffs)...");
-    const regular = await syncSeasonType(supabase, "Regular Season", now);
+    const SEASON = (await fetchLeagueState()).currentSeason;
+    console.log(`[SYNC-TEAM-STATS] Saison ${SEASON}`);
+    const regular = await syncSeasonType(supabase, SEASON, "Regular Season", now);
 
     if (SEASON_TYPE_DELAY_MS > 0) {
       console.log(`[SYNC-TEAM-STATS] Waiting ${SEASON_TYPE_DELAY_MS}ms before Playoffs fetch...`);
       await new Promise((r) => setTimeout(r, SEASON_TYPE_DELAY_MS));
     }
 
-    const playoffs = await syncSeasonType(supabase, "Playoffs", now);
+    const playoffs = await syncSeasonType(supabase, SEASON, "Playoffs", now);
 
     revalidatePath("/statistiques");
     revalidatePath("/equipes");

@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { OG_IMAGE } from "@/lib/seo";
-import { getCurrentSeason, seasonLabel } from "@/lib/season";
+import { seasonLabel } from "@/lib/season";
+import { getStatsSeason } from "@/lib/league-season";
 import type { PlayerStatLeader, StatCategory } from "@/lib/nba-api";
 import StatsView from "@/components/StatsView";
 import type { PlayerRow } from "@/components/StatsTable";
@@ -57,7 +58,7 @@ const GP_CATEGORIES = new Set(["PTS", "REB", "AST", "BLK", "STL", "EFF", "TOV", 
 
 export default async function Statistiques({ searchParams }: { searchParams: Promise<{ season?: string }> }) {
   const { season: seasonParam } = await searchParams;
-  const season = seasonParam || getCurrentSeason();
+  const season = seasonParam || (await getStatsSeason());
   const supabase = await createClient();
 
   // Fetch season list and stat leaders in parallel

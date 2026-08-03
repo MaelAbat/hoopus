@@ -9,6 +9,12 @@
     "src/app/api/sync-team-stats/route.ts": {
       "maxDuration": 60
     },
+    "src/app/api/sync-season/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/sync-players/route.ts": {
+      "maxDuration": 60
+    },
     "src/app/api/sync-rosters/route.ts": {
       "maxDuration": 60
     }

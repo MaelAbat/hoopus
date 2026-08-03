@@ -2,10 +2,9 @@ import https from "node:https";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentSeason } from "@/lib/season";
+import { seasonFromGameId } from "@/lib/season";
+import { fetchLeagueState } from "@/lib/league-season";
 import { isCronAuthorized } from "@/lib/cron-auth";
-
-const SEASON = getCurrentSeason();
 
 interface NbaTeam {
   teamTricode: string;
@@ -113,6 +112,17 @@ export async function GET(request: NextRequest) {
 
         const gameDate = game.gameDateEst.split("T")[0];
 
+        // La saison est lue dans l'identifiant du match, pas calculée à côté.
+        // Le calendrier du CDN bascule sur la saison suivante à l'intersaison :
+        // étiqueter son contenu avec une saison globale y verserait les matchs
+        // de l'année N+1. Un identifiant illisible est ignoré plutôt que rangé
+        // dans la mauvaise saison.
+        const gameSeason = seasonFromGameId(game.gameId);
+        if (!gameSeason) {
+          console.warn(`[SYNC-GAMES] Identifiant illisible, match ignoré : ${game.gameId}`);
+          continue;
+        }
+
         allGames.push({
           game_id: game.gameId,
           game_date: gameDate,
@@ -127,7 +137,7 @@ export async function GET(request: NextRequest) {
           away_score: game.awayTeam?.score || 0,
           arena: game.arenaName || "",
           arena_city: game.arenaCity || "",
-          season: SEASON,
+          season: gameSeason,
           updated_at: now,
         });
       }
@@ -154,6 +164,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       ok: true,
+      // Les saisons réellement écrites, pour vérifier la bascule d'un coup d'œil.
+      seasons: [...new Set(allGames.map((g) => g.season))].sort(),
       totalGames: allGames.length,
       inserted: totalInserted,
       timestamp: now,

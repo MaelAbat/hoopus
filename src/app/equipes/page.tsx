@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { OG_IMAGE } from "@/lib/seo";
-import { getCurrentSeason } from "@/lib/season";
+import { getLeagueSeason } from "@/lib/league-season";
 import TeamsView from "@/components/TeamsView";
 import PageBanner from "@/components/PageBanner";
 import ScrollReveal from "@/components/ScrollReveal";
@@ -22,7 +22,7 @@ export const metadata = {
 
 export default async function Equipes({ searchParams }: { searchParams: Promise<{ season?: string }> }) {
   const { season: seasonParam } = await searchParams;
-  const season = seasonParam || getCurrentSeason();
+  const season = seasonParam || (await getLeagueSeason());
   const supabase = await createClient();
 
   const [{ data: seasonRows }, { data: players, error }, { data: payrolls }] = await Promise.all([

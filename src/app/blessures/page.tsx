@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { OG_IMAGE } from "@/lib/seo";
-import { getCurrentSeason, seasonLabel } from "@/lib/season";
+import { seasonLabel } from "@/lib/season";
+import { getLeagueSeason } from "@/lib/league-season";
 import InjuriesView from "@/components/InjuriesView";
 import PageBanner from "@/components/PageBanner";
 import ScrollReveal from "@/components/ScrollReveal";
@@ -20,7 +21,7 @@ export const metadata = {
 };
 
 export default async function Blessures() {
-  const season = getCurrentSeason();
+  const season = await getLeagueSeason();
   const supabase = await createClient();
 
   const { data: injuries, error } = await supabase

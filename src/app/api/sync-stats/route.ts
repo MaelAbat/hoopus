@@ -2,10 +2,10 @@ import https from "node:https";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentSeason } from "@/lib/season";
+import { fetchLeagueState } from "@/lib/league-season";
 import { isCronAuthorized } from "@/lib/cron-auth";
 
-const SEASON = getCurrentSeason();
+// Saison résolue par requête depuis league_state (voir /api/sync-season).
 const BATCH_SIZE = 200;
 
 // Eligibility gates — playoffs use much smaller thresholds because the format
@@ -71,6 +71,7 @@ const DIRECT_CATEGORIES: { category: string; statField: string }[] = [
 ];
 
 function fetchAllPlayers(
+  season: string,
   seasonType: NbaSeasonType,
   perMode: "Totals" | "PerGame" = "Totals",
   measureType: "Base" | "Advanced" = "Base"
@@ -80,7 +81,7 @@ function fetchAllPlayers(
     "Conference=&DateFrom=&DateTo=&Division=&GameScope=&GameSegment=&Height=&ISTRound=" +
     "&LastNGames=0&LeagueID=00&Location=&MeasureType=" + measureType + "&Month=0&OpponentTeamID=0" +
     "&Outcome=&PORound=0&PaceAdjust=N&PerMode=" + perMode + "&Period=0&PlayerExperience=" +
-    "&PlayerPosition=&PlusMinus=N&Rank=N&Season=" + SEASON +
+    "&PlayerPosition=&PlusMinus=N&Rank=N&Season=" + season +
     "&SeasonSegment=&SeasonType=" + encodeURIComponent(seasonType) + "&ShotClockRange=&StarterBench=" +
     "&TeamID=0&TwoWay=0&VsConference=&VsDivision=&Weight=";
 
@@ -128,7 +129,8 @@ async function batchInsert(supabase: any, rows: LeaderRow[]): Promise<number> {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function syncSeasonType(supabase: any, seasonType: NbaSeasonType): Promise<Record<string, number>> {
+async function syncSeasonType(supabase: any, season: string, seasonType: NbaSeasonType): Promise<Record<string, number>> {
+  const SEASON = season;
   const dbType: DbSeasonType = seasonType === "Playoffs" ? "playoffs" : "regular";
   const minGp = seasonType === "Playoffs" ? MIN_GP_PLAYOFFS : MIN_GP_REGULAR;
   const results: Record<string, number> = {};
@@ -136,9 +138,9 @@ async function syncSeasonType(supabase: any, seasonType: NbaSeasonType): Promise
 
   console.log(`[SYNC-STATS] [${seasonType}] Fetching from stats.nba.com (3 parallel calls, timeout 10min each)...`);
   const [baseData, perGameData, advData] = await Promise.all([
-    fetchAllPlayers(seasonType, "Totals", "Base"),
-    fetchAllPlayers(seasonType, "PerGame", "Base"),
-    fetchAllPlayers(seasonType, "PerGame", "Advanced"),
+    fetchAllPlayers(season, seasonType, "Totals", "Base"),
+    fetchAllPlayers(season, seasonType, "PerGame", "Base"),
+    fetchAllPlayers(season, seasonType, "PerGame", "Advanced"),
   ]);
 
   const headers = baseData.resultSets[0].headers;
@@ -639,7 +641,10 @@ export async function GET(request: NextRequest) {
   try {
     console.log("[SYNC-STATS] Starting sync (Regular Season then Playoffs)...");
 
-    const regularResults = await syncSeasonType(supabase, "Regular Season");
+    const SEASON = (await fetchLeagueState()).currentSeason;
+    console.log(`[SYNC-STATS] Saison ${SEASON}`);
+
+    const regularResults = await syncSeasonType(supabase, SEASON, "Regular Season");
     for (const [k, v] of Object.entries(regularResults)) {
       combined[k] = { ...(combined[k] || {}), regular: v };
     }
@@ -650,7 +655,7 @@ export async function GET(request: NextRequest) {
       await new Promise((r) => setTimeout(r, SEASON_TYPE_DELAY_MS));
     }
 
-    const playoffResults = await syncSeasonType(supabase, "Playoffs");
+    const playoffResults = await syncSeasonType(supabase, SEASON, "Playoffs");
     for (const [k, v] of Object.entries(playoffResults)) {
       combined[k] = { ...(combined[k] || {}), playoffs: v };
     }

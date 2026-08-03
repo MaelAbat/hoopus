@@ -2,14 +2,15 @@ import https from "node:https";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentSeason } from "@/lib/season";
+import { fetchLeagueState } from "@/lib/league-season";
 import { isCronAuthorized } from "@/lib/cron-auth";
 
-const SEASON = getCurrentSeason();
+// Saison résolue par requête depuis league_state (voir /api/sync-season).
 // ESPN uses the END year of the season (e.g. "2025-26" → 2026)
-const ESPN_YEAR = parseInt(SEASON.split("-")[0], 10) + 1;
-const ESPN_URL =
-  `https://site.api.espn.com/apis/v2/sports/basketball/nba/standings?season=${ESPN_YEAR}`;
+function espnUrl(season: string): string {
+  const espnYear = parseInt(season.split("-")[0], 10) + 1;
+  return `https://site.api.espn.com/apis/v2/sports/basketball/nba/standings?season=${espnYear}`;
+}
 
 // ESPN uses different tricodes than NBA — map to standard NBA tricodes
 const TRICODE_MAP: Record<string, string> = {
@@ -43,9 +44,9 @@ interface EspnStandingsResponse {
   }[];
 }
 
-function fetchStandings(): Promise<EspnStandingsResponse> {
+function fetchStandings(season: string): Promise<EspnStandingsResponse> {
   return new Promise((resolve, reject) => {
-    const req = https.get(ESPN_URL, (res) => {
+    const req = https.get(espnUrl(season), (res) => {
       const chunks: Buffer[] = [];
       res.on("data", (chunk: Buffer) => chunks.push(chunk));
       res.on("end", () => {
@@ -87,7 +88,9 @@ export async function GET(request: NextRequest) {
   try {
     console.log("[SYNC-STANDINGS] Starting sync...");
     console.log("[SYNC-STANDINGS] Fetching from ESPN...");
-    const response = await fetchStandings();
+    const SEASON = (await fetchLeagueState()).currentSeason;
+    console.log(`[SYNC-STANDINGS] Saison ${SEASON}`);
+    const response = await fetchStandings(SEASON);
     const now = new Date().toISOString();
 
     const standings = response.children.flatMap((conference) => {

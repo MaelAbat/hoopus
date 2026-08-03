@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { OG_IMAGE } from "@/lib/seo";
-import { getCurrentSeason } from "@/lib/season";
+import { getLeagueSeason } from "@/lib/league-season";
 import { parseSalaryOrNull } from "@/lib/salary-cap";
 import { decodeTrade, type TradeRosterPlayer } from "@/lib/trade-rules";
 import PageBanner from "@/components/PageBanner";
@@ -43,7 +43,7 @@ export default async function TradesPage({
   searchParams: Promise<{ season?: string; teams?: string; moves?: string }>;
 }) {
   const params = await searchParams;
-  const season = params.season || getCurrentSeason();
+  const season = params.season || (await getLeagueSeason());
   const supabase = await createClient();
 
   const [{ data: seasonRows }, { data: rows }, { data: payrolls }] = await Promise.all([

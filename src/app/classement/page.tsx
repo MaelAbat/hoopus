@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { OG_IMAGE } from "@/lib/seo";
-import { getCurrentSeason, seasonLabel } from "@/lib/season";
+import { seasonLabel } from "@/lib/season";
+import { getStatsSeason } from "@/lib/league-season";
 import StandingsView from "@/components/StandingsView";
 import PageBanner from "@/components/PageBanner";
 import ScrollReveal from "@/components/ScrollReveal";
@@ -22,7 +23,7 @@ export const metadata = {
 
 export default async function Classement({ searchParams }: { searchParams: Promise<{ season?: string }> }) {
   const { season: seasonParam } = await searchParams;
-  const season = seasonParam || getCurrentSeason();
+  const season = seasonParam || (await getStatsSeason());
   const supabase = await createClient();
 
   const [{ data: seasonRows }, { data: standings, error }] = await Promise.all([

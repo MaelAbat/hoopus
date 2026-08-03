@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentSeason } from "@/lib/season";
+import { getLeagueSeason } from "@/lib/league-season";
 import { syncPlayerCareer } from "@/lib/sync-career";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -85,7 +85,7 @@ function StatBox({ label, value }: { label: string; value: string }) {
 
 export default async function PlayerDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const season = getCurrentSeason();
+  const season = await getLeagueSeason();
   const supabase = await createClient();
 
   const playerId = Number(id);

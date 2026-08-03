@@ -2,7 +2,8 @@ import Link from "next/link";
 import { ArrowRight, ArrowUpRight } from "lucide-react";
 import { getArticles } from "@/lib/actions/articles";
 import { hasNews } from "@/lib/actions/news";
-import { getCurrentSeason, seasonLabel } from "@/lib/season";
+import { seasonLabel } from "@/lib/season";
+import { getLeagueSeason } from "@/lib/league-season";
 import ScrollReveal from "@/components/ScrollReveal";
 import SeasonWidget from "@/components/SeasonWidget";
 import FavoriteDashboard from "@/components/FavoriteDashboard";
@@ -58,7 +59,7 @@ function formatDate(dateStr: string) {
 }
 
 export default async function Home() {
-  const season = getCurrentSeason();
+  const season = await getLeagueSeason();
   const [articles, newsExists] = await Promise.all([getArticles(), hasNews()]);
   const featured = articles[0] ?? null;
   const funFact = getDaily(funFacts);
@@ -73,7 +74,7 @@ export default async function Home() {
   return (
     <div className="mx-auto max-w-6xl">
       {/* ── Favorite Alerts ──────────────────── */}
-      <FavoriteAlerts />
+      <FavoriteAlerts season={season} />
 
       {/* ── Masthead ─────────────────────────── */}
       <section className="relative overflow-hidden border border-rule bg-card">
@@ -206,7 +207,7 @@ export default async function Home() {
       {/* ── Mon espace (favoris) ───────────── */}
       <div className="mt-10 sm:mt-16">
         <ScrollReveal variant="up">
-          <FavoriteDashboard />
+          <FavoriteDashboard season={season} />
         </ScrollReveal>
       </div>
 

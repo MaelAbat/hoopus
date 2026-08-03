@@ -1,7 +1,7 @@
 import https from "node:https";
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentSeason } from "@/lib/season";
+import { fetchLeagueState } from "@/lib/league-season";
 import { isCronAuthorized } from "@/lib/cron-auth";
 
 const BATCH_SIZE = 200;
@@ -63,13 +63,18 @@ export async function GET(request: NextRequest) {
 
   try {
     console.log("[SYNC-PLAYERS] Starting sync...");
+    // La saison de la ligue, pas celle du calendrier : c'est elle qui porte les
+    // affectations d'équipe de l'intersaison. Interrogé sur la nouvelle saison,
+    // `playerindex` renvoie les effectifs à jour dès la fin des Finales.
+    const SEASON = (await fetchLeagueState()).currentSeason;
+    console.log(`[SYNC-PLAYERS] Saison ${SEASON}`);
     console.log("[SYNC-PLAYERS] Fetching from stats.nba.com (timeout 10min)...");
     // Only fetch active players (Historical=0) — much smaller payload
     // Historical players already in DB are preserved via upsert
     const indexData = await fetchNba(
       "https://stats.nba.com/stats/playerindex?" +
         "College=&Conference=&Country=&DraftPick=&DraftRound=&DraftYear=" +
-        `&Height=&Historical=0&LeagueID=00&Season=${getCurrentSeason()}` +
+        `&Height=&Historical=0&LeagueID=00&Season=${SEASON}` +
         "&SeasonType=Regular+Season&TeamID=0&Weight="
     );
 

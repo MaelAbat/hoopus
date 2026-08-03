@@ -2,10 +2,11 @@ import https from "node:https";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentSeason, seasonStartYear } from "@/lib/season";
+import { seasonBefore, seasonStartYear } from "@/lib/season";
+import { fetchLeagueState } from "@/lib/league-season";
 import { isCronAuthorized } from "@/lib/cron-auth";
 
-const SEASON = getCurrentSeason();
+// Saison résolue par requête depuis league_state (voir /api/sync-season).
 const BATCH_SIZE = 200;
 
 const NBA_HEADERS: Record<string, string> = {
@@ -216,19 +217,19 @@ function fetchNba(url: string, timeoutMs = 300000): Promise<NbaResponse> {
   });
 }
 
-/** Fetch biostats for all players in a single call */
-async function fetchAllBioStats(): Promise<Map<number, number>> {
+/** Fetch biostats for one season in a single call. */
+async function fetchBioStatsForSeason(season: string): Promise<Map<number, number>> {
   const ageMap = new Map<number, number>();
 
   try {
-    console.log("[SYNC-ROSTERS] Fetching bio stats from stats.nba.com (timeout 10min)...");
+    console.log(`[SYNC-ROSTERS] Fetching bio stats for ${season} (timeout 10min)...`);
     const bioData = await fetchNba(
       "https://stats.nba.com/stats/leaguedashplayerbiostats?" +
         "College=&Conference=&Country=&DateFrom=&DateTo=&Division=" +
         "&DraftPick=&DraftYear=&GameScope=&GameSegment=&Height=" +
         "&ISTRound=&LastNGames=0&LeagueID=00&Location=&Month=0" +
         "&OpponentTeamID=0&Outcome=&PORound=0&PerMode=PerGame" +
-        "&Period=0&PlayerExperience=&PlayerPosition=&Season=" + SEASON +
+        "&Period=0&PlayerExperience=&PlayerPosition=&Season=" + season +
         "&SeasonSegment=&SeasonType=Regular+Season" +
         "&ShotClockRange=&StarterBench=&TeamID=0" +
         "&VsConference=&VsDivision=&Weight="
@@ -242,12 +243,28 @@ async function fetchAllBioStats(): Promise<Map<number, number>> {
       const age = row[ageIdx] != null ? Number(row[ageIdx]) : null;
       if (pid && age) ageMap.set(pid, age);
     }
-    console.log(`[SYNC-ROSTERS] Got ages for ${ageMap.size} players`);
+    console.log(`[SYNC-ROSTERS] Got ages for ${ageMap.size} players (${season})`);
   } catch (err) {
     console.error("[SYNC-ROSTERS] Bio stats fetch failed (non-fatal):", (err as Error).message);
   }
 
   return ageMap;
+}
+
+/**
+ * Âges des joueurs, avec repli sur la saison précédente.
+ *
+ * Les bio stats d'une saison qui n'a pas commencé sont vides. Sans repli, tous
+ * les effectifs de l'intersaison perdraient l'âge de leurs joueurs. Les valeurs
+ * reprises accusent alors jusqu'à un an de retard, jusqu'au coup d'envoi.
+ */
+async function fetchAllBioStats(season: string): Promise<Map<number, number>> {
+  const ages = await fetchBioStatsForSeason(season);
+  if (ages.size > 0) return ages;
+
+  const previous = seasonBefore(season);
+  console.log(`[SYNC-ROSTERS] Aucune bio stat pour ${season}, repli sur ${previous}`);
+  return fetchBioStatsForSeason(previous);
 }
 
 export async function GET(request: NextRequest) {
@@ -264,6 +281,8 @@ export async function GET(request: NextRequest) {
 
   try {
     console.log("[SYNC-ROSTERS] Starting sync...");
+    const SEASON = (await fetchLeagueState()).currentSeason;
+    console.log(`[SYNC-ROSTERS] Saison ${SEASON}`);
     // Read active players from Supabase (already synced by sync-players)
     const { data: dbPlayers, error: dbError } = await supabase
       .from("players")
@@ -278,7 +297,7 @@ export async function GET(request: NextRequest) {
     // Fetch bio stats (ages) and salaries in parallel
     console.log("[SYNC-ROSTERS] Fetching from NBA API and Basketball Reference...");
     const [ageMap, salaryResult] = await Promise.all([
-      fetchAllBioStats(),
+      fetchAllBioStats(SEASON),
       (async () => {
         try {
           return await fetchSalaries(seasonStartYear(SEASON) + 1);

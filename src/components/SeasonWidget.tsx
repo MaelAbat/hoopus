@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentSeason } from "@/lib/season";
+import { getStatsSeason } from "@/lib/league-season";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { teamLogoUrl } from "@/lib/nba-teams";
@@ -27,7 +27,7 @@ function MoreLink({ href, label }: { href: string; label: string }) {
 }
 
 export default async function SeasonWidget() {
-  const season = getCurrentSeason();
+  const season = await getStatsSeason();
   const supabase = await createClient();
 
   /* ── 1. Check active playoff series ────────── */

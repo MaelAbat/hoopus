@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { OG_IMAGE } from "@/lib/seo";
-import { getCurrentSeason, seasonLabel } from "@/lib/season";
+import { seasonLabel } from "@/lib/season";
+import { getScheduleSeason } from "@/lib/league-season";
 import CalendarView from "@/components/CalendarView";
 import PageBanner from "@/components/PageBanner";
 import ScrollReveal from "@/components/ScrollReveal";
@@ -22,7 +23,7 @@ export const metadata = {
 
 export default async function Calendrier({ searchParams }: { searchParams: Promise<{ season?: string }> }) {
   const { season: seasonParam } = await searchParams;
-  const season = seasonParam || getCurrentSeason();
+  const season = seasonParam || (await getScheduleSeason());
   const supabase = await createClient();
 
   // Fetch one game per potential season to discover available seasons

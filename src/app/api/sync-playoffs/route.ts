@@ -2,10 +2,10 @@ import https from "node:https";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentSeason } from "@/lib/season";
+import { fetchLeagueState } from "@/lib/league-season";
 import { isCronAuthorized } from "@/lib/cron-auth";
 
-const SEASON = getCurrentSeason();
+// Saison résolue par requête depuis league_state (voir /api/sync-season).
 
 /*
   NBA gameId format for playoffs: "004XXYYZZ"
@@ -126,11 +126,11 @@ interface StandingRow {
 const TEAM_SEEDS = new Map<string, { conference: string; seed: number }>();
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function fetchConferenceTeams(supabase: any) {
+async function fetchConferenceTeams(supabase: any, season: string) {
   const { data } = await supabase
     .from("standings")
     .select("team_tricode, conference, conference_rank")
-    .eq("season", SEASON);
+    .eq("season", season);
 
   const standings = data as StandingRow[] | null;
   if (standings) {
@@ -170,10 +170,13 @@ export async function GET(request: NextRequest) {
 
   const startTime = Date.now();
 
+  const SEASON = (await fetchLeagueState()).currentSeason;
+  console.log(`[SYNC-PLAYOFFS] Saison ${SEASON}`);
+
   try {
     console.log("[SYNC-PLAYOFFS] Starting sync...");
     const now = new Date().toISOString();
-    await fetchConferenceTeams(supabase);
+    await fetchConferenceTeams(supabase, SEASON);
     console.log("[SYNC-PLAYOFFS] Fetching from NBA CDN...");
     const schedule = await fetchSchedule();
     const gameDates = schedule.leagueSchedule.gameDates;
