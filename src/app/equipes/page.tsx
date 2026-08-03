@@ -6,7 +6,6 @@ import { getLeagueState } from "@/lib/league-season";
 import TeamsView from "@/components/TeamsView";
 import PageBanner from "@/components/PageBanner";
 import ScrollReveal from "@/components/ScrollReveal";
-import OffseasonNotice from "@/components/OffseasonNotice";
 import SeasonSelector, { SeasonTransitionProvider, SeasonContent } from "@/components/SeasonSelector";
 
 export const revalidate = 3600;
@@ -53,7 +52,6 @@ export default async function Equipes({ searchParams }: { searchParams: Promise<
   const statuses = Object.fromEntries(
     availableSeasons.map((s) => [s, seasonStatusLabel(seasonStatus(s, leagueState))])
   );
-  const status = seasonStatus(season, leagueState);
 
   const hasData = !error && players && players.length > 0;
 
@@ -113,15 +111,6 @@ export default async function Equipes({ searchParams }: { searchParams: Promise<
                   Seuils estimés
                 </span>
               )}
-              <span
-                className={`inline-flex items-center border px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider ${
-                  status === "upcoming"
-                    ? "border-accent text-accent-text"
-                    : "border-rule text-text-muted"
-                }`}
-              >
-                {seasonStatusLabel(status)}
-              </span>
               {hasData ? (
                 <span className="font-mono text-[11px] uppercase tracking-wider text-text-faint">Mis à jour le {lastUpdate}</span>
               ) : (

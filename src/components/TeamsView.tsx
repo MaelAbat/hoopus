@@ -109,10 +109,11 @@ function RosterTable({
         </div>
       </div>
 
+      {/* Provenance des chiffres, à l'endroit où on les lit — pas un avertissement
+          général sur la période de l'année. */}
       {statsFromSeason && (
-        <p className="border border-rule bg-input/30 px-4 py-2.5 text-xs text-text-muted">
-          La saison n&apos;a pas encore débuté : les colonnes PTS, REB et AST reprennent les moyennes
-          de la saison <strong className="text-text-secondary">{statsFromSeason}</strong>.
+        <p className="kicker text-text-faint">
+          PTS · REB · AST — moyennes {statsFromSeason}
         </p>
       )}
 
@@ -264,9 +265,7 @@ function SalaryCapView({
         </div>
         {thresholds.isEstimated && (
           <p className="mt-3 border-t border-rule pt-2.5 text-[11px] leading-snug text-amber-500">
-            Seuils estimés : la ligue n&apos;a pas encore publié ses montants pour{" "}
-            <span className="tnum">{thresholds.season}</span>. La projection applique la hausse
-            maximale prévue par la convention collective.
+            Seuils {thresholds.season} projetés, en attente des montants officiels.
           </p>
         )}
       </div>

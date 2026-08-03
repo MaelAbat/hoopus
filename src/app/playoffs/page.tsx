@@ -5,7 +5,6 @@ import { getLeagueState } from "@/lib/league-season";
 import PlayoffBracket from "@/components/PlayoffBracket";
 import PageBanner from "@/components/PageBanner";
 import ScrollReveal from "@/components/ScrollReveal";
-import OffseasonNotice from "@/components/OffseasonNotice";
 import SeasonSelector, { SeasonTransitionProvider, SeasonContent } from "@/components/SeasonSelector";
 
 export const revalidate = 3600;
@@ -79,7 +78,6 @@ export default async function Playoffs({ searchParams }: { searchParams: Promise
   const statuses = Object.fromEntries(
     availableSeasons.map((s) => [s, seasonStatusLabel(seasonStatus(s, leagueState))])
   );
-  const status = seasonStatus(season, leagueState);
 
   // Enrich each series game with its game_id by looking up (date, home, away)
   // in the games table — avoids needing the playoff sync to store it.
@@ -134,15 +132,6 @@ export default async function Playoffs({ searchParams }: { searchParams: Promise
                 defaultSeason={defaultSeason}
                 statuses={statuses}
               />
-              <span
-                className={`inline-flex items-center border px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider ${
-                  status === "current"
-                    ? "border-accent text-accent-text"
-                    : "border-rule text-text-muted"
-                }`}
-              >
-                {seasonStatusLabel(status)}
-              </span>
               {hasData && (
                 <span className="tnum text-xs text-text-faint">Basé sur le classement du {lastUpdate}</span>
               )}
@@ -150,7 +139,6 @@ export default async function Playoffs({ searchParams }: { searchParams: Promise
           }
         />
 
-        {status === "completed" && <OffseasonNotice variant="compact" />}
 
         <SeasonContent>
           <ScrollReveal variant="up" delay={100}>

@@ -70,7 +70,6 @@ export default async function TradesPage({
   const statuses = Object.fromEntries(
     availableSeasons.map((s) => [s, seasonStatusLabel(seasonStatus(s, leagueState))])
   );
-  const status = seasonStatus(season, leagueState);
 
   const roster: TradeRosterPlayer[] = ((rows || []) as RosterRow[]).map((r) => ({
     player_id: r.player_id,
@@ -158,15 +157,6 @@ export default async function TradesPage({
                   Seuils estimés
                 </span>
               )}
-              <span
-                className={`inline-flex items-center border px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider ${
-                  status === "upcoming"
-                    ? "border-accent text-accent-text"
-                    : "border-rule text-text-muted"
-                }`}
-              >
-                {seasonStatusLabel(status)}
-              </span>
               {missingSalaries > 0 && (
                 <span className="inline-flex items-center border border-amber-500 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-amber-500">
                   <span className="tnum">{missingSalaries}</span>&nbsp;contrats manquants
