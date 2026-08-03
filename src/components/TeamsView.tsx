@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { teamLogoUrl, playerPhotoUrl } from "@/lib/nba-teams";
 import { useFavorites } from "@/context/FavoritesContext";
-import { CAP_THRESHOLDS, capStatus, formatMoney, parseSalary } from "@/lib/salary-cap";
+import { CAP_THRESHOLDS, NBA_TEAM_COUNT, capStatus, formatMoney, parseSalary } from "@/lib/salary-cap";
 
 interface Player {
   id: string;
@@ -196,8 +196,10 @@ function SalaryCapView({ players, payrolls }: { players: Player[]; payrolls: Tea
       }
     }
 
-    // Use scraped payroll totals from BR (accurate with dead money, cap holds)
-    if (payrolls.length > 0) {
+    // Totaux officiels de BR (qui incluent dead money et cap holds), mais
+    // seulement s'ils couvrent les 30 équipes : une série partielle comparerait
+    // des totaux officiels à des sommes de contrats selon l'équipe.
+    if (payrolls.filter((p) => p.payroll > 0).length >= NBA_TEAM_COUNT) {
       return payrolls
         .map(p => ({
           tricode: p.team_tricode,

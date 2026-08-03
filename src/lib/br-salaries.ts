@@ -35,6 +35,13 @@ export const BR_TEAMS = [
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+/** Nombre de pages sollicitées en parallèle. Volontairement bas : BR renvoie 429. */
+const CONCURRENCY = 3;
+/** Pause entre deux lots. */
+const BATCH_DELAY_MS = 2500;
+/** Tentatives par page, en cas de limitation. */
+const ATTEMPTS = 3;
+
 /**
  * Normalise un nom pour rapprocher les deux sources.
  *
@@ -102,6 +109,34 @@ function fetchHtml(url: string, redirects = 0): Promise<string> {
 }
 
 /**
+ * `fetchHtml` avec reprise sur limitation de débit.
+ *
+ * Basketball Reference renvoie 429 quand les appels se succèdent trop vite. Ce
+ * n'est pas une erreur définitive, contrairement à un 404 qui signifie « page
+ * pas encore publiée » et qui ne doit surtout pas être réessayé.
+ */
+async function fetchHtmlResilient(url: string): Promise<string> {
+  let lastError: Error = new Error("jamais tenté");
+
+  for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
+    try {
+      return await fetchHtml(url);
+    } catch (err) {
+      lastError = err as Error;
+      const status = (err as Error & { status?: number }).status;
+      const retryable = !status || status === 429 || status === 403 || status >= 500;
+      if (attempt === ATTEMPTS || !retryable) throw err;
+      // 4s puis 12s : une limitation de débit se dissipe en quelques secondes.
+      const wait = 4000 * Math.pow(3, attempt - 1);
+      console.warn(`[BR] ${lastError.message} — nouvelle tentative ${attempt + 1}/${ATTEMPTS} dans ${wait}ms`);
+      await delay(wait);
+    }
+  }
+
+  throw lastError;
+}
+
+/**
  * Isole la table « Salaries » d'une page équipe-saison.
  *
  * BR la sert dans un commentaire HTML (elle est montée côté client), donc on
@@ -164,7 +199,7 @@ export async function fetchTeamSalaries(
 
   // 1. Page de saison — verrouillée, donc préférable.
   try {
-    const html = await fetchHtml(
+    const html = await fetchHtmlResilient(
       `https://www.basketball-reference.com/teams/${brTeam}/${seasonEndYear}.html`
     );
     const section = extractSalariesSection(html);
@@ -175,7 +210,7 @@ export async function fetchTeamSalaries(
   }
 
   // 2. Page de contrats — uniquement si elle annonce bien la saison demandée.
-  const html = await fetchHtml(`https://www.basketball-reference.com/contracts/${brTeam}.html`);
+  const html = await fetchHtmlResilient(`https://www.basketball-reference.com/contracts/${brTeam}.html`);
   const advertised = readContractsSeason(html);
   if (advertised !== season) {
     console.warn(
@@ -210,8 +245,8 @@ export async function fetchAllSalaries(season: string): Promise<SalaryScrape> {
   const payrollMap = new Map<string, number>();
   const failed: string[] = [];
 
-  for (let i = 0; i < BR_TEAMS.length; i += 5) {
-    const batch = BR_TEAMS.slice(i, i + 5);
+  for (let i = 0; i < BR_TEAMS.length; i += CONCURRENCY) {
+    const batch = BR_TEAMS.slice(i, i + CONCURRENCY);
     await Promise.all(
       batch.map(async (brTeam) => {
         const nbaTeam = BR_TRICODE_MAP[brTeam] || brTeam;
@@ -238,7 +273,7 @@ export async function fetchAllSalaries(season: string): Promise<SalaryScrape> {
       })
     );
     // Un peu d'air entre les lots, pour rester courtois avec BR.
-    if (i + 5 < BR_TEAMS.length) await delay(1000);
+    if (i + CONCURRENCY < BR_TEAMS.length) await delay(BATCH_DELAY_MS);
   }
 
   console.log(

@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import { seasonBefore } from "@/lib/season";
-import { fetchAllSalaries, normalizeName } from "@/lib/br-salaries";
+import { BR_TEAMS, fetchAllSalaries, normalizeName } from "@/lib/br-salaries";
 import { fetchLeagueState } from "@/lib/league-season";
 import { isCronAuthorized } from "@/lib/cron-auth";
 
@@ -148,17 +148,43 @@ export async function GET(request: NextRequest) {
       })(),
     ]);
 
-    const { salaryMap, payrollMap } = salaryResult;
+    const { salaryMap, payrollMap, failed } = salaryResult;
     console.log(`[SYNC-ROSTERS] Fetched ${ageMap.size} ages, ${salaryMap.size} salaries, ${payrollMap.size} payrolls`);
+
+    // ── Salaires déjà connus ──
+    // Une synchronisation ne doit jamais détruire de données valides. Sans ce
+    // repli, un incident chez Basketball Reference (429, coupure) rendait un
+    // `salaryMap` vide et remettait toute la colonne salaires à null. On
+    // conserve donc la valeur déjà en base pour les joueurs que le scraping
+    // n'a pas couverts.
+    const { data: knownRows } = await supabase
+      .from("rosters")
+      .select("player_id, salary")
+      .eq("season", SEASON)
+      .not("salary", "is", null);
+    const knownSalaries = new Map<number, string>(
+      (knownRows || []).map((r) => [r.player_id, r.salary as string])
+    );
+    if (knownSalaries.size > 0) {
+      console.log(`[SYNC-ROSTERS] ${knownSalaries.size} salaires déjà en base, conservés à défaut`);
+    }
 
     const now = new Date().toISOString();
     const players = [];
+    let preserved = 0;
 
     for (const p of dbPlayers) {
       if (!p.team_tricode) continue;
 
       const salaryKey = normalizeName(`${p.first_name} ${p.last_name}`) + "|" + p.team_tricode;
-      const salary = salaryMap.get(salaryKey) || null;
+      let salary = salaryMap.get(salaryKey) ?? null;
+      if (!salary) {
+        const known = knownSalaries.get(p.player_id);
+        if (known) {
+          salary = known;
+          preserved++;
+        }
+      }
 
       players.push({
         season: SEASON,
@@ -203,7 +229,17 @@ export async function GET(request: NextRequest) {
     }
 
     // Store team payroll totals
-    if (payrollMap.size > 0) {
+    // ── Masses salariales ──
+    // On n'écrit que si les 30 équipes ont répondu. Une série partielle est
+    // pire que rien : les pages compareraient des totaux officiels pour
+    // certaines équipes à des sommes de contrats pour les autres. En cas de
+    // scraping incomplet, les valeurs précédentes restent en place.
+    if (payrollMap.size < BR_TEAMS.length) {
+      console.warn(
+        `[SYNC-ROSTERS] Masses salariales incomplètes (${payrollMap.size}/${BR_TEAMS.length}` +
+          `${failed.length > 0 ? `, échecs : ${failed.join(", ")}` : ""}) — écriture ignorée`
+      );
+    } else {
       const payrollRows = Array.from(payrollMap.entries()).map(([tricode, payroll]) => ({
         season: SEASON,
         team_tricode: tricode,
@@ -249,6 +285,9 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    if (preserved > 0) {
+      console.log(`[SYNC-ROSTERS] ${preserved} salaire(s) repris de la base, source incomplète`);
+    }
     console.log(`[SYNC-ROSTERS] Upserted ${inserted} rows successfully`);
     revalidatePath("/equipes");
     revalidatePath("/trades");
@@ -260,6 +299,7 @@ export async function GET(request: NextRequest) {
       season: SEASON,
       players: inserted,
       pruned,
+      preserved,
       salaries: salaryMap.size,
       payrolls: payrollMap.size,
       timestamp: now,

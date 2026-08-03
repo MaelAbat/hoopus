@@ -104,3 +104,6 @@ export function capStatus(total: number, t: CapThresholds = CAP_THRESHOLDS): Cap
     return { key: "over", label: "Over Cap", color: "text-text-secondary", barFill: "bg-text-muted", badge: "border-rule text-text-secondary" };
   return { key: "under", label: "Under Cap", color: "text-text-muted", barFill: "bg-text-faint", badge: "border-rule text-text-muted" };
 }
+
+/** Nombre de franchises actives — repère pour juger une série de données complète. */
+export const NBA_TEAM_COUNT = 30;

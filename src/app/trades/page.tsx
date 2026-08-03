@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { OG_IMAGE } from "@/lib/seo";
 import { getLeagueState } from "@/lib/league-season";
-import { parseSalaryOrNull } from "@/lib/salary-cap";
+import { NBA_TEAM_COUNT, parseSalaryOrNull } from "@/lib/salary-cap";
 import { decodeTrade, type TradeRosterPlayer } from "@/lib/trade-rules";
 import PageBanner from "@/components/PageBanner";
 import ScrollReveal from "@/components/ScrollReveal";
@@ -101,14 +101,17 @@ export default async function TradesPage({
     if (matched > 0) statsFromSeason = statsSeason;
   }
 
-  // Masse salariale de départ : le total officiel quand il existe (il inclut le
-  // dead money et les cap holds), sinon la somme des contrats de l'effectif.
+  // Masse salariale de départ : la somme des contrats de l'effectif, remplacée
+  // par les totaux officiels (qui incluent le dead money et les cap holds)
+  // uniquement s'ils couvrent les 30 équipes. Une série partielle mélangerait
+  // deux façons de compter d'une équipe à l'autre.
   const payrollBase: Record<string, number> = {};
   for (const p of roster) {
     payrollBase[p.team_tricode] = (payrollBase[p.team_tricode] ?? 0) + (p.salary ?? 0);
   }
-  for (const p of payrolls || []) {
-    if (p.payroll > 0) payrollBase[p.team_tricode] = p.payroll;
+  const officialPayrolls = (payrolls || []).filter((p) => p.payroll > 0);
+  if (officialPayrolls.length >= NBA_TEAM_COUNT) {
+    for (const p of officialPayrolls) payrollBase[p.team_tricode] = p.payroll;
   }
 
   // État initial relu depuis l'URL, pour que les échanges soient partageables.
