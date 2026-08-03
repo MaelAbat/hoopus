@@ -33,6 +33,7 @@ const navItems: NavItem[] = [
   { href: "/classement", label: "Classement" },
   { href: "/equipes", label: "Équipes" },
   { href: "/joueurs", label: "Joueurs" },
+  { href: "/trades", label: "Trade Machine" },
   { href: "/blessures", label: "Infirmerie" },
   { href: "/playoffs", label: "Playoffs" },
   { href: "/mini-jeux", label: "Mini-jeux" },
