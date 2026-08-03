@@ -463,7 +463,7 @@ export default function HoopLinkGame({ players, playerTeams, adjacencyList }: Pr
     const result = won
       ? `\u{1F517} ${chain.length} maillon${chain.length > 1 ? "s" : ""} (optimal : ${puzzle.optimalLength})`
       : "Pas trouvé";
-    return `HoopLink \u{1F3C0} ${dateStr}\n\n${startPlayer.name} \u2192 ${endPlayer.name}\n${result} (${formatTime(elapsed)})\n\nhttps://www.hoopus.fr/mini-jeux/hooplink`;
+    return `HoopLink \u{1F3C0} ${dateStr}\n\n${startPlayer.name} → ${endPlayer.name}\n${result} (${formatTime(elapsed)})\n\nhttps://www.hoopus.fr/mini-jeux/hooplink`;
   }
 
   function handleShare() {

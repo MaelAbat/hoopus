@@ -53,9 +53,9 @@ const HEADERS = [
 ];
 
 function computeGB(leader: Standing, team: Standing): string {
-  if (leader === team) return "\u2014";
+  if (leader === team) return "—";
   const gb = (leader.wins - team.wins + (team.losses - leader.losses)) / 2;
-  if (gb === 0) return "\u2014";
+  if (gb === 0) return "—";
   return gb % 1 === 0 ? gb.toFixed(0) : gb.toFixed(1);
 }
 
@@ -244,7 +244,7 @@ function DivisionsGrid({ allTeams }: { allTeams: Standing[] }) {
                         {(team.win_pct * 100).toFixed(1)}
                       </td>
                       <td className="tnum px-2 py-1.5 text-center text-text-muted">
-                        {leader ? computeGB(leader, team) : "\u2014"}
+                        {leader ? computeGB(leader, team) : "—"}
                       </td>
                     </tr>
                   );

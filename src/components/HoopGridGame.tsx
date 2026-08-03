@@ -580,7 +580,7 @@ export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
   function buildShareText(): string {
     const today = new Date();
     const dateStr = today.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
-    return `HoopGrid \u{1F50E} ${dateStr}\n\n\u{2705} ${foundWords.length}/${words.length} mots barr\u00e9s\n\u{1F3C0} Joueur myst\u00e8re trouv\u00e9\n\u{23F1}\u{FE0F} ${formatTime(elapsed)}\n\nhttps://www.hoopus.fr/mini-jeux/hoopgrid`;
+    return `HoopGrid \u{1F50E} ${dateStr}\n\n\u{2705} ${foundWords.length}/${words.length} mots barrés\n\u{1F3C0} Joueur mystère trouvé\n\u{23F1}\u{FE0F} ${formatTime(elapsed)}\n\nhttps://www.hoopus.fr/mini-jeux/hoopgrid`;
   }
 
   function handleShare() {
@@ -629,12 +629,12 @@ export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
           </h1>
           <p className="font-mono text-[11px] uppercase tracking-wider text-text-muted">
             {gaveUp
-              ? "Partie abandonn\u00e9e"
+              ? "Partie abandonnée"
               : won
-                ? `Joueur myst\u00e8re trouv\u00e9 en ${formatTime(elapsed)} !`
+                ? `Joueur mystère trouvé en ${formatTime(elapsed)} !`
                 : allWordsFound
-                  ? "Devine le joueur myst\u00e8re !"
-                  : "Barre les noms pour r\u00e9v\u00e9ler le joueur myst\u00e8re"
+                  ? "Devine le joueur mystère !"
+                  : "Barre les noms pour révéler le joueur mystère"
             }
           </p>
         </div>
@@ -868,7 +868,7 @@ export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
         }`}>
           <span className={`absolute left-0 top-0 bottom-0 w-1 ${gaveUp ? "bg-red-600" : "bg-accent"}`} />
           <p className={`kicker ${gaveUp ? "text-red-300" : "text-accent-text"}`}>
-            {gaveUp ? "Joueur myst\u00e8re" : "Joueur myst\u00e8re"}
+            Joueur mystère
           </p>
           <div className="flex items-center justify-center gap-3">
             <img src={teamLogoUrl(mystery.team)} alt="" className="h-8 w-8 object-contain" />
