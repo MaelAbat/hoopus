@@ -19,13 +19,15 @@ export interface CapThresholds {
 /**
  * Seuils officiels par saison. Les échanges et la masse salariale sont
  * évalués avec les seuils de la saison affichée.
+ *
+ * Source 2025-26 : annonce NBA du 1er juillet 2025 (hausse maximale de 10 %).
  */
 const THRESHOLDS_BY_SEASON: Record<string, CapThresholds> = {
   "2025-26": {
     salaryCap: 154_647_000,
-    luxuryTax: 188_931_000,
-    firstApron: 196_581_000,
-    secondApron: 204_231_000,
+    luxuryTax: 187_895_000,
+    firstApron: 195_945_000,
+    secondApron: 207_824_000,
   },
   "2024-25": {
     salaryCap: 140_588_000,

@@ -2,7 +2,7 @@ import https from "node:https";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentSeason } from "@/lib/season";
+import { getCurrentSeason, seasonStartYear } from "@/lib/season";
 import { isCronAuthorized } from "@/lib/cron-auth";
 
 const SEASON = getCurrentSeason();
@@ -76,6 +76,10 @@ function normalizeName(name: string): string {
     .toLowerCase()
     .replace(/[^a-z ]/g, "")
     .replace(/\s+/g, " ")
+    .trim()
+    // BR's per-season salary tables drop generational suffixes ("Kevin Porter"
+    // vs the NBA's "Kevin Porter Jr."), so strip them on both sides.
+    .replace(/ (jr|sr|ii|iii|iv|v)$/, "")
     .trim();
 }
 
@@ -95,63 +99,99 @@ const BR_TEAMS = [
 
 function delay(ms: number) { return new Promise(r => setTimeout(r, ms)); }
 
-async function fetchTeamSalaries(brTeam: string, salaryMap: Map<string, string>) {
-  const html = await fetchHtml(`https://www.basketball-reference.com/contracts/${brTeam}.html`);
+/**
+ * Isole la table « Salaries » d'une page équipe-saison de Basketball
+ * Reference. BR la sert à l'intérieur d'un commentaire HTML (rendu côté
+ * client), donc on découpe la section au lieu de parser le DOM.
+ */
+function extractSalariesSection(html: string): string {
+  const start = html.indexOf('id="all_salaries');
+  if (start === -1) return "";
+  const end = html.indexOf("</table>", start);
+  return end === -1 ? html.slice(start) : html.slice(start, end);
+}
+
+/**
+ * Salaires d'une équipe pour UNE saison donnée.
+ *
+ * On lit `/teams/{TRI}/{année}.html`, dont la table de salaires est verrouillée
+ * sur la saison demandée. Les pages `/contracts/` ne conviennent pas : leur
+ * colonne `y1` bascule sur la saison suivante dès l'intersaison, ce qui
+ * associait des salaires de l'année N+1 à des effectifs de l'année N.
+ *
+ * Renvoie le total de la masse salariale de l'équipe pour la saison.
+ */
+async function fetchTeamSalaries(
+  brTeam: string,
+  seasonEndYear: number,
+  salaryMap: Map<string, string>
+): Promise<number> {
+  const html = await fetchHtml(
+    `https://www.basketball-reference.com/teams/${brTeam}/${seasonEndYear}.html`
+  );
   const nbaTeam = BR_TRICODE_MAP[brTeam] || brTeam;
-  const rows = html.match(/<tr\s*>[\s\S]*?<\/tr>/g) || [];
+  const section = extractSalariesSection(html);
+  if (!section) {
+    console.error(`No salaries table found for ${brTeam} ${seasonEndYear}`);
+    return 0;
+  }
+
+  const rows = section.match(/<tr[^>]*>[\s\S]*?<\/tr>/g) || [];
+  let total = 0;
 
   for (const row of rows) {
-    const playerMatch = row.match(/data-stat="player"[^>]*>.*?<a[^>]*>([^<]+)<\/a>/);
+    const playerMatch = row.match(/data-stat="player"[^>]*>(?:<a[^>]*>)?([^<]+)/);
     if (!playerMatch) continue;
-    const salaryMatch = row.match(/data-stat="y1"[^>]*>(\$[\d,]+)/);
+    const salaryMatch = row.match(/data-stat="salary"[^>]*>(\$[\d,]+)/);
     if (!salaryMatch) continue;
 
     const key = normalizeName(playerMatch[1].trim()) + "|" + nbaTeam;
     salaryMap.set(key, salaryMatch[1]);
+    total += Number(salaryMatch[1].replace(/[$,]/g, "")) || 0;
   }
+
+  return total;
 }
 
-async function fetchTeamPayrolls(): Promise<Map<string, number>> {
-  const payrollMap = new Map<string, number>();
-  try {
-    const html = await fetchHtml("https://www.basketball-reference.com/contracts/");
-    const rows = html.match(/<tr[^>]*>[\s\S]*?<\/tr>/g) || [];
-    for (const row of rows) {
-      const tricodeMatch = row.match(/\/contracts\/([A-Z]{3})\.html/);
-      if (!tricodeMatch) continue;
-      const payrollMatch = row.match(/data-stat="y1"[^>]*>(\$[\d,]+)/);
-      if (!payrollMatch) continue;
-      let tri = tricodeMatch[1];
-      tri = BR_TRICODE_MAP[tri] || tri;
-      const amount = Number(payrollMatch[1].replace(/[$,]/g, "")) || 0;
-      payrollMap.set(tri, amount);
-    }
-    console.log(`Payroll scraping: found ${payrollMap.size} team totals`);
-  } catch (err) {
-    console.error("Error scraping payrolls:", err);
-  }
-  return payrollMap;
-}
-
-async function fetchSalaries(): Promise<Map<string, string>> {
+/**
+ * Salaires individuels + masse salariale par équipe, pour la saison courante.
+ *
+ * Les deux sortent de la même table, donc les totaux restent cohérents avec les
+ * contrats affichés. Nuance : la table recense tous les joueurs payés par la
+ * franchise sur la saison, un joueur échangé en cours d'année peut donc être
+ * compté par ses deux équipes.
+ */
+async function fetchSalaries(
+  seasonEndYear: number
+): Promise<{ salaryMap: Map<string, string>; payrollMap: Map<string, number> }> {
   const salaryMap = new Map<string, string>();
+  const payrollMap = new Map<string, number>();
 
   try {
     // Fetch team pages in batches of 5 to avoid rate limiting
     for (let i = 0; i < BR_TEAMS.length; i += 5) {
       const batch = BR_TEAMS.slice(i, i + 5);
-      await Promise.all(batch.map(team => fetchTeamSalaries(team, salaryMap).catch(err => {
-        console.error(`Salary scrape failed for ${team}:`, err.message);
-      })));
+      await Promise.all(
+        batch.map(async (team) => {
+          try {
+            const total = await fetchTeamSalaries(team, seasonEndYear, salaryMap);
+            if (total > 0) payrollMap.set(BR_TRICODE_MAP[team] || team, total);
+          } catch (err) {
+            console.error(`Salary scrape failed for ${team}:`, (err as Error).message);
+          }
+        })
+      );
       // Small delay between batches to be polite
       if (i + 5 < BR_TEAMS.length) await delay(1000);
     }
-    console.log(`Salary scraping: found ${salaryMap.size} salaries from ${BR_TEAMS.length} team pages`);
+    console.log(
+      `Salary scraping: found ${salaryMap.size} salaries and ${payrollMap.size} payrolls from ${BR_TEAMS.length} team pages`
+    );
   } catch (err) {
     console.error("Error scraping salaries:", err);
   }
 
-  return salaryMap;
+  return { salaryMap, payrollMap };
 }
 
 function fetchNba(url: string, timeoutMs = 300000): Promise<NbaResponse> {
@@ -240,17 +280,12 @@ export async function GET(request: NextRequest) {
     const [ageMap, salaryResult] = await Promise.all([
       fetchAllBioStats(),
       (async () => {
-        let salaryMap = new Map<string, string>();
-        let payrollMap = new Map<string, number>();
         try {
-          [salaryMap, payrollMap] = await Promise.all([
-            fetchSalaries(),
-            fetchTeamPayrolls(),
-          ]);
+          return await fetchSalaries(seasonStartYear(SEASON) + 1);
         } catch (err) {
           console.error("Salary/payroll scraping failed (non-fatal):", err);
+          return { salaryMap: new Map<string, string>(), payrollMap: new Map<string, number>() };
         }
-        return { salaryMap, payrollMap };
       })(),
     ]);
 
