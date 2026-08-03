@@ -180,6 +180,13 @@ interface EvaluateInput {
   roster: TradeRosterPlayer[];
   /** Masse salariale de départ par équipe (tricode → dollars). */
   payrollBase: Record<string, number>;
+  /**
+   * Seuils applicables. À fournir explicitement : les montants réels vivent en
+   * base (table salary_cap_levels), pas dans le code, afin qu'une nouvelle
+   * saison n'exige aucune modification de code. Omis, on retombe sur les
+   * montants connus — acceptable pour les tests et les scripts uniquement.
+   */
+  thresholds?: CapThresholds;
 }
 
 /** Moyenne, ou `null` si aucune valeur exploitable. */
@@ -194,8 +201,9 @@ export function evaluateTrade({
   moves,
   roster,
   payrollBase,
+  thresholds: providedThresholds,
 }: EvaluateInput): TradeEvaluation {
-  const thresholds = capThresholds(season);
+  const thresholds = providedThresholds ?? capThresholds(season);
   const byId = new Map(roster.map((p) => [p.player_id, p]));
   const globalIssues: TradeIssue[] = [];
 

@@ -3,6 +3,7 @@ import { OG_IMAGE } from "@/lib/seo";
 import { buildSeasonOptions, seasonStatus, seasonStatusLabel } from "@/lib/season";
 import { getLeagueState } from "@/lib/league-season";
 import { NBA_TEAM_COUNT, parseSalaryOrNull } from "@/lib/salary-cap";
+import { getCapLevels } from "@/lib/cap-levels";
 import { decodeTrade, type TradeRosterPlayer } from "@/lib/trade-rules";
 import PageBanner from "@/components/PageBanner";
 import ScrollReveal from "@/components/ScrollReveal";
@@ -47,6 +48,7 @@ export default async function TradesPage({
   const leagueState = await getLeagueState();
   const { currentSeason, statsSeason } = leagueState;
   const season = params.season || currentSeason;
+  const capLevels = await getCapLevels(season);
   const supabase = await createClient();
 
   const [{ data: seasonRows }, { data: rows }, { data: payrolls }] = await Promise.all([
@@ -148,6 +150,14 @@ export default async function TradesPage({
                 defaultSeason={currentSeason}
                 statuses={statuses}
               />
+              {capLevels.isEstimated && (
+                <span
+                  className="inline-flex items-center border border-amber-500 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-amber-500"
+                  title="La ligue n'a pas encore publié ses seuils pour cette saison : les montants sont projetés."
+                >
+                  Seuils estimés
+                </span>
+              )}
               <span
                 className={`inline-flex items-center border px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider ${
                   status === "upcoming"
@@ -175,6 +185,7 @@ export default async function TradesPage({
               initialTeams={initialTeams}
               initialMoves={initialMoves}
               statsFromSeason={statsFromSeason}
+              thresholds={capLevels}
             />
           </ScrollReveal>
         </SeasonContent>

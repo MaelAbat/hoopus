@@ -257,7 +257,8 @@ export default function Sidebar({
           </Link>
         )}
         <ThemeSelector />
-        <p className="mt-3 kicker text-text-faint">&copy; 2026 Hoopus</p>
+        {/* Année calculée : un millésime codé en dur devient faux au 1er janvier. */}
+        <p className="mt-3 kicker text-text-faint">&copy; {new Date().getFullYear()} Hoopus</p>
       </div>
     </>
   );

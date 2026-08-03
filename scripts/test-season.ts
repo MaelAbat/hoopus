@@ -19,6 +19,11 @@ import {
   seasonStatus,
   seasonStatusLabel,
 } from "../src/lib/season";
+import {
+  KNOWN_THRESHOLDS,
+  projectThresholds,
+  resolveThresholds,
+} from "../src/lib/salary-cap";
 
 let pass = 0;
 let fail = 0;
@@ -185,6 +190,65 @@ check(
   buildSeasonOptions(["2025-26", "2024-25"], "2026-27")[0],
   "2026-27"
 );
+
+console.log("\n--- seuils de masse salariale : aucune saison codée en dur ---");
+
+// Une saison connue reste exacte.
+{
+  const t = resolveThresholds("2025-26");
+  check("2025-26 exact", [t.salaryCap, t.isEstimated], [154_647_000, false]);
+}
+
+// La projection reproduit exactement la progression observée entre les deux
+// saisons connues : elle est donc calibrée, pas inventée.
+{
+  const projected = projectThresholds(KNOWN_THRESHOLDS["2024-25"], 1);
+  check("2024-25 projeté sur un an redonne 2025-26", projected, KNOWN_THRESHOLDS["2025-26"]);
+}
+
+// Les saisons que personne n'a saisies fonctionnent quand même — c'est tout
+// l'enjeu : aucune modification de code à la bascule de saison.
+for (const [season, years] of [
+  ["2026-27", 1],
+  ["2027-28", 2],
+  ["2030-31", 5],
+] as const) {
+  const t = resolveThresholds(season);
+  const expected = projectThresholds(KNOWN_THRESHOLDS["2025-26"], years);
+  check(`${season} projeté`, [t.salaryCap, t.isEstimated], [expected.salaryCap, true]);
+  check(`  ${season} — ordre des seuils respecté`,
+    t.salaryCap < t.luxuryTax && t.luxuryTax < t.firstApron && t.firstApron < t.secondApron,
+    true
+  );
+}
+
+// Une saison antérieure à tout ce qu'on connaît ne doit pas renvoyer zéro.
+{
+  const t = resolveThresholds("2015-16");
+  check("saison ancienne : montants non nuls", t.salaryCap > 0, true);
+  check("  et marquée estimée", t.isEstimated, true);
+}
+
+// Un montant réel saisi en base l'emporte, et sert de base aux projections
+// suivantes — c'est ce qui rend la correction annuelle purement déclarative.
+{
+  const known = {
+    ...KNOWN_THRESHOLDS,
+    "2026-27": {
+      salaryCap: 160_000_000,
+      luxuryTax: 194_000_000,
+      firstApron: 202_000_000,
+      secondApron: 214_000_000,
+    },
+  };
+  check("montant saisi l'emporte", resolveThresholds("2026-27", known).salaryCap, 160_000_000);
+  check("  et n'est plus estimé", resolveThresholds("2026-27", known).isEstimated, false);
+  check(
+    "  la saison suivante projette depuis lui",
+    resolveThresholds("2027-28", known).salaryCap,
+    projectThresholds(known["2026-27"], 1).salaryCap
+  );
+}
 
 console.log(`\n${pass} réussis, ${fail} échoués`);
 process.exit(fail > 0 ? 1 : 0);
