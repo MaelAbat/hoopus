@@ -11,8 +11,19 @@ const LIVE_NOW = [
   { href: "/mini-jeux", label: "Mini-jeux" },
 ];
 
-/** Ce qui reste figé sur la saison écoulée. */
-const FROZEN = ["Statistiques", "Classement", "Playoffs", "Calendrier"];
+/**
+ * Ce qui affiche encore la saison écoulée.
+ *
+ * Ces pages sont consultables normalement : seule leur saison de référence
+ * diffère. Les présenter comme désactivées laissait croire à une indisponibilité
+ * qui n'existe pas — le titre de la colonne suffit à porter la nuance.
+ */
+const PREVIOUS_SEASON = [
+  { href: "/statistiques", label: "Statistiques" },
+  { href: "/classement", label: "Classement" },
+  { href: "/playoffs", label: "Playoffs" },
+  { href: "/calendrier", label: "Calendrier" },
+];
 
 /**
  * Repère d'intersaison.
@@ -110,22 +121,28 @@ export default async function OffseasonNotice({
 
         <div className="bg-card px-6 py-5 sm:px-9">
           <p className="kicker text-text-faint">Encore en {statsSeason}</p>
-          {/* Même géométrie que les pastilles de gauche, mais éteintes : c'est le
-              contraste de traitement qui dit « celles-ci sont à jour, celles-là
-              attendent ». Une liste à puces face à des boutons ne créait aucune
-              parallèle, et des puces de 1 px passaient pour des poussières. */}
-          <ul className="mt-3 flex flex-wrap gap-2">
-            {FROZEN.map((item) => (
-              <li
-                key={item}
-                className="inline-flex items-center border border-dashed border-rule px-3 py-2 font-mono text-[11px] font-bold uppercase tracking-wider text-text-faint"
+          {/* Mêmes pastilles cliquables qu'à gauche : ces pages fonctionnent, seule
+              leur saison de référence diffère. Le seul écart est la couleur de
+              survol, neutre plutôt qu'accent, pour distinguer sans jamais
+              suggérer une indisponibilité. */}
+          <div className="mt-3 flex flex-wrap gap-2">
+            {PREVIOUS_SEASON.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="group inline-flex items-center gap-1.5 border border-rule px-3 py-2 font-mono text-[11px] font-bold uppercase tracking-wider text-text-muted transition-colors hover:border-border-hover hover:text-text-primary"
               >
-                {item}
-              </li>
+                {link.label}
+                <ArrowRight
+                  size={12}
+                  strokeWidth={2}
+                  className="transition-transform duration-200 group-hover:translate-x-0.5"
+                />
+              </Link>
             ))}
-          </ul>
+          </div>
           <p className="mt-3 text-[11px] leading-snug text-text-faint">
-            Ces sections reprendront au premier match de la saison.
+            Consultables normalement : elles basculeront sur {currentSeason} au premier match.
           </p>
         </div>
       </div>
