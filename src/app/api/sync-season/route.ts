@@ -25,6 +25,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { fetchLeagueSchedule, readSeasonYear } from "@/lib/nba-schedule";
 import { isCronAuthorized } from "@/lib/cron-auth";
 import {
+  KNOWN_THRESHOLDS,
+  resolveThresholds,
+  type CapThresholds,
+} from "@/lib/salary-cap";
+import {
   getCurrentSeason,
   latestSeason,
   resolveLeagueSeason,
@@ -137,6 +142,47 @@ export async function GET(request: NextRequest) {
     );
     if (upsertError) throw new Error(`league_state upsert failed: ${upsertError.message}`);
 
+    // ── Seuils de masse salariale de la saison courante ──
+    // La ligue publie ses montants début juillet. D'ici là, on insère une
+    // projection marquée « estimée » pour que la trade machine reste utilisable
+    // sans intervention. La ligne se corrige ensuite par un simple UPDATE.
+    let capLevels: string | null = null;
+    const { data: existingLevels } = await supabase
+      .from("salary_cap_levels")
+      .select("season, salary_cap, luxury_tax, first_apron, second_apron, is_estimated");
+
+    if (existingLevels && !existingLevels.some((r) => r.season === currentSeason)) {
+      const known: Record<string, CapThresholds> = { ...KNOWN_THRESHOLDS };
+      for (const r of existingLevels) {
+        if (r.is_estimated) continue; // ne pas projeter depuis une projection
+        known[r.season] = {
+          salaryCap: r.salary_cap,
+          luxuryTax: r.luxury_tax,
+          firstApron: r.first_apron,
+          secondApron: r.second_apron,
+        };
+      }
+
+      const projected = resolveThresholds(currentSeason, known);
+      if (projected.salaryCap > 0) {
+        const { error: levelsError } = await supabase.from("salary_cap_levels").insert({
+          season: currentSeason,
+          salary_cap: projected.salaryCap,
+          luxury_tax: projected.luxuryTax,
+          first_apron: projected.firstApron,
+          second_apron: projected.secondApron,
+          is_estimated: projected.isEstimated,
+          updated_at: now,
+        });
+        if (levelsError) {
+          console.error("[SYNC-SEASON] Seuils non insérés:", levelsError.message);
+        } else {
+          capLevels = `${currentSeason} projeté (cap ${(projected.salaryCap / 1e6).toFixed(1)} M$)`;
+          console.log(`[SYNC-SEASON] Seuils projetés pour ${currentSeason} — à corriger dès l'annonce officielle`);
+        }
+      }
+    }
+
     // ── Nettoyage des matchs jamais joués d'une saison terminée ──
     // Une saison dont les Finales sont jouées ne peut plus contenir de match
     // « programmé » : ce sont les games 6/7 rendus inutiles par un sweep.
@@ -177,6 +223,7 @@ export async function GET(request: NextRequest) {
         finalsCompletedSeason,
       },
       phantomsRemoved,
+      capLevels,
       timestamp: now,
     });
   } catch (err) {

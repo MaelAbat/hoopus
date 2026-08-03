@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { OG_IMAGE } from "@/lib/seo";
 import { buildSeasonOptions, seasonStatus, seasonStatusLabel } from "@/lib/season";
+import { getCapLevels } from "@/lib/cap-levels";
 import { getLeagueState } from "@/lib/league-season";
 import TeamsView from "@/components/TeamsView";
 import PageBanner from "@/components/PageBanner";
@@ -28,6 +29,7 @@ export default async function Equipes({ searchParams }: { searchParams: Promise<
   const { currentSeason, statsSeason } = leagueState;
   // Les effectifs suivent la ligue : ils basculent dès la fin des Finales.
   const season = seasonParam || currentSeason;
+  const capLevels = await getCapLevels(season);
   const supabase = await createClient();
 
   const [{ data: seasonRows }, { data: players, error }, { data: payrolls }] = await Promise.all([
@@ -103,6 +105,14 @@ export default async function Equipes({ searchParams }: { searchParams: Promise<
                 defaultSeason={currentSeason}
                 statuses={statuses}
               />
+              {capLevels.isEstimated && (
+                <span
+                  className="inline-flex items-center border border-amber-500 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-amber-500"
+                  title="La ligue n'a pas encore publié ses seuils pour cette saison : les montants sont projetés."
+                >
+                  Seuils estimés
+                </span>
+              )}
               <span
                 className={`inline-flex items-center border px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider ${
                   status === "upcoming"
@@ -125,7 +135,7 @@ export default async function Equipes({ searchParams }: { searchParams: Promise<
 
         <SeasonContent>
           <ScrollReveal variant="up" delay={100}>
-            <TeamsView players={players || []} payrolls={payrolls || []} statsFromSeason={statsFromSeason} />
+            <TeamsView players={players || []} payrolls={payrolls || []} statsFromSeason={statsFromSeason} thresholds={capLevels} />
           </ScrollReveal>
         </SeasonContent>
       </div>

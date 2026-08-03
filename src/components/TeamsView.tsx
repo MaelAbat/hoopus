@@ -5,7 +5,13 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { teamLogoUrl, playerPhotoUrl } from "@/lib/nba-teams";
 import { useFavorites } from "@/context/FavoritesContext";
-import { CAP_THRESHOLDS, NBA_TEAM_COUNT, capStatus, formatMoney, parseSalary } from "@/lib/salary-cap";
+import {
+  NBA_TEAM_COUNT,
+  capStatus,
+  formatMoney,
+  parseSalary,
+  type SeasonThresholds,
+} from "@/lib/salary-cap";
 
 interface Player {
   id: string;
@@ -186,7 +192,16 @@ interface TeamPayroll {
 }
 
 /* ─── Salary Cap view ─── */
-function SalaryCapView({ players, payrolls }: { players: Player[]; payrolls: TeamPayroll[] }) {
+function SalaryCapView({
+  players,
+  payrolls,
+  thresholds,
+}: {
+  players: Player[];
+  payrolls: TeamPayroll[];
+  thresholds: SeasonThresholds;
+}) {
+  const CAP_THRESHOLDS = thresholds;
   const teamSalaries = useMemo(() => {
     // Build team info from players
     const teamInfo = new Map<string, { city: string; name: string }>();
@@ -247,6 +262,13 @@ function SalaryCapView({ players, payrolls }: { players: Player[]; payrolls: Tea
             </div>
           ))}
         </div>
+        {thresholds.isEstimated && (
+          <p className="mt-3 border-t border-rule pt-2.5 text-[11px] leading-snug text-amber-500">
+            Seuils estimés : la ligue n&apos;a pas encore publié ses montants pour{" "}
+            <span className="tnum">{thresholds.season}</span>. La projection applique la hausse
+            maximale prévue par la convention collective.
+          </p>
+        )}
       </div>
 
       {/* Team bars */}
@@ -336,11 +358,14 @@ export default function TeamsView({
   players,
   payrolls,
   statsFromSeason,
+  thresholds,
 }: {
   players: Player[];
   payrolls: TeamPayroll[];
   /** Saison d'où viennent les moyennes, si ce n'est pas celle affichée. */
   statsFromSeason?: string | null;
+  /** Seuils de la saison, lus en base plutôt que codés en dur. */
+  thresholds: SeasonThresholds;
 }) {
   const [view, setView] = useState<"rosters" | "cap">("rosters");
   const searchParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
@@ -419,7 +444,7 @@ export default function TeamsView({
       </div>
 
       {view === "cap" ? (
-        <SalaryCapView players={players} payrolls={payrolls} />
+        <SalaryCapView players={players} payrolls={payrolls} thresholds={thresholds} />
       ) : (
         <TeamGrid teams={teams} onSelect={setSelectedTeam} />
       )}

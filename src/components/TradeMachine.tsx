@@ -20,6 +20,7 @@ import {
   formatMoney,
   formatMoneyDelta,
   type CapThresholds,
+  type SeasonThresholds,
 } from "@/lib/salary-cap";
 import {
   encodeTrade,
@@ -43,6 +44,8 @@ interface Props {
   initialMoves: TradeMove[];
   /** Saison d'où viennent les moyennes affichées, si ce n'est pas celle de l'échange. */
   statsFromSeason?: string | null;
+  /** Seuils de la saison, lus en base plutôt que codés en dur. */
+  thresholds: SeasonThresholds;
 }
 
 /* ─────────────────────────── Helpers ─────────────────────────── */
@@ -705,7 +708,7 @@ function BalanceTable({
 
 /* ─────────────────────── Rules panel ─────────────────────── */
 
-function RulesPanel({ season, thresholds }: { season: string; thresholds: CapThresholds }) {
+function RulesPanel({ season, thresholds }: { season: string; thresholds: SeasonThresholds }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -738,6 +741,13 @@ function RulesPanel({ season, thresholds }: { season: string; thresholds: CapThr
                 </div>
               ))}
             </div>
+            {thresholds.isEstimated && (
+              <p className="mt-2 text-[11px] leading-snug text-amber-500">
+                Montants estimés : la ligue n&apos;a pas encore publié ses seuils pour {season}. La
+                projection applique la hausse maximale prévue par la convention collective, soit
+                10 % par an. Les verdicts d&apos;échange sont donc indicatifs près des lignes.
+              </p>
+            )}
           </div>
 
           <div>
@@ -807,6 +817,7 @@ export default function TradeMachine({
   initialTeams,
   initialMoves,
   statsFromSeason,
+  thresholds,
 }: Props) {
   const [teams, setTeams] = useState<string[]>(initialTeams);
   const [moves, setMoves] = useState<TradeMove[]>(initialMoves);
@@ -880,8 +891,8 @@ export default function TradeMachine({
   /* ── Évaluation ── */
 
   const evaluation = useMemo(
-    () => evaluateTrade({ season, teams, moves, roster, payrollBase }),
-    [season, teams, moves, roster, payrollBase]
+    () => evaluateTrade({ season, teams, moves, roster, payrollBase, thresholds }),
+    [season, teams, moves, roster, payrollBase, thresholds]
   );
 
   const errors = useMemo(
@@ -1031,7 +1042,7 @@ export default function TradeMachine({
       )}
 
       {/* Rules */}
-      <RulesPanel season={season} thresholds={evaluation.thresholds} />
+      <RulesPanel season={season} thresholds={thresholds} />
     </div>
   );
 }
