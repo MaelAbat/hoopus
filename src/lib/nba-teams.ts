@@ -100,6 +100,35 @@ export function playerPhotoUrl(playerId: number): string {
 }
 
 /**
+ * Surnoms d'équipes, pour nommer une franchise sans dépendre de la base.
+ *
+ * Les pages de marché citent des équipes qui n'ont plus de ligne dans les
+ * effectifs de la saison affichée : une signature de 2015 concerne parfois une
+ * franchise disparue depuis. Un tricode seul est illisible pour un lecteur de
+ * passage, d'où cette table.
+ */
+export const TEAM_NICKNAMES: Record<string, string> = {
+  ATL: "Hawks", BOS: "Celtics", BKN: "Nets", CHA: "Hornets",
+  CHI: "Bulls", CLE: "Cavaliers", DAL: "Mavericks", DEN: "Nuggets",
+  DET: "Pistons", GSW: "Warriors", HOU: "Rockets", IND: "Pacers",
+  LAC: "Clippers", LAL: "Lakers", MEM: "Grizzlies", MIA: "Heat",
+  MIL: "Bucks", MIN: "Timberwolves", NOP: "Pelicans", NYK: "Knicks",
+  OKC: "Thunder", ORL: "Magic", PHI: "76ers", PHX: "Suns",
+  POR: "Trail Blazers", SAC: "Kings", SAS: "Spurs", TOR: "Raptors",
+  UTA: "Jazz", WAS: "Wizards",
+
+  // Tricodes historiques, encore présents dans les archives de mouvements.
+  SEA: "SuperSonics", NJN: "Nets", VAN: "Grizzlies", NOH: "Hornets",
+  NOK: "Hornets", CHH: "Hornets", WSB: "Bullets", SDC: "Clippers",
+  KCK: "Kings", SFW: "Warriors", NYN: "Nets",
+};
+
+/** Surnom d'une équipe, ou son tricode s'il est inconnu. */
+export function teamNickname(tricode: string): string {
+  return TEAM_NICKNAMES[tricode] || tricode;
+}
+
+/**
  * Map of active team tricodes to their NBA IDs (for components that only need current teams).
  */
 export const ACTIVE_TEAM_IDS: Record<string, number> = Object.fromEntries(

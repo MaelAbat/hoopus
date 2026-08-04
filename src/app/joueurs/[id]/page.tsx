@@ -7,6 +7,7 @@ import { cache } from "react";
 import type { Metadata } from "next";
 import { ChevronLeft, MapPin, GraduationCap, Calendar, Ruler, Weight, Hash, BarChart3 } from "lucide-react";
 import PlayerCareer from "@/components/PlayerCareer";
+import PlayerMarketHistory from "@/components/PlayerMarketHistory";
 import CareerChart from "@/components/CareerChart";
 import ScrollReveal from "@/components/ScrollReveal";
 import FollowPlayerButton from "@/components/FollowPlayerButton";
@@ -276,6 +277,9 @@ export default async function PlayerDetail({ params }: { params: Promise<{ id: s
 
       {/* Career: teams + stats table */}
       <PlayerCareer seasons={careerSeasons} />
+
+      {/* Échanges, signatures et coupes — rien ne s'affiche si l'historique est vide */}
+      <PlayerMarketHistory playerId={playerId} />
     </div>
   );
 }

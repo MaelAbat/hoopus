@@ -17,6 +17,12 @@
     },
     "src/app/api/sync-rosters/route.ts": {
       "maxDuration": 60
+    },
+    "src/app/api/sync-transactions/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/sync-draft/route.ts": {
+      "maxDuration": 60
     }
   },
   "crons": [

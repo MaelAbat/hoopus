@@ -68,6 +68,18 @@ export function seasonBefore(season: string): string {
   return seasonFromStartYear(seasonStartYear(season) - 1);
 }
 
+/**
+ * Suite continue de saisons, bornes comprises, de la plus ancienne à la plus
+ * récente. Utile pour construire une liste complète depuis une seule borne lue en
+ * base, plutôt qu'en rapatriant toutes les lignes pour les dédoublonner.
+ */
+export function seasonRange(from: string, to: string): string[] {
+  const first = seasonStartYear(from);
+  const last = seasonStartYear(to);
+  if (!Number.isFinite(first) || !Number.isFinite(last) || last < first) return [from];
+  return Array.from({ length: last - first + 1 }, (_, i) => seasonFromStartYear(first + i));
+}
+
 /** Vrai si `a` est postérieure à `b`. */
 export function isSeasonAfter(a: string, b: string): boolean {
   return seasonStartYear(a) > seasonStartYear(b);

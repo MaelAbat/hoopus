@@ -40,6 +40,8 @@ export async function syncEndpoint(endpointKey: string): Promise<{
     revalidatePath("/playoffs");
     revalidatePath("/equipes");
     revalidatePath("/joueurs");
+    revalidatePath("/marche");
+    revalidatePath("/draft");
 
     return { ok: res.ok, error: data.error };
   } catch (e) {

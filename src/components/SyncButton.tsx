@@ -13,6 +13,8 @@ const SYNC_ENDPOINTS = [
   { key: "stats", label: "Statistiques" },
   { key: "team-stats", label: "Stats équipes" },
   { key: "rosters", label: "Effectifs" },
+  { key: "transactions", label: "Marché" },
+  { key: "draft", label: "Draft" },
   { key: "career", label: "Carrières" },
 ];
 

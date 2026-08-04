@@ -11,10 +11,23 @@ const PROTECTED_ROUTES = ["/profil"];
 // simply gone — a real 404, before anything renders.
 const HIDDEN_ROUTES = TRADE_MACHINE_ENABLED ? [] : ["/trades"];
 
+/**
+ * Segments de saison attendus par /draft/[season]. Un segment invalide doit
+ * répondre 404, et pas 200 avec une page d'erreur : le ticker de l'accueil ouvre
+ * une frontière de streaming dans le gabarit racine (layout.tsx), si bien que les
+ * en-têtes partent avant qu'une page puisse encore changer son statut.
+ */
+const SEASON_SEGMENT = /^\d{4}-\d{2}$/;
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (HIDDEN_ROUTES.some((r) => pathname === r || pathname.startsWith(`${r}/`))) {
+    return NextResponse.rewrite(new URL("/_not-found", request.url));
+  }
+
+  const draftSegment = pathname.match(/^\/draft\/([^/]+)\/?$/);
+  if (draftSegment && !SEASON_SEGMENT.test(decodeURIComponent(draftSegment[1]))) {
     return NextResponse.rewrite(new URL("/_not-found", request.url));
   }
 
