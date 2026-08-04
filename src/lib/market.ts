@@ -139,8 +139,12 @@ export const CONTRACT_LABELS: Record<EventContract["type"], string> = {
 export function assetLabel(asset: EventAsset): string {
   switch (asset.type) {
     case "pick": {
-      const round = asset.round === 1 ? "1er tour" : asset.round === 2 ? "2e tour" : "choix de draft";
-      return asset.year ? `${round} ${asset.year}` : round;
+      // Un choix sans tour connu n'est qu'une « compensation de draft » : ESPN
+      // écrit parfois « draft considerations » sans plus de précision, et broder
+      // dessus serait inventer.
+      if (!asset.round) return asset.detail || "choix de draft";
+      const round = asset.round === 1 ? "1er tour" : "2e tour";
+      return asset.year ? `${round} ${asset.year}` : `${round} (année non précisée)`;
     }
     case "swap":
       return asset.year ? `échange de choix ${asset.year}` : "échange de choix";
@@ -258,6 +262,47 @@ export function formatEventDateShort(date: string): string {
     month: "short",
     timeZone: "UTC",
   });
+}
+
+/* ─── Détail d'un échange ─── */
+
+export interface TradeFlow {
+  from: string | null;
+  to: string | null;
+  players: EventPlayer[];
+  assets: EventAsset[];
+}
+
+/**
+ * Un échange décomposé en flux, un par couple d'équipes.
+ *
+ * C'est la seule façon de lire un échange à trois équipes sans le déformer :
+ * Atlanta reçoit de Dallas et d'Oklahoma City, et envoie à Dallas seulement. Une
+ * phrase unique mélangerait tout.
+ */
+export function tradeFlows(event: MarketEvent): TradeFlow[] {
+  const flows = new Map<string, TradeFlow>();
+  const key = (from: string | null, to: string | null) => `${from ?? "?"}>${to ?? "?"}`;
+
+  const flow = (from: string | null, to: string | null): TradeFlow => {
+    const existing = flows.get(key(from, to));
+    if (existing) return existing;
+    const created: TradeFlow = { from, to, players: [], assets: [] };
+    flows.set(key(from, to), created);
+    return created;
+  };
+
+  for (const player of event.players) flow(player.from, player.to).players.push(player);
+  for (const asset of event.assets) flow(asset.from, asset.to).assets.push(asset);
+
+  return [...flows.values()].sort(
+    (a, b) => (a.from ?? "").localeCompare(b.from ?? "") || (a.to ?? "").localeCompare(b.to ?? "")
+  );
+}
+
+/** Contenu d'un flux, dit en français : joueurs puis actifs. */
+export function flowContents(flow: TradeFlow): string[] {
+  return [...flow.players.map((p) => p.name), ...flow.assets.map(assetLabel)];
 }
 
 /* ─── Mouvements d'effectif ─── */

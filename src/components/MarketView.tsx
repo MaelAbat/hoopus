@@ -11,6 +11,7 @@ import {
   CONTRACT_LABELS,
   countByKind,
   eventAction,
+  flowContents,
   formatEventDate,
   isMinorMove,
   KIND_LABELS,
@@ -19,6 +20,7 @@ import {
   mostMovedPlayers,
   rosterMoves,
   teamBalances,
+  tradeFlows,
   type EventKind,
   type EventPlayer,
   type MarketEvent,
@@ -51,6 +53,15 @@ interface Props {
    */
   previousRoster: Record<string, string>;
   /**
+   * Termes des contrats en cours, par nom normalisé : « 3 ans · 120,8 M$ ».
+   *
+   * Aucune source de transactions ne chiffre ses lignes ; les montants viennent
+   * des pages de contrats, et ne concernent donc que les contrats en cours. Une
+   * signature ancienne reste sans montant — ce serait afficher le contrat
+   * d'aujourd'hui à côté d'un mouvement d'hier.
+   */
+  contractTerms: Record<string, string>;
+  /**
    * Faux quand l'effectif précédent est inconnu — la première saison de
    * l'historique. Les prolongations ne sont alors pas identifiables, et
    * l'interface le dit plutôt que de les ranger ailleurs.
@@ -67,6 +78,7 @@ export default function MarketView({
   initialPhase,
   previousRoster,
   canDetectExtensions,
+  contractTerms,
 }: Props) {
   const [search, setSearch] = useState("");
   const [kind, setKind] = useState(isKind(initialKind) ? initialKind : "");
@@ -362,7 +374,7 @@ export default function MarketView({
                   </span>
                 </div>
                 {list.map((event) => (
-                  <EventRow key={event.event_key} event={event} />
+                  <EventRow key={event.event_key} event={event} contractTerms={contractTerms} />
                 ))}
               </div>
             ))}
@@ -745,10 +757,23 @@ function movedTag(player: MovedPlayer): string {
 
 /* ─── Ligne de mouvement ─── */
 
-function EventRow({ event }: { event: MarketEvent }) {
+function EventRow({
+  event,
+  contractTerms,
+}: {
+  event: MarketEvent;
+  contractTerms: Record<string, string>;
+}) {
   const [open, setOpen] = useState(false);
   const subject = event.from_team || event.to_team || event.teams[0];
   const hasDetail = event.assets.length > 0 || event.raw.length > 90;
+
+  // Le montant n'a de sens que pour une arrivée ou une prolongation : personne ne
+  // signe en étant coupé.
+  const money =
+    event.kind === "signature" || event.kind === "extension"
+      ? event.players.map((p) => contractTerms[normalizeForMoney(p.name)]).find(Boolean)
+      : undefined;
 
   return (
     <div className="border-t border-rule">
@@ -766,6 +791,11 @@ function EventRow({ event }: { event: MarketEvent }) {
 
         <p className="min-w-0 flex-1 text-sm leading-relaxed text-text-primary">
           <RichAction event={event} />
+          {money && (
+            <span className="ml-2 whitespace-nowrap font-mono text-[11px] text-accent-text">
+              {money}
+            </span>
+          )}
         </p>
 
         {hasDetail && (
@@ -780,8 +810,28 @@ function EventRow({ event }: { event: MarketEvent }) {
       </div>
 
       {open && (
-        <div className="border-t border-rule bg-input/30 px-4 py-3 pl-[122px]">
-          {event.assets.length > 0 && (
+        <div className="border-t border-rule bg-input/30 px-4 py-3 sm:pl-[122px]">
+          {/* Un échange se lit flux par flux : qui envoie quoi à qui. C'est la
+              seule façon de rendre un échange à trois équipes sans le déformer. */}
+          {event.kind === "trade" && (
+            <ul className="mb-2 space-y-1.5">
+              {tradeFlows(event).map((flow, i) => (
+                <li key={i} className="flex flex-wrap items-baseline gap-x-2 text-[12px]">
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-text-faint">
+                    {flow.from ? teamNickname(flow.from) : "?"} → {flow.to ? teamNickname(flow.to) : "?"}
+                  </span>
+                  <span className="text-text-primary">{flowContents(flow).join(", ")}</span>
+                  {flow.assets.some((a) => a.detail) && (
+                    <span className="text-[11px] text-text-faint">
+                      ({flow.assets.filter((a) => a.detail).map((a) => a.detail).join(" · ")})
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {event.kind !== "trade" && event.assets.length > 0 && (
             <ul className="mb-2 space-y-1">
               {event.assets.map((asset, i) => (
                 <li key={i} className="text-[11px] text-text-muted">
@@ -794,6 +844,7 @@ function EventRow({ event }: { event: MarketEvent }) {
               ))}
             </ul>
           )}
+
           <p className="text-[11px] italic leading-relaxed text-text-faint">{event.raw}</p>
         </div>
       )}
@@ -1006,4 +1057,20 @@ function isKind(value: string | undefined): value is EventKind {
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * Même normalisation que côté synchronisation : les contrats sont indexés par nom,
+ * la page de contrats ne portant aucun identifiant NBA.
+ */
+function normalizeForMoney(name: string): string {
+  return name
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z ]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/ (jr|sr|ii|iii|iv|v)$/, "")
+    .trim();
 }

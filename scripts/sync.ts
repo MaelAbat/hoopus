@@ -33,6 +33,7 @@ const SEQUENTIAL_ENDPOINTS = [
   { key: "rosters", label: "Effectifs" },
   { key: "transactions", label: "Marche" },
   { key: "draft", label: "Draft" },
+  { key: "contracts", label: "Contrats" },
   { key: "stats", label: "Statistiques" },
   { key: "team-stats", label: "Stats equipes" },
   { key: "career", label: "Carrieres" },

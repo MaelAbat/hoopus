@@ -22,6 +22,7 @@ import {
 import { fetchDraft, parseDraftPage } from "../src/lib/br-draft";
 import { buildLotteryBoard, lotteryOdds } from "../src/lib/lottery";
 import { resolveCollege } from "../src/lib/market-sync";
+import { contractTerms, formatMillions, parseContractsPage } from "../src/lib/br-contracts";
 import { classifyEspn, parseEspnSentence, playersInText, splitSentences, teamInText } from "../src/lib/espn-transactions";
 import { eventAction, isMinorMove, KIND_LABELS, MINOR_KINDS, rosterMoves, semanticKey, type MarketEvent } from "../src/lib/market";
 import { estimateSeasonPhases, phaseForDate, seasonForEventDate } from "../src/lib/season-phases";
@@ -310,6 +311,24 @@ console.log("\n--- ESPN ---");
     check("mise au ballottage : départ", [e.kind, e.from_team, e.players[0].name], ["waiver", "DAL", "Miles Kelly"]);
   }
   {
+    // Les choix de draft, dans les quatre façons dont ESPN les écrit.
+    const e = parseEspnSentence(
+      "Acquired C Ivica Zubac from the L.A. Clippers in exchange for G Bennedict Mathurin, a 2026 first-round pick and three second-round picks.",
+      "2026-02-08",
+      "IND",
+      teams
+    )!;
+    const picks = e.assets.filter((a) => a.type === "pick");
+    check("choix daté reconnu", picks.filter((p) => p.year === 2026 && p.round === 1).length, 1);
+    check("lot compté produit autant de lignes", picks.filter((p) => p.round === 2 && !p.year).length, 3);
+    check("les choix partent du bon côté", [picks.length, picks.every((p) => p.from === "IND")], [4, true]);
+    check("le joueur reçu malgré le point de « L.A. »", e.players.filter((p) => p.to === "IND").map((p) => p.name), ["Ivica Zubac"]);
+  }
+  {
+    const e = parseEspnSentence("Acquired draft considerations from Memphis.", "2026-02-01", "BOS", teams)!;
+    check("compensation vague conservée sans invention", e.assets.map((a) => [a.type, a.year, a.round, a.detail]), [["pick", null, null, "compensation de draft"]]);
+  }
+  {
     // « Los Angeles » seul désigne deux franchises : ne rien affirmer.
     const ambiguous = new Map<string, string>([["los angeles lakers", "LAL"], ["lakers", "LAL"], ["los angeles clippers", "LAC"], ["clippers", "LAC"]]);
     check("ville ambiguë non résolue", teamInText("from Los Angeles", ambiguous), null);
@@ -415,6 +434,31 @@ console.log("\n--- arrivées, départs, prolongations ---");
     isMinorMove({ name: "X", player_id: null, date: "2025-07-01", kind: "signature", counterpart: null, contract: { type: "rest_of_season", detail: null } }),
     false
   );
+}
+
+/* ── Termes des contrats ── */
+console.log("\n--- contrats ---");
+{
+  // Deux colonnes annuelles nommées par leur en-tête, plus le garanti restant :
+  // la structure exacte des pages /contracts/{TRI}.html.
+  const html = `
+    <tr><th data-stat="y1">2026-27</th><th data-stat="y2">2027-28</th><th data-stat="y3">2028-29</th><th data-stat="remain_gtd">Guaranteed</th></tr>
+    <tr><th data-stat="player"><a href="/players/e/embiijo01.html">Joel Embiid</a></th><td data-stat="y1">$58,100,000</td><td data-stat="y2">$62,700,000</td><td data-stat="y3">$67,400,000</td><td data-stat="remain_gtd">$188,200,000</td></tr>
+    <tr><th data-stat="player">LeBron James</th><td data-stat="y1">$3,876,529</td><td data-stat="y2">$4,070,355</td><td data-stat="y3"></td><td data-stat="remain_gtd">$3,876,529</td></tr>
+    <tr><th data-stat="player">Team Totals</th><td data-stat="y1">$180,000,000</td></tr>`;
+
+  const contracts = parseContractsPage(html, "PHI");
+  check("contrats lus, ligne de totaux exclue", contracts.map((c) => c.player_name), ["Joel Embiid", "LeBron James"]);
+  check("saisons lues dans les en-têtes", contracts[0].years.map((y) => y.season), ["2026-27", "2027-28", "2028-29"]);
+  check("montants annuels", contracts[0].years.map((y) => y.amount), [58100000, 62700000, 67400000]);
+  check("années vides ignorées", contracts[1].years.length, 2);
+  check("identifiant BR quand il est là", contracts[0].br_slug, "embiijo01");
+
+  check("durée et valeur", contractTerms(contracts[0]), "3 ans · 188,2 M$");
+  // LeBron : deux ans dus, un seul garanti — le dire évite d'annoncer comme
+  // acquis ce qui ne l'est pas.
+  check("garanti inférieur au total", contractTerms(contracts[1]), "2 ans · 7,9 M$ dont 3,9 M$ garantis");
+  check("montant sous le million", formatMillions(875_000), "875 k$");
 }
 
 /* ── Université ou club d'un joueur drafté ── */

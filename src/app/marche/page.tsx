@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { fetchAllRows } from "@/lib/supabase/paginate";
+import { contractTerms as describeContract } from "@/lib/br-contracts";
 import { OG_IMAGE } from "@/lib/seo";
 import {
   buildSeasonOptions,
@@ -62,7 +63,7 @@ export default async function MarchePage({
 
   const previous = seasonBefore(season);
 
-  const [rows, { data: earliest }, { count: pickCount }, rosterRows, phases] =
+  const [rows, { data: earliest }, { count: pickCount }, rosterRows, phases, contractRows] =
     await Promise.all([
       // Lecture paginée : une saison dépasse le millier de mouvements, et
       // PostgREST tronque à mille sans le dire. Les compteurs de la page se
@@ -97,6 +98,17 @@ export default async function MarchePage({
         { label: `effectifs ${previous}` }
       ),
       getSeasonPhases(season),
+      // Montants des contrats en cours, pour chiffrer les signatures et les
+      // prolongations. Aucune source de transactions ne les donne.
+      fetchAllRows<{ normalized_name: string; years: { season: string; amount: number }[]; guaranteed: number | null }>(
+        (from, to) =>
+          supabase
+            .from("player_contracts")
+            .select("normalized_name, years, guaranteed")
+            .eq("season", season)
+            .range(from, to),
+        { label: `contrats ${season}` }
+      ),
     ]);
 
   const events: MarketEvent[] = rows.map((row) => ({
@@ -129,6 +141,14 @@ export default async function MarchePage({
 
   const previousRoster: Record<string, string> = {};
   for (const row of rosterRows) previousRoster[String(row.player_id)] = row.team_tricode;
+
+  const contractTerms: Record<string, string> = {};
+  for (const row of contractRows) {
+    contractTerms[row.normalized_name] = describeContract({
+      years: row.years ?? [],
+      guaranteed: row.guaranteed,
+    });
+  }
 
   const hasDraft = (pickCount ?? 0) > 0;
 
@@ -175,6 +195,7 @@ export default async function MarchePage({
               initialPhase={params.periode}
               previousRoster={previousRoster}
               canDetectExtensions={rosterRows.length > 0}
+              contractTerms={contractTerms}
             />
           </ScrollReveal>
         </SeasonContent>

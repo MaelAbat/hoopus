@@ -256,12 +256,61 @@ function detectContract(text: string): EventContract | null {
   return null;
 }
 
+/** Nombres écrits en mots, tels qu'ESPN les emploie (« three second-round picks »). */
+const WORD_COUNTS: Record<string, number> = {
+  a: 1, an: 1, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7,
+};
+
+/**
+ * Choix de draft et autres actifs d'un fragment.
+ *
+ * ESPN les écrit de quatre façons : datés (« a 2026 first-round pick »), comptés
+ * (« three second-round picks »), vagues (« draft considerations ») ou sous forme
+ * d'échange de rangs (« pick swap »). Les trois premières se distinguent, et un
+ * lot compté produit autant de lignes qu'il annonce de choix : c'est la seule
+ * façon d'afficher « trois 2e tours » sans mentir sur le nombre.
+ */
 function assetsInText(text: string): Omit<EventAsset, "from" | "to">[] {
   const found: Omit<EventAsset, "from" | "to">[] = [];
-  if (/draft consideration/i.test(text)) {
-    found.push({ type: "pick", year: null, round: null, detail: "draft consideration" });
+
+  // Choix datés, avec leur tour.
+  const dated = /\b(20\d\d)\s+(first|second)[- ]round\s+(?:draft\s+)?pick/gi;
+  const datedYears = new Set<string>();
+  for (const match of text.matchAll(dated)) {
+    datedYears.add(match[0]);
+    found.push({
+      type: "pick",
+      year: Number(match[1]),
+      round: match[2].toLowerCase() === "first" ? 1 : 2,
+      detail: null,
+    });
   }
-  if (/\bcash\b/i.test(text)) found.push({ type: "cash", year: null, round: null, detail: null });
+
+  // Choix comptés mais non datés : « three second-round picks ».
+  const counted = /\b(a|an|one|two|three|four|five|six|seven)\s+(first|second)[- ]round\s+(?:draft\s+)?picks?/gi;
+  for (const match of text.matchAll(counted)) {
+    const round = match[2].toLowerCase() === "first" ? 1 : 2;
+    const howMany = WORD_COUNTS[match[1].toLowerCase()] ?? 1;
+    for (let i = 0; i < howMany; i++) {
+      found.push({ type: "pick", year: null, round, detail: null });
+    }
+  }
+
+  if (/pick swap|right to swap|swap rights/i.test(text)) {
+    found.push({ type: "swap", year: null, round: null, detail: null });
+  }
+
+  // « draft consideration » ne dit ni l'année ni le tour : on le conserve tel
+  // quel, sans lui inventer de précision, et seulement si rien de plus précis n'a
+  // été trouvé pour ce fragment.
+  if (found.length === 0 && /draft consideration/i.test(text)) {
+    found.push({ type: "pick", year: null, round: null, detail: "compensation de draft" });
+  }
+
+  if (/\bcash\b|cash consideration/i.test(text)) {
+    found.push({ type: "cash", year: null, round: null, detail: null });
+  }
+
   return found;
 }
 
@@ -331,8 +380,12 @@ function parseTrade(
 
   // ESPN commente parfois l'échange après coup (« Dallas received draft
   // consideration from Atlanta, while... »). Ce commentaire nomme des équipes qui
-  // brouilleraient la lecture des destinations : on s'arrête à la première phrase.
-  const operative = text.split(/\.\s+(?=[A-Z])/)[0];
+  // brouilleraient la lecture des destinations, et il faut donc l'écarter.
+  //
+  // On le repère à sa forme — « <Équipe> received … » — et non à un simple point
+  // suivi d'une majuscule : « the L.A. Clippers » en contient un, et couper là
+  // faisait disparaître la moitié de l'échange, choix de draft compris.
+  const operative = text.split(/\.\s+(?=[A-Z][^.]*\breceived\b)/)[0];
   const [incoming, outgoing = ""] = operative.split(
     /\bin exchange for\b|\bthat sent\b|\bfor\b(?![^.]*\bfrom\b)/i
   );

@@ -1,5 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { normalizeName } from "./br-salaries";
+import { BR_TEAMS, BR_TRICODE_MAP, normalizeName } from "./br-salaries";
+import { contractKey, fetchTeamContracts } from "./br-contracts";
+import { BR_REQUEST_INTERVAL_MS, delay } from "./br-fetch";
 import { attachPlayerIds, fetchSeasonTransactions, type ParsedEvent } from "./br-transactions";
 import { fetchEspnEvents } from "./espn-transactions";
 import { fetchDraft } from "./br-draft";
@@ -424,6 +426,111 @@ export async function syncEspnTransactions(
     entries: scrape.entries,
     skipped: scrape.skipped.length,
   };
+}
+
+/* ─── Contrats ─── */
+
+export interface ContractSyncResult {
+  season: string;
+  teamsRead: string[];
+  contracts: number;
+  playersResolved: number;
+}
+
+/**
+ * Termes des contrats, équipe par équipe.
+ *
+ * Trente pages à 3,2 s l'une dépassent la minute allouée à une fonction : le
+ * balayage tourne donc par rotation, en reprenant d'abord les équipes dont les
+ * contrats sont les plus anciens en base. La couverture se complète en trois
+ * passages, comme le fait déjà la lecture des salaires.
+ */
+export async function syncContracts(
+  supabase: Client,
+  season: string,
+  {
+    teamsPerRun = 12,
+    log = () => {},
+  }: { teamsPerRun?: number; log?: (message: string) => void } = {}
+): Promise<ContractSyncResult> {
+  // Équipes les moins fraîches d'abord. Si la table manque, on s'arrête tout de
+  // suite plutôt que de lire douze pages pour rien.
+  const { data: freshness, error: readError } = await supabase
+    .from("player_contracts")
+    .select("team_tricode, updated_at")
+    .eq("season", season);
+
+  if (readError) {
+    throw new Error(
+      `table player_contracts inaccessible (${readError.message}) — appliquer la migration 047`
+    );
+  }
+
+  const lastSeen = new Map<string, string>();
+  for (const row of freshness || []) {
+    const previous = lastSeen.get(row.team_tricode);
+    if (!previous || row.updated_at > previous) lastSeen.set(row.team_tricode, row.updated_at);
+  }
+
+  const ordered = [...BR_TEAMS].sort((a, b) => {
+    const nbaA = BR_TRICODE_MAP[a] || a;
+    const nbaB = BR_TRICODE_MAP[b] || b;
+    return (lastSeen.get(nbaA) ?? "").localeCompare(lastSeen.get(nbaB) ?? "");
+  });
+
+  const selected = ordered.slice(0, teamsPerRun);
+  const nameIndex = await loadPlayerNameIndex(supabase);
+  const rows: Record<string, unknown>[] = [];
+  const teamsRead: string[] = [];
+  let playersResolved = 0;
+
+  for (const [i, brTeam] of selected.entries()) {
+    const nba = BR_TRICODE_MAP[brTeam] || brTeam;
+    try {
+      const contracts = await fetchTeamContracts(brTeam);
+      if (contracts.length === 0) {
+        log(`${nba} : aucun contrat lisible`);
+      } else {
+        teamsRead.push(nba);
+        for (const contract of contracts) {
+          // La saison de référence est celle de la première année due, lue dans
+          // l'en-tête de la page et non calculée.
+          const reference = contract.years[0]?.season;
+          if (!reference) continue;
+          const normalized = contractKey(contract.player_name);
+          const playerId = nameIndex.get(normalized);
+          if (playerId) playersResolved++;
+          rows.push({
+            season: reference,
+            team_tricode: contract.team_tricode,
+            player_name: contract.player_name,
+            normalized_name: normalized,
+            player_id: playerId ?? null,
+            br_slug: contract.br_slug,
+            years: contract.years,
+            guaranteed: contract.guaranteed,
+            updated_at: new Date().toISOString(),
+          });
+        }
+        log(`${nba} : ${contracts.length} contrats`);
+      }
+    } catch (err) {
+      console.error(`[CONTRACTS] ${nba} :`, (err as Error).message);
+    }
+    if (i < selected.length - 1) await delay(BR_REQUEST_INTERVAL_MS);
+  }
+
+  for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+    const { error } = await supabase
+      .from("player_contracts")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .upsert(rows.slice(i, i + BATCH_SIZE) as any, {
+        onConflict: "season,normalized_name,team_tricode",
+      });
+    if (error) console.error("[CONTRACTS] écriture :", error.message);
+  }
+
+  return { season, teamsRead, contracts: rows.length, playersResolved };
 }
 
 /* ─── Draft et loterie ─── */

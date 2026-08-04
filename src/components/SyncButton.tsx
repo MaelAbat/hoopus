@@ -15,6 +15,7 @@ const SYNC_ENDPOINTS = [
   { key: "rosters", label: "Effectifs" },
   { key: "transactions", label: "Marché" },
   { key: "draft", label: "Draft" },
+  { key: "contracts", label: "Contrats" },
   { key: "career", label: "Carrières" },
 ];
 

@@ -23,6 +23,9 @@
     },
     "src/app/api/sync-draft/route.ts": {
       "maxDuration": 60
+    },
+    "src/app/api/sync-contracts/route.ts": {
+      "maxDuration": 60
     }
   },
   "crons": [

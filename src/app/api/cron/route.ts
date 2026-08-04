@@ -44,8 +44,12 @@ export async function GET(request: NextRequest) {
   // ces deux-là, qui relient les mouvements aux fiches joueurs par le nom.
   const transactionsRes = await fetch(`${baseUrl}/api/sync-transactions?${authParam}`);
   const draftRes = await fetch(`${baseUrl}/api/sync-draft?${authParam}`);
+  // Les montants des contrats tournent par rotation d'équipes : aucune source de
+  // transactions ne chiffre ses lignes, et les trente pages de BR ne tiennent pas
+  // dans une seule exécution.
+  const contractsRes = await fetch(`${baseUrl}/api/sync-contracts?${authParam}`);
 
-  const [gamesData, standingsData, playoffsData, injuriesData, statsData, teamStatsData, playersData, rostersData, transactionsData, draftData] = await Promise.all([
+  const [gamesData, standingsData, playoffsData, injuriesData, statsData, teamStatsData, playersData, rostersData, transactionsData, draftData, contractsData] = await Promise.all([
     gamesRes.json(),
     standingsRes.json(),
     playoffsRes.json(),
@@ -56,6 +60,7 @@ export async function GET(request: NextRequest) {
     rostersRes.json(),
     transactionsRes.json(),
     draftRes.json(),
+    contractsRes.json(),
   ]);
 
   // Revalidate all data-driven pages after sync
@@ -85,6 +90,7 @@ export async function GET(request: NextRequest) {
     rosters: rostersData,
     transactions: transactionsData,
     draft: draftData,
+    contracts: contractsData,
     timestamp: new Date().toISOString(),
   };
 
@@ -100,6 +106,7 @@ export async function GET(request: NextRequest) {
     rosters: rostersData.ok ?? rostersData.error,
     transactions: transactionsData.ok ?? transactionsData.error,
     draft: draftData.ok ?? draftData.error,
+    contracts: contractsData.ok ?? contractsData.error,
   }));
 
   return NextResponse.json(results);
