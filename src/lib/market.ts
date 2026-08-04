@@ -252,6 +252,128 @@ export function formatEventDateShort(date: string): string {
   });
 }
 
+/* ─── Mouvements d'effectif ─── */
+
+export interface MovedPlayer {
+  name: string;
+  player_id: number | null;
+  date: string;
+  kind: EventKind;
+  /** Équipe d'où l'on vient, ou vers laquelle on part, quand elle est connue. */
+  counterpart: string | null;
+  contract: EventContract | null;
+}
+
+export interface RosterMoves {
+  team: string;
+  arrivals: MovedPlayer[];
+  departures: MovedPlayer[];
+  extensions: MovedPlayer[];
+  total: number;
+}
+
+/**
+ * Contrats de second plan : deux-way, dix jours, Exhibit 10.
+ *
+ * Ils remplissent les colonnes d'un effectif sans rien dire de ses intentions —
+ * une équipe en signe une dizaine par saison, souvent pour quelques jours. Les
+ * mettre au même rang qu'une vraie arrivée noierait celle qui compte, d'où leur
+ * mise en retrait à l'affichage.
+ */
+const MINOR_CONTRACTS: EventContract["type"][] = ["two_way", "ten_day", "exhibit_10"];
+
+/** Vrai pour un mouvement de second plan, à mettre en retrait plutôt qu'à masquer. */
+export function isMinorMove(player: MovedPlayer): boolean {
+  return !!player.contract && MINOR_CONTRACTS.includes(player.contract.type);
+}
+
+/**
+ * Ce que devient un effectif : qui arrive, qui part, qui reste.
+ *
+ * Une prolongation ne se lit pas dans la source — Basketball Reference écrit
+ * « signed » qu'un joueur arrive ou reste, et ses vingt-deux « re-signed »
+ * historiques ne servent à rien. Elle se déduit donc de l'effectif de la saison
+ * précédente, via `wasThereBefore` : signer là où l'on était déjà, c'est
+ * prolonger. Une conversion de contrat compte aussi comme rester.
+ *
+ * Quand l'effectif précédent est inconnu, l'appelant passe une fonction qui
+ * répond toujours faux et l'interface le signale : mieux vaut une colonne vide
+ * qu'une prolongation inventée.
+ */
+export function rosterMoves(
+  events: MarketEvent[],
+  wasThereBefore: (player: EventPlayer, team: string) => boolean
+): RosterMoves[] {
+  const map = new Map<string, RosterMoves>();
+  const of = (team: string): RosterMoves => {
+    let row = map.get(team);
+    if (!row) {
+      row = { team, arrivals: [], departures: [], extensions: [], total: 0 };
+      map.set(team, row);
+    }
+    return row;
+  };
+
+  // Un même joueur peut revenir plusieurs fois dans une colonne (signé, coupé,
+  // resigné) : on ne garde que son mouvement le plus récent.
+  const add = (bucket: MovedPlayer[], moved: MovedPlayer) => {
+    const key = moved.player_id ? `id:${moved.player_id}` : `name:${moved.name}`;
+    const existing = bucket.findIndex(
+      (m) => (m.player_id ? `id:${m.player_id}` : `name:${m.name}`) === key
+    );
+    if (existing === -1) {
+      bucket.push(moved);
+      return;
+    }
+    if (moved.date > bucket[existing].date) bucket[existing] = moved;
+  };
+
+  for (const event of events) {
+    if (MINOR_KINDS.includes(event.kind)) continue;
+    // Un joueur suspendu, retraité, ou un mouvement d'encadrement ne change pas
+    // la composition d'un effectif.
+    if (event.kind === "suspension" || event.kind === "retirement" || event.kind === "coaching") {
+      continue;
+    }
+
+    for (const player of event.players) {
+      if (player.role === "coach") continue;
+
+      const moved = (counterpart: string | null): MovedPlayer => ({
+        name: player.name,
+        player_id: player.player_id,
+        date: event.event_date,
+        kind: event.kind,
+        counterpart,
+        contract: event.contract,
+      });
+
+      // Conversion ou option : le joueur ne bouge pas, il reste.
+      if ((event.kind === "conversion" || event.kind === "option") && (player.to || player.from)) {
+        add(of((player.to || player.from)!).extensions, moved(null));
+        continue;
+      }
+
+      if (player.to) {
+        const stays = event.kind === "signature" && wasThereBefore(player, player.to);
+        add(stays ? of(player.to).extensions : of(player.to).arrivals, moved(player.from));
+      }
+      if (player.from && player.from !== player.to) {
+        add(of(player.from).departures, moved(player.to));
+      }
+    }
+  }
+
+  for (const row of map.values()) {
+    row.total = row.arrivals.length + row.departures.length + row.extensions.length;
+    for (const bucket of [row.arrivals, row.departures, row.extensions]) {
+      bucket.sort((a, b) => b.date.localeCompare(a.date) || a.name.localeCompare(b.name));
+    }
+  }
+
+  return [...map.values()].sort((a, b) => b.total - a.total || a.team.localeCompare(b.team));
+}
+
 /* ─── Récapitulatifs ─── */
 
 export interface TeamBalance {

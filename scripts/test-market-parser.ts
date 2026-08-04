@@ -22,7 +22,7 @@ import {
 import { fetchDraft, parseDraftPage } from "../src/lib/br-draft";
 import { buildLotteryBoard, lotteryOdds } from "../src/lib/lottery";
 import { resolveCollege } from "../src/lib/market-sync";
-import { eventAction, KIND_LABELS, MINOR_KINDS, type MarketEvent } from "../src/lib/market";
+import { eventAction, isMinorMove, KIND_LABELS, MINOR_KINDS, rosterMoves, type MarketEvent } from "../src/lib/market";
 import { estimateSeasonPhases, phaseForDate, seasonForEventDate } from "../src/lib/season-phases";
 import { seasonStartYear } from "../src/lib/season";
 
@@ -233,6 +233,66 @@ console.log("\n--- draft ---");
     <tr><td data-stat="pick_overall">99</td><td data-stat="team_id"></td><td data-stat="player">Ligne de mise en forme</td></tr>`;
   const picks = parseDraftPage(html, 2025);
   check("draft : choix non exercé conservé", picks.map((p) => [p.pick_overall, p.team_tricode, p.player_name]), [[60, "NYK", null]]);
+}
+
+/* ── Mouvements d'effectif ── */
+console.log("\n--- arrivées, départs, prolongations ---");
+{
+  const event = (html: string, date: string) => parseTransaction(html, date)! as unknown as MarketEvent;
+
+  const events = [
+    // Une signature d'un joueur déjà présent la saison précédente : prolongation.
+    event(`<p>The <a data-attr-to="TOR" href="/teams/TOR/2026.html">Toronto Raptors</a> signed <a href="/players/r/rhodeja01.html">Jared Rhoden</a>.</p>`, "2025-07-05"),
+    // Une signature d'un joueur venu d'ailleurs : arrivée.
+    event(SIGN, "2025-07-06"),
+    // Un échange : départ d'un côté, arrivée de l'autre.
+    event(TRADE, "2025-07-07"),
+    // Une coupe : départ sec.
+    event(WAIVE, "2025-10-18"),
+    // Une conversion : le joueur reste.
+    event(`<p>The <a data-attr-from="ATL" href="/teams/ATL/2026.html">Atlanta Hawks</a> converted <a href="/players/w/wallake01.html">Keaton Wallace</a> from a two-way contract to a regular contract.</p>`, "2025-11-02"),
+    // Un aller en G League : ne change pas la composition de l'effectif.
+    event(`<p>The <a data-attr-from="BOS" href="/teams/BOS/2026.html">Boston Celtics</a> assigned <a href="/players/w/walshjo01.html">Jordan Walsh</a> to the Maine Red Claws of the G-League.</p>`, "2025-12-01"),
+    // Une suspension non plus.
+    event(SUSPENSION, "2026-01-12"),
+  ];
+
+  // Rhoden était à Toronto la saison passée, personne d'autre.
+  const wasThere = (player: { name: string }, team: string) => player.name === "Jared Rhoden" && team === "TOR";
+  const rows = rosterMoves(events, wasThere);
+  const of = (team: string) => rows.find((r) => r.team === team);
+
+  check("prolongation reconnue", of("TOR")?.extensions.map((p) => p.name), ["Jared Rhoden"]);
+  check("le prolongé n'est pas une arrivée", of("TOR")?.arrivals.length, 0);
+  check("mais la coupe reste un départ", of("TOR")?.departures.map((p) => p.name), ["Jared Rhoden"]);
+  check("signature d'un joueur venu d'ailleurs = arrivée", of("MIN")?.arrivals.map((p) => p.name), ["Jules Bernard"]);
+  check("échange : arrivée chez le destinataire", of("MEM")?.arrivals.map((p) => p.name).sort(), ["Jahmai Mashack", "Justinian Jessup"]);
+  check("échange : départ chez l'expéditeur", of("GSW")?.departures.map((p) => p.name).sort(), ["Jahmai Mashack", "Justinian Jessup"]);
+  check("échange : contrepartie reçue", of("GSW")?.arrivals.map((p) => p.name), ["Will Richard"]);
+  check("conversion = prolongation", of("ATL")?.extensions.map((p) => p.name), ["Keaton Wallace"]);
+  check("G League hors du tableau", of("BOS"), undefined);
+  check("suspension hors du tableau", rows.some((r) => r.arrivals.concat(r.departures, r.extensions).some((p) => p.name === "Rudy Gobert")), false);
+  check("équipes triées par activité", rows[0].total >= rows[rows.length - 1].total, true);
+
+  // Sans effectif précédent, aucune prolongation ne peut être affirmée.
+  const blind = rosterMoves(events, () => false);
+  check("sans effectif précédent, pas de prolongation inventée", blind.find((r) => r.team === "TOR")?.extensions.map((p) => p.name), []);
+
+  // Les contrats de second plan sont identifiés pour être mis en retrait.
+  const bernard = of("MIN")!.arrivals[0];
+  check("un two-way est un mouvement de second plan", isMinorMove(bernard), true);
+  const richard = of("GSW")!.arrivals[0];
+  check("une arrivée par échange ne l'est pas", isMinorMove(richard), false);
+  check(
+    "une signature sans précision de contrat non plus",
+    isMinorMove({ name: "X", player_id: null, date: "2025-07-01", kind: "signature", counterpart: null, contract: null }),
+    false
+  );
+  check(
+    "un contrat jusqu'à la fin de saison reste un vrai mouvement",
+    isMinorMove({ name: "X", player_id: null, date: "2025-07-01", kind: "signature", counterpart: null, contract: { type: "rest_of_season", detail: null } }),
+    false
+  );
 }
 
 /* ── Université ou club d'un joueur drafté ── */

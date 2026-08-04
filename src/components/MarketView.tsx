@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronDown, ChevronRight, Search } from "lucide-react";
 import { teamLogoUrl, teamNickname } from "@/lib/nba-teams";
@@ -8,17 +8,22 @@ import { TRADE_MACHINE_ENABLED } from "@/lib/feature-flags";
 import {
   assetLabel,
   busiestDays,
+  CONTRACT_LABELS,
   countByKind,
   eventAction,
   formatEventDate,
+  isMinorMove,
   KIND_LABELS,
   KIND_ORDER,
   MINOR_KINDS,
   mostMovedPlayers,
+  rosterMoves,
   teamBalances,
   type EventKind,
   type EventPlayer,
   type MarketEvent,
+  type MovedPlayer,
+  type RosterMoves,
 } from "@/lib/market";
 import {
   formatPhaseDate,
@@ -41,10 +46,16 @@ interface Props {
   initialTeam?: string;
   initialPhase?: string;
   /**
-   * Draft et loterie de la saison, rendues côté serveur. Elles font partie du
-   * marché : les reléguer derrière un lien revenait à les cacher.
+   * Effectifs de la saison précédente, par joueur. Ils servent à distinguer une
+   * prolongation d'une arrivée : la source ne fait pas la différence.
    */
-  draftPanel?: ReactNode;
+  previousRoster: Record<string, string>;
+  /**
+   * Faux quand l'effectif précédent est inconnu — la première saison de
+   * l'historique. Les prolongations ne sont alors pas identifiables, et
+   * l'interface le dit plutôt que de les ranger ailleurs.
+   */
+  canDetectExtensions: boolean;
 }
 
 export default function MarketView({
@@ -54,7 +65,8 @@ export default function MarketView({
   initialKind,
   initialTeam,
   initialPhase,
-  draftPanel,
+  previousRoster,
+  canDetectExtensions,
 }: Props) {
   const [search, setSearch] = useState("");
   const [kind, setKind] = useState(isKind(initialKind) ? initialKind : "");
@@ -63,6 +75,7 @@ export default function MarketView({
   const [showMinor, setShowMinor] = useState(false);
   const [limit, setLimit] = useState(PAGE_SIZE);
   const [sortKey, setSortKey] = useState<SortKey>("total");
+  const [showStats, setShowStats] = useState(false);
 
   /**
    * La période est recalculée à l'affichage plutôt que lue telle quelle.
@@ -114,6 +127,19 @@ export default function MarketView({
     });
   }, [visible, kind, team, phase, search]);
 
+  /**
+   * Un joueur qui signe là où il était la saison précédente prolonge. Le
+   * rapprochement passe par l'identifiant NBA : les noms non résolus ne peuvent
+   * pas être tranchés, et comptent donc comme des arrivées.
+   */
+  const moves = useMemo(
+    () =>
+      rosterMoves(filtered, (player, team) =>
+        player.player_id ? previousRoster[String(player.player_id)] === team : false
+      ),
+    [filtered, previousRoster]
+  );
+
   const balances = useMemo(() => teamBalances(filtered), [filtered]);
   const kinds = useMemo(() => countByKind(visible), [visible]);
   const days = useMemo(() => busiestDays(filtered, 5), [filtered]);
@@ -161,18 +187,13 @@ export default function MarketView({
     setLimit(PAGE_SIZE);
   }
 
-  // Une saison peut avoir sa draft sans mouvement enregistré : le panneau reste
-  // affiché, sinon la page perdrait la seule chose qu'elle a à montrer.
   if (events.length === 0) {
     return (
-      <div className="space-y-6">
-        <div className="border border-rule bg-card px-6 py-16 text-center">
-          <p className="font-display text-2xl text-text-primary">Aucun mouvement enregistré</p>
-          <p className="mt-2 text-sm text-text-muted">
-            La saison {season} n&apos;a pas encore été synchronisée.
-          </p>
-        </div>
-        {draftPanel}
+      <div className="border border-rule bg-card px-6 py-16 text-center">
+        <p className="font-display text-2xl text-text-primary">Aucun mouvement enregistré</p>
+        <p className="mt-2 text-sm text-text-muted">
+          La saison {season} n&apos;a pas encore été synchronisée.
+        </p>
       </div>
     );
   }
@@ -246,9 +267,6 @@ export default function MarketView({
         </div>
       </section>
 
-      {/* ── Draft et loterie ── */}
-      {draftPanel}
-
       {/* ── Filtres ── */}
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative min-w-[180px] max-w-xs flex-1">
@@ -310,6 +328,75 @@ export default function MarketView({
         )}
       </div>
 
+      {/* ── Mouvements d'effectif ── */}
+      <RosterMovesTable moves={moves} canDetectExtensions={canDetectExtensions} />
+
+      {/* ── Chronologie ── */}
+      <section className="border border-rule bg-card">
+        <header className="flex flex-wrap items-center justify-between gap-2 border-b border-rule bg-input/50 px-4 py-2.5">
+          <h2 className="kicker text-text-muted">Chronologie</h2>
+          <span className="tnum font-mono text-[10px] uppercase tracking-wider text-text-faint">
+            {filtered.length} mouvement{filtered.length > 1 ? "s" : ""}
+          </span>
+        </header>
+
+        {grouped.length === 0 ? (
+          <p className="px-4 py-12 text-center text-sm text-text-muted">
+            Aucun mouvement ne correspond à ces filtres
+          </p>
+        ) : (
+          <div>
+            {grouped.map(([date, list]) => (
+              <div key={date}>
+                <div className="flex items-center gap-3 border-t border-rule bg-input/30 px-4 py-1.5">
+                  <span className="tnum text-xs font-semibold text-text-primary">
+                    {formatEventDate(date)}
+                  </span>
+                  {list[0].phase && (
+                    <span className="font-mono text-[10px] uppercase tracking-wider text-text-faint">
+                      {PHASE_LABELS[list[0].phase]}
+                    </span>
+                  )}
+                  <span className="tnum ml-auto font-mono text-[10px] text-text-faint">
+                    {list.length}
+                  </span>
+                </div>
+                {list.map((event) => (
+                  <EventRow key={event.event_key} event={event} />
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {filtered.length > limit && (
+          <button
+            onClick={() => setLimit(limit + PAGE_SIZE * 2)}
+            className="w-full border-t border-rule px-4 py-3 font-mono text-[11px] uppercase tracking-wider text-text-muted transition-colors hover:bg-card-hover hover:text-text-primary"
+          >
+            Afficher {Math.min(PAGE_SIZE * 2, filtered.length - limit)} mouvements de plus
+          </button>
+        )}
+      </section>
+
+      {/* ── Statistiques, au second plan ── */}
+      <div>
+        <button
+          onClick={() => setShowStats(!showStats)}
+          className="flex w-full items-center gap-2 border border-rule bg-card px-4 py-2.5 text-left transition-colors hover:bg-card-hover"
+        >
+          <ChevronRight
+            size={14}
+            className={`text-text-faint transition-transform ${showStats ? "rotate-90" : ""}`}
+          />
+          <span className="kicker text-text-muted">Statistiques de la période</span>
+          <span className="ml-auto font-mono text-[10px] uppercase tracking-wider text-text-faint">
+            {showStats ? "masquer" : "afficher"}
+          </span>
+        </button>
+
+        {showStats && (
+          <div className="mt-4 space-y-4">
       {/* ── Bilan par équipe ── */}
       <section className="border border-rule bg-card">
         <header className="flex flex-wrap items-center justify-between gap-2 border-b border-rule bg-input/50 px-4 py-2.5">
@@ -442,56 +529,218 @@ export default function MarketView({
           )}
         </section>
       </div>
-
-      {/* ── Chronologie ── */}
-      <section className="border border-rule bg-card">
-        <header className="flex flex-wrap items-center justify-between gap-2 border-b border-rule bg-input/50 px-4 py-2.5">
-          <h2 className="kicker text-text-muted">Chronologie</h2>
-          <span className="tnum font-mono text-[10px] uppercase tracking-wider text-text-faint">
-            {filtered.length} mouvement{filtered.length > 1 ? "s" : ""}
-          </span>
-        </header>
-
-        {grouped.length === 0 ? (
-          <p className="px-4 py-12 text-center text-sm text-text-muted">
-            Aucun mouvement ne correspond à ces filtres
-          </p>
-        ) : (
-          <div>
-            {grouped.map(([date, list]) => (
-              <div key={date}>
-                <div className="flex items-center gap-3 border-t border-rule bg-input/30 px-4 py-1.5">
-                  <span className="tnum text-xs font-semibold text-text-primary">
-                    {formatEventDate(date)}
-                  </span>
-                  {list[0].phase && (
-                    <span className="font-mono text-[10px] uppercase tracking-wider text-text-faint">
-                      {PHASE_LABELS[list[0].phase]}
-                    </span>
-                  )}
-                  <span className="tnum ml-auto font-mono text-[10px] text-text-faint">
-                    {list.length}
-                  </span>
-                </div>
-                {list.map((event) => (
-                  <EventRow key={event.event_key} event={event} />
-                ))}
-              </div>
-            ))}
           </div>
         )}
-
-        {filtered.length > limit && (
-          <button
-            onClick={() => setLimit(limit + PAGE_SIZE * 2)}
-            className="w-full border-t border-rule px-4 py-3 font-mono text-[11px] uppercase tracking-wider text-text-muted transition-colors hover:bg-card-hover hover:text-text-primary"
-          >
-            Afficher {Math.min(PAGE_SIZE * 2, filtered.length - limit)} mouvements de plus
-          </button>
-        )}
-      </section>
+      </div>
     </div>
   );
+}
+
+/* ─── Mouvements d'effectif ─── */
+
+/** Noms affichés d'emblée dans une colonne, avant dépliage. */
+const NAMES_SHOWN = 6;
+
+/**
+ * Ce que devient chaque effectif : qui arrive, qui part, qui prolonge.
+ *
+ * C'est la lecture qu'un lecteur cherche en premier — des noms, pas des volumes.
+ * Les compteurs restent disponibles plus bas, dans la section des statistiques.
+ */
+function RosterMovesTable({
+  moves,
+  canDetectExtensions,
+}: {
+  moves: RosterMoves[];
+  canDetectExtensions: boolean;
+}) {
+  if (moves.length === 0) {
+    return (
+      <section className="border border-rule bg-card px-6 py-10 text-center">
+        <p className="text-sm text-text-muted">Aucun mouvement d&apos;effectif sur cette sélection</p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="border border-rule bg-card">
+      <header className="flex flex-wrap items-center justify-between gap-2 border-b border-rule bg-input/50 px-4 py-2.5">
+        <h2 className="kicker text-text-muted">Qui arrive, qui part, qui prolonge</h2>
+        <span className="font-mono text-[10px] uppercase tracking-wider text-text-faint">
+          {moves.length} équipe{moves.length > 1 ? "s" : ""}
+        </span>
+      </header>
+
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[860px] text-sm">
+          <thead>
+            <tr className="border-b border-rule bg-input/30 text-left align-bottom">
+              <th className="w-40 px-4 py-1.5 kicker text-text-faint">Équipe</th>
+              <th className="px-3 py-1.5 kicker text-text-faint">Arrivées</th>
+              <th className="px-3 py-1.5 kicker text-text-faint">Départs</th>
+              <th className="px-3 py-1.5 kicker text-text-faint">
+                Prolongations
+                {!canDetectExtensions && (
+                  <span
+                    className="ml-1 normal-case text-text-faint"
+                    title="Les prolongations se déduisent de l'effectif de la saison précédente, absent de la base pour cette saison."
+                  >
+                    (indisponible)
+                  </span>
+                )}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {moves.map((row) => (
+              <tr key={row.team} className="border-t border-rule align-top transition-colors hover:bg-card-hover">
+                <td className="px-4 py-3">
+                  <span className="flex items-center gap-2">
+                    <img src={teamLogoUrl(row.team)} alt="" className="h-5 w-5 shrink-0 object-contain" />
+                    <span className="text-sm font-semibold text-text-primary">{teamNickname(row.team)}</span>
+                  </span>
+                </td>
+                <PlayerCell players={row.arrivals} tone="in" />
+                <PlayerCell players={row.departures} tone="out" />
+                <PlayerCell players={row.extensions} tone="stay" />
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <p className="border-t border-rule px-4 py-2 text-[11px] leading-relaxed text-text-faint">
+        Les contrats two-way, 10 jours et Exhibit 10 sont comptés à part : une équipe en signe une
+        dizaine par saison, souvent pour quelques jours. Une prolongation est une signature dans
+        l&apos;équipe où le joueur évoluait déjà la saison précédente — la source ne les distingue pas
+        des arrivées, elles sont déduites des effectifs. Les allers-retours en G League sont exclus.
+      </p>
+    </section>
+  );
+}
+
+/**
+ * Une colonne de noms, les vrais mouvements devant.
+ *
+ * Les deux-way, dix jours et Exhibit 10 sont relégués derrière une ligne à
+ * déplier : une équipe en signe une dizaine par saison, et les mêler aux vraies
+ * arrivées ferait disparaître celle qui compte.
+ */
+function PlayerCell({ players, tone }: { players: MovedPlayer[]; tone: "in" | "out" | "stay" }) {
+  const [expanded, setExpanded] = useState(false);
+  const [showMinor, setShowMinor] = useState(false);
+
+  if (players.length === 0) {
+    return (
+      <td className="px-3 py-3">
+        <span className="font-mono text-[11px] text-text-faint">—</span>
+      </td>
+    );
+  }
+
+  const major = players.filter((p) => !isMinorMove(p));
+  const minor = players.filter(isMinorMove);
+  const shown = expanded ? major : major.slice(0, NAMES_SHOWN);
+  const hidden = major.length - shown.length;
+  const marker = tone === "in" ? "text-accent-text" : tone === "out" ? "text-text-muted" : "text-text-primary";
+
+  return (
+    <td className="px-3 py-3">
+      <span className="mb-1 block font-mono text-[10px] uppercase tracking-wider">
+        <span className={`tnum font-bold ${marker}`}>{major.length}</span>
+        {minor.length > 0 && (
+          <span
+            className="tnum ml-1 text-text-faint"
+            title="Contrats two-way, 10 jours ou Exhibit 10"
+          >
+            +{minor.length}
+          </span>
+        )}
+      </span>
+
+      {major.length === 0 ? (
+        <span className="font-mono text-[11px] text-text-faint">aucun contrat ferme</span>
+      ) : (
+        <ul className="space-y-0.5">
+          {shown.map((player) => (
+            <li key={`${player.player_id ?? player.name}-${player.date}`} className="leading-snug">
+              <PlayerName
+                player={{
+                  name: player.name,
+                  player_id: player.player_id,
+                  br_slug: null,
+                  from: null,
+                  to: null,
+                }}
+              />
+              {movedTag(player) && (
+                <span className="ml-1.5 font-mono text-[10px] uppercase tracking-wider text-text-faint">
+                  {movedTag(player)}
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {hidden > 0 && (
+        <button
+          onClick={() => setExpanded(true)}
+          className="mt-1 block font-mono text-[10px] uppercase tracking-wider text-text-faint transition-colors hover:text-accent"
+        >
+          et {hidden} autre{hidden > 1 ? "s" : ""}
+        </button>
+      )}
+      {expanded && major.length > NAMES_SHOWN && (
+        <button
+          onClick={() => setExpanded(false)}
+          className="mt-1 block font-mono text-[10px] uppercase tracking-wider text-text-faint transition-colors hover:text-accent"
+        >
+          réduire
+        </button>
+      )}
+
+      {minor.length > 0 && (
+        <div className="mt-2 border-t border-rule/60 pt-1.5">
+          <button
+            onClick={() => setShowMinor(!showMinor)}
+            className="font-mono text-[10px] uppercase tracking-wider text-text-faint transition-colors hover:text-accent"
+          >
+            {showMinor ? "masquer" : `+ ${minor.length} two-way, 10 jours ou Exhibit 10`}
+          </button>
+          {showMinor && (
+            <ul className="mt-1 space-y-0.5">
+              {minor.map((player) => (
+                <li
+                  key={`${player.player_id ?? player.name}-${player.date}`}
+                  className="text-[11px] leading-snug text-text-muted"
+                >
+                  {player.name}
+                  <span className="ml-1.5 font-mono text-[10px] uppercase tracking-wider text-text-faint">
+                    {movedTag(player)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </td>
+  );
+}
+
+/**
+ * La précision qui accompagne un nom : d'où il vient, où il va, ou la nature du
+ * contrat. Deux mots au plus — la chronologie porte le détail.
+ */
+function movedTag(player: MovedPlayer): string {
+  if (player.counterpart) return player.counterpart;
+  if (player.kind === "waiver") return "coupé";
+  if (player.kind === "conversion") return "converti";
+  if (player.kind === "option") return "option";
+  if (player.contract) return CONTRACT_LABELS[player.contract.type];
+  // Rien à préciser : la colonne dit déjà s'il arrive, part ou prolonge.
+  return "";
 }
 
 /* ─── Ligne de mouvement ─── */
@@ -744,6 +993,7 @@ function Dropdown({ value, onChange, placeholder, options }: DropdownProps) {
           </div>
         </>
       )}
+
     </div>
   );
 }

@@ -4,15 +4,14 @@ import { fetchAllRows } from "@/lib/supabase/paginate";
 import { OG_IMAGE } from "@/lib/seo";
 import {
   buildSeasonOptions,
+  seasonBefore,
   seasonRange,
-  seasonStartYear,
   seasonStatus,
   seasonStatusLabel,
 } from "@/lib/season";
 import { getLeagueState } from "@/lib/league-season";
 import { estimateSeasonPhases, type PhaseKey, type SeasonPhase } from "@/lib/season-phases";
 import type { MarketEvent } from "@/lib/market";
-import MarketDraftPanel from "@/components/MarketDraftPanel";
 import MarketView from "@/components/MarketView";
 import PageBanner from "@/components/PageBanner";
 import ScrollReveal from "@/components/ScrollReveal";
@@ -60,16 +59,10 @@ export default async function MarchePage({
   const season = params.season || currentSeason;
   const supabase = await createClient();
 
-  const draftYear = seasonStartYear(season);
+  const previous = seasonBefore(season);
 
-  const [
-    rows,
-    { data: earliest },
-    { data: phaseRows },
-    { data: draftPicks },
-    { data: lotteryRows },
-    { count: pickCount },
-  ] = await Promise.all([
+  const [rows, { data: earliest }, { data: phaseRows }, { count: pickCount }, rosterRows] =
+    await Promise.all([
       // Lecture paginée : une saison dépasse le millier de mouvements, et
       // PostgREST tronque à mille sans le dire. Les compteurs de la page se
       // calculeraient alors sur un morceau de saison.
@@ -94,24 +87,18 @@ export default async function MarchePage({
         .from("season_phases")
         .select("season, phase, starts_on, ends_on, is_estimated")
         .eq("season", season),
-      // Draft et loterie : le haut de chaque tableau suffit ici, la page de draft
-      // porte le détail.
-      supabase
-        .from("draft_picks")
-        .select("pick_overall, team_tricode, player_name, player_id")
-        .eq("season", season)
-        .lte("pick_overall", 5)
-        .order("pick_overall"),
-      supabase
-        .from("draft_lottery")
-        .select("team_tricode, pre_lottery_rank, wins, losses, odds_top1, tied")
-        .eq("draft_year", draftYear)
-        .lte("pre_lottery_rank", 5)
-        .order("pre_lottery_rank"),
-      supabase
-        .from("draft_picks")
-        .select("*", { count: "exact", head: true })
-        .eq("season", season),
+      supabase.from("draft_picks").select("*", { count: "exact", head: true }).eq("season", season),
+      // Effectif de la saison précédente : il seul permet de distinguer une
+      // prolongation d'une arrivée, la source ne le disant jamais.
+      fetchAllRows<{ player_id: number; team_tricode: string }>(
+        (from, to) =>
+          supabase
+            .from("rosters")
+            .select("player_id, team_tricode")
+            .eq("season", previous)
+            .range(from, to),
+        { label: `effectifs ${previous}` }
+      ),
     ]);
 
   const events: MarketEvent[] = rows.map((row) => ({
@@ -153,6 +140,9 @@ export default async function MarchePage({
   const statuses = Object.fromEntries(
     availableSeasons.map((s) => [s, seasonStatusLabel(seasonStatus(s, leagueState))])
   );
+
+  const previousRoster: Record<string, string> = {};
+  for (const row of rosterRows) previousRoster[String(row.player_id)] = row.team_tricode;
 
   const hasDraft = (pickCount ?? 0) > 0;
 
@@ -197,14 +187,8 @@ export default async function MarchePage({
               initialKind={params.type}
               initialTeam={params.equipe}
               initialPhase={params.periode}
-              draftPanel={
-                <MarketDraftPanel
-                  season={season}
-                  picks={draftPicks || []}
-                  lottery={lotteryRows || []}
-                  totalPicks={pickCount ?? 0}
-                />
-              }
+              previousRoster={previousRoster}
+              canDetectExtensions={rosterRows.length > 0}
             />
           </ScrollReveal>
         </SeasonContent>
