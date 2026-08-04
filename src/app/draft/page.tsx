@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { fetchAllRows } from "@/lib/supabase/paginate";
 import { OG_IMAGE } from "@/lib/seo";
@@ -104,17 +103,18 @@ export default async function DraftIndexPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-8">
+      {/* Aucun lien de retour : la rubrique a sa propre entrée de menu, on n'y
+          arrive pas forcément depuis le marché. */}
       <PageBanner
         title="Draft"
         subtitle="Chaque draft, ses deux tours et la grille de loterie qui l'a précédée"
         variant="players"
         extra={
-          <Link
-            href="/marche"
-            className="inline-flex items-center border border-rule px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-text-muted transition-colors hover:border-accent hover:text-accent"
-          >
-            Retour au marché
-          </Link>
+          rows.length > 0 ? (
+            <span className="tnum kicker text-text-faint">
+              {rows.length} drafts archivées · de {rows[rows.length - 1].draftYear} à {rows[0].draftYear}
+            </span>
+          ) : undefined
         }
       />
 
