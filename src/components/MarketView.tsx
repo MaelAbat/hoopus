@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { ChevronDown, ChevronRight, Search } from "lucide-react";
 import { teamLogoUrl, teamNickname } from "@/lib/nba-teams";
@@ -38,6 +38,11 @@ interface Props {
   initialKind?: string;
   initialTeam?: string;
   initialPhase?: string;
+  /**
+   * Draft et loterie de la saison, rendues côté serveur. Elles font partie du
+   * marché : les reléguer derrière un lien revenait à les cacher.
+   */
+  draftPanel?: ReactNode;
 }
 
 export default function MarketView({
@@ -47,6 +52,7 @@ export default function MarketView({
   initialKind,
   initialTeam,
   initialPhase,
+  draftPanel,
 }: Props) {
   const [search, setSearch] = useState("");
   const [kind, setKind] = useState(isKind(initialKind) ? initialKind : "");
@@ -133,13 +139,18 @@ export default function MarketView({
     setLimit(PAGE_SIZE);
   }
 
+  // Une saison peut avoir sa draft sans mouvement enregistré : le panneau reste
+  // affiché, sinon la page perdrait la seule chose qu'elle a à montrer.
   if (events.length === 0) {
     return (
-      <div className="border border-rule bg-card px-6 py-16 text-center">
-        <p className="font-display text-2xl text-text-primary">Aucun mouvement enregistré</p>
-        <p className="mt-2 text-sm text-text-muted">
-          La saison {season} n&apos;a pas encore été synchronisée.
-        </p>
+      <div className="space-y-6">
+        <div className="border border-rule bg-card px-6 py-16 text-center">
+          <p className="font-display text-2xl text-text-primary">Aucun mouvement enregistré</p>
+          <p className="mt-2 text-sm text-text-muted">
+            La saison {season} n&apos;a pas encore été synchronisée.
+          </p>
+        </div>
+        {draftPanel}
       </div>
     );
   }
@@ -203,6 +214,9 @@ export default function MarketView({
           })}
         </div>
       </section>
+
+      {/* ── Draft et loterie ── */}
+      {draftPanel}
 
       {/* ── Filtres ── */}
       <div className="flex flex-wrap items-center gap-2">

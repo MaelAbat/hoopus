@@ -1,10 +1,17 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { OG_IMAGE } from "@/lib/seo";
-import { buildSeasonOptions, seasonRange, seasonStatus, seasonStatusLabel } from "@/lib/season";
+import {
+  buildSeasonOptions,
+  seasonRange,
+  seasonStartYear,
+  seasonStatus,
+  seasonStatusLabel,
+} from "@/lib/season";
 import { getLeagueState } from "@/lib/league-season";
 import { estimateSeasonPhases, type PhaseKey, type SeasonPhase } from "@/lib/season-phases";
 import type { MarketEvent } from "@/lib/market";
+import MarketDraftPanel from "@/components/MarketDraftPanel";
 import MarketView from "@/components/MarketView";
 import PageBanner from "@/components/PageBanner";
 import ScrollReveal from "@/components/ScrollReveal";
@@ -52,8 +59,16 @@ export default async function MarchePage({
   const season = params.season || currentSeason;
   const supabase = await createClient();
 
-  const [{ data: rows }, { data: earliest }, { data: phaseRows }, { data: draftRows }] =
-    await Promise.all([
+  const draftYear = seasonStartYear(season);
+
+  const [
+    { data: rows },
+    { data: earliest },
+    { data: phaseRows },
+    { data: draftPicks },
+    { data: lotteryRows },
+    { count: pickCount },
+  ] = await Promise.all([
       supabase
         .from("league_events")
         .select(
@@ -70,7 +85,24 @@ export default async function MarchePage({
         .from("season_phases")
         .select("season, phase, starts_on, ends_on, is_estimated")
         .eq("season", season),
-      supabase.from("draft_picks").select("pick_overall").eq("season", season).limit(1),
+      // Draft et loterie : le haut de chaque tableau suffit ici, la page de draft
+      // porte le détail.
+      supabase
+        .from("draft_picks")
+        .select("pick_overall, team_tricode, player_name, player_id")
+        .eq("season", season)
+        .lte("pick_overall", 5)
+        .order("pick_overall"),
+      supabase
+        .from("draft_lottery")
+        .select("team_tricode, pre_lottery_rank, wins, losses, odds_top1, tied")
+        .eq("draft_year", draftYear)
+        .lte("pre_lottery_rank", 5)
+        .order("pre_lottery_rank"),
+      supabase
+        .from("draft_picks")
+        .select("*", { count: "exact", head: true })
+        .eq("season", season),
     ]);
 
   const events: MarketEvent[] = ((rows || []) as EventRow[]).map((row) => ({
@@ -113,7 +145,7 @@ export default async function MarchePage({
     availableSeasons.map((s) => [s, seasonStatusLabel(seasonStatus(s, leagueState))])
   );
 
-  const hasDraft = (draftRows || []).length > 0;
+  const hasDraft = (pickCount ?? 0) > 0;
 
   return (
     <SeasonTransitionProvider>
@@ -133,7 +165,7 @@ export default async function MarchePage({
               {hasDraft && (
                 <Link
                   href={`/draft/${season}`}
-                  className="inline-flex items-center border border-rule px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-text-muted transition-colors hover:border-accent hover:text-accent"
+                  className="inline-flex items-center border border-accent bg-accent-light px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-accent transition-colors hover:bg-accent hover:text-white"
                 >
                   Draft {season.slice(0, 4)}
                 </Link>
@@ -156,6 +188,14 @@ export default async function MarchePage({
               initialKind={params.type}
               initialTeam={params.equipe}
               initialPhase={params.periode}
+              draftPanel={
+                <MarketDraftPanel
+                  season={season}
+                  picks={draftPicks || []}
+                  lottery={lotteryRows || []}
+                  totalPicks={pickCount ?? 0}
+                />
+              }
             />
           </ScrollReveal>
         </SeasonContent>
