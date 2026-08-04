@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import { fetchLeagueState } from "@/lib/league-season";
 import { isCronAuthorized } from "@/lib/cron-auth";
-import { syncSeasonTransactions } from "@/lib/market-sync";
+import { syncEspnTransactions, syncSeasonTransactions } from "@/lib/market-sync";
 
 /**
  * Mouvements de la saison courante.
@@ -36,16 +36,27 @@ export async function GET(request: NextRequest) {
       console.log(`[SYNC-TRANSACTIONS] ${message}`)
     );
 
+    // ESPN par-dessus, pour l'actualité que Basketball Reference n'a pas encore
+    // publiée. Les doublons sont écartés par comparaison de sens.
+    const espn = await syncEspnTransactions(supabase, undefined, (message) =>
+      console.log(`[SYNC-TRANSACTIONS] ESPN — ${message}`)
+    );
+
     revalidatePath("/marche");
     revalidatePath("/");
 
     const duration = ((Date.now() - startTime) / 1000).toFixed(1);
     console.log(
-      `[SYNC-TRANSACTIONS] ${result.written}/${result.fetched} mouvements écrits, ` +
-        `${result.playersResolved} joueurs reliés, saisons ${result.seasonsTouched.join(", ")} (${duration}s)`
+      `[SYNC-TRANSACTIONS] BR ${result.written}/${result.fetched} + ESPN ${espn.written}/${espn.fetched} ` +
+        `mouvements écrits, saisons ${result.seasonsTouched.join(", ")} (${duration}s)`
     );
 
-    return NextResponse.json({ ok: true, ...result, timestamp: new Date().toISOString() });
+    return NextResponse.json({
+      ok: true,
+      ...result,
+      espn: { written: espn.written, fetched: espn.fetched, skipped: espn.skipped },
+      timestamp: new Date().toISOString(),
+    });
   } catch (err) {
     console.error("[SYNC-TRANSACTIONS] Erreur:", err);
     return NextResponse.json({ error: (err as Error).message }, { status: 502 });

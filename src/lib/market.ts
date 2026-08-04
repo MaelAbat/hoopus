@@ -15,6 +15,10 @@ import type { PhaseKey } from "./season-phases";
 export type EventKind =
   | "trade"
   | "signature"
+  // Prolongation affirmée par la source, et non déduite : ESPN distingue
+  // « Signed » de « Re-signed », là où Basketball Reference écrit « signed »
+  // dans les deux cas.
+  | "extension"
   | "waiver"
   | "claim"
   | "conversion"
@@ -81,6 +85,7 @@ export interface MarketEvent {
 export const KIND_LABELS: Record<EventKind, string> = {
   trade: "Échange",
   signature: "Signature",
+  extension: "Prolongation",
   waiver: "Coupe",
   claim: "Ballottage",
   conversion: "Conversion",
@@ -103,6 +108,7 @@ export const KIND_LABELS: Record<EventKind, string> = {
 export const KIND_ORDER: EventKind[] = [
   "trade",
   "signature",
+  "extension",
   "waiver",
   "claim",
   "conversion",
@@ -194,6 +200,8 @@ export function eventAction(event: MarketEvent): string {
     }
     case "signature":
       return `signe ${playerNames(event.players)}${contract}`;
+    case "extension":
+      return `prolonge ${playerNames(event.players)}${contract}`;
     case "waiver":
       return `coupe ${playerNames(event.players)}`;
     case "claim":
@@ -348,8 +356,11 @@ export function rosterMoves(
         contract: event.contract,
       });
 
-      // Conversion ou option : le joueur ne bouge pas, il reste.
-      if ((event.kind === "conversion" || event.kind === "option") && (player.to || player.from)) {
+      // Prolongation, conversion ou option : le joueur ne bouge pas, il reste.
+      if (
+        (event.kind === "extension" || event.kind === "conversion" || event.kind === "option") &&
+        (player.to || player.from)
+      ) {
         add(of((player.to || player.from)!).extensions, moved(null));
         continue;
       }
@@ -372,6 +383,38 @@ export function rosterMoves(
   }
 
   return [...map.values()].sort((a, b) => b.total - a.total || a.team.localeCompare(b.team));
+}
+
+/**
+ * Empreinte du *sens* d'un mouvement, indépendante de sa formulation.
+ *
+ * Deux sources décrivent la même signature avec des mots différents : « The
+ * Philadelphia 76ers signed LeBron James » et « Signed F LeBron James to a
+ * contract ». Leurs empreintes de texte diffèrent, mais leur sens est le même —
+ * cette clé le capture, pour ne pas inscrire deux fois le même événement.
+ *
+ * La date, le type, les équipes et les joueurs suffisent : ce sont les seuls
+ * éléments que les deux sources rapportent identiquement.
+ */
+export function semanticKey(event: {
+  event_date: string;
+  kind: EventKind;
+  teams: string[];
+  players: { name: string }[];
+}): string {
+  const teams = [...event.teams].sort().join(",");
+  const players = event.players
+    .map((p) =>
+      p.name
+        .normalize("NFD")
+        .replace(/[̀-ͯ]/g, "")
+        .toLowerCase()
+        .replace(/[^a-z ]/g, "")
+        .trim()
+    )
+    .sort()
+    .join(",");
+  return `${event.event_date}|${event.kind}|${teams}|${players}`;
 }
 
 /* ─── Récapitulatifs ─── */

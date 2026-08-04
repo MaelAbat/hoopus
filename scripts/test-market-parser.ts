@@ -22,7 +22,8 @@ import {
 import { fetchDraft, parseDraftPage } from "../src/lib/br-draft";
 import { buildLotteryBoard, lotteryOdds } from "../src/lib/lottery";
 import { resolveCollege } from "../src/lib/market-sync";
-import { eventAction, isMinorMove, KIND_LABELS, MINOR_KINDS, rosterMoves, type MarketEvent } from "../src/lib/market";
+import { classifyEspn, parseEspnSentence, playersInText, splitSentences, teamInText } from "../src/lib/espn-transactions";
+import { eventAction, isMinorMove, KIND_LABELS, MINOR_KINDS, rosterMoves, semanticKey, type MarketEvent } from "../src/lib/market";
 import { estimateSeasonPhases, phaseForDate, seasonForEventDate } from "../src/lib/season-phases";
 import { seasonStartYear } from "../src/lib/season";
 
@@ -233,6 +234,102 @@ console.log("\n--- draft ---");
     <tr><td data-stat="pick_overall">99</td><td data-stat="team_id"></td><td data-stat="player">Ligne de mise en forme</td></tr>`;
   const picks = parseDraftPage(html, 2025);
   check("draft : choix non exercé conservé", picks.map((p) => [p.pick_overall, p.team_tricode, p.player_name]), [[60, "NYK", null]]);
+}
+
+/* ── Lecture d'ESPN ── */
+console.log("\n--- ESPN ---");
+{
+  // Index minimal, à l'image de celui que renvoie l'API.
+  const teams = new Map<string, string>([
+    ["dallas mavericks", "DAL"], ["dallas", "DAL"], ["mavericks", "DAL"],
+    ["oklahoma city thunder", "OKC"], ["oklahoma city", "OKC"], ["thunder", "OKC"],
+    ["phoenix suns", "PHX"], ["phoenix", "PHX"], ["suns", "PHX"],
+    ["charlotte hornets", "CHA"], ["charlotte", "CHA"], ["hornets", "CHA"],
+    ["minnesota timberwolves", "MIN"], ["minnesota", "MIN"], ["timberwolves", "MIN"],
+    ["brooklyn nets", "BKN"], ["brooklyn", "BKN"], ["nets", "BKN"],
+  ]);
+
+  check("découpage : deux mouvements dans une entrée", splitSentences("Signed F LeBron James to a contract. Waived F Dalen Terry."), ["Signed F LeBron James to a contract.", "Waived F Dalen Terry."]);
+  check("découpage : un suffixe ne coupe pas la phrase", splitSentences("Signed F Larry Nance Jr. to a contract."), ["Signed F Larry Nance Jr. to a contract."]);
+  check("découpage : trois mouvements", splitSentences("Acquired F Julius Randle from Minnesota. Waived G Malachi Smith. Signed F Joshua Jefferson to a rookie scale contract.").length, 3);
+
+  check("position simple", playersInText("Signed F LeBron James to a contract."), ["LeBron James"]);
+  check("position au pluriel, deux joueurs", playersInText("Acquired Gs LaMelo Ball and Josh Green from Charlotte"), ["LaMelo Ball", "Josh Green"]);
+  check("initiales dans un nom", playersInText("Converted the contract of G A.J. Lawson to an NBA contract."), ["A.J. Lawson"]);
+  // « AJ » et « CJ » ressemblent à des positions : la liste fermée les écarte.
+  check("un prénom en initiales n'est pas une position", playersInText("Acquired G AJ Johnson and draft consideration from Dallas."), ["AJ Johnson"]);
+  check("suffixe conservé", playersInText("Signed F Larry Nance Jr. to a contract."), ["Larry Nance Jr."]);
+
+  check("prolongation annoncée", classifyEspn("Re-signed G De'Anthony Melton to a contract."), "extension");
+  check("signature", classifyEspn("Signed F Moritz Wagner to a contract."), "signature");
+  check("mise au ballottage est une coupe", classifyEspn("Placed G Miles Kelly on waivers."), "waiver");
+  check("limogeage", classifyEspn("Fired head coach Jamahl Mosley."), "coaching");
+  check("démission", classifyEspn("Announced the resignation of head coach Billy Donovan."), "coaching");
+  check("échange", classifyEspn("Acquired C Nic Claxton from Brooklyn."), "trade");
+
+  {
+    const e = parseEspnSentence("Signed F LeBron James to a contract.", "2026-07-26", "PHI", teams)!;
+    check("LeBron à Philadelphie", [e.kind, e.to_team, e.players.map((p) => p.name)], ["signature", "PHI", ["LeBron James"]]);
+    check("rattaché à la saison qui s'ouvre", e.season, "2026-27");
+  }
+  {
+    const e = parseEspnSentence("Re-signed G De'Anthony Melton to a contract.", "2026-07-31", "GSW", teams)!;
+    check("prolongation : type et équipe", [e.kind, e.to_team], ["extension", "GSW"]);
+    check("prolongation : phrase française", eventAction(e as unknown as MarketEvent), "prolonge De'Anthony Melton");
+  }
+  {
+    // L'échange à trois qui envoie Risacher à Dallas.
+    const e = parseEspnSentence(
+      "Acquired G Ryan Nembhard from Dallas and G Luguentz Dort from Oklahoma City in a three-team trade that sent F Zaccharie Risacher to Dallas.",
+      "2026-07-19",
+      "ATL",
+      teams
+    )!;
+    check("échange à trois : équipes", e.teams.sort(), ["ATL", "DAL", "OKC"]);
+    check("échange à trois : joueurs reçus", e.players.filter((p) => p.to === "ATL").map((p) => p.name), ["Ryan Nembhard", "Luguentz Dort"]);
+    check("échange à trois : Risacher part à Dallas", e.players.filter((p) => p.from === "ATL").map((p) => [p.name, p.to]), [["Zaccharie Risacher", "DAL"]]);
+    check("échange à trois : origine de chaque arrivée", e.players.filter((p) => p.to === "ATL").map((p) => p.from), ["DAL", "OKC"]);
+  }
+  {
+    const e = parseEspnSentence(
+      "Acquired F Naz Reid and draft considerations from Minnesota Timberwolves for Gs LaMelo Ball and Josh Green.",
+      "2026-07-15",
+      "CHA",
+      teams
+    )!;
+    check("échange classique : arrivée", e.players.filter((p) => p.to === "CHA").map((p) => p.name), ["Naz Reid"]);
+    check("échange classique : départs", e.players.filter((p) => p.from === "CHA").map((p) => p.name), ["LaMelo Ball", "Josh Green"]);
+    check("échange classique : choix reçu", e.assets.filter((a) => a.to === "CHA").length, 1);
+  }
+  {
+    const e = parseEspnSentence("Fired head coach Jamahl Mosley.", "2026-04-20", "ORL", teams)!;
+    check("encadrement : rôle et phrase", [e.kind, e.players[0].role, eventAction(e as unknown as MarketEvent)], ["coaching", "coach", "limoge son entraîneur principal Jamahl Mosley"]);
+  }
+  {
+    const e = parseEspnSentence("Placed G Miles Kelly on waivers.", "2026-07-20", "DAL", teams)!;
+    check("mise au ballottage : départ", [e.kind, e.from_team, e.players[0].name], ["waiver", "DAL", "Miles Kelly"]);
+  }
+  {
+    // « Los Angeles » seul désigne deux franchises : ne rien affirmer.
+    const ambiguous = new Map<string, string>([["los angeles lakers", "LAL"], ["lakers", "LAL"], ["los angeles clippers", "LAC"], ["clippers", "LAC"]]);
+    check("ville ambiguë non résolue", teamInText("from Los Angeles", ambiguous), null);
+    check("nom complet résolu", teamInText("from Los Angeles Lakers", ambiguous), "LAL");
+  }
+}
+
+/* ── Dédoublonnage entre sources ── */
+console.log("\n--- deux sources, un seul mouvement ---");
+{
+  const br = parseTransaction(
+    `<p>The <a data-attr-to="PHI" href="/teams/PHI/2027.html">Philadelphia 76ers</a> signed <a href="/players/j/jamesle01.html">LeBron James</a>.</p>`,
+    "2026-07-26"
+  )!;
+  const espn = parseEspnSentence("Signed F LeBron James to a contract.", "2026-07-26", "PHI", new Map())!;
+  check("empreintes de texte différentes", br.event_key === espn.event_key, false);
+  check("même sens reconnu", semanticKey(br) === semanticKey(espn), true);
+
+  const autre = parseEspnSentence("Signed F Dalen Terry to a contract.", "2026-07-26", "PHI", new Map())!;
+  check("deux joueurs distincts restent distincts", semanticKey(br) === semanticKey(autre), false);
 }
 
 /* ── Mouvements d'effectif ── */

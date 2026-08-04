@@ -11,6 +11,8 @@
  *   npm run sync:market 2018-19 2020-21     # plusieurs saisons
  *   npm run sync:market -- --skip-draft     # mouvements seulement
  *   npm run sync:market -- --drafts-since 1950   # toutes les drafts NBA, sans les mouvements
+ *   npm run sync:market -- --espn                # mouvements récents vus par ESPN
+ *   npm run sync:market -- --espn 2024           # une année civile ESPN
  *
  * Le marché et les drafts n'ont pas le même horizon. Les mouvements commencent en
  * 2015-16, comme le reste du site : avant, ni effectifs ni classements ne sont en
@@ -25,7 +27,7 @@
 import { config } from "dotenv";
 import { createClient } from "@supabase/supabase-js";
 import { seasonFromStartYear, seasonStartYear } from "../src/lib/season";
-import { syncDraftYear, syncSeasonTransactions } from "../src/lib/market-sync";
+import { syncDraftYear, syncEspnTransactions, syncSeasonTransactions } from "../src/lib/market-sync";
 import { BR_REQUEST_INTERVAL_MS, delay } from "../src/lib/br-fetch";
 import { FIRST_NBA_DRAFT } from "../src/lib/br-draft";
 
@@ -48,6 +50,14 @@ const args = process.argv.slice(2);
 const skipDraft = args.includes("--skip-draft");
 const skipTransactions = args.includes("--skip-transactions");
 const requested = args.filter((a) => /^\d{4}-\d{2}$/.test(a));
+
+/**
+ * `--espn [année]` : lecture d'ESPN, qui publie au jour près là où Basketball
+ * Reference prend des semaines. L'année est civile, comme leur API.
+ */
+const espnArg = args.indexOf("--espn");
+const useEspn = espnArg !== -1;
+const espnYear = useEspn ? Number(args[espnArg + 1]) || undefined : undefined;
 
 /** `--drafts-since 1950` : balayage des drafts seules, sans les mouvements. */
 const draftsSinceArg = args.indexOf("--drafts-since");
@@ -107,6 +117,14 @@ async function syncDraftsSince(from: number) {
 
 async function main() {
   if (draftsSince !== null) return syncDraftsSince(draftsSince);
+
+  if (useEspn) {
+    console.log(`ESPN — ${espnYear ?? "année en cours"}\n`);
+    const result = await syncEspnTransactions(supabase, espnYear, (m) => console.log(`    ${m}`));
+    console.log(`\n${result.written} mouvement(s) écrits, ${result.playersResolved} joueurs reliés`);
+    console.log(`  saisons touchées : ${result.seasonsTouched.join(", ") || "aucune"}`);
+    return;
+  }
 
   const startTime = Date.now();
   const seasons =

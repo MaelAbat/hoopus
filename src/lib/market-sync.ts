@@ -1,7 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { normalizeName } from "./br-salaries";
 import { attachPlayerIds, fetchSeasonTransactions, type ParsedEvent } from "./br-transactions";
+import { fetchEspnEvents } from "./espn-transactions";
 import { fetchDraft } from "./br-draft";
+import { semanticKey } from "./market";
 import { buildLotteryBoard, type LotteryRow, type StandingsRow } from "./lottery";
 import { seasonFromStartYear, seasonStartYear } from "./season";
 import {
@@ -207,7 +209,11 @@ export async function syncSeasonTransactions(
   season: string,
   log: (message: string) => void = () => {}
 ): Promise<TransactionSyncResult> {
-  const { events, pagesRead, missing } = await fetchSeasonTransactions(season, log);
+  const scrape = await fetchSeasonTransactions(season, log);
+  const { pagesRead, missing } = scrape;
+
+  const { kept: events, dropped } = await filterAlreadyKnown(supabase, scrape.events);
+  if (dropped > 0) log(`${dropped} mouvement(s) déjà connus d'une autre source, ignorés`);
 
   const nameIndex = await loadPlayerNameIndex(supabase);
   const playersResolved = attachPlayerIds(events, nameIndex);
@@ -246,6 +252,56 @@ export async function syncSeasonTransactions(
   };
 }
 
+/**
+ * Écarte les mouvements déjà connus sous une autre plume.
+ *
+ * Deux sources décrivent la même signature avec des mots différents, donc avec
+ * des empreintes de texte différentes : sans ce filtre, ESPN rejouerait ce que
+ * Basketball Reference a déjà écrit, et inversement le jour où BR rattrape son
+ * retard. La comparaison porte sur le sens du mouvement (voir `semanticKey`).
+ *
+ * Un mouvement déjà présent avec la *même* empreinte de texte n'est pas écarté :
+ * c'est la même ligne, que l'upsert doit pouvoir mettre à jour.
+ */
+export async function filterAlreadyKnown(
+  supabase: Client,
+  events: ParsedEvent[]
+): Promise<{ kept: ParsedEvent[]; dropped: number }> {
+  if (events.length === 0) return { kept: [], dropped: 0 };
+
+  const dates = events.map((e) => e.event_date).sort();
+  const { data, error } = await supabase
+    .from("league_events")
+    .select("event_key, event_date, kind, teams, players")
+    .gte("event_date", dates[0])
+    .lte("event_date", dates[dates.length - 1]);
+
+  if (error) {
+    console.warn(`[MARKET] comparaison impossible, écriture sans filtre : ${error.message}`);
+    return { kept: events, dropped: 0 };
+  }
+
+  const known = new Map<string, string>();
+  for (const row of data || []) {
+    known.set(
+      semanticKey({
+        event_date: row.event_date,
+        kind: row.kind,
+        teams: row.teams ?? [],
+        players: row.players ?? [],
+      }),
+      row.event_key
+    );
+  }
+
+  const kept = events.filter((event) => {
+    const existing = known.get(semanticKey(event));
+    return existing === undefined || existing === event.event_key;
+  });
+
+  return { kept, dropped: events.length - kept.length };
+}
+
 function toEventRow(event: ParsedEvent, phases: SeasonPhase[]) {
   return {
     event_key: event.event_key,
@@ -263,6 +319,73 @@ function toEventRow(event: ParsedEvent, phases: SeasonPhase[]) {
     raw: event.raw,
     source: "basketball-reference",
     updated_at: new Date().toISOString(),
+  };
+}
+
+/**
+ * Synchronise les mouvements vus par ESPN pour une année civile.
+ *
+ * Ce lecteur existe parce que Basketball Reference publie avec retard : début
+ * août 2026, son journal s'arrêtait au 9 juillet, sans l'arrivée de LeBron James
+ * à Philadelphie ni l'échange envoyant Zaccharie Risacher à Dallas. ESPN est à
+ * jour au jour près.
+ *
+ * Il ne remplace pas BR, qui reste plus riche — liens joueurs, choix de draft
+ * détaillés. Les deux cohabitent, et `filterAlreadyKnown` empêche de compter deux
+ * fois le même mouvement.
+ */
+export async function syncEspnTransactions(
+  supabase: Client,
+  year: number | undefined,
+  log: (message: string) => void = () => {}
+): Promise<TransactionSyncResult & { entries: number; skipped: number }> {
+  const scrape = await fetchEspnEvents(year);
+  log(`${scrape.entries} entrées ESPN, ${scrape.events.length} mouvements lus`);
+  if (scrape.skipped.length > 0) {
+    log(`${scrape.skipped.length} phrase(s) non exploitées`);
+  }
+
+  const { kept: events, dropped } = await filterAlreadyKnown(supabase, scrape.events);
+  if (dropped > 0) log(`${dropped} mouvement(s) déjà connus de Basketball Reference, ignorés`);
+
+  const nameIndex = await loadPlayerNameIndex(supabase);
+  const playersResolved = attachPlayerIds(events, nameIndex);
+
+  const seasonsTouched = [...new Set(events.map((e) => e.season))].sort();
+  const phasesBySeason = new Map<string, SeasonPhase[]>();
+  for (const touched of seasonsTouched) {
+    phasesBySeason.set(touched, await ensureSeasonPhases(supabase, touched));
+  }
+
+  const rows = events.map((event) => ({
+    ...toEventRow(event, phasesBySeason.get(event.season) || []),
+    source: "espn",
+  }));
+
+  let written = 0;
+  for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+    const batch = rows.slice(i, i + BATCH_SIZE);
+    const { error } = await supabase
+      .from("league_events")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .upsert(batch as any, { onConflict: "event_key" });
+    if (error) {
+      console.error(`[MARKET] écriture ESPN (lot ${i}) :`, error.message);
+      continue;
+    }
+    written += batch.length;
+  }
+
+  return {
+    season: seasonsTouched.join(", "),
+    fetched: scrape.events.length,
+    written,
+    playersResolved,
+    seasonsTouched,
+    pagesRead: 1,
+    pagesMissing: 0,
+    entries: scrape.entries,
+    skipped: scrape.skipped.length,
   };
 }
 
