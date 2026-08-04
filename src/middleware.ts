@@ -1,10 +1,23 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { TRADE_MACHINE_ENABLED } from "@/lib/feature-flags";
 
 // Routes that require authentication
 const PROTECTED_ROUTES = ["/profil"];
 
+// Sections still behind a feature flag. Blocking here rather than inside the
+// page matters: /trades streams a loading shell, so a notFound() from the page
+// itself lands after the 200 has been flushed. From the middleware the route is
+// simply gone — a real 404, before anything renders.
+const HIDDEN_ROUTES = TRADE_MACHINE_ENABLED ? [] : ["/trades"];
+
 export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  if (HIDDEN_ROUTES.some((r) => pathname === r || pathname.startsWith(`${r}/`))) {
+    return NextResponse.rewrite(new URL("/_not-found", request.url));
+  }
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -32,13 +45,11 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
 
   // Redirect unauthenticated users away from protected routes
-  const isProtected = PROTECTED_ROUTES.some((route) =>
-    request.nextUrl.pathname.startsWith(route)
-  );
+  const isProtected = PROTECTED_ROUTES.some((route) => pathname.startsWith(route));
 
   if (isProtected && !user) {
     const loginUrl = new URL("/auth/login", request.url);
-    loginUrl.searchParams.set("redirect", request.nextUrl.pathname);
+    loginUrl.searchParams.set("redirect", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
