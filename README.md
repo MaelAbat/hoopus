@@ -20,7 +20,7 @@ Live at [hoopus.fr](https://hoopus.fr).
 - Statistical leaders (points, rebounds, assists, blocks, steals, three-point %)
 - Player career stats with advanced metrics
 - Team rosters with salary data
-- Trade machine — build trades between 2 and 4 teams, validated against CBA salary-matching and apron rules
+- Trade machine — build trades between 2 and 4 teams, validated against CBA salary-matching and apron rules (work in progress: set `NEXT_PUBLIC_TRADE_MACHINE=1` to enable it)
 - Injury reports
 - News feed and long-form articles with Markdown rendering
 - User accounts, favorites system, light/dark theming
