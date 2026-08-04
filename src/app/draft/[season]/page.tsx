@@ -134,14 +134,18 @@ export default async function DraftSeasonPage({ params }: { params: Promise<{ se
                   </span>
                 </header>
 
+                {/* `table-fixed` et des largeurs explicites : chaque tour est un
+                    tableau distinct, et sans cela chacun calculerait ses colonnes
+                    d'après son propre contenu — les vingt tours de 1969 se
+                    décalaient les uns par rapport aux autres. */}
                 <div className="overflow-x-auto">
-                  <table className="w-full min-w-[520px] text-sm">
+                  <table className="w-full min-w-[620px] table-fixed text-sm">
                     <thead>
                       <tr className="border-b border-rule bg-input/30 text-left">
-                        <th className="w-14 px-4 py-1.5 kicker text-text-faint">Rang</th>
-                        <th className="px-3 py-1.5 kicker text-text-faint">Équipe</th>
+                        <th className="w-16 px-4 py-1.5 kicker text-text-faint">Rang</th>
+                        <th className="w-44 px-3 py-1.5 kicker text-text-faint">Équipe</th>
                         <th className="px-3 py-1.5 kicker text-text-faint">Joueur</th>
-                        <th className="px-3 py-1.5 kicker text-text-faint">Université ou club</th>
+                        <th className="w-56 px-3 py-1.5 kicker text-text-faint">Université ou club</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -157,7 +161,9 @@ export default async function DraftSeasonPage({ params }: { params: Promise<{ se
                             <td className="px-3 py-2">
                               <span className="flex items-center gap-2">
                                 <TeamMark tricode={pick.team_tricode} />
-                                <span className="text-sm text-text-primary">{teamNickname(pick.team_tricode)}</span>
+                                <span className="truncate text-sm text-text-primary">
+                                  {teamNickname(pick.team_tricode)}
+                                </span>
                               </span>
                             </td>
                             <td className="px-3 py-2">
@@ -171,11 +177,20 @@ export default async function DraftSeasonPage({ params }: { params: Promise<{ se
                                   {pick.player_name}
                                 </Link>
                               ) : (
-                                <span className="text-sm font-semibold text-text-primary">{pick.player_name}</span>
+                                <span className="block truncate text-sm font-semibold text-text-primary">
+                                  {pick.player_name}
+                                </span>
                               )}
                             </td>
                             <td className="px-3 py-2">
-                              <span className="text-[11px] text-text-muted">{pick.college || "—"}</span>
+                              {/* Colonne de largeur fixe : les noms les plus longs
+                                  sont coupés, et restent lisibles au survol. */}
+                              <span
+                                className="block truncate text-[11px] text-text-muted"
+                                title={pick.college ?? undefined}
+                              >
+                                {pick.college || "—"}
+                              </span>
                             </td>
                           </tr>
                         ))}
