@@ -12,15 +12,29 @@
  * dire « début février » d'une date limite est juste, et le drapeau `isEstimated`
  * empêche de la présenter comme officielle.
  *
- * Toutes les périodes d'une saison portant l'année de départ Y :
+ * Les périodes couvrent la fenêtre de rattachement d'une saison portant l'année
+ * de départ Y, soit du 20 juin Y au 19 juin Y+1 (voir `seasonForEventDate`), et
+ * se suivent sans trou — un mouvement doit toujours tomber quelque part :
  *
- *   loterie          mi-mai Y            (détermine la draft qui suit)
- *   draft            fin juin Y
+ *   draft            20 juin Y → veille de la free agency
  *   free agency      30 juin Y → veille du premier match
- *   saison régulière fin octobre Y → mi-avril Y+1
- *   date limite      début février Y+1
+ *   saison régulière fin octobre Y → veille des playoffs
+ *   date limite      début février Y+1   (repère, dans la saison régulière)
  *   marché rachats   date limite → 1er mars Y+1
- *   playoffs         mi-avril Y+1 → mi-juin Y+1
+ *   playoffs         mi-avril Y+1 → 19 juin Y+1
+ *   loterie          mi-mai Y+1          (repère, pendant les playoffs)
+ *
+ * Deux choix méritent leur explication.
+ *
+ * La draft est une fenêtre, pas un jour. Sa date exacte est estimée, et les
+ * échanges de la nuit de draft tombent sur la vraie date : un repère ponctuel
+ * n'en aurait jamais attrapé un seul. La fenêtre part du lendemain des Finales et
+ * s'arrête à l'ouverture du marché, ce qui recouvre la draft où qu'elle tombe.
+ *
+ * La loterie est en mai Y+1, et non mai Y. Celle de mai Y prépare bien la draft
+ * qui garnit cette saison, mais ses mouvements appartiennent à la saison
+ * précédente : la placer là rendait son compteur nul par construction. Elle est
+ * donc rangée où elle tombe, pendant les playoffs, et prépare la draft suivante.
  */
 
 import { seasonFromStartYear, seasonStartYear } from "./season";
@@ -56,8 +70,9 @@ export const PHASE_LABELS: Record<PhaseKey, string> = {
 
 /** Une phrase qui situe la période, pour les bandeaux et les infobulles. */
 export const PHASE_DESCRIPTIONS: Record<PhaseKey, string> = {
-  lottery: "Le tirage qui fixe l'ordre des quatorze premiers choix de la draft.",
-  draft: "Les deux tours de sélection des nouveaux joueurs.",
+  lottery:
+    "Le tirage qui fixe l'ordre des quatorze premiers choix de la draft suivante. Il ne produit aucun mouvement par lui-même.",
+  draft: "Les deux tours de sélection, et les échanges qui s'y nouent.",
   free_agency: "Les agents libres signent où ils veulent.",
   regular_season: "Quatre-vingt-deux matchs, et les échanges qui les accompagnent.",
   trade_deadline: "Dernier jour pour échanger un joueur.",
@@ -65,15 +80,15 @@ export const PHASE_DESCRIPTIONS: Record<PhaseKey, string> = {
   playoffs: "Les effectifs sont figés, place au jeu.",
 };
 
-/** Ordre chronologique dans une saison, pour l'affichage en frise. */
+/** Ordre chronologique dans la fenêtre d'une saison, pour l'affichage en frise. */
 export const PHASE_ORDER: PhaseKey[] = [
-  "lottery",
   "draft",
   "free_agency",
   "regular_season",
   "trade_deadline",
   "buyout_market",
   "playoffs",
+  "lottery",
 ];
 
 /* ─── Utilitaires de dates ─── */
@@ -92,11 +107,25 @@ function nthWeekday(year: number, month: number, weekday: number, n: number): nu
   return 1 + offset + (n - 1) * 7;
 }
 
+/** Veille d'une date ISO. */
+function dayBefore(date: string): string {
+  const d = new Date(`${date}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
+
 /**
  * La free agency s'ouvre le 30 juin depuis la convention 2023, le 1er juillet
  * avant. Deux dates différentes pour un même moment de l'année.
  */
 const FREE_AGENCY_JUNE_30_FROM = 2023;
+
+/**
+ * Premier jour rattaché à une saison — le lendemain des Finales, au plus tard.
+ * Aligné sur `seasonForEventDate`, sans quoi la frise laisserait un trou entre
+ * les deux saisons.
+ */
+const SEASON_WINDOW_START_DAY = 20;
 
 /**
  * Dates estimées des périodes d'une saison, d'après les usages de la ligue.
@@ -111,14 +140,13 @@ export function estimateSeasonPhases(season: string): SeasonPhase[] {
   const y = seasonStartYear(season);
   const next = y + 1;
 
-  const lottery = iso(y, 5, nthWeekday(y, 5, 2, 2));
-  const draft = iso(y, 6, nthWeekday(y, 6, 4, 4));
   const faStart = y >= FREE_AGENCY_JUNE_30_FROM ? iso(y, 6, 30) : iso(y, 7, 1);
+  const draftStart = iso(y, 6, SEASON_WINDOW_START_DAY);
   const seasonStart = iso(y, 10, nthWeekday(y, 10, 2, 3));
-  const seasonEnd = iso(next, 4, nthWeekday(next, 4, 0, 2));
   const deadline = iso(next, 2, nthWeekday(next, 2, 4, 1));
   const playoffsStart = iso(next, 4, nthWeekday(next, 4, 6, 3));
-  const playoffsEnd = iso(next, 6, 20);
+  const playoffsEnd = iso(next, 6, SEASON_WINDOW_START_DAY - 1);
+  const lottery = iso(next, 5, nthWeekday(next, 5, 2, 2));
 
   const phase = (p: PhaseKey, startsOn: string, endsOn = startsOn): SeasonPhase => ({
     season,
@@ -129,17 +157,22 @@ export function estimateSeasonPhases(season: string): SeasonPhase[] {
   });
 
   return [
-    phase("lottery", lottery),
-    phase("draft", draft),
+    // Fenêtre de draft : du lendemain des Finales à l'ouverture du marché. La date
+    // exacte du tirage étant estimée, seule une fenêtre attrape à coup sûr les
+    // échanges de la nuit de draft.
+    phase("draft", draftStart, dayBefore(faStart)),
     // La free agency reste ouverte tout l'été : elle se referme la veille du
     // premier match, quand les effectifs se figent pour de bon.
-    phase("free_agency", faStart, iso(y, 10, nthWeekday(y, 10, 2, 3) - 1)),
-    phase("regular_season", seasonStart, seasonEnd),
+    phase("free_agency", faStart, dayBefore(seasonStart)),
+    // Jusqu'à la veille des playoffs, play-in compris : rien ne doit tomber entre
+    // les deux.
+    phase("regular_season", seasonStart, dayBefore(playoffsStart)),
     phase("trade_deadline", deadline),
     // Fenêtre des rachats : de la date limite au 1er mars, dernier jour pour
     // signer un joueur et le rendre qualifiable pour les playoffs.
     phase("buyout_market", deadline, iso(next, 3, 1)),
     phase("playoffs", playoffsStart, playoffsEnd),
+    phase("lottery", lottery),
   ];
 }
 

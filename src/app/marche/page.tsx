@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { fetchAllRows } from "@/lib/supabase/paginate";
 import { OG_IMAGE } from "@/lib/seo";
 import {
   buildSeasonOptions,
@@ -62,21 +63,29 @@ export default async function MarchePage({
   const draftYear = seasonStartYear(season);
 
   const [
-    { data: rows },
+    rows,
     { data: earliest },
     { data: phaseRows },
     { data: draftPicks },
     { data: lotteryRows },
     { count: pickCount },
   ] = await Promise.all([
-      supabase
-        .from("league_events")
-        .select(
-          "id, event_key, season, event_date, phase, kind, teams, from_team, to_team, players, assets, contract, detail, raw"
-        )
-        .eq("season", season)
-        .order("event_date", { ascending: false })
-        .limit(4000),
+      // Lecture paginée : une saison dépasse le millier de mouvements, et
+      // PostgREST tronque à mille sans le dire. Les compteurs de la page se
+      // calculeraient alors sur un morceau de saison.
+      fetchAllRows<EventRow>(
+        (from, to) =>
+          supabase
+            .from("league_events")
+            .select(
+              "id, event_key, season, event_date, phase, kind, teams, from_team, to_team, players, assets, contract, detail, raw"
+            )
+            .eq("season", season)
+            .order("event_date", { ascending: false })
+            .order("id", { ascending: true })
+            .range(from, to),
+        { label: `mouvements ${season}`, maxRows: 6000 }
+      ),
       // Une seule ligne suffit à connaître le début de l'historique : la liste des
       // saisons s'en déduit, sans rapatrier des milliers de lignes pour les
       // dédoublonner.
@@ -105,7 +114,7 @@ export default async function MarchePage({
         .eq("season", season),
     ]);
 
-  const events: MarketEvent[] = ((rows || []) as EventRow[]).map((row) => ({
+  const events: MarketEvent[] = rows.map((row) => ({
     id: row.id,
     event_key: row.event_key,
     season: row.season,

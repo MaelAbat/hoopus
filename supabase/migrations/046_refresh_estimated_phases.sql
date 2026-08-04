@@ -1,0 +1,28 @@
+-- ==========================================
+-- Rafraîchissement des périodes estimées
+-- ==========================================
+--
+-- La définition des périodes a été corrigée (voir src/lib/season-phases.ts) :
+--
+--   * La draft est devenue une fenêtre — du lendemain des Finales à l'ouverture
+--     de la free agency — et non plus un jour unique à une date estimée. Les
+--     échanges de la nuit de draft tombent sur la vraie date du tirage : un
+--     repère ponctuel n'en attrapait jamais aucun.
+--   * La loterie est passée de mai de l'année de départ à mai de l'année
+--     suivante. Placée avant le 20 juin, elle tombait hors de la fenêtre de
+--     rattachement de sa propre saison, et son compteur était donc nul par
+--     construction, quelle que soit l'année.
+--
+-- Les lignes estimées sont des données dérivées : elles doivent suivre. Celles
+-- corrigées à la main (is_estimated à false) ne sont pas touchées.
+--
+-- La suppression suffit : /api/sync-transactions et npm run sync:market les
+-- réécrivent, et les pages estiment d'elles-mêmes les périodes manquantes — la
+-- frise est donc juste dès l'application de cette migration.
+--
+-- La colonne `phase` de league_events, elle, garde son ancienne valeur jusqu'au
+-- prochain passage de synchronisation. L'affichage n'en dépend plus : la période
+-- y est recalculée depuis la date, précisément pour que ce décalage ne se voie
+-- jamais.
+
+delete from public.season_phases where is_estimated;

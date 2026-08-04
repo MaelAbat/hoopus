@@ -74,8 +74,13 @@ export async function loadPlayerNameIndex(supabase: Client): Promise<Map<string,
 /* ─── Périodes ─── */
 
 /**
- * Périodes d'une saison : celles déjà en base, complétées par des estimations
- * pour les repères manquants. Les dates corrigées à la main ne sont pas touchées.
+ * Périodes d'une saison : les dates saisies à la main, complétées et rafraîchies
+ * par les estimations.
+ *
+ * Une ligne estimée est une donnée dérivée : affiner la règle d'estimation doit la
+ * mettre à jour, sinon la base garde éternellement une définition abandonnée. Une
+ * ligne dont `is_estimated` est faux a été corrigée par un humain et prime
+ * toujours : elle n'est jamais touchée.
  */
 export async function ensureSeasonPhases(supabase: Client, season: string): Promise<SeasonPhase[]> {
   const { data, error } = await supabase
@@ -93,12 +98,14 @@ export async function ensureSeasonPhases(supabase: Client, season: string): Prom
     isEstimated: row.is_estimated,
   }));
 
-  const known = new Set(existing.map((p) => p.phase));
-  const missing = estimateSeasonPhases(season).filter((p) => !known.has(p.phase));
+  // Les périodes corrigées à la main gardent la main ; les autres sont réécrites
+  // depuis l'estimation courante.
+  const corrected = new Set(existing.filter((p) => !p.isEstimated).map((p) => p.phase));
+  const estimated = estimateSeasonPhases(season).filter((p) => !corrected.has(p.phase));
 
-  if (missing.length > 0) {
-    const { error: insertError } = await supabase.from("season_phases").upsert(
-      missing.map((p) => ({
+  if (estimated.length > 0) {
+    const { error: writeError } = await supabase.from("season_phases").upsert(
+      estimated.map((p) => ({
         season: p.season,
         phase: p.phase,
         starts_on: p.startsOn,
@@ -106,12 +113,12 @@ export async function ensureSeasonPhases(supabase: Client, season: string): Prom
         is_estimated: true,
         updated_at: new Date().toISOString(),
       })),
-      { onConflict: "season,phase", ignoreDuplicates: true }
+      { onConflict: "season,phase" }
     );
-    if (insertError) throw new Error(`écriture des périodes impossible : ${insertError.message}`);
+    if (writeError) throw new Error(`écriture des périodes impossible : ${writeError.message}`);
   }
 
-  return [...existing, ...missing];
+  return [...existing.filter((p) => corrected.has(p.phase)), ...estimated];
 }
 
 /* ─── Mouvements ─── */

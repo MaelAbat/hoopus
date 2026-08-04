@@ -52,12 +52,34 @@ console.log("\n--- périodes ---");
 {
   const phases = estimateSeasonPhases("2025-26");
   const draft = phases.find((p) => p.phase === "draft")!;
-  check("draft estimée en juin 2025", draft.startsOn.slice(0, 7), "2025-06");
+  check("fenêtre de draft en juin 2025", [draft.startsOn, draft.endsOn], ["2025-06-20", "2025-06-29"]);
   check("date limite estimée en février 2026", phases.find((p) => p.phase === "trade_deadline")!.startsOn.slice(0, 7), "2026-02");
   check("free agency ouvre le 30 juin", phases.find((p) => p.phase === "free_agency")!.startsOn, "2025-06-30");
   check("un jour de draft est rangé dans la draft", phaseForDate(draft.startsOn, phases), "draft");
   check("un jour de juillet est rangé dans la free agency", phaseForDate("2025-07-15", phases), "free_agency");
   check("un jour de décembre est rangé dans la saison régulière", phaseForDate("2025-12-10", phases), "regular_season");
+
+  // Les échanges de la nuit de draft tombent sur la vraie date du tirage, jamais
+  // sur celle qu'on estime : seule une fenêtre les attrape.
+  check("échange de la nuit de draft rangé dans la draft", phaseForDate("2025-06-25", phases), "draft");
+  check("draft de fin juin aussi", phaseForDate("2025-06-26", phases), "draft");
+
+  // La loterie appartient à la fenêtre de la saison, donc à mai de l'année
+  // suivante : en mai 2025 elle serait rattachée à la saison 2024-25 et son
+  // compteur resterait nul par construction.
+  const lottery = phases.find((p) => p.phase === "lottery")!;
+  check("loterie en mai 2026", lottery.startsOn.slice(0, 7), "2026-05");
+  check("le jour de loterie est rangé dans la loterie", phaseForDate(lottery.startsOn, phases), "lottery");
+  check("la loterie tombe dans la saison qu'elle clôt", seasonForEventDate(lottery.startsOn), "2025-26");
+
+  // Aucun trou : chaque jour de la fenêtre de rattachement doit tomber quelque
+  // part, play-in et lendemain des Finales compris.
+  const orphans: string[] = [];
+  for (let d = new Date("2025-06-20T12:00:00Z"); d <= new Date("2026-06-19T12:00:00Z"); d.setUTCDate(d.getUTCDate() + 1)) {
+    const day = d.toISOString().slice(0, 10);
+    if (!phaseForDate(day, phases)) orphans.push(day);
+  }
+  check("aucun jour sans période sur la fenêtre de la saison", orphans, []);
 }
 {
   // La free agency 2022-23 s'ouvrait le 1er juillet, avant la convention 2023.

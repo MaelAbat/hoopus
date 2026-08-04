@@ -22,9 +22,11 @@ import {
 } from "@/lib/market";
 import {
   formatPhaseDate,
+  phaseForDate,
   PHASE_DESCRIPTIONS,
   PHASE_LABELS,
   PHASE_ORDER,
+  type PhaseKey,
   type SeasonPhase,
 } from "@/lib/season-phases";
 
@@ -63,14 +65,34 @@ export default function MarketView({
   const [sortKey, setSortKey] = useState<SortKey>("total");
 
   /**
+   * La période est recalculée à l'affichage plutôt que lue telle quelle.
+   *
+   * La colonne `phase` est écrite au moment de la synchronisation : affiner la
+   * définition d'une période laisserait sinon les anciens mouvements rangés selon
+   * l'ancienne, jusqu'au prochain passage du sync. Le calcul ici garantit que la
+   * frise et les filtres disent la même chose que les dates affichées.
+   */
+  const dated = useMemo(() => {
+    const cache = new Map<string, PhaseKey | null>();
+    return events.map((event) => {
+      let phase = cache.get(event.event_date);
+      if (phase === undefined) {
+        phase = phaseForDate(event.event_date, phases);
+        cache.set(event.event_date, phase);
+      }
+      return event.phase === phase ? event : { ...event, phase };
+    });
+  }, [events, phases]);
+
+  /**
    * Les allers-retours en G League sont écartés d'emblée, sauf demande
    * explicite : plusieurs centaines par saison, ils noieraient tout le reste. Un
    * filtre par type les fait réapparaître sans avoir à cocher quoi que ce soit.
    */
   const visible = useMemo(() => {
     const wantsMinor = showMinor || MINOR_KINDS.includes(kind as EventKind);
-    return wantsMinor ? events : events.filter((e) => !MINOR_KINDS.includes(e.kind));
-  }, [events, showMinor, kind]);
+    return wantsMinor ? dated : dated.filter((e) => !MINOR_KINDS.includes(e.kind));
+  }, [dated, showMinor, kind]);
 
   const filtered = useMemo(() => {
     const needle = search.trim().toLowerCase();
@@ -97,8 +119,8 @@ export default function MarketView({
   const days = useMemo(() => busiestDays(filtered, 5), [filtered]);
   const movers = useMemo(() => mostMovedPlayers(filtered, 8), [filtered]);
   const teamOptions = useMemo(
-    () => [...new Set(events.flatMap((e) => e.teams))].sort((a, b) => teamNickname(a).localeCompare(teamNickname(b))),
-    [events]
+    () => [...new Set(dated.flatMap((e) => e.teams))].sort((a, b) => teamNickname(a).localeCompare(teamNickname(b))),
+    [dated]
   );
 
   const phaseCounts = useMemo(() => {
@@ -203,7 +225,16 @@ export default function MarketView({
                 >
                   {PHASE_LABELS[key]}
                 </p>
-                <p className="tnum mt-1 font-display text-xl text-text-primary">{count}</p>
+                {/* Un tiret plutôt qu'un zéro : la loterie, notamment, ne produit
+                    aucun mouvement par elle-même. Un compteur à zéro se lirait
+                    comme une donnée manquante. */}
+                <p
+                  className={`tnum mt-1 font-display text-xl ${
+                    count > 0 ? "text-text-primary" : "text-text-faint"
+                  }`}
+                >
+                  {count > 0 ? count : "—"}
+                </p>
                 {definition && (
                   <p className="tnum mt-0.5 font-mono text-[10px] text-text-faint">
                     {formatPhaseDate(definition.startsOn)}
