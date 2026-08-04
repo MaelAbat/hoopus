@@ -71,6 +71,67 @@ export async function loadPlayerNameIndex(supabase: Client): Promise<Map<string,
   return index;
 }
 
+/**
+ * Libellés des franchises NBA, lus depuis les classements.
+ *
+ * Le champ `college` de l'API NBA n'est pas fiable : pour certains joueurs, il
+ * contient l'équipe NBA du moment et non l'université ou le club d'avant-draft
+ * (Alex Sarr y figure avec « Washington Wizards »). Avant de reprendre cette
+ * valeur, il faut donc pouvoir reconnaître un nom de franchise.
+ *
+ * La liste vient de la base plutôt que du code : elle couvre ainsi les noms
+ * historiques sans entretien.
+ */
+export async function loadFranchiseLabels(supabase: Client): Promise<Set<string>> {
+  const labels = new Set<string>();
+  const { data } = await supabase.from("standings").select("team_city, team_name");
+
+  for (const row of data || []) {
+    if (!row.team_name) continue;
+    labels.add(normalizeLabel(row.team_name));
+    if (row.team_city) labels.add(normalizeLabel(`${row.team_city} ${row.team_name}`));
+  }
+
+  return labels;
+}
+
+function normalizeLabel(value: string): string {
+  return value.toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+/**
+ * Valeurs de remplissage de l'API NBA, à ne pas confondre avec une information.
+ * Un tiret recopié dans une colonne se lit comme une donnée ; une case vide se
+ * lit comme une absence, ce qu'elle est.
+ */
+const PLACEHOLDERS = /^(?:[-–—]+|n\/?a|none|null|unknown|undrafted|inconnu)$/i;
+
+/**
+ * Université ou club d'un joueur drafté.
+ *
+ * Basketball Reference ne renseigne que les universités : un joueur venu d'un
+ * club professionnel étranger arrive sans rien, alors que la fiche joueur connaît
+ * souvent son club. On complète donc, en écartant deux valeurs trompeuses :
+ *
+ *   * les noms de franchises NBA — le champ `college` de l'API contient parfois
+ *     l'équipe du moment (Alex Sarr y figure avec « Washington Wizards ») ;
+ *   * les tirets et autres marques de remplissage.
+ *
+ * Dans les deux cas, mieux vaut une case vide qu'une affirmation fausse.
+ */
+export function resolveCollege(
+  fromDraftPage: string | null,
+  fromPlayerRow: string | null | undefined,
+  franchiseLabels: Set<string>
+): string | null {
+  const fromDraft = fromDraftPage?.trim();
+  if (fromDraft && !PLACEHOLDERS.test(fromDraft)) return fromDraft;
+
+  const fromPlayer = fromPlayerRow?.trim();
+  if (!fromPlayer || PLACEHOLDERS.test(fromPlayer)) return null;
+  return franchiseLabels.has(normalizeLabel(fromPlayer)) ? null : fromPlayer;
+}
+
 /* ─── Périodes ─── */
 
 /**
@@ -212,6 +273,8 @@ export interface DraftSyncResult {
   season: string;
   picks: number;
   playersResolved: number;
+  /** Universités ou clubs repris de la fiche joueur, absents de la page de draft. */
+  collegesFilled: number;
   lotteryTeams: number;
   /** Vrai si la grille de loterie n'a pas pu être établie, faute de playoffs connus. */
   lotterySkipped: boolean;
@@ -234,11 +297,32 @@ export async function syncDraftYear(
   log(`draft ${draftYear} — ${picks.length} choix`);
 
   let playersResolved = 0;
+  let collegesFilled = 0;
   if (picks.length > 0) {
     const nameIndex = await loadPlayerNameIndex(supabase);
+    const resolvedIds = picks
+      .map((pick) => (pick.player_name ? nameIndex.get(normalizeName(pick.player_name)) : undefined))
+      .filter((id): id is number => !!id);
+
+    // Universités et clubs connus des fiches joueurs, pour compléter ce que la
+    // page de draft ne dit pas des joueurs venus du professionnel.
+    const [{ data: playerRows }, franchiseLabels] = await Promise.all([
+      resolvedIds.length > 0
+        ? supabase.from("players").select("player_id, college").in("player_id", resolvedIds)
+        : Promise.resolve({ data: [] as { player_id: number; college: string | null }[] }),
+      loadFranchiseLabels(supabase),
+    ]);
+    const collegeById = new Map((playerRows || []).map((row) => [row.player_id, row.college]));
+
     const rows = picks.map((pick) => {
       const playerId = pick.player_name ? nameIndex.get(normalizeName(pick.player_name)) : undefined;
       if (playerId) playersResolved++;
+      const college = resolveCollege(
+        pick.college,
+        playerId ? collegeById.get(playerId) : null,
+        franchiseLabels
+      );
+      if (!pick.college && college) collegesFilled++;
       return {
         draft_year: pick.draft_year,
         pick_overall: pick.pick_overall,
@@ -249,7 +333,7 @@ export async function syncDraftYear(
         player_name: pick.player_name,
         player_id: playerId ?? null,
         br_slug: pick.br_slug,
-        college: pick.college,
+        college,
         updated_at: new Date().toISOString(),
       };
     });
@@ -260,6 +344,10 @@ export async function syncDraftYear(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .upsert(rows.slice(i, i + BATCH_SIZE) as any, { onConflict: "draft_year,pick_overall" });
       if (error) console.error(`[MARKET] écriture des choix de draft :`, error.message);
+    }
+
+    if (collegesFilled > 0) {
+      log(`${collegesFilled} université(s) ou club(s) repris des fiches joueurs`);
     }
   }
 
@@ -292,6 +380,7 @@ export async function syncDraftYear(
     season,
     picks: picks.length,
     playersResolved,
+    collegesFilled,
     lotteryTeams: lottery.length,
     lotterySkipped: lottery.length === 0,
   };

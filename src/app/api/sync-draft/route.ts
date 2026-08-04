@@ -38,7 +38,8 @@ export async function GET(request: NextRequest) {
 
     console.log(
       `[SYNC-DRAFT] Draft ${draftYear} : ${result.picks} choix, ` +
-        `${result.playersResolved} joueurs reliés, ${result.lotteryTeams} équipes en loterie`
+        `${result.playersResolved} joueurs reliés, ${result.collegesFilled} clubs complétés, ` +
+        `${result.lotteryTeams} équipes en loterie`
     );
 
     return NextResponse.json({ ok: true, ...result, timestamp: new Date().toISOString() });

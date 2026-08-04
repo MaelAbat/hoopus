@@ -21,6 +21,7 @@ import {
 } from "../src/lib/br-transactions";
 import { fetchDraft, parseDraftPage } from "../src/lib/br-draft";
 import { buildLotteryBoard, lotteryOdds } from "../src/lib/lottery";
+import { resolveCollege } from "../src/lib/market-sync";
 import { eventAction, KIND_LABELS, MINOR_KINDS, type MarketEvent } from "../src/lib/market";
 import { estimateSeasonPhases, phaseForDate, seasonForEventDate } from "../src/lib/season-phases";
 import { seasonStartYear } from "../src/lib/season";
@@ -232,6 +233,25 @@ console.log("\n--- draft ---");
     <tr><td data-stat="pick_overall">99</td><td data-stat="team_id"></td><td data-stat="player">Ligne de mise en forme</td></tr>`;
   const picks = parseDraftPage(html, 2025);
   check("draft : choix non exercé conservé", picks.map((p) => [p.pick_overall, p.team_tricode, p.player_name]), [[60, "NYK", null]]);
+}
+
+/* ── Université ou club d'un joueur drafté ── */
+console.log("\n--- université ou club ---");
+{
+  // Les noms de franchises viennent de la base ; ici, un échantillon suffit.
+  const franchises = new Set(["washington wizards", "wizards", "boston celtics", "celtics"]);
+  check("la page de draft prime quand elle renseigne", resolveCollege("Duke", "Duke University", franchises), "Duke");
+  check("le club de la fiche complète une case vide", resolveCollege(null, "JL Bourg-en-Bresse", franchises), "JL Bourg-en-Bresse");
+  check("une équipe NBA n'est pas un club formateur", resolveCollege(null, "Washington Wizards", franchises), null);
+  check("un surnom d'équipe NBA non plus", resolveCollege(null, "Wizards", franchises), null);
+  check("rien d'un côté comme de l'autre", resolveCollege(null, null, franchises), null);
+  check("casse et espaces indifférents", resolveCollege(null, "  washington   WIZARDS ", franchises), null);
+  // L'API NBA écrit « - » quand elle ne sait pas : un tiret recopié se lirait
+  // comme une information.
+  check("un tiret n'est pas un club", resolveCollege(null, "-", franchises), null);
+  check("ni un N/A", resolveCollege(null, "N/A", franchises), null);
+  check("un tiret côté draft n'écrase pas la fiche", resolveCollege("-", "Cholet", franchises), "Cholet");
+  check("les espaces autour sont retirés", resolveCollege(null, "  Le Mans Sarthe  ", franchises), "Le Mans Sarthe");
 }
 
 /* ── Loterie ── */
