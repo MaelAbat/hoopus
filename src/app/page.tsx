@@ -6,6 +6,7 @@ import { seasonLabel } from "@/lib/season";
 import { getLeagueState } from "@/lib/league-season";
 import ScrollReveal from "@/components/ScrollReveal";
 import SeasonWidget from "@/components/SeasonWidget";
+import MarketSpotlight, { spotlightFocus } from "@/components/MarketSpotlight";
 import FavoriteDashboard from "@/components/FavoriteDashboard";
 import FavoriteAlerts from "@/components/FavoriteAlerts";
 
@@ -38,6 +39,8 @@ const sections = [
   { href: "/statistiques", title: "Statistiques", tagline: "Leaders, moyennes, classements" },
   { href: "/joueurs", title: "Joueurs", tagline: "Profils et carrières" },
   { href: "/equipes", title: "Équipes", tagline: "Les 30 franchises" },
+  { href: "/marche", title: "Marché", tagline: "Échanges, signatures, coupes" },
+  { href: "/draft", title: "Draft", tagline: "Tous les choix depuis 1950" },
   { href: "/playoffs", title: "Playoffs", tagline: "Brackets, séries, play-in" },
   { href: "/blessures", title: "Infirmerie", tagline: "Le rapport blessures du jour" },
   { href: "/mini-jeux", title: "Mini-jeux", tagline: "7 défis quotidiens" },
@@ -65,11 +68,17 @@ export default async function Home() {
   const funFact = getDaily(funFacts);
 
   const articlesExist = articles.length > 0;
-  const visibleSections = sections.filter((s) => {
-    if (s.href === "/articles") return articlesExist;
-    if (s.href === "/actualites") return newsExists;
-    return true;
-  });
+  const focus = await spotlightFocus();
+
+  const visibleSections = sections
+    .filter((s) => {
+      if (s.href === "/articles") return articlesExist;
+      if (s.href === "/actualites") return newsExists;
+      return true;
+    })
+    // Pendant la draft, la free agency ou la date limite, la rubrique concernée
+    // passe en tête du sommaire : c'est ce jour-là qu'on la cherche.
+    .sort((a, b) => Number(isFocused(b, focus)) - Number(isFocused(a, focus)));
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -157,6 +166,15 @@ export default async function Home() {
         <SectionLabel index="00" title={isOffseason ? "Où en est la ligue" : "En ce moment"} />
         <ScrollReveal variant="up">
           <SeasonWidget />
+        </ScrollReveal>
+      </div>
+
+      {/* ── Le marché, quand c'est son heure ── */}
+      {/* Ne s'affiche que pendant la draft, la free agency, la date limite, les
+          rachats ou la loterie — et seulement s'il y a des mouvements à montrer. */}
+      <div className="mt-6 sm:mt-8">
+        <ScrollReveal variant="up">
+          <MarketSpotlight />
         </ScrollReveal>
       </div>
 
@@ -289,6 +307,12 @@ export default async function Home() {
       </div>
     </div>
   );
+}
+
+/** Vrai si cette entrée du sommaire est celle que la période met en avant. */
+function isFocused(section: { href: string }, focus: "draft" | "market" | null): boolean {
+  if (!focus) return false;
+  return focus === "draft" ? section.href === "/draft" : section.href === "/marche";
 }
 
 function SectionLabel({ index, title }: { index: string; title: string }) {

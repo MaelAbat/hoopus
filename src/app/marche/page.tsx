@@ -10,7 +10,8 @@ import {
   seasonStatusLabel,
 } from "@/lib/season";
 import { getLeagueState } from "@/lib/league-season";
-import { estimateSeasonPhases, type PhaseKey, type SeasonPhase } from "@/lib/season-phases";
+import { type PhaseKey } from "@/lib/season-phases";
+import { getSeasonPhases } from "@/lib/season-phases-db";
 import type { MarketEvent } from "@/lib/market";
 import MarketView from "@/components/MarketView";
 import PageBanner from "@/components/PageBanner";
@@ -61,7 +62,7 @@ export default async function MarchePage({
 
   const previous = seasonBefore(season);
 
-  const [rows, { data: earliest }, { data: phaseRows }, { count: pickCount }, rosterRows] =
+  const [rows, { data: earliest }, { count: pickCount }, rosterRows, phases] =
     await Promise.all([
       // Lecture paginée : une saison dépasse le millier de mouvements, et
       // PostgREST tronque à mille sans le dire. Les compteurs de la page se
@@ -83,10 +84,6 @@ export default async function MarchePage({
       // saisons s'en déduit, sans rapatrier des milliers de lignes pour les
       // dédoublonner.
       supabase.from("league_events").select("season").order("season").limit(1),
-      supabase
-        .from("season_phases")
-        .select("season, phase, starts_on, ends_on, is_estimated")
-        .eq("season", season),
       supabase.from("draft_picks").select("*", { count: "exact", head: true }).eq("season", season),
       // Effectif de la saison précédente : il seul permet de distinguer une
       // prolongation d'une arrivée, la source ne le disant jamais.
@@ -99,6 +96,7 @@ export default async function MarchePage({
             .range(from, to),
         { label: `effectifs ${previous}` }
       ),
+      getSeasonPhases(season),
     ]);
 
   const events: MarketEvent[] = rows.map((row) => ({
@@ -118,18 +116,6 @@ export default async function MarchePage({
     raw: row.raw,
   }));
 
-  // Les périodes en base peuvent être incomplètes tant qu'aucune
-  // synchronisation n'est passée : on complète par les estimations, comme le
-  // fait le sync, pour que la frise ne soit jamais vide.
-  const stored: SeasonPhase[] = (phaseRows || []).map((row) => ({
-    season: row.season,
-    phase: row.phase as PhaseKey,
-    startsOn: row.starts_on,
-    endsOn: row.ends_on ?? row.starts_on,
-    isEstimated: row.is_estimated,
-  }));
-  const known = new Set(stored.map((p) => p.phase));
-  const phases = [...stored, ...estimateSeasonPhases(season).filter((p) => !known.has(p.phase))];
 
   const firstSeason = earliest?.[0]?.season;
   const availableSeasons = buildSeasonOptions(
