@@ -117,10 +117,23 @@ export const TEAM_NICKNAMES: Record<string, string> = {
   POR: "Trail Blazers", SAC: "Kings", SAS: "Spurs", TOR: "Raptors",
   UTA: "Jazz", WAS: "Wizards",
 
-  // Tricodes historiques, encore présents dans les archives de mouvements.
+  // ── Franchises disparues ou renommées ──
+  // Les archives de draft remontent à 1950 : un tableau rempli de « SYR » et
+  // « FTW » serait illisible pour qui n'a pas l'histoire de la ligue en tête.
   SEA: "SuperSonics", NJN: "Nets", VAN: "Grizzlies", NOH: "Hornets",
   NOK: "Hornets", CHH: "Hornets", WSB: "Bullets", SDC: "Clippers",
   KCK: "Kings", SFW: "Warriors", NYN: "Nets",
+  MNL: "Lakers", PHW: "Warriors", SYR: "Nationals", ROC: "Royals",
+  FTW: "Pistons", STL: "Hawks", MLH: "Hawks", TRI: "Blackhawks",
+  BLB: "Bullets", BAL: "Bullets", CAP: "Bullets", CHP: "Packers",
+  CHZ: "Zephyrs", CIN: "Royals", KCO: "Kings", SDR: "Rockets",
+  BUF: "Braves", NOJ: "Jazz", INO: "Olympians", WSC: "Capitols",
+  CHS: "Stags", STB: "Bombers", AND: "Packers", DNN: "Nuggets",
+  DNR: "Rockets", NYA: "Americans", PIT: "Ironmen", CLR: "Rebels",
+  TRH: "Huskies", PRO: "Steamrollers", INJ: "Jets",
+  // Ces deux-là n'ont jamais eu de surnom d'usage courant en français : la ville
+  // fait office de nom.
+  SHE: "Sheboygan", WAT: "Waterloo",
 };
 
 /** Surnom d'une équipe, ou son tricode s'il est inconnu. */

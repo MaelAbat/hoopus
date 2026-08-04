@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { OG_IMAGE } from "@/lib/seo";
 import { seasonBefore, seasonStartYear } from "@/lib/season";
-import { teamLogoUrl, teamNickname } from "@/lib/nba-teams";
+import { teamNickname } from "@/lib/nba-teams";
+import TeamMark from "@/components/TeamMark";
 import PageBanner from "@/components/PageBanner";
 import ScrollReveal from "@/components/ScrollReveal";
 
@@ -55,7 +56,7 @@ export default async function DraftSeasonPage({ params }: { params: Promise<{ se
   const draftYear = seasonStartYear(season);
   const supabase = await createClient();
 
-  const [{ data: picks }, { data: lottery }] = await Promise.all([
+  const [{ data: picks }, { data: lottery }, { count: marketEvents }] = await Promise.all([
     supabase
       .from("draft_picks")
       .select("pick_overall, round, pick_in_round, team_tricode, player_name, player_id, college")
@@ -66,11 +67,17 @@ export default async function DraftSeasonPage({ params }: { params: Promise<{ se
       .select("team_tricode, pre_lottery_rank, wins, losses, odds_top1, tied")
       .eq("draft_year", draftYear)
       .order("pre_lottery_rank"),
+    // Les drafts remontent à 1950, le marché à 2015-16 : inutile de proposer un
+    // lien vers une page de mouvements qui n'existent pas.
+    supabase.from("league_events").select("*", { count: "exact", head: true }).eq("season", season),
   ]);
 
   const rows = (picks || []) as DraftPick[];
   const board = (lottery || []) as LotteryTeam[];
-  const rounds = [...new Set(rows.map((p) => p.round))].sort();
+  // Tri numérique explicite : `sort()` compare des chaînes, ce qui donnait
+  // 1, 10, 11, 12, 2… sur les drafts d'avant 1989, qui comptaient jusqu'à
+  // vingt-et-un tours.
+  const rounds = [...new Set(rows.map((p) => p.round))].sort((a, b) => a - b);
   const firstPick = rows.find((p) => p.pick_overall === 1);
 
   return (
@@ -85,12 +92,14 @@ export default async function DraftSeasonPage({ params }: { params: Promise<{ se
         variant="players"
         extra={
           <div className="flex flex-wrap items-center gap-3">
-            <Link
-              href={`/marche?season=${season}`}
-              className="inline-flex items-center border border-rule px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-text-muted transition-colors hover:border-accent hover:text-accent"
-            >
-              Marché {season}
-            </Link>
+            {(marketEvents ?? 0) > 0 && (
+              <Link
+                href={`/marche?season=${season}`}
+                className="inline-flex items-center border border-rule px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-text-muted transition-colors hover:border-accent hover:text-accent"
+              >
+                Marché {season}
+              </Link>
+            )}
             <Link
               href="/draft"
               className="inline-flex items-center border border-rule px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-text-muted transition-colors hover:border-accent hover:text-accent"
@@ -147,7 +156,7 @@ export default async function DraftSeasonPage({ params }: { params: Promise<{ se
                             </td>
                             <td className="px-3 py-2">
                               <span className="flex items-center gap-2">
-                                <img src={teamLogoUrl(pick.team_tricode)} alt="" className="h-5 w-5 object-contain" />
+                                <TeamMark tricode={pick.team_tricode} />
                                 <span className="text-sm text-text-primary">{teamNickname(pick.team_tricode)}</span>
                               </span>
                             </td>
@@ -207,7 +216,7 @@ export default async function DraftSeasonPage({ params }: { params: Promise<{ se
                           </td>
                           <td className="px-3 py-2">
                             <span className="flex items-center gap-2">
-                              <img src={teamLogoUrl(row.team_tricode)} alt="" className="h-5 w-5 object-contain" />
+                              <TeamMark tricode={row.team_tricode} />
                               <span className="text-sm text-text-primary">{teamNickname(row.team_tricode)}</span>
                               {row.tied && (
                                 <span

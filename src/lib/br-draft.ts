@@ -36,6 +36,16 @@ export function draftPageUrl(year: number): string {
   return `https://www.basketball-reference.com/draft/NBA_${year}.html`;
 }
 
+/**
+ * Première draft de la NBA.
+ *
+ * La ligue naît en août 1949 de la fusion entre la BAA et la NBL : les drafts de
+ * 1947 à 1949 sont des drafts BAA, que Basketball Reference sert d'ailleurs sous
+ * un autre préfixe (`NBA_1949.html` renvoie 404, `BAA_1949.html` répond). Elles
+ * sont volontairement hors périmètre.
+ */
+export const FIRST_NBA_DRAFT = 1950;
+
 /** Cellules d'une ligne, indexées par `data-stat`. */
 function cells(row: string): Map<string, string> {
   const map = new Map<string, string>();

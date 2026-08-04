@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { teamLogoUrl, teamNickname } from "@/lib/nba-teams";
+import { teamNickname } from "@/lib/nba-teams";
+import TeamMark from "./TeamMark";
 
 /**
  * Tableau des drafts, année par année.
@@ -82,7 +83,7 @@ export default function DraftIndexTable({ rows }: { rows: DraftIndexRow[] }) {
 
               <td className="px-3 py-2">
                 <span className="flex items-center gap-2">
-                  <img src={teamLogoUrl(row.teamTricode)} alt="" className="h-5 w-5 object-contain" />
+                  <TeamMark tricode={row.teamTricode} />
                   <span className="text-sm text-text-muted">{teamNickname(row.teamTricode)}</span>
                 </span>
               </td>
@@ -90,11 +91,7 @@ export default function DraftIndexTable({ rows }: { rows: DraftIndexRow[] }) {
               <td className="px-3 py-2">
                 {row.favourite ? (
                   <span className="flex items-center gap-2">
-                    <img
-                      src={teamLogoUrl(row.favourite.teamTricode)}
-                      alt=""
-                      className="h-4 w-4 object-contain"
-                    />
+                    <TeamMark tricode={row.favourite.teamTricode} size={16} />
                     <span className="text-[11px] text-text-muted">
                       {teamNickname(row.favourite.teamTricode)}
                     </span>

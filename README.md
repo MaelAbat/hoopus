@@ -68,7 +68,13 @@ To run a sync manually from the command line:
 npm run sync          # full sync
 npm run sync:history  # backfill historical games
 npm run sync:market   # backfill the transaction market and drafts (2015-16 → today)
+npm run sync:market -- --drafts-since 1950   # every NBA draft, no transactions
 ```
+
+Drafts and transactions have different horizons on purpose. Transactions start in
+2015-16, like the rest of the site: earlier than that, no rosters or standings exist
+to give them meaning. A draft stands on its own, so the archive goes back to 1950 —
+the first NBA draft, the 1947-1949 ones having been run by the BAA.
 
 `sync:market` is deliberately kept out of the cron: it reads one Basketball Reference
 page per season at a polite 3.2s interval, which is far beyond the 60s a serverless
