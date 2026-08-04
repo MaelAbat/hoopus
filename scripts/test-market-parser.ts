@@ -330,6 +330,31 @@ console.log("\n--- deux sources, un seul mouvement ---");
 
   const autre = parseEspnSentence("Signed F Dalen Terry to a contract.", "2026-07-26", "PHI", new Map())!;
   check("deux joueurs distincts restent distincts", semanticKey(br) === semanticKey(autre), false);
+
+  // Charlotte a signé Caleb Martin deux fois le 19 octobre 2019, en two-way puis
+  // en pluriannuel : deux mouvements réels, que la clé ne doit pas confondre.
+  const base = { event_date: "2019-10-19", kind: "signature" as const, teams: ["CHA"], players: [{ name: "Caleb Martin" }] };
+  check(
+    "deux contrats le même jour restent deux mouvements",
+    semanticKey({ ...base, contract: { type: "two_way", detail: null } }) ===
+      semanticKey({ ...base, contract: { type: "multi_year", detail: null } }),
+    false
+  );
+  check(
+    "même contrat, même mouvement",
+    semanticKey({ ...base, contract: { type: "two_way", detail: null } }) ===
+      semanticKey({ ...base, contract: { type: "two_way", detail: null } }),
+    true
+  );
+
+  // Les lignes incomplètes de BR n'ont aucun joueur : elles partagent date, type
+  // et équipe tout en décrivant des choix différents. Aucune clé, donc aucune
+  // fusion possible.
+  check(
+    "un mouvement sans joueur n'est comparable à rien",
+    semanticKey({ event_date: "2021-03-25", kind: "trade", teams: ["BOS"], players: [], contract: null }),
+    null
+  );
 }
 
 /* ── Mouvements d'effectif ── */

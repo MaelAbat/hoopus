@@ -253,53 +253,90 @@ export async function syncSeasonTransactions(
 }
 
 /**
+ * Le même mouvement, raconté deux fois dans un même lot.
+ *
+ * ESPN publie une entrée par équipe : un échange entre deux clubs arrive donc
+ * deux fois, vu de chaque côté, et un échange à trois équipes trois fois. Les
+ * deux récits portent la même information une fois analysés — on garde le plus
+ * complet, celui qui cite le plus de joueurs et d'actifs.
+ */
+function collapseWithinBatch(events: ParsedEvent[]): { kept: ParsedEvent[]; dropped: number } {
+  const best = new Map<string, ParsedEvent>();
+
+  const unmatched: ParsedEvent[] = [];
+
+  for (const event of events) {
+    const key = semanticKey(event);
+    // Un mouvement sans joueur nommé n'est comparable à aucun autre : il passe
+    // sans filtre plutôt que d'en écraser un différent.
+    if (!key) {
+      unmatched.push(event);
+      continue;
+    }
+    const current = best.get(key);
+    if (!current) {
+      best.set(key, event);
+      continue;
+    }
+    const richness = (e: ParsedEvent) => e.players.length + e.assets.length;
+    if (richness(event) > richness(current)) best.set(key, event);
+  }
+
+  const kept = [...best.values(), ...unmatched];
+  return { kept, dropped: events.length - kept.length };
+}
+
+/**
  * Écarte les mouvements déjà connus sous une autre plume.
  *
  * Deux sources décrivent la même signature avec des mots différents, donc avec
  * des empreintes de texte différentes : sans ce filtre, ESPN rejouerait ce que
  * Basketball Reference a déjà écrit, et inversement le jour où BR rattrape son
- * retard. La comparaison porte sur le sens du mouvement (voir `semanticKey`).
+ * retard. La comparaison porte sur le sens du mouvement (voir `semanticKey`), et
+ * s'applique aussi à l'intérieur du lot.
  *
  * Un mouvement déjà présent avec la *même* empreinte de texte n'est pas écarté :
  * c'est la même ligne, que l'upsert doit pouvoir mettre à jour.
  */
 export async function filterAlreadyKnown(
   supabase: Client,
-  events: ParsedEvent[]
+  incoming: ParsedEvent[]
 ): Promise<{ kept: ParsedEvent[]; dropped: number }> {
-  if (events.length === 0) return { kept: [], dropped: 0 };
+  if (incoming.length === 0) return { kept: [], dropped: 0 };
 
+  const { kept: events, dropped: withinBatch } = collapseWithinBatch(incoming);
   const dates = events.map((e) => e.event_date).sort();
   const { data, error } = await supabase
     .from("league_events")
-    .select("event_key, event_date, kind, teams, players")
+    .select("event_key, event_date, kind, teams, players, contract")
     .gte("event_date", dates[0])
     .lte("event_date", dates[dates.length - 1]);
 
   if (error) {
     console.warn(`[MARKET] comparaison impossible, écriture sans filtre : ${error.message}`);
-    return { kept: events, dropped: 0 };
+    return { kept: events, dropped: withinBatch };
   }
 
   const known = new Map<string, string>();
   for (const row of data || []) {
-    known.set(
-      semanticKey({
-        event_date: row.event_date,
-        kind: row.kind,
-        teams: row.teams ?? [],
-        players: row.players ?? [],
-      }),
-      row.event_key
-    );
+    const key = semanticKey({
+      event_date: row.event_date,
+      kind: row.kind,
+      teams: row.teams ?? [],
+      players: row.players ?? [],
+      contract: row.contract ?? null,
+    });
+    if (key) known.set(key, row.event_key);
   }
 
   const kept = events.filter((event) => {
-    const existing = known.get(semanticKey(event));
+    const key = semanticKey(event);
+    if (!key) return true;
+    const existing = known.get(key);
     return existing === undefined || existing === event.event_key;
   });
 
-  return { kept, dropped: events.length - kept.length };
+  return { kept, dropped: withinBatch + (events.length - kept.length) };
 }
 
 function toEventRow(event: ParsedEvent, phases: SeasonPhase[]) {

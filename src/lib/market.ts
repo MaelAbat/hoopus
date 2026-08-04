@@ -401,8 +401,8 @@ export function semanticKey(event: {
   kind: EventKind;
   teams: string[];
   players: { name: string }[];
-}): string {
-  const teams = [...event.teams].sort().join(",");
+  contract?: EventContract | null;
+}): string | null {
   const players = event.players
     .map((p) =>
       p.name
@@ -412,9 +412,21 @@ export function semanticKey(event: {
         .replace(/[^a-z ]/g, "")
         .trim()
     )
-    .sort()
-    .join(",");
-  return `${event.event_date}|${event.kind}|${teams}|${players}`;
+    .filter(Boolean)
+    .sort();
+
+  // Sans joueur nommé, deux mouvements ne sont pas comparables : les lignes
+  // incomplètes de Basketball Reference (« The traded FROM_TRADE to the Boston
+  // Celtics ») partagent date, type et équipe tout en décrivant des choix de
+  // draft différents. Les confondre effacerait de l'information.
+  if (players.length === 0) return null;
+
+  // La nature du contrat fait partie du sens : Charlotte a signé Caleb Martin
+  // deux fois le 19 octobre 2019, en two-way puis en pluriannuel. Sans elle, ces
+  // deux mouvements bien réels n'en feraient qu'un.
+  const teams = [...event.teams].sort().join(",");
+  const contract = event.contract?.type ?? "";
+  return `${event.event_date}|${event.kind}|${teams}|${players.join(",")}|${contract}`;
 }
 
 /* ─── Récapitulatifs ─── */
