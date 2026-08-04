@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { fetchAllRows } from "@/lib/supabase/paginate";
 import { OG_IMAGE } from "@/lib/seo";
 import { seasonFromStartYear } from "@/lib/season";
-import { teamLogoUrl, teamNickname } from "@/lib/nba-teams";
+import DraftIndexTable, { type DraftIndexRow } from "@/components/DraftIndexTable";
 import PageBanner from "@/components/PageBanner";
 import ScrollReveal from "@/components/ScrollReveal";
 
@@ -74,12 +74,33 @@ export default async function DraftIndexPage() {
     byYear.set(row.draft_year, (byYear.get(row.draft_year) || 0) + 1);
   }
 
-  const rows = ((topPicks || []) as PickRow[]).filter((row) => byYear.has(row.draft_year));
-
   const favouriteByYear = new Map<number, LotteryFavourite>();
   for (const row of (favourites || []) as LotteryFavourite[]) {
     favouriteByYear.set(row.draft_year, row);
   }
+
+  const rows: DraftIndexRow[] = ((topPicks || []) as PickRow[])
+    .filter((row) => byYear.has(row.draft_year))
+    .map((row) => {
+      const favourite = favouriteByYear.get(row.draft_year);
+      return {
+        draftYear: row.draft_year,
+        season: seasonFromStartYear(row.draft_year),
+        teamTricode: row.team_tricode,
+        playerName: row.player_name,
+        playerId: row.player_id,
+        college: row.college,
+        pickCount: byYear.get(row.draft_year) ?? 0,
+        favourite: favourite
+          ? {
+              teamTricode: favourite.team_tricode,
+              wins: favourite.wins,
+              losses: favourite.losses,
+              oddsTop1: favourite.odds_top1,
+            }
+          : null,
+      };
+    });
 
   return (
     <div className="mx-auto max-w-6xl space-y-8">
@@ -114,88 +135,7 @@ export default async function DraftIndexPage() {
               </span>
             </header>
 
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[760px] text-sm">
-                <thead>
-                  <tr className="border-b border-rule bg-input/30 text-left">
-                    <th className="w-20 px-4 py-1.5 kicker text-text-faint">Draft</th>
-                    <th className="px-3 py-1.5 kicker text-text-faint">Premier choix</th>
-                    <th className="px-3 py-1.5 kicker text-text-faint">Par</th>
-                    <th className="px-3 py-1.5 kicker text-text-faint">Meilleures chances à la loterie</th>
-                    <th className="px-3 py-1.5 kicker text-text-faint text-right">Choix</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((row) => (
-                    <tr key={row.draft_year} className="border-t border-rule transition-colors hover:bg-card-hover">
-                      <td className="px-4 py-2">
-                        <Link
-                          href={`/draft/${seasonFromStartYear(row.draft_year)}`}
-                          className="tnum font-mono text-xs font-bold text-text-primary transition-colors hover:text-accent"
-                        >
-                          {row.draft_year}
-                        </Link>
-                      </td>
-                      <td className="px-3 py-2">
-                        {row.player_id ? (
-                          <Link
-                            href={`/joueurs/${row.player_id}`}
-                            className="text-sm font-semibold text-text-primary underline decoration-rule underline-offset-2 transition-colors hover:text-accent hover:decoration-accent"
-                          >
-                            {row.player_name}
-                          </Link>
-                        ) : (
-                          <span className="text-sm font-semibold text-text-primary">
-                            {row.player_name ?? "Choix non exercé"}
-                          </span>
-                        )}
-                        {row.college && (
-                          <span className="ml-2 text-[11px] text-text-faint">{row.college}</span>
-                        )}
-                      </td>
-                      <td className="px-3 py-2">
-                        <span className="flex items-center gap-2">
-                          <img src={teamLogoUrl(row.team_tricode)} alt="" className="h-5 w-5 object-contain" />
-                          <span className="text-sm text-text-muted">{teamNickname(row.team_tricode)}</span>
-                        </span>
-                      </td>
-                      <td className="px-3 py-2">
-                        {(() => {
-                          const favourite = favouriteByYear.get(row.draft_year);
-                          if (!favourite) {
-                            return <span className="text-[11px] italic text-text-faint">grille indisponible</span>;
-                          }
-                          return (
-                            <span className="flex items-center gap-2">
-                              <img
-                                src={teamLogoUrl(favourite.team_tricode)}
-                                alt=""
-                                className="h-4 w-4 object-contain"
-                              />
-                              <span className="text-[11px] text-text-muted">
-                                {teamNickname(favourite.team_tricode)}
-                              </span>
-                              <span className="tnum font-mono text-[10px] text-text-faint">
-                                {favourite.wins}–{favourite.losses}
-                                {favourite.odds_top1 != null ? ` · ${favourite.odds_top1} %` : ""}
-                              </span>
-                            </span>
-                          );
-                        })()}
-                      </td>
-                      <td className="px-3 py-2 text-right">
-                        <Link
-                          href={`/draft/${seasonFromStartYear(row.draft_year)}`}
-                          className="tnum font-mono text-xs text-text-muted transition-colors hover:text-accent"
-                        >
-                          {byYear.get(row.draft_year)}
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <DraftIndexTable rows={rows} />
           </section>
         </ScrollReveal>
       )}
