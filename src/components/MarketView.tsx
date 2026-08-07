@@ -18,6 +18,7 @@ import {
   KIND_ORDER,
   MINOR_KINDS,
   mostMovedPlayers,
+  resolveEventPhases,
   rosterMoves,
   teamBalances,
   tradeFlows,
@@ -26,10 +27,10 @@ import {
   type MarketEvent,
   type MovedPlayer,
   type RosterMoves,
+  type TeamBalance,
 } from "@/lib/market";
 import {
   formatPhaseDate,
-  phaseForDate,
   PHASE_DESCRIPTIONS,
   PHASE_LABELS,
   PHASE_ORDER,
@@ -67,7 +68,24 @@ interface Props {
    * l'interface le dit plutôt que de les ranger ailleurs.
    */
   canDetectExtensions: boolean;
+  /**
+   * Période sur laquelle ouvrir, calculée côté serveur pour que le rendu initial
+   * ne dépende pas de l'horloge du navigateur.
+   */
+  defaultPhase: PhaseKey;
 }
+
+/** Les trois lectures d'une même période. */
+type ViewKey = "timeline" | "rosters" | "balance";
+
+const VIEWS: { key: ViewKey; label: string }[] = [
+  { key: "timeline", label: "Chronologie" },
+  { key: "rosters", label: "Effectifs" },
+  { key: "balance", label: "Bilan" },
+];
+
+/** Valeur du sélecteur de période qui lève la restriction. */
+const ALL_PHASES = "";
 
 export default function MarketView({
   season,
@@ -79,35 +97,21 @@ export default function MarketView({
   previousRoster,
   canDetectExtensions,
   contractTerms,
+  defaultPhase,
 }: Props) {
   const [search, setSearch] = useState("");
   const [kind, setKind] = useState(isKind(initialKind) ? initialKind : "");
   const [team, setTeam] = useState(initialTeam?.toUpperCase() ?? "");
-  const [phase, setPhase] = useState(initialPhase ?? "");
+  // La période n'est pas un filtre parmi d'autres mais la navigation principale :
+  // la page s'ouvre sur une période, jamais sur la saison entière. Tout empiler
+  // donnait une page où l'on ne savait plus ce qu'on regardait.
+  const [phase, setPhase] = useState<string>(initialPhase ?? defaultPhase);
+  const [view, setView] = useState<ViewKey>("timeline");
   const [showMinor, setShowMinor] = useState(false);
   const [limit, setLimit] = useState(PAGE_SIZE);
   const [sortKey, setSortKey] = useState<SortKey>("total");
-  const [showStats, setShowStats] = useState(false);
 
-  /**
-   * La période est recalculée à l'affichage plutôt que lue telle quelle.
-   *
-   * La colonne `phase` est écrite au moment de la synchronisation : affiner la
-   * définition d'une période laisserait sinon les anciens mouvements rangés selon
-   * l'ancienne, jusqu'au prochain passage du sync. Le calcul ici garantit que la
-   * frise et les filtres disent la même chose que les dates affichées.
-   */
-  const dated = useMemo(() => {
-    const cache = new Map<string, PhaseKey | null>();
-    return events.map((event) => {
-      let phase = cache.get(event.event_date);
-      if (phase === undefined) {
-        phase = phaseForDate(event.event_date, phases);
-        cache.set(event.event_date, phase);
-      }
-      return event.phase === phase ? event : { ...event, phase };
-    });
-  }, [events, phases]);
+  const dated = useMemo(() => resolveEventPhases(events, phases), [events, phases]);
 
   /**
    * Les allers-retours en G League sont écartés d'emblée, sauf demande
@@ -189,13 +193,20 @@ export default function MarketView({
     return names.size;
   }, [filtered]);
 
-  const hasFilter = !!(kind || team || phase || search);
+  // La période ne compte pas comme un filtre : elle est toujours posée, et la
+  // remettre à zéro voudrait dire « toute la saison », ce qui n'est pas ce
+  // qu'attend quelqu'un qui efface une recherche.
+  const hasFilter = !!(kind || team || search);
 
   function reset() {
     setKind("");
     setTeam("");
-    setPhase("");
     setSearch("");
+    setLimit(PAGE_SIZE);
+  }
+
+  function goToPhase(next: string) {
+    setPhase(next);
     setLimit(PAGE_SIZE);
   }
 
@@ -210,20 +221,18 @@ export default function MarketView({
     );
   }
 
-  return (
-    <div className="space-y-6">
-      {/* ── Synthèse ── */}
-      <div className="flex flex-wrap gap-3">
-        <StatCard value={filtered.length} label="Mouvements" accent />
-        <StatCard value={filtered.filter((e) => e.kind === "trade").length} label="Échanges" />
-        <StatCard value={filtered.filter((e) => e.kind === "signature").length} label="Signatures" />
-        <StatCard value={filtered.filter((e) => e.kind === "waiver").length} label="Coupes" />
-        <StatCard value={playersInvolved} label="Joueurs concernés" />
-      </div>
+  const activeDefinition = phase ? phases.find((p) => p.phase === phase) : undefined;
+  const activeLabel = phase ? PHASE_LABELS[phase as PhaseKey] : "Toute la saison";
 
-      {/* ── Frise des périodes ── */}
-      <section className="border border-rule bg-card">
-        <header className="flex items-center justify-between border-b border-rule bg-input/50 px-4 py-2.5">
+  return (
+    <div className="space-y-5">
+      {/* ── Navigation par période ──
+          Une saison se lit par temps forts : draft, free agency, saison
+          régulière… Les cumuler produisait une page où l'on ne savait plus de
+          quoi on parlait. On en montre donc un à la fois, et « toute la saison »
+          reste accessible en dernier onglet, pour qui le demande. */}
+      <nav className="border border-rule bg-card">
+        <div className="flex items-center justify-between gap-2 border-b border-rule bg-input/50 px-4 py-2.5">
           <h2 className="kicker text-text-muted">Les temps de la saison</h2>
           {phases.some((p) => p.isEstimated) && (
             <span
@@ -233,51 +242,106 @@ export default function MarketView({
               Dates estimées
             </span>
           )}
-        </header>
-        <div className="grid grid-cols-2 divide-rule sm:grid-cols-4 lg:grid-cols-7 lg:divide-x">
+        </div>
+
+        <div className="flex overflow-x-auto">
           {PHASE_ORDER.map((key) => {
-            const definition = phases.find((p) => p.phase === key);
             const count = phaseCounts.get(key) || 0;
             const active = phase === key;
+            const definition = phases.find((p) => p.phase === key);
+            // Une période sans mouvement ne mène nulle part : la loterie, par
+            // construction, n'en produit aucun. On la montre — elle fait partie
+            // de la saison — mais on n'y envoie pas l'utilisateur pour rien.
+            const reachable = count > 0;
             return (
               <button
                 key={key}
-                onClick={() => {
-                  setPhase(active ? "" : key);
-                  setLimit(PAGE_SIZE);
-                }}
+                type="button"
+                disabled={!reachable}
+                onClick={() => goToPhase(key)}
                 title={PHASE_DESCRIPTIONS[key]}
-                className={`border-b border-rule px-3 py-3 text-left transition-colors lg:border-b-0 ${
-                  active ? "bg-accent-light" : "hover:bg-card-hover"
+                className={`min-w-[7.5rem] flex-1 border-r border-rule px-3 py-2.5 text-left transition-colors last:border-r-0 ${
+                  active
+                    ? "bg-accent-light"
+                    : reachable
+                      ? "hover:bg-card-hover"
+                      : "cursor-not-allowed opacity-40"
                 }`}
               >
                 <p
-                  className={`font-mono text-[10px] font-bold uppercase tracking-wider ${
+                  className={`truncate font-mono text-[10px] font-bold uppercase tracking-wider ${
                     active ? "text-accent" : "text-text-muted"
                   }`}
                 >
                   {PHASE_LABELS[key]}
                 </p>
-                {/* Un tiret plutôt qu'un zéro : la loterie, notamment, ne produit
-                    aucun mouvement par elle-même. Un compteur à zéro se lirait
-                    comme une donnée manquante. */}
                 <p
-                  className={`tnum mt-1 font-display text-xl ${
-                    count > 0 ? "text-text-primary" : "text-text-faint"
+                  className={`tnum mt-0.5 font-display text-lg leading-none ${
+                    reachable ? "text-text-primary" : "text-text-faint"
                   }`}
                 >
-                  {count > 0 ? count : "—"}
+                  {reachable ? count : "—"}
                 </p>
                 {definition && (
-                  <p className="tnum mt-0.5 font-mono text-[10px] text-text-faint">
+                  <p className="tnum mt-1 truncate font-mono text-[10px] text-text-faint">
                     {formatPhaseDate(definition.startsOn)}
                   </p>
                 )}
               </button>
             );
           })}
+
+          <button
+            type="button"
+            onClick={() => goToPhase(ALL_PHASES)}
+            title="Tous les mouvements de la saison, toutes périodes confondues."
+            className={`min-w-[7.5rem] flex-1 border-l-2 border-rule px-3 py-2.5 text-left transition-colors ${
+              phase === ALL_PHASES ? "bg-accent-light" : "hover:bg-card-hover"
+            }`}
+          >
+            <p
+              className={`truncate font-mono text-[10px] font-bold uppercase tracking-wider ${
+                phase === ALL_PHASES ? "text-accent" : "text-text-muted"
+              }`}
+            >
+              Toute la saison
+            </p>
+            <p className="tnum mt-0.5 font-display text-lg leading-none text-text-primary">
+              {visible.length}
+            </p>
+            <p className="mt-1 truncate font-mono text-[10px] text-text-faint">{season}</p>
+          </button>
         </div>
-      </section>
+
+        {/* Ce qu'on regarde, dit en une phrase — l'onglet seul ne suffit pas. */}
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-t border-rule px-4 py-2.5">
+          <h3 className="font-display text-base uppercase leading-none text-text-primary">
+            {activeLabel}
+          </h3>
+          {activeDefinition && (
+            <span className="tnum font-mono text-[10px] uppercase tracking-wider text-text-faint">
+              {formatPhaseDate(activeDefinition.startsOn)}
+              {activeDefinition.endsOn !== activeDefinition.startsOn && (
+                <> → {formatPhaseDate(activeDefinition.endsOn)}</>
+              )}
+            </span>
+          )}
+          <p className="min-w-0 flex-1 text-xs text-text-muted">
+            {phase
+              ? PHASE_DESCRIPTIONS[phase as PhaseKey]
+              : "Tous les mouvements de la saison, toutes périodes confondues."}
+          </p>
+        </div>
+      </nav>
+
+      {/* ── Synthèse de la période ── */}
+      <div className="flex flex-wrap gap-3">
+        <StatCard value={filtered.length} label="Mouvements" accent />
+        <StatCard value={filtered.filter((e) => e.kind === "trade").length} label="Échanges" />
+        <StatCard value={filtered.filter((e) => e.kind === "signature").length} label="Signatures" />
+        <StatCard value={filtered.filter((e) => e.kind === "waiver").length} label="Waivers" />
+        <StatCard value={playersInvolved} label="Joueurs concernés" />
+      </div>
 
       {/* ── Filtres ── */}
       <div className="flex flex-wrap items-center gap-2">
@@ -340,19 +404,55 @@ export default function MarketView({
         )}
       </div>
 
-      {/* ── Mouvements d'effectif ── */}
-      <RosterMovesTable moves={moves} canDetectExtensions={canDetectExtensions} />
-
-      {/* ── Chronologie ── */}
+      {/* ── Une seule lecture à la fois ──
+          Chronologie, effectifs et bilan répondent à trois questions
+          différentes ; les empiler faisait défiler trois grands tableaux pour en
+          consulter un. Les onglets vivent dans l'en-tête de la section, ce qui
+          évite un bloc de plus. */}
       <section className="border border-rule bg-card">
-        <header className="flex flex-wrap items-center justify-between gap-2 border-b border-rule bg-input/50 px-4 py-2.5">
-          <h2 className="kicker text-text-muted">Chronologie</h2>
-          <span className="tnum font-mono text-[10px] uppercase tracking-wider text-text-faint">
+        <header className="flex flex-wrap items-center justify-between gap-2 border-b border-rule bg-input/50">
+          <div className="flex">
+            {VIEWS.map((v) => (
+              <button
+                key={v.key}
+                type="button"
+                onClick={() => setView(v.key)}
+                className={`border-r border-rule px-4 py-2.5 font-mono text-[11px] font-bold uppercase tracking-wider transition-colors ${
+                  view === v.key
+                    ? "bg-card text-text-primary"
+                    : "text-text-faint hover:text-text-muted"
+                }`}
+              >
+                {v.label}
+              </button>
+            ))}
+          </div>
+          <span className="tnum px-4 font-mono text-[10px] uppercase tracking-wider text-text-faint">
             {filtered.length} mouvement{filtered.length > 1 ? "s" : ""}
           </span>
         </header>
 
-        {grouped.length === 0 ? (
+        {view === "rosters" && (
+          <RosterMovesTable moves={moves} canDetectExtensions={canDetectExtensions} embedded />
+        )}
+
+        {view === "balance" && (
+          <BalanceView
+            balances={balances}
+            days={days}
+            movers={movers}
+            sortKey={sortKey}
+            onSort={setSortKey}
+            team={team}
+            onTeam={(t) => {
+              setTeam(t);
+              setLimit(PAGE_SIZE);
+            }}
+          />
+        )}
+
+        {view === "timeline" &&
+          (grouped.length === 0 ? (
           <p className="px-4 py-12 text-center text-sm text-text-muted">
             Aucun mouvement ne correspond à ces filtres
           </p>
@@ -379,9 +479,9 @@ export default function MarketView({
               </div>
             ))}
           </div>
-        )}
+          ))}
 
-        {filtered.length > limit && (
+        {view === "timeline" && filtered.length > limit && (
           <button
             onClick={() => setLimit(limit + PAGE_SIZE * 2)}
             className="w-full border-t border-rule px-4 py-3 font-mono text-[11px] uppercase tracking-wider text-text-muted transition-colors hover:bg-card-hover hover:text-text-primary"
@@ -390,116 +490,123 @@ export default function MarketView({
           </button>
         )}
       </section>
+    </div>
+  );
+}
 
-      {/* ── Statistiques, au second plan ── */}
-      <div>
-        <button
-          onClick={() => setShowStats(!showStats)}
-          className="flex w-full items-center gap-2 border border-rule bg-card px-4 py-2.5 text-left transition-colors hover:bg-card-hover"
-        >
-          <ChevronRight
-            size={14}
-            className={`text-text-faint transition-transform ${showStats ? "rotate-90" : ""}`}
-          />
-          <span className="kicker text-text-muted">Statistiques de la période</span>
-          <span className="ml-auto font-mono text-[10px] uppercase tracking-wider text-text-faint">
-            {showStats ? "masquer" : "afficher"}
-          </span>
-        </button>
+/* ─── Bilan chiffré d'une période ─── */
 
-        {showStats && (
-          <div className="mt-4 space-y-4">
-      {/* ── Bilan par équipe ── */}
-      <section className="border border-rule bg-card">
-        <header className="flex flex-wrap items-center justify-between gap-2 border-b border-rule bg-input/50 px-4 py-2.5">
-          <h2 className="kicker text-text-muted">Bilan par équipe</h2>
-          <span className="font-mono text-[10px] uppercase tracking-wider text-text-faint">
-            {balances.length} équipes actives
-          </span>
-        </header>
+/**
+ * Les volumes, quand on les cherche : combien d'arrivées, quels jours, quels
+ * joueurs. C'est la troisième lecture d'une période, et elle ne s'impose pas —
+ * on y vient par son onglet.
+ */
+function BalanceView({
+  balances,
+  days,
+  movers,
+  sortKey,
+  onSort,
+  team,
+  onTeam,
+}: {
+  balances: TeamBalance[];
+  days: { date: string; count: number; phase: PhaseKey | null }[];
+  movers: { name: string; player_id: number | null; teams: string[]; moves: number }[];
+  sortKey: SortKey;
+  onSort: (key: SortKey) => void;
+  team: string;
+  onTeam: (team: string) => void;
+}) {
+  if (balances.length === 0) {
+    return (
+      <p className="px-4 py-12 text-center text-sm text-text-muted">
+        Aucun mouvement à comptabiliser sur cette période.
+      </p>
+    );
+  }
 
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[620px] text-sm">
-            <thead>
-              <tr className="border-b border-rule bg-input/30 text-left">
-                <th className="px-4 py-1.5 kicker text-text-faint">Équipe</th>
-                <SortableHeader label="Arrivées" name="arrivals" sortKey={sortKey} onSort={setSortKey} />
-                <SortableHeader label="Départs" name="departures" sortKey={sortKey} onSort={setSortKey} />
-                <SortableHeader label="Échanges" name="trades" sortKey={sortKey} onSort={setSortKey} />
-                <SortableHeader label="Signatures" name="signatures" sortKey={sortKey} onSort={setSortKey} />
-                <SortableHeader label="Coupes" name="waivers" sortKey={sortKey} onSort={setSortKey} />
-                <SortableHeader label="Choix" name="pickBalance" sortKey={sortKey} onSort={setSortKey} />
-                <SortableHeader label="Total" name="total" sortKey={sortKey} onSort={setSortKey} />
-              </tr>
-            </thead>
-            <tbody>
-              {sortBalances(balances, sortKey).map((row) => (
-                <tr
-                  key={row.team}
-                  className="border-t border-rule transition-colors hover:bg-card-hover"
-                >
-                  <td className="px-4 py-2">
-                    <button
-                      onClick={() => {
-                        setTeam(team === row.team ? "" : row.team);
-                        setLimit(PAGE_SIZE);
-                      }}
-                      className="flex items-center gap-2 text-left"
-                    >
-                      <img src={teamLogoUrl(row.team)} alt="" className="h-5 w-5 object-contain" />
-                      <span
-                        className={`text-sm ${
-                          team === row.team ? "font-semibold text-accent" : "text-text-primary"
-                        }`}
-                      >
-                        {teamNickname(row.team)}
-                      </span>
-                    </button>
-                  </td>
-                  <Cell value={row.arrivals} />
-                  <Cell value={row.departures} />
-                  <Cell value={row.trades} />
-                  <Cell value={row.signatures} />
-                  <Cell value={row.waivers} />
-                  <td className="px-3 py-2 text-right">
+  return (
+    <div>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[620px] text-sm">
+          <thead>
+            <tr className="border-b border-rule bg-input/30 text-left">
+              <th className="px-4 py-1.5 kicker text-text-faint">Équipe</th>
+              <SortableHeader label="Arrivées" name="arrivals" sortKey={sortKey} onSort={onSort} />
+              <SortableHeader label="Départs" name="departures" sortKey={sortKey} onSort={onSort} />
+              <SortableHeader label="Échanges" name="trades" sortKey={sortKey} onSort={onSort} />
+              <SortableHeader label="Signatures" name="signatures" sortKey={sortKey} onSort={onSort} />
+              <SortableHeader label="Waivers" name="waivers" sortKey={sortKey} onSort={onSort} />
+              <SortableHeader label="Picks" name="pickBalance" sortKey={sortKey} onSort={onSort} />
+              <SortableHeader label="Total" name="total" sortKey={sortKey} onSort={onSort} />
+            </tr>
+          </thead>
+          <tbody>
+            {sortBalances(balances, sortKey).map((row) => (
+              <tr key={row.team} className="border-t border-rule transition-colors hover:bg-card-hover">
+                <td className="px-4 py-2">
+                  <button
+                    onClick={() => onTeam(team === row.team ? "" : row.team)}
+                    className="flex items-center gap-2 text-left"
+                  >
+                    <img src={teamLogoUrl(row.team)} alt="" className="h-5 w-5 object-contain" />
                     <span
-                      className={`tnum font-mono text-xs ${
-                        row.pickBalance > 0
-                          ? "text-accent-text"
-                          : row.pickBalance < 0
-                            ? "text-text-muted"
-                            : "text-text-faint"
+                      className={`text-sm ${
+                        team === row.team ? "font-semibold text-accent" : "text-text-primary"
                       }`}
                     >
-                      {row.pickBalance > 0 ? `+${row.pickBalance}` : row.pickBalance}
+                      {teamNickname(row.team)}
                     </span>
-                  </td>
-                  <td className="px-3 py-2 text-right">
-                    <span className="tnum font-mono text-xs font-bold text-text-primary">{row.total}</span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <p className="border-t border-rule px-4 py-2 text-[11px] text-text-faint">
-          Le solde de choix compte les tours de draft reçus moins ceux cédés sur la période affichée.
-          Les allers-retours en G League n&apos;entrent pas dans ce bilan.
-        </p>
-      </section>
+                  </button>
+                </td>
+                <Cell value={row.arrivals} />
+                <Cell value={row.departures} />
+                <Cell value={row.trades} />
+                <Cell value={row.signatures} />
+                <Cell value={row.waivers} />
+                <td className="px-3 py-2 text-right">
+                  <span
+                    className={`tnum font-mono text-xs ${
+                      row.pickBalance > 0
+                        ? "text-accent-text"
+                        : row.pickBalance < 0
+                          ? "text-text-muted"
+                          : "text-text-faint"
+                    }`}
+                  >
+                    {row.pickBalance > 0 ? `+${row.pickBalance}` : row.pickBalance}
+                  </span>
+                </td>
+                <td className="px-3 py-2 text-right">
+                  <span className="tnum font-mono text-xs font-bold text-text-primary">
+                    {row.total}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="border-t border-rule px-4 py-2 text-[11px] text-text-faint">
+        Le solde de picks compte les tours de draft reçus moins ceux cédés sur la période affichée.
+        Les allers-retours en G League n&apos;entrent pas dans ce bilan.
+      </p>
 
-      {/* ── Deux récapitulatifs courts ── */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        <section className="border border-rule bg-card">
-          <header className="border-b border-rule bg-input/50 px-4 py-2.5">
-            <h2 className="kicker text-text-muted">Journées les plus chargées</h2>
-          </header>
+      <div className="grid border-t border-rule lg:grid-cols-2 lg:divide-x lg:divide-rule">
+        <div>
+          <p className="kicker border-b border-rule bg-input/30 px-4 py-2 text-text-muted">
+            Journées les plus chargées
+          </p>
           {days.length === 0 ? (
             <p className="px-4 py-6 text-center text-sm text-text-muted">Rien à signaler</p>
           ) : (
             <ul>
               {days.map((day) => (
-                <li key={day.date} className="flex items-center gap-3 border-t border-rule px-4 py-2 first:border-t-0">
+                <li
+                  key={day.date}
+                  className="flex items-center gap-3 border-b border-rule/60 px-4 py-2 last:border-b-0"
+                >
                   <span className="tnum text-sm text-text-primary">{formatEventDate(day.date)}</span>
                   {day.phase && (
                     <span className="font-mono text-[10px] uppercase tracking-wider text-text-faint">
@@ -513,12 +620,12 @@ export default function MarketView({
               ))}
             </ul>
           )}
-        </section>
+        </div>
 
-        <section className="border border-rule bg-card">
-          <header className="border-b border-rule bg-input/50 px-4 py-2.5">
-            <h2 className="kicker text-text-muted">Joueurs les plus déplacés</h2>
-          </header>
+        <div className="border-t border-rule lg:border-t-0">
+          <p className="kicker border-b border-rule bg-input/30 px-4 py-2 text-text-muted">
+            Joueurs les plus déplacés
+          </p>
           {movers.length === 0 ? (
             <p className="px-4 py-6 text-center text-sm text-text-muted">Rien à signaler</p>
           ) : (
@@ -526,9 +633,17 @@ export default function MarketView({
               {movers.map((mover) => (
                 <li
                   key={mover.player_id ?? mover.name}
-                  className="flex items-center gap-3 border-t border-rule px-4 py-2 first:border-t-0"
+                  className="flex items-center gap-3 border-b border-rule/60 px-4 py-2 last:border-b-0"
                 >
-                  <PlayerName player={{ name: mover.name, player_id: mover.player_id, br_slug: null, from: null, to: null }} />
+                  <PlayerName
+                    player={{
+                      name: mover.name,
+                      player_id: mover.player_id,
+                      br_slug: null,
+                      from: null,
+                      to: null,
+                    }}
+                  />
                   <span className="font-mono text-[10px] uppercase tracking-wider text-text-faint">
                     {mover.teams.join(" · ")}
                   </span>
@@ -539,10 +654,7 @@ export default function MarketView({
               ))}
             </ul>
           )}
-        </section>
-      </div>
-          </div>
-        )}
+        </div>
       </div>
     </div>
   );
@@ -562,26 +674,33 @@ const NAMES_SHOWN = 6;
 function RosterMovesTable({
   moves,
   canDetectExtensions,
+  /** Rendu à l'intérieur d'une section qui porte déjà son cadre et son en-tête. */
+  embedded = false,
 }: {
   moves: RosterMoves[];
   canDetectExtensions: boolean;
+  embedded?: boolean;
 }) {
   if (moves.length === 0) {
     return (
-      <section className="border border-rule bg-card px-6 py-10 text-center">
-        <p className="text-sm text-text-muted">Aucun mouvement d&apos;effectif sur cette sélection</p>
-      </section>
+      <p className={`text-center text-sm text-text-muted ${embedded ? "px-4 py-12" : "border border-rule bg-card px-6 py-10"}`}>
+        Aucun mouvement d&apos;effectif sur cette période
+      </p>
     );
   }
 
+  const Wrapper = embedded ? "div" : "section";
+
   return (
-    <section className="border border-rule bg-card">
-      <header className="flex flex-wrap items-center justify-between gap-2 border-b border-rule bg-input/50 px-4 py-2.5">
-        <h2 className="kicker text-text-muted">Qui arrive, qui part, qui prolonge</h2>
-        <span className="font-mono text-[10px] uppercase tracking-wider text-text-faint">
-          {moves.length} équipe{moves.length > 1 ? "s" : ""}
-        </span>
-      </header>
+    <Wrapper className={embedded ? "" : "border border-rule bg-card"}>
+      {!embedded && (
+        <header className="flex flex-wrap items-center justify-between gap-2 border-b border-rule bg-input/50 px-4 py-2.5">
+          <h2 className="kicker text-text-muted">Qui arrive, qui part, qui prolonge</h2>
+          <span className="font-mono text-[10px] uppercase tracking-wider text-text-faint">
+            {moves.length} équipe{moves.length > 1 ? "s" : ""}
+          </span>
+        </header>
+      )}
 
       <div className="overflow-x-auto">
         <table className="w-full min-w-[860px] text-sm">
@@ -591,11 +710,11 @@ function RosterMovesTable({
               <th className="px-3 py-1.5 kicker text-text-faint">Arrivées</th>
               <th className="px-3 py-1.5 kicker text-text-faint">Départs</th>
               <th className="px-3 py-1.5 kicker text-text-faint">
-                Prolongations
+                Extensions
                 {!canDetectExtensions && (
                   <span
                     className="ml-1 normal-case text-text-faint"
-                    title="Les prolongations se déduisent de l'effectif de la saison précédente, absent de la base pour cette saison."
+                    title="Les extensions se déduisent de l'effectif de la saison précédente, absent de la base pour cette saison."
                   >
                     (indisponible)
                   </span>
@@ -627,7 +746,7 @@ function RosterMovesTable({
         l&apos;équipe où le joueur évoluait déjà la saison précédente — la source ne les distingue pas
         des arrivées, elles sont déduites des effectifs. Les allers-retours en G League sont exclus.
       </p>
-    </section>
+    </Wrapper>
   );
 }
 

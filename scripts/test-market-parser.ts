@@ -24,7 +24,7 @@ import { buildLotteryBoard, lotteryOdds } from "../src/lib/lottery";
 import { resolveCollege } from "../src/lib/market-sync";
 import { contractTerms, formatMillions, parseContractsPage } from "../src/lib/br-contracts";
 import { classifyEspn, parseEspnSentence, playersInText, splitSentences, teamInText } from "../src/lib/espn-transactions";
-import { eventAction, isMinorMove, KIND_LABELS, MINOR_KINDS, rosterMoves, semanticKey, type MarketEvent } from "../src/lib/market";
+import { defaultMarketPhase, eventAction, isMinorMove, KIND_LABELS, MINOR_KINDS, resolveEventPhases, rosterMoves, semanticKey, type MarketEvent } from "../src/lib/market";
 import { estimateSeasonPhases, phaseForDate, seasonForEventDate } from "../src/lib/season-phases";
 import { seasonStartYear } from "../src/lib/season";
 
@@ -134,7 +134,7 @@ const ANNOTATED = `<p>The <a data-attr-from="DET" href="/teams/DET/2016.html">De
   check("annotation : joueur futur exclu des participants", e.players.map((p) => p.name).includes("Xavier Tillman Sr."), false);
   check("annotation : joueurs reçus", e.players.filter((p) => p.to === "DET").map((p) => p.name), ["Reggie Bullock", "Danny Granger", "Marcus Morris"]);
   check("annotation : le choix reste cédé", e.assets.map((a) => [a.type, a.year, a.round, a.from, a.to]), [["pick", 2020, 2, "DET", "PHX"]]);
-  check("annotation : conservée comme note du choix", e.assets[0].detail, "Xavier Tillman Sr. sélectionné avec ce choix");
+  check("annotation : conservée comme note du choix", e.assets[0].detail, "Xavier Tillman Sr. sélectionné avec ce pick");
   check("annotation : texte brut intact", e.raw.includes("was later selected"), true);
   check("annotation : phrase", eventAction(e as unknown as MarketEvent), "envoie 2e tour 2020 à PHX contre Reggie Bullock, Danny Granger et Marcus Morris");
 }
@@ -176,7 +176,7 @@ const CLAIM = `<p>The <a data-attr-to="PHO" href="/teams/PHO/2026.html">Phoenix 
   const e = parseTransaction(CLAIM, "2025-10-22")!;
   check("ballottage : les deux équipes", [e.from_team, e.to_team], ["LAL", "PHX"]);
   check("ballottage : tricode BR converti", e.teams.includes("PHX"), true);
-  check("ballottage : phrase", eventAction(e as unknown as MarketEvent), "récupère Jordan Goodwin au ballottage (depuis LAL)");
+  check("ballottage : phrase", eventAction(e as unknown as MarketEvent), "récupère Jordan Goodwin aux waivers (depuis LAL)");
 }
 
 const RETIRE = `<p><a href="/players/w/walljo01.html">John Wall</a> announced retirement.</p>`;
@@ -569,6 +569,45 @@ async function live() {
       console.log(`      1er choix : ${picks[0].team_tricode} — ${picks[0].player_name} (${picks[0].college ?? "sans université"})`);
     }
   }
+}
+
+/* ════════════════ Période d'ouverture du Mercato ════════════════ */
+console.log("\n--- période d'ouverture ---");
+{
+  const season = "2025-26";
+  const phases = estimateSeasonPhases(season);
+  const draftDay = phases.find((p) => p.phase === "draft")!.startsOn;
+  const faDay = phases.find((p) => p.phase === "free_agency")!.startsOn;
+  const deadline = phases.find((p) => p.phase === "trade_deadline")!.startsOn;
+
+  const ev = (date: string, kind: MarketEvent["kind"] = "signature"): MarketEvent => ({
+    event_key: date + kind + Math.random(), season, event_date: date, phase: null, kind,
+    teams: ["BOS"], from_team: null, to_team: "BOS", players: [], assets: [], contract: null,
+    detail: null, raw: "",
+  });
+
+  // Les périodes se déduisent des dates, sans faire confiance à la colonne stockée.
+  const resolved = resolveEventPhases([ev(faDay)], phases);
+  check("période recalculée depuis la date", resolved[0].phase, "free_agency");
+
+  // Pendant la saison, on ouvre sur la période du jour si elle a bougé.
+  const events = [ev(draftDay), ev(faDay), ev(faDay), ev(deadline, "trade")];
+  check("un jour de free agency ouvre sur la free agency", defaultMarketPhase(events, phases, faDay), "free_agency");
+  check("un jour de deadline ouvre sur la deadline", defaultMarketPhase(events, phases, deadline), "trade_deadline");
+
+  // Hors saison — ou sur une saison révolue — on ouvre sur la période la plus fournie.
+  check("saison révolue : la période la plus fournie", defaultMarketPhase(events, phases, "2030-01-01"), "free_agency");
+
+  // Une période sans mouvement n'est jamais choisie, même si c'est aujourd'hui.
+  const quiet = [ev(faDay), ev(faDay)];
+  check("période du jour vide -> on retombe sur la plus fournie", defaultMarketPhase(quiet, phases, draftDay), "free_agency");
+
+  // Les allers-retours en G League ne doivent pas décider de la période d'accueil.
+  const minor = [ev(draftDay), ...Array.from({ length: 50 }, () => ev(deadline, "assignment"))];
+  check("G League ignorée dans le choix", defaultMarketPhase(minor, phases, "2030-01-01"), "draft");
+
+  // Aucun mouvement : on ne renvoie pas une période nulle.
+  check("saison vide -> free agency par défaut", defaultMarketPhase([], phases, "2030-01-01"), "free_agency");
 }
 
 (seasons.length > 0 ? live() : Promise.resolve()).then(() => {

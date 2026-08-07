@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
   revalidatePath("/trades");
   revalidatePath("/joueurs");
   revalidatePath("/mini-jeux");
-  revalidatePath("/marche");
+  revalidatePath("/mercato");
   revalidatePath("/draft");
 
   const results = {

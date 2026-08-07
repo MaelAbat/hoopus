@@ -68,7 +68,7 @@ export default async function PlayerMarketHistory({ playerId }: { playerId: numb
                   {eventAction(event)}
                 </p>
                 <Link
-                  href={`/marche?season=${event.season}`}
+                  href={`/mercato?season=${event.season}`}
                   className="mt-0.5 hidden shrink-0 font-mono text-[10px] uppercase tracking-wider text-text-faint transition-colors hover:text-accent sm:block"
                 >
                   {event.season}

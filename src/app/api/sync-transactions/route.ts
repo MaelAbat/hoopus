@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
       console.log(`[SYNC-TRANSACTIONS] ESPN — ${message}`)
     );
 
-    revalidatePath("/marche");
+    revalidatePath("/mercato");
     revalidatePath("/");
 
     const duration = ((Date.now() - startTime) / 1000).toFixed(1);

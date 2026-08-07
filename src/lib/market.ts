@@ -1,5 +1,5 @@
 /**
- * Modèle et vocabulaire du marché NBA.
+ * Modèle et vocabulaire du mercato NBA.
  *
  * Ce module ne lit rien et ne récupère rien : il définit la forme d'un mouvement
  * et sait le dire en français. Les phrases ne sont donc jamais stockées en base —
@@ -10,7 +10,8 @@
  * aussi bien au rendu serveur qu'aux filtres côté client.
  */
 
-import type { PhaseKey } from "./season-phases";
+import { phaseForDate, PHASE_ORDER, type PhaseKey, type SeasonPhase } from "./season-phases";
+import { roundLabel } from "./draft-assets";
 
 export type EventKind =
   | "trade"
@@ -85,9 +86,9 @@ export interface MarketEvent {
 export const KIND_LABELS: Record<EventKind, string> = {
   trade: "Échange",
   signature: "Signature",
-  extension: "Prolongation",
-  waiver: "Coupe",
-  claim: "Ballottage",
+  extension: "Extension",
+  waiver: "Waivers",
+  claim: "Claim",
   conversion: "Conversion",
   option: "Option",
   assignment: "G League",
@@ -135,25 +136,31 @@ export const CONTRACT_LABELS: Record<EventContract["type"], string> = {
 
 /* ─── Mise en français ─── */
 
-/** « 2e tour 2032 », « compensation financière », « trade exception ». */
+/**
+ * « 2e tour 2032 », « cash », « trade exception ».
+ *
+ * Les termes de métier restent en anglais — pick, swap, cash, trade exception,
+ * draft rights — parce que c'est ainsi qu'on les lit et qu'on les dit. Le tour
+ * d'un pick, lui, se dit en français : voir `roundLabel`.
+ */
 export function assetLabel(asset: EventAsset): string {
   switch (asset.type) {
     case "pick": {
-      // Un choix sans tour connu n'est qu'une « compensation de draft » : ESPN
-      // écrit parfois « draft considerations » sans plus de précision, et broder
+      // Un pick sans tour connu n'est qu'une compensation de draft : ESPN écrit
+      // parfois « draft considerations » sans plus de précision, et broder
       // dessus serait inventer.
-      if (!asset.round) return asset.detail || "choix de draft";
-      const round = asset.round === 1 ? "1er tour" : "2e tour";
+      if (!asset.round) return asset.detail || "pick de draft";
+      const round = roundLabel(asset.round);
       return asset.year ? `${round} ${asset.year}` : `${round} (année non précisée)`;
     }
     case "swap":
-      return asset.year ? `échange de choix ${asset.year}` : "échange de choix";
+      return asset.year ? `pick swap ${asset.year}` : "pick swap";
     case "cash":
-      return "compensation financière";
+      return "cash";
     case "exception":
       return "trade exception";
     case "rights":
-      return asset.detail || "droits de draft";
+      return asset.detail || "draft rights";
   }
 }
 
@@ -209,7 +216,7 @@ export function eventAction(event: MarketEvent): string {
     case "waiver":
       return `coupe ${playerNames(event.players)}`;
     case "claim":
-      return `récupère ${playerNames(event.players)} au ballottage${
+      return `récupère ${playerNames(event.players)} aux waivers${
         event.from_team ? ` (depuis ${event.from_team})` : ""
       }`;
     case "conversion":
@@ -548,6 +555,61 @@ export function countByKind(events: MarketEvent[]): { kind: EventKind; count: nu
     kind,
     count: counts.get(kind)!,
   }));
+}
+
+/**
+ * Périodes des mouvements, recalculées plutôt que relues.
+ *
+ * La colonne `phase` est écrite au moment de la synchronisation : affiner la
+ * définition d'une période laisserait sinon les anciens mouvements rangés selon
+ * l'ancienne, jusqu'au prochain passage du sync. Le calcul ici garantit que la
+ * navigation, les compteurs et les dates affichées disent tous la même chose.
+ */
+export function resolveEventPhases(
+  events: MarketEvent[],
+  phases: SeasonPhase[]
+): MarketEvent[] {
+  const cache = new Map<string, PhaseKey | null>();
+  return events.map((event) => {
+    let phase = cache.get(event.event_date);
+    if (phase === undefined) {
+      phase = phaseForDate(event.event_date, phases);
+      cache.set(event.event_date, phase);
+    }
+    return event.phase === phase ? event : { ...event, phase };
+  });
+}
+
+/**
+ * Période sur laquelle ouvrir la rubrique Mercato.
+ *
+ * La page ne montre qu'une période à la fois — voir `MarketView` — il faut donc
+ * en choisir une. La plus utile est celle qu'on est en train de vivre ; sur une
+ * saison révolue, où « en ce moment » ne veut rien dire, c'est celle qui a le
+ * plus bougé.
+ */
+export function defaultMarketPhase(
+  events: MarketEvent[],
+  phases: SeasonPhase[],
+  today: string
+): PhaseKey {
+  const counts = new Map<PhaseKey, number>();
+  for (const event of resolveEventPhases(events, phases)) {
+    if (!event.phase || MINOR_KINDS.includes(event.kind)) continue;
+    counts.set(event.phase, (counts.get(event.phase) ?? 0) + 1);
+  }
+
+  const live = phaseForDate(today, phases);
+  if (live && (counts.get(live) ?? 0) > 0) return live;
+
+  let best: PhaseKey | null = null;
+  for (const key of PHASE_ORDER) {
+    const count = counts.get(key) ?? 0;
+    if (count > 0 && (best === null || count > (counts.get(best) ?? 0))) best = key;
+  }
+  // Saison sans aucun mouvement : la free agency est la période qui en porte le
+  // plus une fois la synchronisation passée.
+  return best ?? "free_agency";
 }
 
 /** Volume par période de la saison. */

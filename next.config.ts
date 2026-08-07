@@ -10,6 +10,18 @@ const nextConfig: NextConfig = {
   experimental: {
     proxyTimeout: 600_000, // 10 minutes
   },
+  /**
+   * La rubrique s'appelait `/marche`, elle s'appelle `/mercato`.
+   *
+   * Redirection permanente et non suppression : l'ancienne adresse est dans le
+   * sitemap depuis des mois, elle vit dans des liens extérieurs et dans les
+   * favoris. Un 301 transmet le référencement acquis à la nouvelle URL, là où un
+   * 404 le perdrait. À garder tant que d'anciens liens peuvent pointer ici.
+   */
+  async redirects() {
+    return [{ source: "/marche", destination: "/mercato", permanent: true }];
+  },
+
   async headers() {
     return [
       {

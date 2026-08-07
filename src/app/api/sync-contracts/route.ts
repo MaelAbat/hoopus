@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       log: (message) => console.log(`[SYNC-CONTRACTS] ${message}`),
     });
 
-    revalidatePath("/marche");
+    revalidatePath("/mercato");
     revalidatePath("/equipes");
 
     console.log(

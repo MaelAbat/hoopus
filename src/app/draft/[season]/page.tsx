@@ -39,7 +39,7 @@ export async function generateMetadata({ params }: { params: Promise<{ season: s
   const year = seasonStartYear(season);
   return {
     title: `Draft NBA ${year}`,
-    description: `Tous les choix de la draft NBA ${year}, tour par tour, avec la grille de la loterie qui l'a précédée. En français, sur Hoopus.`,
+    description: `Tous les picks de la draft NBA ${year}, tour par tour, avec la grille de la loterie qui l'a précédée. En français, sur Hoopus.`,
     alternates: { canonical: `/draft/${season}` },
     openGraph: {
       title: `Draft NBA ${year} · Hoopus`,
@@ -87,17 +87,17 @@ export default async function DraftSeasonPage({ params }: { params: Promise<{ se
         subtitle={
           firstPick?.player_name
             ? `${firstPick.player_name} en tête — la promotion qui ouvre la saison ${season}`
-            : `Les choix de la draft ${draftYear}, qui ouvre la saison ${season}`
+            : `Les picks de la draft ${draftYear}, qui ouvre la saison ${season}`
         }
         variant="players"
         extra={
           <div className="flex flex-wrap items-center gap-3">
             {(marketEvents ?? 0) > 0 && (
               <Link
-                href={`/marche?season=${season}`}
+                href={`/mercato?season=${season}`}
                 className="inline-flex items-center border border-rule px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-text-muted transition-colors hover:border-accent hover:text-accent"
               >
-                Marché {season}
+                Mercato {season}
               </Link>
             )}
             <Link
@@ -107,7 +107,7 @@ export default async function DraftSeasonPage({ params }: { params: Promise<{ se
               Toutes les drafts
             </Link>
             {rows.length > 0 && (
-              <span className="tnum kicker text-text-faint">{rows.length} choix</span>
+              <span className="tnum kicker text-text-faint">{rows.length} picks</span>
             )}
           </div>
         }
@@ -130,7 +130,7 @@ export default async function DraftSeasonPage({ params }: { params: Promise<{ se
                     {round === 1 ? "Premier tour" : round === 2 ? "Second tour" : `Tour ${round}`}
                   </h2>
                   <span className="tnum font-mono text-[10px] uppercase tracking-wider text-text-faint">
-                    {rows.filter((p) => p.round === round).length} choix
+                    {rows.filter((p) => p.round === round).length} picks
                   </span>
                 </header>
 
@@ -168,7 +168,7 @@ export default async function DraftSeasonPage({ params }: { params: Promise<{ se
                             </td>
                             <td className="px-3 py-2">
                               {pick.player_name === null ? (
-                                <span className="text-sm italic text-text-faint">Choix non exercé</span>
+                                <span className="text-sm italic text-text-faint">Pick non exercé</span>
                               ) : pick.player_id ? (
                                 <Link
                                   href={`/joueurs/${pick.player_id}`}
@@ -218,7 +218,7 @@ export default async function DraftSeasonPage({ params }: { params: Promise<{ se
                         <th className="w-14 px-4 py-1.5 kicker text-text-faint">Rang</th>
                         <th className="px-3 py-1.5 kicker text-text-faint">Équipe</th>
                         <th className="px-3 py-1.5 kicker text-text-faint text-right">Bilan</th>
-                        <th className="px-3 py-1.5 kicker text-text-faint text-right">1er choix</th>
+                        <th className="px-3 py-1.5 kicker text-text-faint text-right">1er pick</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -262,7 +262,7 @@ export default async function DraftSeasonPage({ params }: { params: Promise<{ se
                 <p className="border-t border-rule px-4 py-3 text-[11px] leading-relaxed text-text-faint">
                   Cette grille donne les probabilités avant tirage, reconstruites depuis le classement
                   de {seasonBefore(season)} et les règles en vigueur cette année-là. Elle ne dit pas
-                  quelle équipe est montée ou descendue : un choix peut avoir été échangé, et aucune
+                  quelle équipe est montée ou descendue : un pick peut avoir été échangé, et aucune
                   source ne permet de savoir à qui il appartenait au départ.
                 </p>
               </section>

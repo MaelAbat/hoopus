@@ -13,7 +13,7 @@ import TeamMark from "./TeamMark";
  * Ce qui se joue en ce moment hors des parquets, sur l'accueil.
  *
  * Cinq moments de l'année méritent la première place : la draft, l'ouverture de
- * la free agency, la date limite des échanges, le marché des rachats et la
+ * la free agency, la trade deadline, le marché des buyouts et la
  * loterie. Le reste du temps ce bloc ne s'affiche pas — mettre en avant un marché
  * endormi en décembre ne servirait personne.
  *
@@ -118,7 +118,7 @@ export default async function MarketSpotlight() {
 
       <div className="flex flex-wrap items-center gap-3 border-t border-rule bg-input/40 px-6 py-4 sm:px-9">
         <Link
-          href={focus === "draft" ? draftHref : "/marche"}
+          href={focus === "draft" ? draftHref : "/mercato"}
           className="group inline-flex shrink-0 items-center gap-2 bg-accent px-5 py-2.5 font-mono text-xs font-bold uppercase tracking-widest text-white transition-colors hover:bg-accent-hover"
         >
           {focus === "draft" ? "Voir la draft" : "Voir le marché"}
@@ -129,7 +129,7 @@ export default async function MarketSpotlight() {
           />
         </Link>
         <Link
-          href={focus === "draft" ? "/marche" : draftHref}
+          href={focus === "draft" ? "/mercato" : draftHref}
           className="inline-flex shrink-0 items-center border border-border-hover px-5 py-2.5 font-mono text-xs font-bold uppercase tracking-widest text-text-primary transition-colors hover:bg-input"
         >
           {focus === "draft" ? "Le marché" : "La draft"}

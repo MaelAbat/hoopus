@@ -5,7 +5,7 @@
  * demandé. Une requête qui dépasse ce seuil est donc tronquée sans erreur ni
  * avertissement : les compteurs d'une page se calculent alors sur un échantillon
  * en se présentant comme un total. C'est exactement ce qui masquait les échanges
- * de la date limite dans la rubrique Marché.
+ * de la trade deadline dans la rubrique Mercato.
  *
  * `maxRows` borne le rapatriement, et l'atteindre est signalé dans les journaux :
  * une troncature silencieuse se lit comme une donnée complète, jamais l'inverse.

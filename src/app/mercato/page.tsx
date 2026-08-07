@@ -13,7 +13,7 @@ import {
 import { getLeagueState } from "@/lib/league-season";
 import { type PhaseKey } from "@/lib/season-phases";
 import { getSeasonPhases } from "@/lib/season-phases-db";
-import type { MarketEvent } from "@/lib/market";
+import { defaultMarketPhase, type MarketEvent } from "@/lib/market";
 import MarketView from "@/components/MarketView";
 import PageBanner from "@/components/PageBanner";
 import ScrollReveal from "@/components/ScrollReveal";
@@ -22,13 +22,13 @@ import SeasonSelector, { SeasonTransitionProvider, SeasonContent } from "@/compo
 export const revalidate = 3600;
 
 export const metadata = {
-  title: "Marché NBA — échanges, signatures et draft",
+  title: "Mercato NBA — trades, signatures et draft",
   description:
-    "Tout ce qui bouge en NBA hors des parquets : échanges, signatures, joueurs coupés, draft et loterie. Le marché saison par saison, en français, sur Hoopus.",
-  alternates: { canonical: "/marche" },
+    "Tout ce qui bouge en NBA hors des parquets : trades, signatures, waivers, extensions, draft et loterie. Le mercato période par période, en français, sur Hoopus.",
+  alternates: { canonical: "/mercato" },
   openGraph: {
-    title: "Marché NBA · Hoopus",
-    description: "Échanges, signatures, coupes, draft : le marché NBA saison par saison.",
+    title: "Mercato NBA · Hoopus",
+    description: "Trades, signatures, waivers, draft : le mercato NBA période par période.",
     images: [OG_IMAGE],
   },
 };
@@ -152,12 +152,17 @@ export default async function MarchePage({
 
   const hasDraft = (pickCount ?? 0) > 0;
 
+  // La rubrique s'ouvre sur une période, pas sur la saison entière. Le choix se
+  // fait ici et non dans le composant : il dépend de la date du jour, et le
+  // calculer côté client ferait diverger le premier rendu de l'hydratation.
+  const defaultPhase = defaultMarketPhase(events, phases, new Date().toISOString().slice(0, 10));
+
   return (
     <SeasonTransitionProvider>
       <div className="mx-auto max-w-6xl space-y-8">
         <PageBanner
-          title="Marché"
-          subtitle="Échanges, signatures, coupes et draft — tout ce qui bouge hors des parquets"
+          title="Mercato"
+          subtitle="Trades, signatures, waivers et draft — période par période, tout ce qui bouge hors des parquets"
           variant="teams"
           extra={
             <div className="flex flex-wrap items-center gap-3">
@@ -193,6 +198,7 @@ export default async function MarchePage({
               initialKind={params.type}
               initialTeam={params.equipe}
               initialPhase={params.periode}
+              defaultPhase={defaultPhase}
               previousRoster={previousRoster}
               canDetectExtensions={rosterRows.length > 0}
               contractTerms={contractTerms}

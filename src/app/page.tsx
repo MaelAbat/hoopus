@@ -39,8 +39,8 @@ const sections = [
   { href: "/statistiques", title: "Statistiques", tagline: "Leaders, moyennes, classements" },
   { href: "/joueurs", title: "Joueurs", tagline: "Profils et carrières" },
   { href: "/equipes", title: "Équipes", tagline: "Les 30 franchises" },
-  { href: "/marche", title: "Marché", tagline: "Échanges, signatures, coupes" },
-  { href: "/draft", title: "Draft", tagline: "Tous les choix depuis 1950" },
+  { href: "/mercato", title: "Mercato", tagline: "Trades, signatures, waivers" },
+  { href: "/draft", title: "Draft", tagline: "Tous les picks depuis 1950" },
   { href: "/playoffs", title: "Playoffs", tagline: "Brackets, séries, play-in" },
   { href: "/blessures", title: "Infirmerie", tagline: "Le rapport blessures du jour" },
   { href: "/mini-jeux", title: "Mini-jeux", tagline: "7 défis quotidiens" },
@@ -312,7 +312,7 @@ export default async function Home() {
 /** Vrai si cette entrée du sommaire est celle que la période met en avant. */
 function isFocused(section: { href: string }, focus: "draft" | "market" | null): boolean {
   if (!focus) return false;
-  return focus === "draft" ? section.href === "/draft" : section.href === "/marche";
+  return focus === "draft" ? section.href === "/draft" : section.href === "/mercato";
 }
 
 function SectionLabel({ index, title }: { index: string; title: string }) {
