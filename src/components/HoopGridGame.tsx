@@ -608,9 +608,11 @@ export default function HoopGridGame({ allNames }: { allNames: NameEntry[] }) {
                 onChange={(e) => { setDebugGridSize(e.target.value ? Number(e.target.value) : null); handleDebugNewGrid(); }}
                 className="border border-rule bg-card px-2 py-1.5 font-mono text-[11px] font-medium uppercase tracking-wider text-text-muted outline-none"
               >
-                <option value="">Auto</option>
+                {/* Fond opaque : le menu natif est dessiné par le navigateur, un
+                    jeton translucide l'y rendrait illisible en thème sombre. */}
+                <option value="" className="bg-card text-text-primary">Auto</option>
                 {[7, 8, 9, 10, 11, 12].map((s) => (
-                  <option key={s} value={s}>{s}x{s}</option>
+                  <option key={s} value={s} className="bg-card text-text-primary">{s}x{s}</option>
                 ))}
               </select>
               <button
