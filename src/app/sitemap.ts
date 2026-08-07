@@ -1,6 +1,5 @@
 import type { MetadataRoute } from "next";
 import { createServerClient } from "@supabase/ssr";
-import { TRADE_MACHINE_ENABLED } from "@/lib/feature-flags";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://hoopus.fr";
 
@@ -47,9 +46,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: "/mini-jeux/hooprank", changeFrequency: "weekly", priority: 0.5 },
   ];
 
-  // Une rubrique derrière un drapeau répond 404 : ne pas l'annoncer aux moteurs.
   const staticRoutes: MetadataRoute.Sitemap = staticPaths
-    .filter((r) => r.path !== "/trades" || TRADE_MACHINE_ENABLED)
     .map((r) => ({
       url: `${siteUrl}${r.path}`,
       lastModified: now,

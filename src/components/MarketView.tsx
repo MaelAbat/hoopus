@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronDown, ChevronRight, Search } from "lucide-react";
 import { teamLogoUrl, teamNickname } from "@/lib/nba-teams";
-import { TRADE_MACHINE_ENABLED } from "@/lib/feature-flags";
 import {
   assetLabel,
   busiestDays,
@@ -1000,7 +999,7 @@ function RichAction({ event }: { event: MarketEvent }) {
           </Link>
         );
       })}
-      {TRADE_MACHINE_ENABLED && event.kind === "trade" && <TradeMachineLink event={event} />}
+      {event.kind === "trade" && <TradeMachineLink event={event} />}
     </>
   );
 }

@@ -1,15 +1,14 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { TRADE_MACHINE_ENABLED } from "@/lib/feature-flags";
 
 // Routes that require authentication
 const PROTECTED_ROUTES = ["/profil"];
 
-// Sections still behind a feature flag. Blocking here rather than inside the
-// page matters: /trades streams a loading shell, so a notFound() from the page
-// itself lands after the 200 has been flushed. From the middleware the route is
-// simply gone — a real 404, before anything renders.
-const HIDDEN_ROUTES = TRADE_MACHINE_ENABLED ? [] : ["/trades"];
+// Rubriques masquées au public — aucune pour l'instant. Bloquer ici plutôt que
+// dans la page compte : une page qui diffuse d'abord son squelette de chargement
+// voit son notFound() arriver après l'envoi du 200. Depuis le middleware, la
+// route n'existe simplement pas — un vrai 404, avant tout rendu.
+const HIDDEN_ROUTES: string[] = [];
 
 /**
  * Segments de saison attendus par /draft/[season]. Un segment invalide doit

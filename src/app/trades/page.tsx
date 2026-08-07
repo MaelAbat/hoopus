@@ -1,7 +1,5 @@
-import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { OG_IMAGE } from "@/lib/seo";
-import { TRADE_MACHINE_ENABLED } from "@/lib/feature-flags";
 import { buildSeasonOptions, seasonStatus, seasonStatusLabel } from "@/lib/season";
 import { getLeagueState } from "@/lib/league-season";
 import { NBA_TEAM_COUNT, parseSalaryOrNull } from "@/lib/salary-cap";
@@ -86,11 +84,6 @@ export default async function TradesPage({
     tpe?: string;
   }>;
 }) {
-  // Deuxième verrou : le middleware renvoie déjà un 404 sur cette route quand le
-  // drapeau est éteint. Si son matcher change un jour, la page refuse quand même
-  // de lire les données plutôt que de s'afficher par accident.
-  if (!TRADE_MACHINE_ENABLED) notFound();
-
   const params = await searchParams;
   const leagueState = await getLeagueState();
   const { currentSeason, statsSeason } = leagueState;
