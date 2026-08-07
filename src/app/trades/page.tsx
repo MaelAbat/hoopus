@@ -6,7 +6,10 @@ import { buildSeasonOptions, seasonStatus, seasonStatusLabel } from "@/lib/seaso
 import { getLeagueState } from "@/lib/league-season";
 import { NBA_TEAM_COUNT, parseSalaryOrNull } from "@/lib/salary-cap";
 import { getCapLevels } from "@/lib/cap-levels";
-import { decodeTrade, type TradeRosterPlayer } from "@/lib/trade-rules";
+import { getSeasonPhases } from "@/lib/season-phases-db";
+import { formatPhaseDate } from "@/lib/season-phases";
+import { buildPickInventory } from "@/lib/draft-assets";
+import { decodeTrade, type TradeRosterPlayer, type TradeWindow } from "@/lib/trade-rules";
 import PageBanner from "@/components/PageBanner";
 import ScrollReveal from "@/components/ScrollReveal";
 import SeasonSelector, { SeasonTransitionProvider, SeasonContent } from "@/components/SeasonSelector";
@@ -17,11 +20,12 @@ export const revalidate = 3600;
 export const metadata = {
   title: "Trade Machine NBA",
   description:
-    "Simulez des échanges entre équipes NBA : concordance salariale, aprons, masse salariale avant et après. La trade machine Hoopus, en français.",
+    "Simulez des échanges NBA avec toutes les règles de la convention 2023 : concordance salariale, aprons, picks, cash, clauses de contrat. La trade machine Hoopus, en français.",
   alternates: { canonical: "/trades" },
   openGraph: {
     title: "Trade Machine NBA · Hoopus",
-    description: "Construisez un échange entre 2 et 4 équipes et vérifiez s'il est légal.",
+    description:
+      "Construisez un échange jusqu'à cinq équipes — joueurs, picks, cash — et vérifiez s'il est légal.",
     images: [OG_IMAGE],
   },
 };
@@ -41,10 +45,46 @@ interface RosterRow {
   ast: number | null;
 }
 
+/**
+ * Fenêtre d'échange de la saison.
+ *
+ * La ligue ferme les échanges à la date limite et ne les rouvre qu'après les
+ * Finales. La contrainte ne s'applique qu'à la saison en cours : sur une saison
+ * révolue, la trade machine reconstitue, elle ne transige pas.
+ */
+async function resolveTradeWindow(season: string, enforce: boolean): Promise<TradeWindow> {
+  if (!enforce) return { open: true, label: "" };
+
+  const phases = await getSeasonPhases(season);
+  const deadline = phases.find((p) => p.phase === "trade_deadline");
+  const playoffs = phases.find((p) => p.phase === "playoffs");
+  if (!deadline) return { open: true, label: "" };
+
+  const today = new Date().toISOString().slice(0, 10);
+  const seasonOver = playoffs ? today > playoffs.endsOn : false;
+  if (today <= deadline.endsOn || seasonOver) return { open: true, label: "" };
+
+  return {
+    open: false,
+    label:
+      `La trade deadline est passée (${formatPhaseDate(deadline.startsOn)})` +
+      `${deadline.isEstimated ? ", date estimée" : ""} : aucun échange n'est possible avant ` +
+      `l'intersaison. La simulation reste utilisable, mais elle ne serait pas validée par la ligue.`,
+  };
+}
+
 export default async function TradesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ season?: string; teams?: string; moves?: string }>;
+  searchParams: Promise<{
+    season?: string;
+    teams?: string;
+    moves?: string;
+    picks?: string;
+    cash?: string;
+    flags?: string;
+    tpe?: string;
+  }>;
 }) {
   // Deuxième verrou : le middleware renvoie déjà un 404 sur cette route quand le
   // drapeau est éteint. Si son matcher change un jour, la page refuse quand même
@@ -131,12 +171,29 @@ export default async function TradesPage({
     for (const p of officialPayrolls) payrollBase[p.team_tricode] = p.payroll;
   }
 
+  // ── Fenêtre d'échange ──
+  // Rien ne se signe entre la date limite et la fin de la saison. La contrainte
+  // ne vaut que pour la saison en cours : sur une saison passée, l'échange est
+  // une reconstitution, pas une transaction.
+  const tradeWindow = await resolveTradeWindow(season, season === currentSeason);
+
   // État initial relu depuis l'URL, pour que les échanges soient partageables.
   const ownerById = new Map(roster.map((p) => [p.player_id, p.team_tricode]));
-  const { teams: initialTeams, moves: initialMoves } = decodeTrade(
-    params.teams,
-    params.moves,
-    (id) => ownerById.get(id)
+  const tricodes = [...new Set(roster.map((p) => p.team_tricode))].sort();
+  const pickOwnerById = new Map(
+    buildPickInventory(tricodes, season).map((p) => [p.id, p.owner])
+  );
+  const {
+    teams: initialTeams,
+    moves: initialMoves,
+    pickMoves: initialPickMoves,
+    cash: initialCash,
+    flags: initialFlags,
+    tradeExceptions: initialTradeExceptions,
+  } = decodeTrade(
+    params,
+    (id) => ownerById.get(id),
+    (pickId) => pickOwnerById.get(pickId)
   );
 
   const missingSalaries = roster.filter((p) => p.salary == null).length;
@@ -146,7 +203,7 @@ export default async function TradesPage({
       <div className="mx-auto max-w-6xl space-y-8">
         <PageBanner
           title="Trade Machine"
-          subtitle="Construisez un échange entre 2 et 4 équipes et vérifiez sa légalité"
+          subtitle="Joueurs, picks et cash, jusqu'à cinq équipes — et le verdict de la convention collective"
           variant="teams"
           extra={
             <div className="flex flex-wrap items-center gap-3">
@@ -181,8 +238,13 @@ export default async function TradesPage({
               payrollBase={payrollBase}
               initialTeams={initialTeams}
               initialMoves={initialMoves}
+              initialPickMoves={initialPickMoves}
+              initialCash={initialCash}
+              initialFlags={initialFlags}
+              initialTradeExceptions={initialTradeExceptions}
               statsFromSeason={statsFromSeason}
               thresholds={capLevels}
+              window={tradeWindow}
             />
           </ScrollReveal>
         </SeasonContent>
