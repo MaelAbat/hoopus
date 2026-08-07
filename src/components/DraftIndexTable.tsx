@@ -42,10 +42,10 @@ export default function DraftIndexTable({ rows }: { rows: DraftIndexRow[] }) {
         <thead>
           <tr className="border-b border-rule bg-input/30 text-left">
             <th className="w-20 px-4 py-1.5 kicker text-text-faint">Draft</th>
-            <th className="px-3 py-1.5 kicker text-text-faint">Premier choix</th>
+            <th className="px-3 py-1.5 kicker text-text-faint">Premier pick</th>
             <th className="px-3 py-1.5 kicker text-text-faint">Par</th>
             <th className="px-3 py-1.5 kicker text-text-faint">Meilleures chances à la loterie</th>
-            <th className="px-3 py-1.5 kicker text-text-faint text-right">Choix</th>
+            <th className="px-3 py-1.5 kicker text-text-faint text-right">Picks</th>
           </tr>
         </thead>
         <tbody>
@@ -75,7 +75,7 @@ export default function DraftIndexTable({ rows }: { rows: DraftIndexRow[] }) {
                   </Link>
                 ) : (
                   <span className="text-sm font-semibold text-text-primary">
-                    {row.playerName ?? "Choix non exercé"}
+                    {row.playerName ?? "Pick non exercé"}
                   </span>
                 )}
                 {row.college && <span className="ml-2 text-[11px] text-text-faint">{row.college}</span>}

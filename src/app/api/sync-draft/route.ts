@@ -34,10 +34,10 @@ export async function GET(request: NextRequest) {
 
     revalidatePath("/draft");
     revalidatePath(`/draft/${result.season}`);
-    revalidatePath("/marche");
+    revalidatePath("/mercato");
 
     console.log(
-      `[SYNC-DRAFT] Draft ${draftYear} : ${result.picks} choix, ` +
+      `[SYNC-DRAFT] Draft ${draftYear} : ${result.picks} picks, ` +
         `${result.playersResolved} joueurs reliés, ${result.collegesFilled} clubs complétés, ` +
         `${result.lotteryTeams} équipes en loterie`
     );

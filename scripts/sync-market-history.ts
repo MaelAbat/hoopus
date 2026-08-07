@@ -130,7 +130,7 @@ async function main() {
   const seasons =
     requested.length > 0 ? requested : seasonRange(FIRST_SEASON, await currentSeason());
 
-  console.log(`Marché — ${seasons.length} saison(s) : ${seasons[0]} → ${seasons[seasons.length - 1]}`);
+  console.log(`Mercato — ${seasons.length} saison(s) : ${seasons[0]} → ${seasons[seasons.length - 1]}`);
   console.log(`Lecture polie de Basketball Reference : ${(BR_REQUEST_INTERVAL_MS / 1000).toFixed(1)}s entre deux pages\n`);
 
   let totalEvents = 0;

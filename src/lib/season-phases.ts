@@ -2,7 +2,7 @@
  * Périodes d'une saison NBA.
  *
  * Une saison NBA se lit en sept temps : loterie, draft, ouverture de la free
- * agency, saison régulière, date limite des échanges, marché des rachats de
+ * agency, saison régulière, trade deadline, marché des buyouts de
  * contrat, playoffs. Ce module donne leurs dates, sait dans quelle période tombe
  * un jour donné, et à quelle saison rattacher un mouvement.
  *
@@ -63,17 +63,17 @@ export const PHASE_LABELS: Record<PhaseKey, string> = {
   draft: "Draft",
   free_agency: "Free agency",
   regular_season: "Saison régulière",
-  trade_deadline: "Date limite des échanges",
-  buyout_market: "Marché des rachats",
+  trade_deadline: "Trade deadline",
+  buyout_market: "Buyouts",
   playoffs: "Playoffs",
 };
 
 /** Une phrase qui situe la période, pour les bandeaux et les infobulles. */
 export const PHASE_DESCRIPTIONS: Record<PhaseKey, string> = {
   lottery:
-    "Le tirage qui fixe l'ordre des quatorze premiers choix de la draft suivante. Il ne produit aucun mouvement par lui-même.",
+    "Le tirage qui fixe l'ordre des quatorze premiers picks de la draft suivante. Il ne produit aucun mouvement par lui-même.",
   draft: "Les deux tours de sélection, et les échanges qui s'y nouent.",
-  free_agency: "Les agents libres signent où ils veulent.",
+  free_agency: "Les free agents signent où ils veulent.",
   regular_season: "Quatre-vingt-deux matchs, et les échanges qui les accompagnent.",
   trade_deadline: "Dernier jour pour échanger un joueur.",
   buyout_market: "Les joueurs coupés cherchent une équipe avant les playoffs.",

@@ -561,7 +561,7 @@ export async function syncDraftYear(
 ): Promise<DraftSyncResult> {
   const season = seasonFromStartYear(draftYear);
   const picks = await fetchDraft(draftYear);
-  log(`draft ${draftYear} — ${picks.length} choix`);
+  log(`draft ${draftYear} — ${picks.length} picks`);
 
   let playersResolved = 0;
   let collegesFilled = 0;
@@ -610,7 +610,7 @@ export async function syncDraftYear(
         .from("draft_picks")
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .upsert(rows.slice(i, i + BATCH_SIZE) as any, { onConflict: "draft_year,pick_overall" });
-      if (error) console.error(`[MARKET] écriture des choix de draft :`, error.message);
+      if (error) console.error(`[MARKET] écriture des picks de draft :`, error.message);
     }
 
     if (collegesFilled > 0) {

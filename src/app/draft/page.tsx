@@ -11,11 +11,11 @@ export const revalidate = 3600;
 export const metadata = {
   title: "Drafts NBA",
   description:
-    "Toutes les drafts NBA archivées sur Hoopus : premier choix, tour par tour, et la grille de loterie de chaque année.",
+    "Toutes les drafts NBA archivées sur Hoopus : premier pick, tour par tour, et la grille de loterie de chaque année.",
   alternates: { canonical: "/draft" },
   openGraph: {
     title: "Drafts NBA · Hoopus",
-    description: "Le premier choix de chaque draft, et le détail des deux tours.",
+    description: "Le premier pick de chaque draft, et le détail des deux tours.",
     images: [OG_IMAGE],
   },
 };

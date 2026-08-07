@@ -488,7 +488,7 @@ function attachPickNotes(raw: string, annotations: string[], assets: EventAsset[
     const name = note.replace(/\s*was (?:later )?selected\.?$/i, "").trim();
     const target = picks[cursor++];
     if (!target || !name) continue;
-    const suffix = `${name} sélectionné avec ce choix`;
+    const suffix = `${name} sélectionné avec ce pick`;
     target.detail = target.detail ? `${target.detail} — ${suffix}` : suffix;
   }
 
