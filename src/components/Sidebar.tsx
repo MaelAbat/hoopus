@@ -17,7 +17,6 @@ import SyncButton from "./SyncButton";
 import { useTheme } from "./ThemeProvider";
 import { useFavorites } from "@/context/FavoritesContext";
 import { teamLogoUrl } from "@/lib/nba-teams";
-import { TRADE_MACHINE_ENABLED } from "@/lib/feature-flags";
 
 interface NavItem {
   href: string;
@@ -34,6 +33,8 @@ const navItems: NavItem[] = [
   { href: "/classement", label: "Classement" },
   { href: "/equipes", label: "Équipes" },
   { href: "/joueurs", label: "Joueurs" },
+  { href: "/mercato", label: "Mercato" },
+  { href: "/draft", label: "Draft" },
   { href: "/trades", label: "Trade Machine" },
   { href: "/blessures", label: "Infirmerie" },
   { href: "/playoffs", label: "Playoffs" },
@@ -62,12 +63,10 @@ export default function Sidebar({
   const pathname = usePathname();
   const router = useRouter();
 
-  // Hide the Actualités / Articles entries when nothing has been published yet,
-  // and the sections still behind a feature flag.
+  // Hide the Actualités / Articles entries when nothing has been published yet.
   const visibleNavItems = navItems.filter((item) => {
     if (item.href === "/actualites") return hasNews;
     if (item.href === "/articles") return hasArticles;
-    if (item.href === "/trades") return TRADE_MACHINE_ENABLED;
     return true;
   });
   const [profile, setProfile] = useState<UserProfile | null>(null);

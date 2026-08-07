@@ -39,7 +39,17 @@ export async function GET(request: NextRequest) {
   const playersRes = await fetch(`${baseUrl}/api/sync-players?${authParam}`);
   const rostersRes = await fetch(`${baseUrl}/api/sync-rosters?${authParam}`);
 
-  const [gamesData, standingsData, playoffsData, injuriesData, statsData, teamStatsData, playersData, rostersData] = await Promise.all([
+  // Sources Basketball Reference, à la suite des effectifs : BR limite le débit
+  // et répond 429 quand deux lectures se chevauchent. sync-players doit précéder
+  // ces deux-là, qui relient les mouvements aux fiches joueurs par le nom.
+  const transactionsRes = await fetch(`${baseUrl}/api/sync-transactions?${authParam}`);
+  const draftRes = await fetch(`${baseUrl}/api/sync-draft?${authParam}`);
+  // Les montants des contrats tournent par rotation d'équipes : aucune source de
+  // transactions ne chiffre ses lignes, et les trente pages de BR ne tiennent pas
+  // dans une seule exécution.
+  const contractsRes = await fetch(`${baseUrl}/api/sync-contracts?${authParam}`);
+
+  const [gamesData, standingsData, playoffsData, injuriesData, statsData, teamStatsData, playersData, rostersData, transactionsData, draftData, contractsData] = await Promise.all([
     gamesRes.json(),
     standingsRes.json(),
     playoffsRes.json(),
@@ -48,6 +58,9 @@ export async function GET(request: NextRequest) {
     teamStatsRes.json(),
     playersRes.json(),
     rostersRes.json(),
+    transactionsRes.json(),
+    draftRes.json(),
+    contractsRes.json(),
   ]);
 
   // Revalidate all data-driven pages after sync
@@ -61,6 +74,8 @@ export async function GET(request: NextRequest) {
   revalidatePath("/trades");
   revalidatePath("/joueurs");
   revalidatePath("/mini-jeux");
+  revalidatePath("/mercato");
+  revalidatePath("/draft");
 
   const results = {
     ok: true,
@@ -73,6 +88,9 @@ export async function GET(request: NextRequest) {
     playoffs: playoffsData,
     players: playersData,
     rosters: rostersData,
+    transactions: transactionsData,
+    draft: draftData,
+    contracts: contractsData,
     timestamp: new Date().toISOString(),
   };
 
@@ -86,6 +104,9 @@ export async function GET(request: NextRequest) {
     playoffs: playoffsData.ok ?? playoffsData.error,
     players: playersData.ok ?? playersData.error,
     rosters: rostersData.ok ?? rostersData.error,
+    transactions: transactionsData.ok ?? transactionsData.error,
+    draft: draftData.ok ?? draftData.error,
+    contracts: contractsData.ok ?? contractsData.error,
   }));
 
   return NextResponse.json(results);

@@ -1,6 +1,5 @@
 import type { MetadataRoute } from "next";
 import { createServerClient } from "@supabase/ssr";
-import { TRADE_MACHINE_ENABLED } from "@/lib/feature-flags";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://hoopus.fr";
 
@@ -31,6 +30,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: "/joueurs/comparer", changeFrequency: "weekly", priority: 0.6 },
     { path: "/equipes", changeFrequency: "weekly", priority: 0.8 },
     { path: "/trades", changeFrequency: "weekly", priority: 0.6 },
+    { path: "/mercato", changeFrequency: "daily", priority: 0.8 },
+    { path: "/draft", changeFrequency: "monthly", priority: 0.6 },
     { path: "/blessures", changeFrequency: "daily", priority: 0.7 },
     { path: "/playoffs", changeFrequency: "daily", priority: 0.7 },
     { path: "/actualites", changeFrequency: "daily", priority: 0.8 },
@@ -45,9 +46,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: "/mini-jeux/hooprank", changeFrequency: "weekly", priority: 0.5 },
   ];
 
-  // Une rubrique derrière un drapeau répond 404 : ne pas l'annoncer aux moteurs.
   const staticRoutes: MetadataRoute.Sitemap = staticPaths
-    .filter((r) => r.path !== "/trades" || TRADE_MACHINE_ENABLED)
     .map((r) => ({
       url: `${siteUrl}${r.path}`,
       lastModified: now,
@@ -58,7 +57,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     const supabase = readClient();
 
-    const [{ data: players }, { data: articles }, { data: news }] = await Promise.all([
+    const [{ data: players }, { data: articles }, { data: news }, { data: drafts }] = await Promise.all([
       supabase
         .from("players")
         .select("player_id, updated_at")
@@ -66,6 +65,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .order("last_name", { ascending: true }),
       supabase.from("articles").select("id, created_at").order("created_at", { ascending: false }),
       supabase.from("news").select("id, created_at").order("created_at", { ascending: false }),
+      // Une ligne par draft : le premier choix suffit à connaître les années
+      // archivées, sans rapatrier les soixante rangs de chacune.
+      supabase.from("draft_picks").select("season, updated_at").eq("pick_overall", 1),
     ]);
 
     const playerRoutes: MetadataRoute.Sitemap = (players ?? []).map((p) => ({
@@ -89,7 +91,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.6,
     }));
 
-    return [...staticRoutes, ...playerRoutes, ...articleRoutes, ...newsRoutes];
+    const draftRoutes: MetadataRoute.Sitemap = (drafts ?? []).map((d) => ({
+      url: `${siteUrl}/draft/${d.season}`,
+      lastModified: d.updated_at ? new Date(d.updated_at) : now,
+      changeFrequency: "yearly",
+      priority: 0.5,
+    }));
+
+    return [...staticRoutes, ...playerRoutes, ...articleRoutes, ...newsRoutes, ...draftRoutes];
   } catch {
     // If the DB is unreachable at build/revalidate time, still ship static routes.
     return staticRoutes;

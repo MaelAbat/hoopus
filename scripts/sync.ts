@@ -22,10 +22,18 @@ const PARALLEL_ENDPOINTS = [
   { key: "injuries", label: "Blessures" },
 ];
 
-// Endpoints lents (stats.nba.com, rate limited) — doivent tourner sequentiellement
+// Endpoints lents (stats.nba.com et Basketball Reference, tous deux limites en
+// debit) — doivent tourner sequentiellement.
+//
+// L'ordre compte : "players" alimente la table dont "rosters", "transactions" et
+// "draft" se servent pour relier un nom a une fiche joueur. Les trois lecteurs de
+// Basketball Reference se suivent, jamais en parallele, sinon la source repond 429.
 const SEQUENTIAL_ENDPOINTS = [
   { key: "players", label: "Joueurs" },
   { key: "rosters", label: "Effectifs" },
+  { key: "transactions", label: "Marche" },
+  { key: "draft", label: "Draft" },
+  { key: "contracts", label: "Contrats" },
   { key: "stats", label: "Statistiques" },
   { key: "team-stats", label: "Stats equipes" },
   { key: "career", label: "Carrieres" },

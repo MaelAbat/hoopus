@@ -21,6 +21,8 @@ Live at [hoopus.fr](https://hoopus.fr).
 - Player career stats with advanced metrics
 - Team rosters with salary data
 - Trade machine — build trades between 2 and 4 teams, validated against CBA salary-matching and apron rules (work in progress: set `NEXT_PUBLIC_TRADE_MACHINE=1` to enable it)
+- Transaction market — trades, signings, waivers, coaching moves and suspensions, season by season back to 2015-16, with per-team summary tables
+- Draft results and pre-lottery odds, year by year
 - Injury reports
 - News feed and long-form articles with Markdown rendering
 - User accounts, favorites system, light/dark theming
@@ -65,7 +67,19 @@ To run a sync manually from the command line:
 ```bash
 npm run sync          # full sync
 npm run sync:history  # backfill historical games
+npm run sync:market   # backfill the transaction market and drafts (2015-16 → today)
+npm run sync:market -- --drafts-since 1950   # every NBA draft, no transactions
 ```
+
+Drafts and transactions have different horizons on purpose. Transactions start in
+2015-16, like the rest of the site: earlier than that, no rosters or standings exist
+to give them meaning. A draft stands on its own, so the archive goes back to 1950 —
+the first NBA draft, the 1947-1949 ones having been run by the BAA.
+
+`sync:market` is deliberately kept out of the cron: it reads one Basketball Reference
+page per season at a polite 3.2s interval, which is far beyond the 60s a serverless
+function gets. The daily cron keeps the current season fresh (`/api/sync-transactions`,
+`/api/sync-draft`); this script fills in the past.
 
 ## Project structure
 

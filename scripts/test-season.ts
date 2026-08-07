@@ -208,17 +208,33 @@ console.log("\n--- seuils de masse salariale : aucune saison codée en dur ---")
   check("2024-25 projeté sur un an redonne 2025-26", projected, KNOWN_THRESHOLDS["2025-26"]);
 }
 
+// La dernière saison annoncée par la ligue, déduite et non recopiée : ce test ne
+// doit pas retomber en échec chaque juillet, quand une saison de plus devient
+// officielle et cesse d'être une projection.
+const latestKnownYear = Math.max(
+  ...Object.keys(KNOWN_THRESHOLDS).map((s) => parseInt(s.split("-")[0], 10))
+);
+const latestKnown = `${latestKnownYear}-${String((latestKnownYear + 1) % 100).padStart(2, "0")}`;
+
+{
+  const t = resolveThresholds(latestKnown);
+  check(
+    `${latestKnown} annoncée : exacte, pas projetée`,
+    [t.salaryCap, t.isEstimated],
+    [KNOWN_THRESHOLDS[latestKnown].salaryCap, false]
+  );
+}
+
 // Les saisons que personne n'a saisies fonctionnent quand même — c'est tout
-// l'enjeu : aucune modification de code à la bascule de saison.
-for (const [season, years] of [
-  ["2026-27", 1],
-  ["2027-28", 2],
-  ["2030-31", 5],
-] as const) {
+// l'enjeu : aucune modification de code à la bascule de saison. Elles se
+// projettent depuis la dernière saison connue, pas depuis une saison en dur.
+for (const years of [1, 2, 5] as const) {
+  const season = `${latestKnownYear + years}-${String((latestKnownYear + years + 1) % 100).padStart(2, "0")}`;
   const t = resolveThresholds(season);
-  const expected = projectThresholds(KNOWN_THRESHOLDS["2025-26"], years);
+  const expected = projectThresholds(KNOWN_THRESHOLDS[latestKnown], years);
   check(`${season} projeté`, [t.salaryCap, t.isEstimated], [expected.salaryCap, true]);
-  check(`  ${season} — ordre des seuils respecté`,
+  check(
+    `  ${season} — ordre des seuils respecté`,
     t.salaryCap < t.luxuryTax && t.luxuryTax < t.firstApron && t.firstApron < t.secondApron,
     true
   );
