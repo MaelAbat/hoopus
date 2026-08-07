@@ -35,6 +35,12 @@ export interface SeasonThresholds extends CapThresholds {
  * Sources : annonces de la ligue, début juillet de chaque année.
  */
 export const KNOWN_THRESHOLDS: Record<string, CapThresholds> = {
+  "2026-27": {
+    salaryCap: 164_961_000,
+    luxuryTax: 200_428_000,
+    firstApron: 209_015_000,
+    secondApron: 221_686_000,
+  },
   "2025-26": {
     salaryCap: 154_647_000,
     luxuryTax: 187_895_000,
@@ -53,9 +59,9 @@ export const KNOWN_THRESHOLDS: Record<string, CapThresholds> = {
  * Rapports des trois seuils au plafond salarial.
  *
  * La convention collective ne fixe pas ces montants indépendamment : ce sont des
- * pourcentages du plafond. Vérifié sur les trois saisons dont la ligue a publié
- * les quatre valeurs (2023-24, 2024-25, 2025-26), les rapports sont constants à
- * la cinquième décimale.
+ * pourcentages du plafond. Vérifié sur les quatre saisons dont la ligue a publié
+ * les quatre valeurs (2023-24 à 2026-27), les rapports sont constants à la
+ * cinquième décimale.
  *
  * Conséquence pratique : il suffit de connaître le plafond — que Basketball
  * Reference publie, saison à venir comprise — pour en déduire le reste. Ce n'est
@@ -83,6 +89,61 @@ export function thresholdsFromCap(salaryCap: number): CapThresholds {
  * un apron du plafond n'aurait aucun sens.
  */
 export const FIRST_APRON_SEASON_START_YEAR = 2023;
+
+/**
+ * Marge fixe de la concordance salariale — 250 000 $ depuis la convention 2023
+ * (100 000 $ sous la précédente). C'est le seul montant du dispositif d'échange
+ * que la ligue n'indexe pas.
+ */
+export const TRADE_CUSHION = 250_000;
+
+/**
+ * Montants du dispositif d'échange, en proportion du plafond.
+ *
+ * La convention les énonce en dollars pour 2023-24 puis les fait évoluer « au
+ * même rythme que le plafond ». Les exprimer en rapport, comme les aprons, évite
+ * de recopier une table chaque été : le plafond suffit.
+ *
+ * Rapports recalés sur les montants publiés :
+ *   - exception élargie : 8 527 000 $ en 2025-26 (7 500 000 $ en 2023-24)
+ *   - liquidités : 7 964 000 $ en 2025-26, 8 495 000 $ en 2026-27
+ *   - minimum recrue : 1 272 870 $ en 2025-26, 1 157 153 $ en 2024-25
+ */
+export const TRADE_RATIOS = {
+  /** Exception élargie (« +7,5 M$ » de la convention), palier intermédiaire. */
+  expandedTpe: 0.0551385,
+  /** Plafond annuel de liquidités qu'une équipe peut verser ou recevoir. */
+  cash: 0.0514976,
+  /** Salaire minimum d'un joueur sans année d'ancienneté. */
+  rookieMinimum: 0.008231,
+  /** Salaire maximal, dixième saison et plus — plafond d'une prime d'échange. */
+  maxSalary: 0.35,
+} as const;
+
+/** Montants d'échange d'une saison, déduits de son plafond. */
+export interface TradeAmounts {
+  /**
+   * Palier intermédiaire de la concordance : une équipe sous les deux aprons
+   * peut reprendre son salaire sortant plus ce montant.
+   */
+  expandedTpe: number;
+  /** Maximum de liquidités versées — et, séparément, reçues — sur la saison. */
+  cashLimit: number;
+  /** Seuil au-delà duquel un contrat n'est plus un minimum de recrue. */
+  rookieMinimum: number;
+  /** Salaire maximal servant de plafond aux primes d'échange. */
+  maxSalary: number;
+}
+
+export function tradeAmounts(salaryCap: number): TradeAmounts {
+  const round = (n: number) => Math.round(n / 1000) * 1000;
+  return {
+    expandedTpe: round(salaryCap * TRADE_RATIOS.expandedTpe),
+    cashLimit: round(salaryCap * TRADE_RATIOS.cash),
+    rookieMinimum: round(salaryCap * TRADE_RATIOS.rookieMinimum),
+    maxSalary: round(salaryCap * TRADE_RATIOS.maxSalary),
+  };
+}
 
 /**
  * Hausse annuelle retenue pour projeter une saison inconnue.
