@@ -66,7 +66,7 @@ async function main() {
   console.log("  Assure-toi que le serveur dev tourne: npm run dev\n");
 
   const authParam = `cron_secret=${encodeURIComponent(cronSecret)}`;
-  const results: { label: string; ok: boolean; duration: string; detail?: string }[] = [];
+  const results: { label: string; ok: boolean; skipped?: boolean; duration: string; detail?: string }[] = [];
   const totalStart = Date.now();
 
   async function runEndpoint(endpoint: { key: string; label: string }) {
@@ -76,7 +76,13 @@ async function main() {
       const url = `${BASE_URL}/api/sync-${endpoint.key}?${authParam}`;
       const data = await httpGet(url);
       const duration = ((Date.now() - start) / 1000).toFixed(1);
-      if (data.ok) {
+      if (data.ok && data.skipped) {
+        // La route a répondu sans rien écrire : sa source est injoignable. Ce
+        // n'est pas une panne du code, mais ce n'est pas un succès non plus.
+        const detail = `${data.skipped}${data.reason ? ` — ${data.reason}` : ""}`;
+        console.log(` SKIP ${detail} (${duration}s)`);
+        results.push({ label: endpoint.label, ok: false, skipped: true, duration, detail });
+      } else if (data.ok) {
         console.log(` OK (${duration}s)`);
         results.push({ label: endpoint.label, ok: true, duration });
       } else {
@@ -118,16 +124,17 @@ async function main() {
 
   // Recap
   const succeeded = results.filter((r) => r.ok).length;
-  const failedCount = results.filter((r) => !r.ok).length;
+  const skippedCount = results.filter((r) => r.skipped).length;
+  const failedCount = results.filter((r) => !r.ok && !r.skipped).length;
   const totalDuration = ((Date.now() - totalStart) / 1000).toFixed(1);
 
   console.log(`\n  ─── Recap ───`);
   for (const r of results) {
-    console.log(`  ${r.ok ? "OK" : "FAIL"}  ${r.label} (${r.duration}s)${r.detail ? ` — ${r.detail}` : ""}`);
+    console.log(`  ${r.ok ? "OK  " : r.skipped ? "SKIP" : "FAIL"}  ${r.label} (${r.duration}s)${r.detail ? ` — ${r.detail}` : ""}`);
   }
-  console.log(`\n  ${succeeded} OK, ${failedCount} echec(s) — total ${totalDuration}s\n`);
+  console.log(`\n  ${succeeded} OK, ${skippedCount} saute(s), ${failedCount} echec(s) — total ${totalDuration}s\n`);
 
-  process.exit(failedCount > 0 ? 1 : 0);
+  process.exit(failedCount + skippedCount > 0 ? 1 : 0);
 }
 
 // Use node:http directly — no timeout at all

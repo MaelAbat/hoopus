@@ -4,6 +4,8 @@ import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import { fetchLeagueState } from "@/lib/league-season";
 import { isCronAuthorized } from "@/lib/cron-auth";
+import { isUpstreamUnavailable, UpstreamUnavailableError } from "@/lib/upstream";
+import { ensureSeasonBoxscores, isEspnSeason, playerDashboards } from "@/lib/boxscore-stats";
 
 // Saison résolue par requête depuis league_state (voir /api/sync-season).
 const BATCH_SIZE = 200;
@@ -87,6 +89,7 @@ function fetchAllPlayers(
 
   return new Promise((resolve, reject) => {
     const req = https.get(url, { headers: NBA_HEADERS }, (res) => {
+      clearTimeout(silent);
       // Accumulate raw bytes and decode once at the end. Concatenating chunks
       // as strings (`data += chunk`) corrupts any multi-byte UTF-8 character
       // (e.g. the "č" in "Luka Dončić") that happens to straddle a chunk
@@ -105,8 +108,15 @@ function fetchAllPlayers(
         }
       });
     });
-    req.on("error", reject);
-    req.setTimeout(600000, () => { req.destroy(); reject(new Error("NBA API timeout after 10min")); });
+    // Un hôte injoignable ne répond jamais : sans échéance sur les en-têtes, la
+    // route attendrait le budget entier — dix minutes — avant de le constater.
+    // Une réponse lente mais vivante envoie ses en-têtes tout de suite et garde
+    // tout ce budget pour son corps, qui est ce qui prend du temps ici.
+    const silent = setTimeout(() => {
+      req.destroy(new UpstreamUnavailableError("stats.nba.com", "aucune réponse en 15s"));
+    }, 15_000);
+    req.on("error", (err) => { clearTimeout(silent); reject(err); });
+    req.setTimeout(600000, () => { clearTimeout(silent); req.destroy(); reject(new Error("NBA API timeout after 10min")); });
   });
 }
 
@@ -129,19 +139,28 @@ async function batchInsert(supabase: any, rows: LeaderRow[]): Promise<number> {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function syncSeasonType(supabase: any, season: string, seasonType: NbaSeasonType): Promise<Record<string, number>> {
+async function syncSeasonType(supabase: any, season: string, seasonType: NbaSeasonType, fromBoxscores: boolean): Promise<Record<string, number>> {
   const SEASON = season;
   const dbType: DbSeasonType = seasonType === "Playoffs" ? "playoffs" : "regular";
   const minGp = seasonType === "Playoffs" ? MIN_GP_PLAYOFFS : MIN_GP_REGULAR;
   const results: Record<string, number> = {};
   const now = new Date().toISOString();
 
-  console.log(`[SYNC-STATS] [${seasonType}] Fetching from stats.nba.com (3 parallel calls, timeout 10min each)...`);
-  const [baseData, perGameData, advData] = await Promise.all([
-    fetchAllPlayers(season, seasonType, "Totals", "Base"),
-    fetchAllPlayers(season, seasonType, "PerGame", "Base"),
-    fetchAllPlayers(season, seasonType, "PerGame", "Advanced"),
-  ]);
+  let baseData: NbaDashResponse, perGameData: NbaDashResponse, advData: NbaDashResponse;
+  if (fromBoxscores) {
+    // Saison lue chez ESPN : les trois tableaux sont recalculés depuis les box
+    // scores, au format de stats.nba.com — tout ce qui suit reste inchangé.
+    console.log(`[SYNC-STATS] [${seasonType}] Calcul depuis les box scores ESPN...`);
+    const d = await playerDashboards(supabase, season, dbType);
+    [baseData, perGameData, advData] = [d.totals, d.perGame, d.advanced];
+  } else {
+    console.log(`[SYNC-STATS] [${seasonType}] Fetching from stats.nba.com (3 parallel calls, timeout 10min each)...`);
+    [baseData, perGameData, advData] = await Promise.all([
+      fetchAllPlayers(season, seasonType, "Totals", "Base"),
+      fetchAllPlayers(season, seasonType, "PerGame", "Base"),
+      fetchAllPlayers(season, seasonType, "PerGame", "Advanced"),
+    ]);
+  }
 
   const headers = baseData.resultSets[0].headers;
   const rows = baseData.resultSets[0].rowSet;
@@ -644,27 +663,48 @@ export async function GET(request: NextRequest) {
     const SEASON = (await fetchLeagueState()).currentSeason;
     console.log(`[SYNC-STATS] Saison ${SEASON}`);
 
-    const regularResults = await syncSeasonType(supabase, SEASON, "Regular Season");
+    // Depuis 2026-27, stats.nba.com ne répond plus : une saison lue chez ESPN
+    // se calcule à partir de ses box scores, récupérés d'abord s'il en manque.
+    const fromBoxscores = await isEspnSeason(supabase, SEASON);
+    if (fromBoxscores) {
+      for (const gameType of ["regular", "playoffs"] as const) {
+        const r = await ensureSeasonBoxscores(supabase, SEASON, gameType, { budgetMs: 20_000 });
+        if (r.missing > 0) {
+          console.log(`[SYNC-STATS] Box scores ${gameType} : ${r.synced}/${r.missing} récupérés`);
+        }
+      }
+    }
+
+    const regularResults = await syncSeasonType(supabase, SEASON, "Regular Season", fromBoxscores);
     for (const [k, v] of Object.entries(regularResults)) {
       combined[k] = { ...(combined[k] || {}), regular: v };
     }
 
     // Breathing room for stats.nba.com before the second wave of parallel calls.
-    if (SEASON_TYPE_DELAY_MS > 0) {
+    if (!fromBoxscores && SEASON_TYPE_DELAY_MS > 0) {
       console.log(`[SYNC-STATS] Waiting ${SEASON_TYPE_DELAY_MS}ms before Playoffs fetch...`);
       await new Promise((r) => setTimeout(r, SEASON_TYPE_DELAY_MS));
     }
 
-    const playoffResults = await syncSeasonType(supabase, SEASON, "Playoffs");
+    const playoffResults = await syncSeasonType(supabase, SEASON, "Playoffs", fromBoxscores);
     for (const [k, v] of Object.entries(playoffResults)) {
       combined[k] = { ...(combined[k] || {}), playoffs: v };
     }
   } catch (err) {
+    // Source injoignable : ce n'est pas une panne de la route. Une ligne, pas
+    // une trace, et rien n'est écrit — les données en base valent mieux qu'un
+    // écrasement par du vide.
+    if (isUpstreamUnavailable(err)) {
+      console.warn(`[SYNC-STATS] ${err.source} indisponible (${err.message}) — statistiques inchangées`);
+      return NextResponse.json({
+        ok: true,
+        skipped: `${err.source} indisponible`,
+        reason: err.message,
+        timestamp: new Date().toISOString(),
+      });
+    }
     console.error("Error syncing stats:", err);
-    return NextResponse.json(
-      { error: (err as Error).message },
-      { status: 502 }
-    );
+    return NextResponse.json({ error: (err as Error).message }, { status: 502 });
   }
 
   const totalRegular = Object.values(combined).reduce((a, b) => a + (b.regular || 0), 0);

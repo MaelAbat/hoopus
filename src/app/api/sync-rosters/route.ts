@@ -6,6 +6,9 @@ import { seasonBefore } from "@/lib/season";
 import { brTeamFor, fetchAllSalaries, normalizeName } from "@/lib/br-salaries";
 import { fetchLeagueState } from "@/lib/league-season";
 import { isCronAuthorized } from "@/lib/cron-auth";
+import { isUpstreamUnavailable, UpstreamUnavailableError } from "@/lib/upstream";
+import { isEspnSeason } from "@/lib/boxscore-stats";
+import { fetchEspnRosters } from "@/lib/espn-rosters";
 
 // Saison résolue par requête depuis league_state (voir /api/sync-season).
 const BATCH_SIZE = 200;
@@ -43,6 +46,7 @@ interface NbaResponse {
 function fetchNba(url: string, timeoutMs = 300000): Promise<NbaResponse> {
   return new Promise((resolve, reject) => {
     const req = https.get(url, { headers: NBA_HEADERS }, (res) => {
+      clearTimeout(silent);
       const chunks: Buffer[] = [];
       res.on("data", (chunk: Buffer) => chunks.push(chunk));
       res.on("end", () => {
@@ -57,8 +61,15 @@ function fetchNba(url: string, timeoutMs = 300000): Promise<NbaResponse> {
         }
       });
     });
-    req.on("error", reject);
-    req.setTimeout(600000, () => { req.destroy(); reject(new Error("timeout after 10min")); });
+    // Un hôte injoignable ne répond jamais : sans échéance sur les en-têtes, la
+    // route attendrait le budget entier — dix minutes — avant de le constater.
+    // Une réponse lente mais vivante envoie ses en-têtes tout de suite et garde
+    // tout ce budget pour son corps, qui est ce qui prend du temps ici.
+    const silent = setTimeout(() => {
+      req.destroy(new UpstreamUnavailableError("stats.nba.com", "aucune réponse en 15s"));
+    }, 15_000);
+    req.on("error", (err) => { clearTimeout(silent); reject(err); });
+    req.setTimeout(600000, () => { clearTimeout(silent); req.destroy(); reject(new Error("timeout after 10min")); });
   });
 }
 
@@ -176,7 +187,14 @@ export async function GET(request: NextRequest) {
     // Fetch bio stats (ages) and salaries in parallel
     console.log("[SYNC-ROSTERS] Fetching from NBA API and Basketball Reference...");
     const [ageMap, salaryResult] = await Promise.all([
-      fetchAllBioStats(SEASON),
+      // Les âges venaient des bio stats de stats.nba.com, qui ne répond plus :
+      // ESPN les donne avec ses effectifs.
+      (await isEspnSeason(supabase, SEASON))
+        ? fetchEspnRosters(supabase).then(
+            ({ players }) =>
+              new Map(players.filter((p) => p.age != null).map((p) => [p.playerId, p.age as number]))
+          )
+        : fetchAllBioStats(SEASON),
       (async () => {
         try {
           return await fetchAllSalaries(SEASON, targets);
@@ -363,10 +381,19 @@ export async function GET(request: NextRequest) {
       timestamp: now,
     });
   } catch (err) {
+    // Source injoignable : ce n'est pas une panne de la route. Une ligne, pas
+    // une trace, et rien n'est écrit — les données en base valent mieux qu'un
+    // écrasement par du vide.
+    if (isUpstreamUnavailable(err)) {
+      console.warn(`[SYNC-ROSTERS] ${err.source} indisponible (${err.message}) — effectifs inchangés`);
+      return NextResponse.json({
+        ok: true,
+        skipped: `${err.source} indisponible`,
+        reason: err.message,
+        timestamp: new Date().toISOString(),
+      });
+    }
     console.error("Error syncing rosters:", err);
-    return NextResponse.json(
-      { error: (err as Error).message },
-      { status: 502 }
-    );
+    return NextResponse.json({ error: (err as Error).message }, { status: 502 });
   }
 }

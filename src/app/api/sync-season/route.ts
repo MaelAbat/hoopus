@@ -22,7 +22,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
-import { fetchLeagueSchedule, readSeasonYear } from "@/lib/nba-schedule";
+import { fetchEspnSeason } from "@/lib/espn-schedule";
 import { fetchCapHistory } from "@/lib/br-cap-history";
 import { isCronAuthorized } from "@/lib/cron-auth";
 import {
@@ -54,21 +54,16 @@ const REVALIDATED_PATHS = [
 ];
 
 /**
- * `seasonYear` tel que le CDN l'annonce, ou `null` s'il est injoignable.
+ * Saison annoncée par ESPN, ou `null` s'il est injoignable.
  *
- * Volontairement sans repli sur stats.nba.com : ce repli exige de nommer une
- * saison, or c'est précisément ce qu'on cherche à déterminer. Le signal serait
- * circulaire. Les Finales en base restent la règle principale — le CDN ne fait
- * que confirmer.
+ * Le CDN de la NBA, qui jouait ce rôle, nous refuse l'accès depuis l'été 2026.
+ * Ce n'est qu'un signal d'appoint : les Finales en base restent la règle
+ * principale, ESPN ne fait que confirmer.
  */
 async function fetchScheduleSeasonYear(): Promise<string | null> {
-  try {
-    const schedule = await fetchLeagueSchedule({ attempts: 2 });
-    return readSeasonYear(schedule);
-  } catch (err) {
-    console.error("[SYNC-SEASON] Signal CDN indisponible:", (err as Error).message);
-    return null;
-  }
+  const season = await fetchEspnSeason();
+  if (!season) console.warn("[SYNC-SEASON] Signal calendrier indisponible (ESPN)");
+  return season;
 }
 
 export async function GET(request: NextRequest) {
@@ -93,12 +88,24 @@ export async function GET(request: NextRequest) {
         .select("season, team_top, team_bottom, wins_top, wins_bottom")
         .eq("round", 4),
       // Dernière saison avec au moins un match de saison régulière terminé.
-      // Le préfixe 002 exclut la présaison : un match amical joué début octobre
-      // ferait sinon basculer les pages de statistiques sur une saison encore
-      // dépourvue de données.
-      supabase.from("games").select("season").eq("status", 3).like("game_id", "002%"),
+      // Le type exclut la présaison : un match amical joué début octobre ferait
+      // sinon basculer les pages de statistiques sur une saison encore dépourvue
+      // de données. Une seule ligne, la plus récente : sans `limit`, PostgREST
+      // en rendait mille au hasard sur plus de treize mille.
+      supabase
+        .from("games")
+        .select("season")
+        .eq("game_type", "regular")
+        .eq("status", 3)
+        .order("season", { ascending: false })
+        .limit(1),
       // Dernière saison avec au moins un match de saison régulière programmé.
-      supabase.from("games").select("season").like("game_id", "002%"),
+      supabase
+        .from("games")
+        .select("season")
+        .eq("game_type", "regular")
+        .order("season", { ascending: false })
+        .limit(1),
     ]);
 
     // ── Finales décidées ──

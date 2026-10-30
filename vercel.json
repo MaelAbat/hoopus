@@ -2,7 +2,7 @@
   "regions": ["dub1"],
   "functions": {
     "src/app/api/cron/route.ts": {
-      "maxDuration": 60
+      "maxDuration": 300
     },
     "src/app/api/sync-stats/route.ts": {
       "maxDuration": 60

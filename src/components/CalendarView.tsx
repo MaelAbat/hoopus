@@ -6,7 +6,7 @@ import { ChevronLeft, ChevronRight, MapPin, Star, Loader2 } from "lucide-react";
 import { teamLogoUrl } from "@/lib/nba-teams";
 import { useFavorites } from "@/context/FavoritesContext";
 import { createClient } from "@/lib/supabase/client";
-import { hideSettledPlayoffGames } from "@/lib/playoff-utils";
+import { hideSettledPlayoffGames, isPlayinGame, isPlayoffGame, playoffRoundOf } from "@/lib/playoff-utils";
 import Link from "next/link";
 
 interface Game {
@@ -23,6 +23,8 @@ interface Game {
   away_score: number;
   arena: string;
   arena_city: string;
+  game_type?: string | null;
+  playoff_round?: number | null;
 }
 
 const MONTHS_FR = [
@@ -73,14 +75,14 @@ function toParisTime(gameDate: string, gameTime: string): string {
   }).format(realUtc);
 }
 
-function getGameLabel(gameId: string): string | null {
-  if (gameId.startsWith("005")) return "Play-in";
-  if (gameId.startsWith("004")) {
-    const round = gameId.substring(6, 8);
-    if (round === "01") return "1er tour";
-    if (round === "02") return "Demi-finale de conférence";
-    if (round === "03") return "Finale de conférence";
-    if (round === "04") return "Finales NBA";
+function getGameLabel(game: Game): string | null {
+  if (isPlayinGame(game)) return "Play-in";
+  if (isPlayoffGame(game)) {
+    const round = playoffRoundOf(game);
+    if (round === 1) return "1er tour";
+    if (round === 2) return "Demi-finale de conférence";
+    if (round === 3) return "Finale de conférence";
+    if (round === 4) return "Finales NBA";
     return "Playoffs";
   }
   return null;
@@ -99,10 +101,10 @@ function GameCard({ game }: { game: Game }) {
   const card = (
     <div className={`bg-card border p-3 transition-colors hover:border-border-hover ${isFav ? "border-accent ring-1 ring-accent/40" : "border-rule"}`}>
       {/* Playoff label */}
-      {getGameLabel(game.game_id) && (
+      {getGameLabel(game) && (
         <div className="mb-1.5">
           <span className="inline-block border border-rule px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-text-secondary">
-            {getGameLabel(game.game_id)}
+            {getGameLabel(game)}
           </span>
         </div>
       )}

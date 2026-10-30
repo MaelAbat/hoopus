@@ -1,8 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
-import { syncPlayerCareer, syncPlayerCareerQuick, overrideLeagueAvg } from "@/lib/sync-career";
+import { syncPlayerCareer, syncPlayerCareerQuick, overrideLeagueAvg, computeAdjustedShooting } from "@/lib/sync-career";
+import { isEspnSeason, seasonCareerLines } from "@/lib/boxscore-stats";
 import { getCurrentSeason } from "@/lib/season";
 import { isCronAuthorized } from "@/lib/cron-auth";
+import { isUpstreamUnavailable } from "@/lib/upstream";
 
 function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
@@ -60,6 +62,41 @@ export async function GET(request: NextRequest) {
     console.log(`[SYNC-CAREER] No live league averages found for ${CURRENT_SEASON}, using hardcoded values`);
   }
 
+  // Saison lue chez ESPN : stats.nba.com ne répond plus, la ligne de la saison en
+  // cours de chaque joueur se calcule à partir des box scores (récupérés par
+  // sync-stats). Les saisons passées, déjà en base, ne bougent pas.
+  if (await isEspnSeason(supabase, CURRENT_SEASON)) {
+    const lines = await seasonCareerLines(supabase, CURRENT_SEASON);
+    const now = new Date().toISOString();
+    const rows = lines.map((l) => ({
+      ...l,
+      ...computeAdjustedShooting({ ...l, season: CURRENT_SEASON }),
+      updated_at: now,
+    }));
+
+    let written = 0;
+    for (let i = 0; i < rows.length; i += 200) {
+      const { error } = await supabase
+        .from("player_career_stats")
+        .upsert(rows.slice(i, i + 200), { onConflict: "player_id,season,team" });
+      if (error) {
+        console.error(`[SYNC-CAREER] Écriture refusée (lot ${i}) :`, error.message);
+      } else {
+        written += Math.min(200, rows.length - i);
+      }
+    }
+
+    const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+    console.log(`[SYNC-CAREER] ${written}/${rows.length} lignes ${CURRENT_SEASON} depuis les box scores (${duration}s)`);
+    return NextResponse.json({
+      ok: written === rows.length,
+      ...(written !== rows.length && { error: `${rows.length - written} lignes non écrites` }),
+      source: "boxscores",
+      season: CURRENT_SEASON,
+      synced: written,
+    });
+  }
+
   // Bulk: sync all active players
   const { data: activePlayers } = await supabase
     .from("players")
@@ -99,6 +136,7 @@ export async function GET(request: NextRequest) {
 
   let synced = 0;
   let failed = 0;
+  let unavailable: string | null = null;
 
   // Process in parallel batches of 3 for quick, 1 at a time for full
   const BATCH_SIZE = 3;
@@ -121,6 +159,11 @@ export async function GET(request: NextRequest) {
       const results = await Promise.allSettled(
         batch.map((p) => syncPlayerCareerQuick(p.player_id, CURRENT_SEASON))
       );
+      const down = results.find((r) => r.status === "rejected" && isUpstreamUnavailable(r.reason));
+      if (down && down.status === "rejected") {
+        unavailable = (down.reason as Error).message;
+        break;
+      }
       results.forEach((r, j) => {
         const p = batch[j];
         const name = `${p.first_name} ${p.last_name}`.trim();
@@ -141,7 +184,11 @@ export async function GET(request: NextRequest) {
         await syncPlayerCareer(p.player_id);
         console.log(`[SYNC-CAREER] ${name} — OK (full)`);
         synced++;
-      } catch {
+      } catch (err) {
+        if (isUpstreamUnavailable(err)) {
+          unavailable = err.message;
+          break;
+        }
         console.log(`[SYNC-CAREER] ${name} — ERREUR (full)`);
         failed++;
       }
@@ -153,6 +200,20 @@ export async function GET(request: NextRequest) {
     if (i % 50 === 0 || i === activePlayers.length) {
       console.log(`[SYNC-CAREER] Progress: ${i}/${activePlayers.length} (synced: ${synced}, failed: ${failed})`);
     }
+  }
+
+  if (unavailable) {
+    // La source bride ou filtre notre adresse : elle le fera pour tous les
+    // joueurs restants. On s'arrête et on le dit, sans le maquiller en succès.
+    console.warn(`[SYNC-CAREER] stats.nba.com injoignable (${unavailable}) — arrêt après ${synced} joueur(s)`);
+    return NextResponse.json({
+      ok: false,
+      unavailable: "stats.nba.com",
+      error: `stats.nba.com injoignable : ${unavailable}`,
+      total: activePlayers.length,
+      synced,
+      failed,
+    });
   }
 
   const duration = ((Date.now() - startTime) / 1000).toFixed(1);

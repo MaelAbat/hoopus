@@ -7,6 +7,10 @@
 
   NBA playoff gameId format: "004XXYYZZ" — chars [6..8] encode the round
   (01=first round, 02=conf semis, 03=conf finals, 04=finals).
+
+  Games read from ESPN have no NBA gameId: their type and round live in the
+  `game_type` / `playoff_round` columns (migration 049). Always go through
+  `playoffRoundOf` / `isPlayinGame`, which read the columns first.
 */
 
 /** Round number from an NBA playoff gameId, or null if it is not a playoff game. */
@@ -16,13 +20,32 @@ export function playoffRoundFromGameId(gameId: string): number | null {
   return Number.isNaN(round) ? null : round;
 }
 
+interface TypedGame {
+  game_id: string;
+  game_type?: string | null;
+  playoff_round?: number | null;
+}
+
+/** Playoff round of a game (1-4), or null if it is not a playoff game. */
+export function playoffRoundOf(game: TypedGame): number | null {
+  if (game.game_type) return game.game_type === "playoffs" ? game.playoff_round ?? null : null;
+  return playoffRoundFromGameId(game.game_id);
+}
+
+export function isPlayinGame(game: TypedGame): boolean {
+  return game.game_type ? game.game_type === "playin" : game.game_id.startsWith("005");
+}
+
+export function isPlayoffGame(game: TypedGame): boolean {
+  return game.game_type ? game.game_type === "playoffs" : game.game_id.startsWith("004");
+}
+
 /** Stable key for a playoff series: round + alphabetically-sorted team pair. */
 export function playoffSeriesKey(round: number, teamA: string, teamB: string): string {
   return `${round}-${[teamA, teamB].sort().join("-")}`;
 }
 
-interface MinimalGame {
-  game_id: string;
+interface MinimalGame extends TypedGame {
   status: number;
   home_team: string;
   away_team: string;
@@ -38,7 +61,7 @@ interface MinimalGame {
 export function decidedSeriesKeysFromGames(games: MinimalGame[]): Set<string> {
   const wins = new Map<string, Record<string, number>>();
   for (const g of games) {
-    const round = playoffRoundFromGameId(g.game_id);
+    const round = playoffRoundOf(g);
     if (round === null || g.status !== 3) continue; // only finished playoff games count
     const key = playoffSeriesKey(round, g.home_team, g.away_team);
     const winner = g.home_score > g.away_score ? g.home_team : g.away_team;
@@ -75,12 +98,12 @@ export function decidedSeriesKeysFromSeries(series: MinimalSeries[]): Set<string
 
 /** Drop scheduled (status 1) games whose series key is in `decided`. Everything else passes through. */
 export function filterScheduledByDecidedSeries<
-  T extends { game_id: string; status: number; home_team: string; away_team: string }
+  T extends TypedGame & { status: number; home_team: string; away_team: string }
 >(games: T[], decided: Set<string>): T[] {
   if (decided.size === 0) return games;
   return games.filter((g) => {
     if (g.status !== 1) return true; // keep played / live games
-    const round = playoffRoundFromGameId(g.game_id);
+    const round = playoffRoundOf(g);
     if (round === null) return true; // not a playoff game
     return !decided.has(playoffSeriesKey(round, g.home_team, g.away_team));
   });

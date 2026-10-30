@@ -1,5 +1,6 @@
 import https from "node:https";
 import { createClient } from "@supabase/supabase-js";
+import { UpstreamUnavailableError } from "@/lib/upstream";
 
 const NBA_HEADERS: Record<string, string> = {
   Accept: "application/json, text/plain, */*",
@@ -32,8 +33,15 @@ function fetchNba(url: string): Promise<NbaResponse> {
         try { resolve(JSON.parse(Buffer.concat(chunks).toString("utf-8"))); } catch { reject(new Error("Parse error")); }
       });
     });
-    req.on("error", reject);
-    req.setTimeout(600000, () => { req.destroy(); reject(new Error("NBA API timeout after 10min")); });
+    // Quand stats.nba.com bride une adresse, il ne refuse pas : il laisse la
+    // connexion pendre sans jamais envoyer d'en-têtes. Sans cette échéance,
+    // chaque joueur attendait le délai entier — dix minutes — avant le suivant.
+    const silent = setTimeout(() => {
+      req.destroy(new UpstreamUnavailableError("stats.nba.com", "aucune réponse en 15s"));
+    }, 15_000);
+    req.on("response", () => clearTimeout(silent));
+    req.on("error", (err) => { clearTimeout(silent); reject(err); });
+    req.setTimeout(600000, () => { clearTimeout(silent); req.destroy(); reject(new Error("NBA API timeout after 10min")); });
   });
 }
 
@@ -130,7 +138,7 @@ export function overrideLeagueAvg(season: string, avg: LeagueAvg): void {
 }
 
 /** Compute Adjusted Shooting (+ stats) from raw player stats and league averages. */
-function computeAdjustedShooting(row: {
+export function computeAdjustedShooting(row: {
   season: string;
   fg_pct: number;
   fg3_pct: number;
@@ -216,89 +224,91 @@ async function fetchAdvancedByYear(playerId: number): Promise<Map<string, Record
  * Quick sync: base stats + adjusted shooting only (1 API call).
  * Does NOT overwrite advanced columns (off_rating, usg_pct, etc.)
  * — those keep their existing values from the last full sync.
+ *
+ * Les erreurs remontent à l'appelant, comme pour `syncPlayerCareer` : avalées,
+ * elles devenaient « 0 ligne » et la sync les annonçait comme des succès.
  */
 export async function syncPlayerCareerQuick(
   playerId: number,
   season: string,
 ): Promise<number> {
-  try {
-    const data = await fetchNba(
-      `https://stats.nba.com/stats/playercareerstats?LeagueID=00&PerMode=PerGame&PlayerID=${playerId}`
-    );
-    const rs = data.resultSets.find((r) => r.headers.includes("SEASON_ID"));
-    if (!rs) return 0;
+  const data = await fetchNba(
+    `https://stats.nba.com/stats/playercareerstats?LeagueID=00&PerMode=PerGame&PlayerID=${playerId}`
+  );
+  const rs = data.resultSets.find((r) => r.headers.includes("SEASON_ID"));
+  if (!rs) return 0;
 
-    const h = rs.headers;
-    const ii = (name: string) => h.indexOf(name);
-    const now = new Date().toISOString();
+  const h = rs.headers;
+  const ii = (name: string) => h.indexOf(name);
+  const now = new Date().toISOString();
 
-    const seasonRows = rs.rowSet.filter(
-      (row) => String(row[ii("SEASON_ID")] || "") === season
-    );
-    if (seasonRows.length === 0) return 0;
+  const seasonRows = rs.rowSet.filter(
+    (row) => String(row[ii("SEASON_ID")] || "") === season
+  );
+  if (seasonRows.length === 0) return 0;
 
-    const rows = seasonRows.map((row) => {
-      const fgm = Number(row[ii("FGM")] || 0);
-      const fga = Number(row[ii("FGA")] || 0);
-      const fg3m = Number(row[ii("FG3M")] || 0);
-      const fg3a = Number(row[ii("FG3A")] || 0);
-      const ftm = Number(row[ii("FTM")] || 0);
-      const fta = Number(row[ii("FTA")] || 0);
-      const pts = Number(row[ii("PTS")] || 0);
-      const fg_pct = Number(row[ii("FG_PCT")] || 0);
-      const fg3_pct = Number(row[ii("FG3_PCT")] || 0);
-      const ft_pct = Number(row[ii("FT_PCT")] || 0);
+  const rows = seasonRows.map((row) => {
+    const fgm = Number(row[ii("FGM")] || 0);
+    const fga = Number(row[ii("FGA")] || 0);
+    const fg3m = Number(row[ii("FG3M")] || 0);
+    const fg3a = Number(row[ii("FG3A")] || 0);
+    const ftm = Number(row[ii("FTM")] || 0);
+    const fta = Number(row[ii("FTA")] || 0);
+    const pts = Number(row[ii("PTS")] || 0);
+    const fg_pct = Number(row[ii("FG_PCT")] || 0);
+    const fg3_pct = Number(row[ii("FG3_PCT")] || 0);
+    const ft_pct = Number(row[ii("FT_PCT")] || 0);
 
-      const adj = computeAdjustedShooting({
-        season, fg_pct, fg3_pct, ft_pct, fgm, fga, fg3m, fg3a, ftm, fta, pts,
-      });
-
-      // Only base + adjusted shooting columns — no advanced stats (off_rating etc.)
-      // so existing advanced values in DB are preserved
-      return {
-        player_id: playerId,
-        season,
-        team: String(row[ii("TEAM_ABBREVIATION")] || ""),
-        gp: Number(row[ii("GP")] || 0),
-        min: Number(row[ii("MIN")] || 0),
-        pts,
-        reb: Number(row[ii("REB")] || 0),
-        ast: Number(row[ii("AST")] || 0),
-        stl: Number(row[ii("STL")] || 0),
-        blk: Number(row[ii("BLK")] || 0),
-        fg_pct,
-        fg3_pct,
-        ft_pct,
-        fgm,
-        fga,
-        fg3m,
-        fg3a,
-        ftm,
-        fta,
-        oreb: Number(row[ii("OREB")] || 0),
-        dreb: Number(row[ii("DREB")] || 0),
-        tov: Number(row[ii("TOV")] || 0),
-        pf: Number(row[ii("PF")] || 0),
-        plus_minus: Number(row[ii("PLUS_MINUS")] || 0),
-        ts_plus: adj.ts_plus,
-        efg_plus: adj.efg_plus,
-        fg_plus: adj.fg_plus,
-        fg3_plus: adj.fg3_plus,
-        ft_plus: adj.ft_plus,
-        fg2_plus: adj.fg2_plus,
-        updated_at: now,
-      };
+    const adj = computeAdjustedShooting({
+      season, fg_pct, fg3_pct, ft_pct, fgm, fga, fg3m, fg3a, ftm, fta, pts,
     });
 
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
-    await supabase.from("player_career_stats").upsert(rows, { onConflict: "player_id,season,team" });
-    return rows.length;
-  } catch {
-    return 0;
-  }
+    // Only base + adjusted shooting columns — no advanced stats (off_rating etc.)
+    // so existing advanced values in DB are preserved
+    return {
+      player_id: playerId,
+      season,
+      team: String(row[ii("TEAM_ABBREVIATION")] || ""),
+      gp: Number(row[ii("GP")] || 0),
+      min: Number(row[ii("MIN")] || 0),
+      pts,
+      reb: Number(row[ii("REB")] || 0),
+      ast: Number(row[ii("AST")] || 0),
+      stl: Number(row[ii("STL")] || 0),
+      blk: Number(row[ii("BLK")] || 0),
+      fg_pct,
+      fg3_pct,
+      ft_pct,
+      fgm,
+      fga,
+      fg3m,
+      fg3a,
+      ftm,
+      fta,
+      oreb: Number(row[ii("OREB")] || 0),
+      dreb: Number(row[ii("DREB")] || 0),
+      tov: Number(row[ii("TOV")] || 0),
+      pf: Number(row[ii("PF")] || 0),
+      plus_minus: Number(row[ii("PLUS_MINUS")] || 0),
+      ts_plus: adj.ts_plus,
+      efg_plus: adj.efg_plus,
+      fg_plus: adj.fg_plus,
+      fg3_plus: adj.fg3_plus,
+      ft_plus: adj.ft_plus,
+      fg2_plus: adj.fg2_plus,
+      updated_at: now,
+    };
+  });
+
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+  const { error } = await supabase
+    .from("player_career_stats")
+    .upsert(rows, { onConflict: "player_id,season,team" });
+  if (error) throw new Error(`écriture refusée : ${error.message}`);
+  return rows.length;
 }
 
 /**
@@ -308,94 +318,93 @@ export async function syncPlayerCareerQuick(
 export async function syncPlayerCareer(
   playerId: number,
 ): Promise<CareerSeason[]> {
-  try {
-    // Fetch base career stats first, then advanced (sequential to avoid NBA API throttling)
-    const baseData = await fetchNba(
-      `https://stats.nba.com/stats/playercareerstats?LeagueID=00&PerMode=PerGame&PlayerID=${playerId}`
-    );
-    const advancedMap = await fetchAdvancedByYear(playerId);
+  // Fetch base career stats first, then advanced (sequential to avoid NBA API throttling)
+  const baseData = await fetchNba(
+    `https://stats.nba.com/stats/playercareerstats?LeagueID=00&PerMode=PerGame&PlayerID=${playerId}`
+  );
+  const advancedMap = await fetchAdvancedByYear(playerId);
 
-    const rs = baseData.resultSets.find((r) => r.headers.includes("SEASON_ID"));
-    if (!rs || rs.rowSet.length === 0) return [];
+  const rs = baseData.resultSets.find((r) => r.headers.includes("SEASON_ID"));
+  if (!rs || rs.rowSet.length === 0) return [];
 
-    const h = rs.headers;
-    const ii = (name: string) => h.indexOf(name);
-    const now = new Date().toISOString();
+  const h = rs.headers;
+  const ii = (name: string) => h.indexOf(name);
+  const now = new Date().toISOString();
 
-    const rows = rs.rowSet.map((row) => {
-      const season = String(row[ii("SEASON_ID")] || "");
-      const adv = advancedMap.get(season) || {};
+  const rows = rs.rowSet.map((row) => {
+    const season = String(row[ii("SEASON_ID")] || "");
+    const adv = advancedMap.get(season) || {};
 
-      const fgm = Number(row[ii("FGM")] || 0);
-      const fga = Number(row[ii("FGA")] || 0);
-      const fg3m = Number(row[ii("FG3M")] || 0);
-      const fg3a = Number(row[ii("FG3A")] || 0);
-      const ftm = Number(row[ii("FTM")] || 0);
-      const fta = Number(row[ii("FTA")] || 0);
-      const pts = Number(row[ii("PTS")] || 0);
-      const fg_pct = Number(row[ii("FG_PCT")] || 0);
-      const fg3_pct = Number(row[ii("FG3_PCT")] || 0);
-      const ft_pct = Number(row[ii("FT_PCT")] || 0);
+    const fgm = Number(row[ii("FGM")] || 0);
+    const fga = Number(row[ii("FGA")] || 0);
+    const fg3m = Number(row[ii("FG3M")] || 0);
+    const fg3a = Number(row[ii("FG3A")] || 0);
+    const ftm = Number(row[ii("FTM")] || 0);
+    const fta = Number(row[ii("FTA")] || 0);
+    const pts = Number(row[ii("PTS")] || 0);
+    const fg_pct = Number(row[ii("FG_PCT")] || 0);
+    const fg3_pct = Number(row[ii("FG3_PCT")] || 0);
+    const ft_pct = Number(row[ii("FT_PCT")] || 0);
 
-      const adj = computeAdjustedShooting({
-        season, fg_pct, fg3_pct, ft_pct, fgm, fga, fg3m, fg3a, ftm, fta, pts,
-      });
-
-      return {
-        player_id: playerId,
-        season,
-        team: String(row[ii("TEAM_ABBREVIATION")] || ""),
-        gp: Number(row[ii("GP")] || 0),
-        min: Number(row[ii("MIN")] || 0),
-        pts,
-        reb: Number(row[ii("REB")] || 0),
-        ast: Number(row[ii("AST")] || 0),
-        stl: Number(row[ii("STL")] || 0),
-        blk: Number(row[ii("BLK")] || 0),
-        fg_pct,
-        fg3_pct,
-        ft_pct,
-        fgm,
-        fga,
-        fg3m,
-        fg3a,
-        ftm,
-        fta,
-        oreb: Number(row[ii("OREB")] || 0),
-        dreb: Number(row[ii("DREB")] || 0),
-        tov: Number(row[ii("TOV")] || 0),
-        pf: Number(row[ii("PF")] || 0),
-        plus_minus: Number(row[ii("PLUS_MINUS")] || 0),
-        off_rating: adv.off_rating ?? 0,
-        def_rating: adv.def_rating ?? 0,
-        net_rating: adv.net_rating ?? 0,
-        ts_pct: adv.ts_pct ?? 0,
-        efg_pct: adv.efg_pct ?? 0,
-        usg_pct: adv.usg_pct ?? 0,
-        pace: adv.pace ?? 0,
-        pie: adv.pie ?? 0,
-        ast_pct: adv.ast_pct ?? 0,
-        oreb_pct: adv.oreb_pct ?? 0,
-        dreb_pct: adv.dreb_pct ?? 0,
-        reb_pct: adv.reb_pct ?? 0,
-        ts_plus: adj.ts_plus,
-        efg_plus: adj.efg_plus,
-        fg_plus: adj.fg_plus,
-        fg3_plus: adj.fg3_plus,
-        ft_plus: adj.ft_plus,
-        fg2_plus: adj.fg2_plus,
-        updated_at: now,
-      };
+    const adj = computeAdjustedShooting({
+      season, fg_pct, fg3_pct, ft_pct, fgm, fga, fg3m, fg3a, ftm, fta, pts,
     });
 
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
-    await supabase.from("player_career_stats").upsert(rows, { onConflict: "player_id,season,team" });
+    return {
+      player_id: playerId,
+      season,
+      team: String(row[ii("TEAM_ABBREVIATION")] || ""),
+      gp: Number(row[ii("GP")] || 0),
+      min: Number(row[ii("MIN")] || 0),
+      pts,
+      reb: Number(row[ii("REB")] || 0),
+      ast: Number(row[ii("AST")] || 0),
+      stl: Number(row[ii("STL")] || 0),
+      blk: Number(row[ii("BLK")] || 0),
+      fg_pct,
+      fg3_pct,
+      ft_pct,
+      fgm,
+      fga,
+      fg3m,
+      fg3a,
+      ftm,
+      fta,
+      oreb: Number(row[ii("OREB")] || 0),
+      dreb: Number(row[ii("DREB")] || 0),
+      tov: Number(row[ii("TOV")] || 0),
+      pf: Number(row[ii("PF")] || 0),
+      plus_minus: Number(row[ii("PLUS_MINUS")] || 0),
+      off_rating: adv.off_rating ?? 0,
+      def_rating: adv.def_rating ?? 0,
+      net_rating: adv.net_rating ?? 0,
+      ts_pct: adv.ts_pct ?? 0,
+      efg_pct: adv.efg_pct ?? 0,
+      usg_pct: adv.usg_pct ?? 0,
+      pace: adv.pace ?? 0,
+      pie: adv.pie ?? 0,
+      ast_pct: adv.ast_pct ?? 0,
+      oreb_pct: adv.oreb_pct ?? 0,
+      dreb_pct: adv.dreb_pct ?? 0,
+      reb_pct: adv.reb_pct ?? 0,
+      ts_plus: adj.ts_plus,
+      efg_plus: adj.efg_plus,
+      fg_plus: adj.fg_plus,
+      fg3_plus: adj.fg3_plus,
+      ft_plus: adj.ft_plus,
+      fg2_plus: adj.fg2_plus,
+      updated_at: now,
+    };
+  });
 
-    return rows;
-  } catch {
-    return [];
-  }
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+  const { error } = await supabase
+    .from("player_career_stats")
+    .upsert(rows, { onConflict: "player_id,season,team" });
+  if (error) throw new Error(`écriture refusée : ${error.message}`);
+
+  return rows;
 }
