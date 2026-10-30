@@ -1,9 +1,11 @@
-import https from "node:https";
 import { revalidatePath } from "next/cache";
+import { keyOf, loadExisting, upsertChanged } from "@/lib/write-changed";
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import { fetchLeagueState } from "@/lib/league-season";
 import { isCronAuthorized } from "@/lib/cron-auth";
+import { fetchEspnJson } from "@/lib/espn-fetch";
+import { isUpstreamUnavailable } from "@/lib/upstream";
 
 // Saison résolue par requête depuis league_state (voir /api/sync-season).
 
@@ -48,26 +50,10 @@ interface EspnInjuryResponse {
 }
 
 function fetchEspn(team: string): Promise<EspnInjuryResponse> {
-  const url = `https://site.api.espn.com/apis/site/v2/sports/basketball/nba/injuries?team=${team}`;
-  return new Promise((resolve, reject) => {
-    const req = https.get(url, (res) => {
-      const chunks: Buffer[] = [];
-      res.on("data", (chunk: Buffer) => chunks.push(chunk));
-      res.on("end", () => {
-        if (res.statusCode !== 200) {
-          reject(new Error(`ESPN API error: ${res.statusCode} for ${team}`));
-          return;
-        }
-        try {
-          resolve(JSON.parse(Buffer.concat(chunks).toString("utf-8")));
-        } catch {
-          reject(new Error(`Failed to parse ESPN response for ${team}`));
-        }
-      });
-    });
-    req.on("error", reject);
-    req.setTimeout(30000, () => { req.destroy(); reject(new Error(`ESPN timeout for ${team}`)); });
-  });
+  return fetchEspnJson<EspnInjuryResponse>(
+    `https://site.api.espn.com/apis/site/v2/sports/basketball/nba/injuries?team=${team}`,
+    { label: `blessures ${team}` }
+  );
 }
 
 export async function GET(request: NextRequest) {
@@ -102,6 +88,12 @@ export async function GET(request: NextRequest) {
       updated_at: string;
     }[] = [];
 
+    // Équipes qui ont répondu, et celles qui n'ont pas répondu. Les deux
+    // comptent : les premières bornent le remplacement, les secondes se
+    // résument en une ligne au lieu de trente.
+    const fetchedTeams = new Set<string>();
+    const failures: string[] = [];
+
     const BATCH_SIZE = 6;
     for (let i = 0; i < ESPN_TEAMS.length; i += BATCH_SIZE) {
       const batch = ESPN_TEAMS.slice(i, i + BATCH_SIZE);
@@ -110,13 +102,14 @@ export async function GET(request: NextRequest) {
       for (let j = 0; j < results.length; j++) {
         const result = results[j];
         if (result.status !== "fulfilled") {
-          console.log(`[SYNC-INJURIES] Failed to fetch ${batch[j]}: ${result.reason}`);
+          failures.push(batch[j]);
           continue;
         }
 
         const data = result.value;
         const espnTeamAbbr = data.team?.abbreviation || batch[j];
         const team = TRICODE_MAP[espnTeamAbbr] || espnTeamAbbr;
+        fetchedTeams.add(team);
 
         for (const injury of data.injuries || []) {
           allInjuries.push({
@@ -136,21 +129,62 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    console.log(`[SYNC-INJURIES] Fetched ${allInjuries.length} injuries across 30 teams`);
-
-    // Full replace: clear then insert fresh data (removes healed players)
-    const { error: delError } = await supabase.from("injuries").delete().eq("season", SEASON);
-    if (delError) console.error(`[SYNC-INJURIES] Delete error:`, delError.message);
-
-    if (allInjuries.length > 0) {
-      for (let i = 0; i < allInjuries.length; i += 200) {
-        const chunk = allInjuries.slice(i, i + 200);
-        const { error } = await supabase.from("injuries").insert(chunk);
-        if (error) {
-          console.error(`[SYNC-INJURIES] Insert error (batch ${i}):`, error.message);
-        }
-      }
+    if (failures.length > 0) {
+      console.warn(
+        `[SYNC-INJURIES] ${failures.length}/${ESPN_TEAMS.length} équipe(s) injoignable(s) : ${failures.join(", ")}`
+      );
     }
+
+    // ESPN muet sur les trente équipes : ne rien toucher. Le remplacement qui
+    // suit effacerait l'infirmerie pour la remplacer par du vide — une panne de
+    // la source viderait la page au lieu de la laisser sur ses dernières
+    // données connues.
+    if (fetchedTeams.size === 0) {
+      console.warn(`[SYNC-INJURIES] ESPN indisponible — infirmerie inchangée`);
+      return NextResponse.json({
+        ok: true,
+        skipped: "ESPN indisponible",
+        teams: 0,
+        timestamp: now,
+      });
+    }
+
+    console.log(
+      `[SYNC-INJURIES] ${allInjuries.length} blessure(s) sur ${fetchedTeams.size} équipe(s)`
+    );
+
+    // Mise à jour différentielle, bornée aux équipes qui ont répondu : effacer
+    // la saison entière priverait de leurs blessures celles qui n'ont pas
+    // répondu. Tout effacer puis tout réinsérer à chaque passage coûtait des
+    // centaines d'écritures pour une infirmerie qui bouge de quelques lignes.
+    const KEY = ["player_name", "team"] as const;
+    const COMPARE = [
+      "player_position", "status", "injury_type", "injury_detail", "injury_side", "return_date", "short_comment",
+    ] as const;
+    const teams = [...fetchedTeams];
+    const existing = await loadExisting(supabase, "injuries", [...COMPARE, "id"], KEY, {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      filter: (q: any) => q.eq("season", SEASON).in("team", teams),
+      order: ["id"],
+    });
+
+    // Un même joueur listé deux fois ferait échouer l'upsert entier.
+    const fresh = [...new Map(allInjuries.map((r) => [keyOf(r, KEY), r])).values()];
+    const freshKeys = new Set(fresh.map((r) => keyOf(r, KEY)));
+    const healed = [...existing.entries()].filter(([k]) => !freshKeys.has(k)).map(([, r]) => r.id as number);
+
+    if (healed.length > 0) {
+      const { error: delError } = await supabase.from("injuries").delete().in("id", healed);
+      if (delError) console.error(`[SYNC-INJURIES] Delete error:`, delError.message);
+    }
+
+    const { written, unchanged } = await upsertChanged(supabase, "injuries", fresh, {
+      existing,
+      key: KEY,
+      compare: COMPARE,
+      onConflict: "player_name,team,season",
+    });
+    console.log(`[SYNC-INJURIES] ${written} écrite(s), ${unchanged} inchangée(s), ${healed.length} retirée(s)`);
 
     revalidatePath("/blessures");
     const duration = ((Date.now() - startTime) / 1000).toFixed(1);
@@ -159,13 +193,21 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       ok: true,
       injuries: allInjuries.length,
+      teams: fetchedTeams.size,
+      unreachable: failures.length || undefined,
       timestamp: now,
     });
   } catch (err) {
+    if (isUpstreamUnavailable(err)) {
+      console.warn(`[SYNC-INJURIES] ${err.source} indisponible (${err.message}) — infirmerie inchangée`);
+      return NextResponse.json({
+        ok: true,
+        skipped: `${err.source} indisponible`,
+        reason: err.message,
+        timestamp: now,
+      });
+    }
     console.error("[SYNC-INJURIES] Error:", err);
-    return NextResponse.json(
-      { error: (err as Error).message },
-      { status: 502 }
-    );
+    return NextResponse.json({ error: (err as Error).message }, { status: 502 });
   }
 }

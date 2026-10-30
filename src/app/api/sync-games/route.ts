@@ -5,6 +5,7 @@ import { fetchLeagueState } from "@/lib/league-season";
 import { isCronAuthorized } from "@/lib/cron-auth";
 import { isUpstreamUnavailable } from "@/lib/upstream";
 import { fetchSeasonGames, type GameRow } from "@/lib/espn-schedule";
+import { loadExisting, upsertChanged } from "@/lib/write-changed";
 
 /**
  * Calendrier et scores de la saison en cours, lus chez ESPN.
@@ -44,21 +45,31 @@ export async function GET(request: NextRequest) {
 
     console.log(`[SYNC-GAMES] ${games.length} matchs lus, écriture...`);
 
-    let inserted = 0;
-    for (let i = 0; i < games.length; i += 200) {
-      const batch = games.slice(i, i + 200);
-      const { error } = await supabase.from("games").upsert(batch, { onConflict: "game_id" });
-      if (error) {
-        console.error(`[SYNC-GAMES] Écriture refusée (lot ${i}) :`, error.message);
-      } else {
-        inserted += batch.length;
-      }
-    }
+    // Seuls les matchs nouveaux ou modifiés partent : d'un jour à l'autre, une
+    // dizaine de scores changent sur 1 200 matchs.
+    const COMPARE = [
+      "game_date", "game_time", "status", "status_text", "home_team", "home_team_name", "home_score",
+      "away_team", "away_team_name", "away_score", "arena", "arena_city", "season", "source",
+      "game_type", "playoff_round",
+    ] as const;
+    const existing = await loadExisting(supabase, "games", COMPARE, ["game_id"], {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      filter: (q: any) => q.eq("season", season),
+      order: ["game_id"],
+    });
+    const { written, unchanged, failed } = await upsertChanged(supabase, "games", games, {
+      existing,
+      key: ["game_id"],
+      compare: COMPARE,
+      onConflict: "game_id",
+    });
+    const inserted = written + unchanged;
+    console.log(`[SYNC-GAMES] ${written} écrit(s), ${unchanged} inchangé(s)${failed ? `, ${failed} refusé(s)` : ""}`);
 
     revalidatePath("/calendrier");
     revalidatePath("/");
     const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-    console.log(`[SYNC-GAMES] ${inserted} matchs écrits en ${duration}s`);
+    console.log(`[SYNC-GAMES] ${inserted} matchs à jour en ${duration}s`);
 
     return NextResponse.json({
       ok: inserted === games.length,

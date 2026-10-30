@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import { syncPlayerCareer, syncPlayerCareerQuick, overrideLeagueAvg, computeAdjustedShooting } from "@/lib/sync-career";
 import { isEspnSeason, seasonCareerLines } from "@/lib/boxscore-stats";
+import { loadExisting, upsertChanged } from "@/lib/write-changed";
 import { getCurrentSeason } from "@/lib/season";
 import { isCronAuthorized } from "@/lib/cron-auth";
 import { isUpstreamUnavailable } from "@/lib/upstream";
@@ -74,17 +75,22 @@ export async function GET(request: NextRequest) {
       updated_at: now,
     }));
 
-    let written = 0;
-    for (let i = 0; i < rows.length; i += 200) {
-      const { error } = await supabase
-        .from("player_career_stats")
-        .upsert(rows.slice(i, i + 200), { onConflict: "player_id,season,team" });
-      if (error) {
-        console.error(`[SYNC-CAREER] Écriture refusée (lot ${i}) :`, error.message);
-      } else {
-        written += Math.min(200, rows.length - i);
-      }
-    }
+    // Seules les lignes nouvelles ou modifiées partent : un joueur qui n'a pas
+    // joué la veille garde exactement la même ligne.
+    const compare = Object.keys(rows[0] ?? {}).filter((k) => !["player_id", "team", "season", "updated_at"].includes(k));
+    const existing = await loadExisting(supabase, "player_career_stats", compare, ["player_id", "team"], {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      filter: (q: any) => q.eq("season", CURRENT_SEASON),
+      order: ["player_id", "team"],
+    });
+    const r = await upsertChanged(supabase, "player_career_stats", rows, {
+      existing,
+      key: ["player_id", "team"],
+      compare,
+      onConflict: "player_id,season,team",
+    });
+    const written = r.written + r.unchanged;
+    console.log(`[SYNC-CAREER] ${r.written} ligne(s) écrite(s), ${r.unchanged} inchangée(s)`);
 
     const duration = ((Date.now() - startTime) / 1000).toFixed(1);
     console.log(`[SYNC-CAREER] ${written}/${rows.length} lignes ${CURRENT_SEASON} depuis les box scores (${duration}s)`);
