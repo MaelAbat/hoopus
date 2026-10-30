@@ -80,19 +80,37 @@ export default async function Statistiques({ searchParams }: { searchParams: Pro
       .eq("season", season)
       .eq("season_type", "regular");
 
-  const [{ data: seasonRows }, { count: leaderCount }] = await Promise.all([
+  const [{ data: seasonRows }, { count: leaderCount, error: countError }] = await Promise.all([
     supabase.from("standings").select("season").order("season", { ascending: false }).limit(1000),
     leadersOf(true),
   ]);
-  const pages = await Promise.all(
-    Array.from({ length: Math.ceil((leaderCount ?? 0) / 1000) }, (_, i) =>
+  if (countError) throw new Error(`stat_leaders ${season} : ${countError.message}`);
+
+  // Quatre pages à la fois, pas toutes ensemble : vingt-deux requêtes simultanées
+  // saturaient la base, et celles qui dépassaient le délai des visiteurs anonymes
+  // échouaient en silence — juste après le cron, la page annonçait alors une
+  // saison « pas encore synchronisée ». Une page qui échoue est retentée une
+  // fois ; si elle échoue encore, le rendu échoue plutôt que d'afficher, et de
+  // mettre en cache, une saison incomplète.
+  const fetchPage = async (i: number) => {
+    const query = () =>
       leadersOf()
         .order("rank", { ascending: true })
         .order("category", { ascending: true })
         .order("player_name", { ascending: true })
-        .range(i * 1000, (i + 1) * 1000 - 1)
-    )
-  );
+        .range(i * 1000, (i + 1) * 1000 - 1);
+    const first = await query();
+    if (!first.error) return first;
+    const retry = await query();
+    if (retry.error) throw new Error(`stat_leaders ${season}, page ${i} : ${retry.error.message}`);
+    return retry;
+  };
+  const pageCount = Math.ceil((leaderCount ?? 0) / 1000);
+  const pages: Awaited<ReturnType<typeof fetchPage>>[] = [];
+  for (let start = 0; start < pageCount; start += 4) {
+    const wave = Array.from({ length: Math.min(4, pageCount - start) }, (_, k) => fetchPage(start + k));
+    pages.push(...(await Promise.all(wave)));
+  }
   const availableSeasons = buildSeasonOptions(
     (seasonRows || []).map((r: { season: string }) => r.season),
     leagueState.currentSeason,
