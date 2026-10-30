@@ -1,32 +1,37 @@
 {
-  "regions": ["dub1"],
+  "regions": [
+    "dub1"
+  ],
   "functions": {
     "src/app/api/cron/route.ts": {
       "maxDuration": 300
     },
     "src/app/api/sync-stats/route.ts": {
-      "maxDuration": 60
+      "maxDuration": 300
     },
     "src/app/api/sync-team-stats/route.ts": {
-      "maxDuration": 60
+      "maxDuration": 300
     },
     "src/app/api/sync-season/route.ts": {
-      "maxDuration": 60
+      "maxDuration": 300
     },
     "src/app/api/sync-players/route.ts": {
-      "maxDuration": 60
+      "maxDuration": 300
     },
     "src/app/api/sync-rosters/route.ts": {
-      "maxDuration": 60
+      "maxDuration": 300
     },
     "src/app/api/sync-transactions/route.ts": {
-      "maxDuration": 60
+      "maxDuration": 300
     },
     "src/app/api/sync-draft/route.ts": {
-      "maxDuration": 60
+      "maxDuration": 300
     },
     "src/app/api/sync-contracts/route.ts": {
-      "maxDuration": 60
+      "maxDuration": 300
+    },
+    "src/app/api/sync-career/route.ts": {
+      "maxDuration": 300
     }
   },
   "crons": [

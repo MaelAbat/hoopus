@@ -8,7 +8,10 @@ import { isUpstreamUnavailable, UpstreamUnavailableError } from "@/lib/upstream"
 import { ensureSeasonBoxscores, isEspnSeason, playerDashboards } from "@/lib/boxscore-stats";
 
 // Saison résolue par requête depuis league_state (voir /api/sync-season).
-const BATCH_SIZE = 200;
+// Mille lignes par écriture : à deux cents, les ~22 000 lignes d'une saison
+// coûtaient plus de cent allers-retours vers Supabase, et la route dépassait
+// sa limite de durée sur Vercel.
+const BATCH_SIZE = 1000;
 
 // Eligibility gates — playoffs use much smaller thresholds because the format
 // caps each team at ~28 games (and most players play far fewer).

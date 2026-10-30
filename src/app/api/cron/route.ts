@@ -2,6 +2,92 @@ import { revalidatePath } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 import { isCronAuthorized } from "@/lib/cron-auth";
 
+/** Issue d'une étape, telle que lue dans sa réponse. */
+type StepStatus = "ok" | "skip" | "fail";
+
+interface StepResult {
+  status: StepStatus;
+  /** Statut HTTP de la route appelée. */
+  http: number;
+  seconds: number;
+  /** Raison d'un échec ou d'une étape sautée. */
+  detail?: string;
+  data?: Record<string, unknown>;
+}
+
+/**
+ * Appelle une route de sync et rend compte de son issue, sans jamais lever.
+ *
+ * Une route qui dépasse sa durée répond par une page d'erreur de Vercel, pas
+ * par du JSON. Lue avec `res.json()`, elle faisait planter tout le cron à la
+ * fin de la chaîne — « Unexpected token 'A', "An error o"… » — sans dire quelle
+ * étape avait cédé. Chaque étape est donc lue isolément, et journalisée par son
+ * nom : en erreur (`console.error`, en rouge dans les logs Vercel) si elle a
+ * échoué, en avertissement si sa source était injoignable.
+ */
+async function runStep(name: string, url: string): Promise<StepResult> {
+  const started = Date.now();
+  const seconds = () => Number(((Date.now() - started) / 1000).toFixed(1));
+
+  let res: Response;
+  try {
+    res = await fetch(url);
+  } catch (err) {
+    const result: StepResult = { status: "fail", http: 0, seconds: seconds(), detail: `appel impossible : ${(err as Error).message}` };
+    console.error(`[CRON] ✗ ${name} — ${result.detail} (${result.seconds}s)`);
+    return result;
+  }
+
+  const body = await res.text();
+  let data: Record<string, unknown> | undefined;
+  try {
+    data = JSON.parse(body);
+  } catch {
+    // Page d'erreur de Vercel (durée dépassée, plantage) ou challenge du pare-feu.
+    const hint = /FUNCTION_INVOCATION_TIMEOUT|timed out/i.test(body)
+      ? "durée maximale dépassée"
+      : res.headers.get("x-vercel-mitigated")
+        ? "bloquée par le pare-feu Vercel"
+        : "réponse illisible";
+    const result: StepResult = {
+      status: "fail",
+      http: res.status,
+      seconds: seconds(),
+      detail: `${hint} — HTTP ${res.status} : ${body.slice(0, 120).replace(/\s+/g, " ")}`,
+    };
+    console.error(`[CRON] ✗ ${name} — ${result.detail} (${result.seconds}s)`);
+    return result;
+  }
+
+  if (!res.ok || data?.ok === false || data?.error) {
+    const result: StepResult = {
+      status: "fail",
+      http: res.status,
+      seconds: seconds(),
+      detail: String(data?.error ?? `HTTP ${res.status}`),
+      data,
+    };
+    console.error(`[CRON] ✗ ${name} — ${result.detail} (${result.seconds}s)`);
+    return result;
+  }
+
+  if (data?.skipped) {
+    const result: StepResult = {
+      status: "skip",
+      http: res.status,
+      seconds: seconds(),
+      detail: `${data.skipped}${data.reason ? ` — ${data.reason}` : ""}`,
+      data,
+    };
+    console.warn(`[CRON] ~ ${name} sautée — ${result.detail} (${result.seconds}s)`);
+    return result;
+  }
+
+  const result: StepResult = { status: "ok", http: res.status, seconds: seconds(), data };
+  console.log(`[CRON] ✓ ${name} (${result.seconds}s)`);
+  return result;
+}
+
 export async function GET(request: NextRequest) {
   if (!isCronAuthorized(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -12,60 +98,46 @@ export async function GET(request: NextRequest) {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3002";
   const cronSecret = process.env.CRON_SECRET || "";
   const authParam = `cron_secret=${encodeURIComponent(cronSecret)}`;
+  const step = (name: string) => runStep(name, `${baseUrl}/api/sync-${name}?${authParam}`);
+
+  const steps: Record<string, StepResult> = {};
 
   // La bascule de saison passe EN PREMIER : tous les autres endpoints lisent
   // league_state pour savoir dans quelle saison écrire. L'inverser ferait
   // atterrir une journée de données dans la saison précédente.
-  const seasonRes = await fetch(`${baseUrl}/api/sync-season?${authParam}`);
-  const seasonData = await seasonRes.json();
+  steps.season = await step("season");
+  const season = steps.season.data ?? {};
   console.log(
-    `[CRON] Saison courante ${seasonData.currentSeason ?? "?"} ` +
-      `(stats ${seasonData.statsSeason ?? "?"}, calendrier ${seasonData.scheduleSeason ?? "?"})`
+    `[CRON] Saison courante ${season.currentSeason ?? "?"} ` +
+      `(stats ${season.statsSeason ?? "?"}, calendrier ${season.scheduleSeason ?? "?"})`
   );
 
-  // Sync non-NBA-stats sources in parallel (CDN/ESPN — no rate limit)
-  const [gamesRes, standingsRes, playoffsRes, injuriesRes] = await Promise.all([
-    fetch(`${baseUrl}/api/sync-games?${authParam}`),
-    fetch(`${baseUrl}/api/sync-standings?${authParam}`),
-    fetch(`${baseUrl}/api/sync-playoffs?${authParam}`),
-    fetch(`${baseUrl}/api/sync-injuries?${authParam}`),
-  ]);
+  // Sources rapides (ESPN, CDN) en parallèle.
+  const [games, standings, playoffs, injuries] = await Promise.all(
+    ["games", "standings", "playoffs", "injuries"].map(step)
+  );
+  Object.assign(steps, { games, standings, playoffs, injuries });
 
-  // Sync stats.nba.com sources sequentially to avoid rate limiting.
+  // Statistiques, puis ce qui en dépend : sync-team-stats et sync-career
+  // réutilisent les box scores que sync-stats vient de compléter.
+  steps.stats = await step("stats");
+  steps["team-stats"] = await step("team-stats");
+  steps.career = await step("career");
+
   // sync-players doit précéder sync-rosters, qui lit la table players : sans
-  // lui, les changements d'équipe de l'intersaison n'arrivent jamais.
-  const statsRes = await fetch(`${baseUrl}/api/sync-stats?${authParam}`);
-  const teamStatsRes = await fetch(`${baseUrl}/api/sync-team-stats?${authParam}`);
-  // Ligne de la saison en cours des fiches joueurs, calculée à partir des box
-  // scores que sync-stats vient de compléter.
-  const careerRes = await fetch(`${baseUrl}/api/sync-career?${authParam}`);
-  const playersRes = await fetch(`${baseUrl}/api/sync-players?${authParam}`);
-  const rostersRes = await fetch(`${baseUrl}/api/sync-rosters?${authParam}`);
+  // lui, les changements d'équipe n'arrivent jamais.
+  steps.players = await step("players");
+  steps.rosters = await step("rosters");
 
   // Sources Basketball Reference, à la suite des effectifs : BR limite le débit
   // et répond 429 quand deux lectures se chevauchent. sync-players doit précéder
   // ces deux-là, qui relient les mouvements aux fiches joueurs par le nom.
-  const transactionsRes = await fetch(`${baseUrl}/api/sync-transactions?${authParam}`);
-  const draftRes = await fetch(`${baseUrl}/api/sync-draft?${authParam}`);
+  steps.transactions = await step("transactions");
+  steps.draft = await step("draft");
   // Les montants des contrats tournent par rotation d'équipes : aucune source de
   // transactions ne chiffre ses lignes, et les trente pages de BR ne tiennent pas
   // dans une seule exécution.
-  const contractsRes = await fetch(`${baseUrl}/api/sync-contracts?${authParam}`);
-
-  const [gamesData, standingsData, playoffsData, injuriesData, statsData, teamStatsData, careerData, playersData, rostersData, transactionsData, draftData, contractsData] = await Promise.all([
-    gamesRes.json(),
-    standingsRes.json(),
-    playoffsRes.json(),
-    injuriesRes.json(),
-    statsRes.json(),
-    teamStatsRes.json(),
-    careerRes.json(),
-    playersRes.json(),
-    rostersRes.json(),
-    transactionsRes.json(),
-    draftRes.json(),
-    contractsRes.json(),
-  ]);
+  steps.contracts = await step("contracts");
 
   // Revalidate all data-driven pages after sync
   revalidatePath("/");
@@ -81,38 +153,22 @@ export async function GET(request: NextRequest) {
   revalidatePath("/mercato");
   revalidatePath("/draft");
 
-  const results = {
-    ok: true,
-    season: seasonData,
-    stats: statsData,
-    games: gamesData,
-    standings: standingsData,
-    injuries: injuriesData,
-    teamStats: teamStatsData,
-    career: careerData,
-    playoffs: playoffsData,
-    players: playersData,
-    rosters: rostersData,
-    transactions: transactionsData,
-    draft: draftData,
-    contracts: contractsData,
-    timestamp: new Date().toISOString(),
-  };
+  const failed = Object.entries(steps).filter(([, r]) => r.status === "fail").map(([name]) => name);
+  const skipped = Object.entries(steps).filter(([, r]) => r.status === "skip").map(([name]) => name);
+  const timestamp = new Date().toISOString();
 
-  console.log(`[CRON] Sync completed at ${results.timestamp}`);
-  console.log(`[CRON] Results:`, JSON.stringify({
-    stats: statsData.ok ?? statsData.error,
-    games: gamesData.ok ?? gamesData.error,
-    standings: standingsData.ok ?? standingsData.error,
-    injuries: injuriesData.ok ?? injuriesData.error,
-    teamStats: teamStatsData.ok ?? teamStatsData.error,
-    playoffs: playoffsData.ok ?? playoffsData.error,
-    players: playersData.ok ?? playersData.error,
-    rosters: rostersData.ok ?? rostersData.error,
-    transactions: transactionsData.ok ?? transactionsData.error,
-    draft: draftData.ok ?? draftData.error,
-    contracts: contractsData.ok ?? contractsData.error,
-  }));
+  const summary =
+    `[CRON] Terminé à ${timestamp} — ${Object.keys(steps).length - failed.length - skipped.length} OK` +
+    (skipped.length ? `, sautées : ${skipped.join(", ")}` : "") +
+    (failed.length ? `, EN ÉCHEC : ${failed.join(", ")}` : "");
+  if (failed.length) console.error(summary);
+  else console.log(summary);
 
-  return NextResponse.json(results);
+  // Une étape en échec fait échouer le cron : Vercel l'affiche alors en erreur,
+  // au lieu d'un succès qui ne se voit qu'en lisant les logs. Une étape sautée
+  // (source injoignable) n'est qu'un avertissement.
+  return NextResponse.json(
+    { ok: failed.length === 0, failed, skipped, steps, timestamp },
+    { status: failed.length ? 500 : 200 }
+  );
 }
