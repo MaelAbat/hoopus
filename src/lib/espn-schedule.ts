@@ -69,6 +69,7 @@ export interface EspnEvent {
   season?: { year: number; type: number };
   seasonType?: { id: string; type: number };
   competitions: {
+    date?: string;
     timeValid?: boolean;
     venue?: { fullName?: string; address?: { city?: string } };
     competitors: EspnCompetitor[];

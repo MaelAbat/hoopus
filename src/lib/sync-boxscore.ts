@@ -1,5 +1,7 @@
 import https from "node:https";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { espnEventId } from "./espn-teams";
+import { fetchEspnBoxscore } from "./espn-boxscore";
 
 interface NbaBoxscoreResponse {
   game: {
@@ -128,13 +130,17 @@ function buildRows(gameId: string, team: NbaTeam, isHome: boolean, now: string) 
  * Returns true if data was synced (or already existed), false on error.
  */
 export async function syncBoxscore(gameId: string): Promise<boolean> {
-  // Validate gameId format (10-digit NBA game ID)
-  if (!/^\d{10}$/.test(gameId)) return false;
-
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
+
+  // Matchs lus chez ESPN depuis 2026-27 : même table, autre source.
+  const eventId = espnEventId(gameId);
+  if (eventId) return syncEspnBoxscore(supabase, gameId, eventId);
+
+  // Validate gameId format (10-digit NBA game ID)
+  if (!/^\d{10}$/.test(gameId)) return false;
 
   try {
     // Throttle: if the games row was refreshed very recently (either by a prior
@@ -188,6 +194,53 @@ export async function syncBoxscore(gameId: string): Promise<boolean> {
     return true;
   } catch {
     // Silently fail — page will show "no data" fallback
+    return false;
+  }
+}
+
+/**
+ * Box score d'un match ESPN. Même étranglement que pour la NBA, et rien à
+ * relire pour un match terminé dont le box score est déjà en base : ses
+ * chiffres ne bougeront plus.
+ */
+async function syncEspnBoxscore(supabase: SupabaseClient, gameId: string, eventId: string): Promise<boolean> {
+  try {
+    const [{ data: current }, { count }] = await Promise.all([
+      supabase.from("games").select("status, updated_at").eq("game_id", gameId).single(),
+      supabase.from("boxscores").select("game_id", { count: "exact", head: true }).eq("game_id", gameId),
+    ]);
+
+    if (current?.status === 3 && (count ?? 0) > 0) return true;
+    if (current?.updated_at && Date.now() - new Date(current.updated_at).getTime() < 15_000 && (count ?? 0) > 0) {
+      return true;
+    }
+
+    const { rows, game } = await fetchEspnBoxscore(supabase, gameId, eventId);
+
+    if (game) {
+      await supabase
+        .from("games")
+        .update({
+          home_score: game.home_score,
+          away_score: game.away_score,
+          status: game.status,
+          status_text: game.status_text,
+          updated_at: game.updated_at,
+        })
+        .eq("game_id", gameId);
+    }
+
+    if (rows.length === 0) return false;
+
+    await supabase.from("boxscores").delete().eq("game_id", gameId);
+    const { error } = await supabase.from("boxscores").insert(rows);
+    if (error) {
+      console.error("Boxscore insert error:", error);
+      return false;
+    }
+    return true;
+  } catch {
+    // ESPN muet : la page affiche le repli « aucune donnée ».
     return false;
   }
 }

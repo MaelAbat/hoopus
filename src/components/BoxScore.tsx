@@ -168,11 +168,25 @@ function TeamTable({
   );
 }
 
+/**
+ * Lien vers la fiche du joueur. Un identifiant négatif désigne un joueur lu chez
+ * ESPN qui n'a pas encore de fiche : son nom s'affiche, sans lien.
+ */
+function PlayerLink({ playerId, children }: { playerId: number; children: React.ReactNode }) {
+  const className = "flex items-center gap-2 group";
+  if (playerId < 0) return <div className={className}>{children}</div>;
+  return (
+    <Link href={`/joueurs/${playerId}`} className={className}>
+      {children}
+    </Link>
+  );
+}
+
 function PlayerRow({ player: p }: { player: PlayerLine }) {
   return (
     <tr className="border-b border-rule hover:bg-card-hover transition-colors duration-150 cursor-pointer">
       <td className="sticky left-0 z-10 bg-card hover:bg-card-hover px-3 py-2">
-        <Link href={`/joueurs/${p.player_id}`} className="flex items-center gap-2 group">
+        <PlayerLink playerId={p.player_id}>
           <div className="relative h-7 w-7 shrink-0">
             <img
               src={playerPhotoUrl(p.player_id)}
@@ -190,7 +204,7 @@ function PlayerRow({ player: p }: { player: PlayerLine }) {
               {p.jersey && <span className="tnum"> #{p.jersey}</span>}
             </p>
           </div>
-        </Link>
+        </PlayerLink>
       </td>
       {STAT_COLS.map((col) => {
         const val = getVal(p, col.key);

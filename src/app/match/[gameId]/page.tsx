@@ -1,6 +1,5 @@
 import { createPublicClient } from "@/lib/supabase/public";
 import { syncBoxscore } from "@/lib/sync-boxscore";
-import { isEspnGameId } from "@/lib/espn-teams";
 import { getHighlightVideoId } from "@/lib/youtube";
 import BoxScore from "@/components/BoxScore";
 import TeamStatsComparison from "@/components/TeamStatsComparison";
@@ -11,7 +10,6 @@ import LiveScoreHeader from "@/components/match/LiveScoreHeader";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import type { Metadata } from "next";
-import { createClient as createMatchClient } from "@/lib/supabase/server";
 import { OG_IMAGE } from "@/lib/seo";
 
 export const revalidate = 60;
@@ -31,7 +29,7 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { gameId } = await params;
-  const supabase = await createMatchClient();
+  const supabase = createPublicClient();
   const { data: game } = await supabase
     .from("games")
     .select("home_team_name, away_team_name, home_score, away_score, game_date, status")
@@ -62,9 +60,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function MatchPage({ params }: PageProps) {
   const { gameId } = await params;
 
-  // Sync boxscore on-demand (fetches from NBA CDN if not in DB). Les matchs lus
-  // chez ESPN n'existent pas sur le CDN NBA : l'appel attendrait pour rien.
-  if (!isEspnGameId(gameId)) await syncBoxscore(gameId);
+  // Sync boxscore on-demand (NBA CDN, or ESPN for games read from ESPN)
+  await syncBoxscore(gameId);
 
   const supabase = createPublicClient();
 

@@ -95,7 +95,12 @@ export function teamLogoUrl(tricode: string): string {
 /**
  * Get player headshot URL.
  */
+/**
+ * Photo d'un joueur. Un identifiant négatif désigne un joueur connu d'ESPN mais
+ * absent de la table `players` (voir lib/espn-boxscore) : sa photo vient d'ESPN.
+ */
 export function playerPhotoUrl(playerId: number): string {
+  if (playerId < 0) return `https://a.espncdn.com/i/headshots/nba/players/full/${-playerId}.png`;
   return `https://cdn.nba.com/headshots/nba/latest/260x190/${playerId}.png`;
 }
 
