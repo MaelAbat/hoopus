@@ -38,6 +38,7 @@ const SEQUENTIAL_ENDPOINTS = [
   { key: "stats", label: "Statistiques" },
   { key: "team-stats", label: "Stats equipes" },
   { key: "career", label: "Carrieres" },
+  { key: "cleanup", label: "Comptes anonymes" },
 ];
 
 const ALL_ENDPOINTS = [SEASON_ENDPOINT, ...PARALLEL_ENDPOINTS, ...SEQUENTIAL_ENDPOINTS];
