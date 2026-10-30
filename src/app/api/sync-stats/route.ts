@@ -729,7 +729,7 @@ export async function GET(request: NextRequest) {
     const fromBoxscores = await isEspnSeason(supabase, SEASON);
     if (fromBoxscores) {
       for (const gameType of ["regular", "playoffs"] as const) {
-        const r = await ensureSeasonBoxscores(supabase, SEASON, gameType, { budgetMs: 20_000 });
+        const r = await ensureSeasonBoxscores(supabase, SEASON, gameType, { budgetMs: 90_000 });
         if (r.missing > 0) {
           console.log(`[SYNC-STATS] Box scores ${gameType} : ${r.synced}/${r.missing} récupérés`);
         }
