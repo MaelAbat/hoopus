@@ -140,6 +140,8 @@ export async function GET(request: NextRequest) {
   // transactions ne chiffre ses lignes, et les trente pages de BR ne tiennent pas
   // dans une seule exécution.
   steps.contracts = await step("contracts");
+  // Comptes anonymes abandonnés (migration 056) : en dernier, rien n'en dépend.
+  steps.cleanup = await step("cleanup");
 
   // Revalidate all data-driven pages after sync
   revalidatePath("/");
