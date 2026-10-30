@@ -1,9 +1,10 @@
-import https from "node:https";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import { fetchLeagueState } from "@/lib/league-season";
 import { isCronAuthorized } from "@/lib/cron-auth";
+import { fetchEspnJson } from "@/lib/espn-fetch";
+import { isUpstreamUnavailable } from "@/lib/upstream";
 
 // Saison résolue par requête depuis league_state (voir /api/sync-season).
 // ESPN uses the END year of the season (e.g. "2025-26" → 2026)
@@ -45,24 +46,8 @@ interface EspnStandingsResponse {
 }
 
 function fetchStandings(season: string): Promise<EspnStandingsResponse> {
-  return new Promise((resolve, reject) => {
-    const req = https.get(espnUrl(season), (res) => {
-      const chunks: Buffer[] = [];
-      res.on("data", (chunk: Buffer) => chunks.push(chunk));
-      res.on("end", () => {
-        if (res.statusCode !== 200) {
-          reject(new Error(`ESPN API error: ${res.statusCode}`));
-          return;
-        }
-        try {
-          resolve(JSON.parse(Buffer.concat(chunks).toString("utf-8")));
-        } catch {
-          reject(new Error("Failed to parse standings"));
-        }
-      });
-    });
-    req.on("error", reject);
-    req.setTimeout(600000, () => { req.destroy(); reject(new Error("ESPN timeout after 10min")); });
+  return fetchEspnJson<EspnStandingsResponse>(espnUrl(season), {
+    label: `classement ${season}`,
   });
 }
 
@@ -153,10 +138,18 @@ export async function GET(request: NextRequest) {
       timestamp: now,
     });
   } catch (err) {
+    // Une source qui nous refuse l'accès n'est pas une panne de la route : on le
+    // dit en une ligne, sans trace d'exception, et on répond « rien à faire ».
+    if (isUpstreamUnavailable(err)) {
+      console.warn(`[SYNC-STANDINGS] ${err.source} indisponible (${err.message}) — classement inchangé`);
+      return NextResponse.json({
+        ok: true,
+        skipped: `${err.source} indisponible`,
+        reason: err.message,
+        timestamp: new Date().toISOString(),
+      });
+    }
     console.error("Error syncing standings:", err);
-    return NextResponse.json(
-      { error: (err as Error).message },
-      { status: 502 }
-    );
+    return NextResponse.json({ error: (err as Error).message }, { status: 502 });
   }
 }

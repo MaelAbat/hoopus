@@ -1,4 +1,4 @@
-import https from "node:https";
+import { fetchEspnJson } from "./espn-fetch";
 import { createHash } from "node:crypto";
 import { seasonForEventDate } from "./season-phases";
 import type { EventAsset, EventContract, EventKind, EventPlayer } from "./market";
@@ -48,28 +48,7 @@ function nbaTricode(espn: string): string {
 /* ─── Accès réseau ─── */
 
 function fetchJson<T>(url: string): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const req = https.get(url, { headers: { Accept: "application/json" } }, (res) => {
-      const chunks: Buffer[] = [];
-      res.on("data", (c: Buffer) => chunks.push(c));
-      res.on("end", () => {
-        if (res.statusCode !== 200) {
-          reject(new Error(`ESPN: HTTP ${res.statusCode}`));
-          return;
-        }
-        try {
-          resolve(JSON.parse(Buffer.concat(chunks).toString("utf-8")) as T);
-        } catch {
-          reject(new Error("ESPN: réponse illisible"));
-        }
-      });
-    });
-    req.on("error", reject);
-    req.setTimeout(30000, () => {
-      req.destroy();
-      reject(new Error("ESPN: délai dépassé"));
-    });
-  });
+  return fetchEspnJson<T>(url, { label: "mouvements" });
 }
 
 interface EspnTransaction {
