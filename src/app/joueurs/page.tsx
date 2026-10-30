@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/public";
 import { OG_IMAGE } from "@/lib/seo";
 import PageBanner from "@/components/PageBanner";
 import PlayersView from "@/components/PlayersView";
@@ -19,7 +19,7 @@ export const metadata = {
 };
 
 export default async function Joueurs() {
-  const supabase = await createClient();
+  const supabase = createPublicClient();
 
   // Paginate (Supabase 1000 row limit)
   const pages = await Promise.all(

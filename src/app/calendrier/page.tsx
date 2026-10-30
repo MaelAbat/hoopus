@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/public";
 import { OG_IMAGE } from "@/lib/seo";
 import { buildSeasonOptions, seasonLabel, seasonStatus, seasonStatusLabel } from "@/lib/season";
 import { getLeagueState } from "@/lib/league-season";
@@ -29,7 +29,7 @@ export default async function Calendrier({ searchParams }: { searchParams: Promi
   // nouveau calendrier doit apparaître dès sa parution.
   const defaultSeason = leagueState.scheduleSeason;
   const season = seasonParam || defaultSeason;
-  const supabase = await createClient();
+  const supabase = createPublicClient({ revalidate: 3600 });
 
   // Fetch one game per potential season to discover available seasons
   const potentialSeasons: string[] = [];

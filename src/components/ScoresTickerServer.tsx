@@ -1,10 +1,10 @@
-import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/public";
 import { getStatsSeason } from "@/lib/league-season";
 import { decidedSeriesKeysFromSeries, filterScheduledByDecidedSeries } from "@/lib/playoff-utils";
 import ScoresTicker from "./ScoresTicker";
 
 export default async function ScoresTickerServer() {
-  const supabase = await createClient();
+  const supabase = createPublicClient({ revalidate: 300 });
 
   // Lazily resolve the set of decided playoff series so we can drop scheduled
   // games that will never be played (series ended 4-0/4-1/4-2). Only queried

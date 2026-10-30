@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useLiveScores } from "@/lib/useLiveScores";
 import { teamLogoUrl } from "@/lib/nba-teams";
 
@@ -32,11 +33,15 @@ export default function LiveScoreHeader({
   arena,
   arenaCity,
 }: Props) {
-  // Always poll while the page is open: a scheduled game can flip to live, and
-  // a "final" render might be stale if we loaded the page before the game started.
-  // For truly-final games the endpoint just reads the DB (syncBoxscore is gated on status === 2).
-  const updates = useLiveScores([gameId], true);
+  // Poll until the game is final: a scheduled game can flip to live, and a live
+  // one needs its score. A final game has nothing left to update — and the page
+  // is cached for a minute, so a stale "final" render cannot last.
+  const [isFinal, setIsFinal] = useState(initialStatus === 3);
+  const updates = useLiveScores([gameId], !isFinal);
   const live = updates.get(gameId);
+  useEffect(() => {
+    if (live?.status === 3) setIsFinal(true);
+  }, [live?.status]);
 
   const awayScore = live?.away_score ?? initialAwayScore;
   const homeScore = live?.home_score ?? initialHomeScore;

@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/public";
 import { OG_IMAGE } from "@/lib/seo";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
@@ -71,7 +71,7 @@ export default async function ComparerPage({
   let playersData: CompareData[] = [];
 
   if (ids.length > 0) {
-    const supabase = await createClient();
+    const supabase = createPublicClient({ revalidate: 3600 });
 
     const [{ data: players }, { data: careerStats }] = await Promise.all([
       supabase

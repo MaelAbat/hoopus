@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/public";
 import { revalidatePath } from "next/cache";
 
 async function requireAdmin() {
@@ -19,7 +20,7 @@ async function requireAdmin() {
 }
 
 export async function getNews() {
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   const { data, error } = await supabase
     .from("news")
     .select("*")
@@ -30,7 +31,7 @@ export async function getNews() {
 }
 
 export async function hasNews(): Promise<boolean> {
-  const supabase = await createClient();
+  const supabase = createPublicClient({ revalidate: 3600 });
   const { count } = await supabase
     .from("news")
     .select("*", { count: "exact", head: true });
@@ -38,7 +39,7 @@ export async function hasNews(): Promise<boolean> {
 }
 
 export async function getNewsById(id: string) {
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   const { data, error } = await supabase
     .from("news")
     .select("*")

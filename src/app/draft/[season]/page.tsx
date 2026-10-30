@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/public";
 import { OG_IMAGE } from "@/lib/seo";
 import { seasonBefore, seasonStartYear } from "@/lib/season";
 import { teamNickname } from "@/lib/nba-teams";
@@ -9,6 +9,13 @@ import PageBanner from "@/components/PageBanner";
 import ScrollReveal from "@/components/ScrollReveal";
 
 export const revalidate = 3600;
+
+// Liste vide : aucune page générée au build, chacune est rendue à sa première
+// visite puis servie depuis le cache. Sans cette déclaration, un segment
+// dynamique est rendu à chaque requête et `revalidate` reste lettre morte.
+export function generateStaticParams() {
+  return [];
+}
 
 interface DraftPick {
   pick_overall: number;
@@ -54,7 +61,7 @@ export default async function DraftSeasonPage({ params }: { params: Promise<{ se
   if (!isSeason(season)) notFound();
 
   const draftYear = seasonStartYear(season);
-  const supabase = await createClient();
+  const supabase = createPublicClient();
 
   const [{ data: picks }, { data: lottery }, { count: marketEvents }] = await Promise.all([
     supabase

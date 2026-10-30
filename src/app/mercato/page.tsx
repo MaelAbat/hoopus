@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/public";
 import { fetchAllRows } from "@/lib/supabase/paginate";
 import { contractTerms as describeContract } from "@/lib/br-contracts";
 import { OG_IMAGE } from "@/lib/seo";
@@ -59,7 +59,7 @@ export default async function MarchePage({
   const leagueState = await getLeagueState();
   const { currentSeason } = leagueState;
   const season = params.season || currentSeason;
-  const supabase = await createClient();
+  const supabase = createPublicClient({ revalidate: 3600 });
 
   const previous = seasonBefore(season);
 

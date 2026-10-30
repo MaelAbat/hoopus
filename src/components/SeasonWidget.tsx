@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/public";
 import { getLeagueState } from "@/lib/league-season";
 import OffseasonNotice from "./OffseasonNotice";
 import Link from "next/link";
@@ -34,7 +34,7 @@ export default async function SeasonWidget() {
   // terminée. On annonce l'intersaison à la place.
   if (isOffseason) return <OffseasonNotice />;
 
-  const supabase = await createClient();
+  const supabase = createPublicClient();
 
   /* ── 1. Check active playoff series ────────── */
   const { data: activeSeries } = await supabase

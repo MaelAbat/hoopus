@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/public";
 import { syncBoxscore } from "@/lib/sync-boxscore";
 import { getHighlightVideoId } from "@/lib/youtube";
 import BoxScore from "@/components/BoxScore";
@@ -14,6 +14,13 @@ import { createClient as createMatchClient } from "@/lib/supabase/server";
 import { OG_IMAGE } from "@/lib/seo";
 
 export const revalidate = 60;
+
+// Liste vide : aucune page générée au build, chacune est rendue à sa première
+// visite puis servie depuis le cache. Sans cette déclaration, un segment
+// dynamique est rendu à chaque requête et `revalidate` reste lettre morte.
+export function generateStaticParams() {
+  return [];
+}
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://hoopus.fr";
 
@@ -57,7 +64,7 @@ export default async function MatchPage({ params }: PageProps) {
   // Sync boxscore on-demand (fetches from NBA CDN if not in DB)
   await syncBoxscore(gameId);
 
-  const supabase = await createClient();
+  const supabase = createPublicClient();
 
   // Fetch boxscore data
   const { data: players } = await supabase

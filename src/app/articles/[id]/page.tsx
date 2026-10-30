@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/public";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { cache } from "react";
@@ -11,11 +11,18 @@ import { OG_IMAGE } from "@/lib/seo";
 
 export const revalidate = 3600;
 
+// Liste vide : aucune page générée au build, chacune est rendue à sa première
+// visite puis servie depuis le cache. Sans cette déclaration, un segment
+// dynamique est rendu à chaque requête et `revalidate` reste lettre morte.
+export function generateStaticParams() {
+  return [];
+}
+
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://hoopus.fr";
 
 // Wrapped in cache() so generateMetadata and the page share a single DB read.
 const getArticle = cache(async (id: string) => {
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   const { data } = await supabase.from("articles").select("*").eq("id", id).single();
   return data;
 });
