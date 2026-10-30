@@ -18,7 +18,6 @@ const SEASON_ENDPOINT = { key: "season", label: "Saison" };
 const PARALLEL_ENDPOINTS = [
   { key: "games", label: "Matchs" },
   { key: "standings", label: "Classement" },
-  { key: "playoffs", label: "Playoffs" },
   { key: "injuries", label: "Blessures" },
 ];
 
@@ -29,6 +28,8 @@ const PARALLEL_ENDPOINTS = [
 // "draft" se servent pour relier un nom a une fiche joueur. Les trois lecteurs de
 // Basketball Reference se suivent, jamais en parallele, sinon la source repond 429.
 const SEQUENTIAL_ENDPOINTS = [
+  // Les séries se reconstruisent à partir des matchs et du classement : après eux.
+  { key: "playoffs", label: "Playoffs" },
   { key: "players", label: "Joueurs" },
   { key: "rosters", label: "Effectifs" },
   { key: "transactions", label: "Marche" },

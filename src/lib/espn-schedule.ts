@@ -138,13 +138,17 @@ function statusOf(s: EspnStatus, hour: number, minute: number, timeValid: boolea
   return { status: 1, text: timeValid ? startLabel(hour, minute) : "TBD" };
 }
 
-/** Tour de playoffs lu dans la note du match (« East 1st Round - Game 3 », « NBA Finals - Game 1 »). */
+/**
+ * Tour de playoffs lu dans la note du match. ESPN écrit « East 1st Round »,
+ * « East Semifinals », « East Finals » et « NBA Finals », suivis de « - Game 3 ».
+ * L'ordre des tests compte : « Semifinals » contient « finals ».
+ */
 function playoffRound(headline: string | undefined): number | null {
   if (!headline) return null;
-  if (/finals/i.test(headline) && !/conf/i.test(headline)) return 4;
-  if (/conf(erence)?\.? finals/i.test(headline)) return 3;
-  if (/semifinals|2nd round|second round/i.test(headline)) return 2;
-  if (/1st round|first round/i.test(headline)) return 1;
+  if (/NBA Finals/i.test(headline)) return 4;
+  if (/Semifinals|2nd Round/i.test(headline)) return 2;
+  if (/Finals/i.test(headline)) return 3;
+  if (/1st Round/i.test(headline)) return 1;
   return null;
 }
 

@@ -4,6 +4,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { fetchLeagueState } from "@/lib/league-season";
 import { fetchLeagueSchedule } from "@/lib/nba-schedule";
 import { isCronAuthorized } from "@/lib/cron-auth";
+import { isUpstreamUnavailable } from "@/lib/upstream";
+import { isEspnSeason } from "@/lib/boxscore-stats";
+import { buildPlayIn, buildSeries, playoffSeeds, type PlayoffGameInput } from "@/lib/playoff-build";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 // Saison résolue par requête depuis league_state (voir /api/sync-season).
 
@@ -145,6 +149,13 @@ export async function GET(request: NextRequest) {
     console.log("[SYNC-PLAYOFFS] Starting sync...");
     const now = new Date().toISOString();
     await fetchConferenceTeams(supabase, SEASON);
+
+    // Depuis 2026-27, le calendrier de la NBA nous est refusé : les matchs de
+    // play-in et de playoffs, lus chez ESPN par sync-games, sont déjà en base.
+    if (await isEspnSeason(supabase, SEASON)) {
+      return NextResponse.json(await syncFromGames(supabase, SEASON, now, startTime));
+    }
+
     console.log("[SYNC-PLAYOFFS] Fetching from NBA CDN...");
     const schedule = await fetchLeagueSchedule<NbaSchedule>({ fallbackSeason: SEASON });
     const gameDates = schedule.leagueSchedule.gameDates;
@@ -336,10 +347,60 @@ export async function GET(request: NextRequest) {
       timestamp: now,
     });
   } catch (err) {
+    // Le calendrier de la ligue nous est refusé ou reste muet : ce n'est pas
+    // une panne de la route. Une ligne, pas une trace, et rien n'est écrit —
+    // les données déjà en base valent mieux qu'un écrasement par du vide.
+    if (isUpstreamUnavailable(err)) {
+      console.warn(`[SYNC-PLAYOFFS] ${err.source} indisponible (${err.message}) — playoffs inchangés`);
+      return NextResponse.json({
+        ok: true,
+        skipped: `${err.source} indisponible`,
+        reason: err.message,
+        timestamp: new Date().toISOString(),
+      });
+    }
     console.error("Error syncing playoffs:", err);
-    return NextResponse.json(
-      { error: (err as Error).message },
-      { status: 502 }
-    );
+    return NextResponse.json({ error: (err as Error).message }, { status: 502 });
   }
+}
+
+/**
+ * Play-in et séries d'une saison lue chez ESPN, reconstruits à partir des matchs
+ * en base (voir lib/playoff-build). Les têtes de série viennent du classement
+ * final, chargé dans TEAM_SEEDS par fetchConferenceTeams.
+ */
+async function syncFromGames(supabase: SupabaseClient, season: string, now: string, startTime: number) {
+  const { data, error } = await supabase
+    .from("games")
+    .select("game_id, game_type, playoff_round, game_date, game_time, status, home_team, away_team, home_score, away_score")
+    .eq("season", season)
+    .in("game_type", ["playin", "playoffs"]);
+  if (error) throw new Error(`lecture des matchs impossible : ${error.message}`);
+  const games = (data ?? []) as PlayoffGameInput[];
+
+  if (games.length === 0) {
+    return { ok: true, message: "No playoff or play-in games found yet", series: 0, playin: 0, timestamp: now };
+  }
+
+  const playIn = buildPlayIn(games, TEAM_SEEDS);
+  const series = buildSeries(games, TEAM_SEEDS, playoffSeeds(TEAM_SEEDS, playIn));
+
+  if (playIn.length > 0) {
+    const { error: playinError } = await supabase
+      .from("playin_games")
+      .upsert(playIn.map((p) => ({ ...p, season, updated_at: now })), { onConflict: "season,conference,matchup_type" });
+    if (playinError) throw new Error(`écriture du play-in refusée : ${playinError.message}`);
+  }
+
+  if (series.length > 0) {
+    const { error: seriesError } = await supabase
+      .from("playoff_series")
+      .upsert(series.map((s) => ({ ...s, season, updated_at: now })), { onConflict: "season,round,team_top,team_bottom" });
+    if (seriesError) throw new Error(`écriture des séries refusée : ${seriesError.message}`);
+  }
+
+  revalidatePath("/playoffs");
+  const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+  console.log(`[SYNC-PLAYOFFS] ${series.length} séries et ${playIn.length} matchs de play-in depuis les matchs ESPN (${duration}s)`);
+  return { ok: true, source: "espn", series: series.length, playin: playIn.length, timestamp: now };
 }
