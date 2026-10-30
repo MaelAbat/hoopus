@@ -1,4 +1,5 @@
 import { createPublicClient } from "@/lib/supabase/public";
+import { readStatPage, type LeaderLine } from "@/lib/stat-pages";
 import { OG_IMAGE } from "@/lib/seo";
 import { buildSeasonOptions, seasonLabel, seasonStatus, seasonStatusLabel } from "@/lib/season";
 import { getLeagueState } from "@/lib/league-season";
@@ -65,52 +66,60 @@ export default async function Statistiques({ searchParams }: { searchParams: Pro
   const season = seasonParam || defaultSeason;
   const supabase = createPublicClient({ revalidate: 3600 });
 
-  // Le nombre de lignes d'abord, pour lire exactement le bon nombre de pages : un
-  // nombre fixe de pages tronquait la saison sans le dire (30 406 lignes en
-  // 2025-26 pour 30 000 lues). Le tri suit l'index de la migration 048, et
-  // (rank, category, player_name) est unique dans une saison : aucune ligne ne
-  // peut glisser d'une page à l'autre.
-  const leadersOf = (countOnly = false) =>
-    supabase
-      .from("stat_leaders")
-      .select(
-        "category, rank, player_name, player_id, team, value, updated_at",
-        countOnly ? { count: "exact", head: true } : undefined
-      )
-      .eq("season", season)
-      .eq("season_type", "regular");
+  // L'instantané écrit par sync-stats d'abord : une requête au lieu de vingt-deux
+  // (voir lib/stat-pages). Une saison qui n'en a pas encore — les plus
+  // anciennes — se lit comme avant, directement dans stat_leaders.
+  const loadFromTable = async (): Promise<LeaderLine[]> => {
+    // Le nombre de lignes d'abord, pour lire exactement le bon nombre de pages : un
+    // nombre fixe de pages tronquait la saison sans le dire (30 406 lignes en
+    // 2025-26 pour 30 000 lues). Le tri suit l'index de la migration 048, et
+    // (rank, category, player_name) est unique dans une saison : aucune ligne ne
+    // peut glisser d'une page à l'autre.
+    const leadersOf = (countOnly = false) =>
+      supabase
+        .from("stat_leaders")
+        .select(
+          "category, rank, player_name, player_id, team, value, updated_at",
+          countOnly ? { count: "exact", head: true } : undefined
+        )
+        .eq("season", season)
+        .eq("season_type", "regular");
 
-  const [{ data: seasonRows }, { count: leaderCount, error: countError }] = await Promise.all([
-    supabase.from("standings").select("season").order("season", { ascending: false }).limit(1000),
-    leadersOf(true),
-  ]);
-  if (countError) throw new Error(`stat_leaders ${season} : ${countError.message}`);
+    const { count: leaderCount, error: countError } = await leadersOf(true);
+    if (countError) throw new Error(`stat_leaders ${season} : ${countError.message}`);
 
-  // Quatre pages à la fois, pas toutes ensemble : vingt-deux requêtes simultanées
-  // saturaient la base, et celles qui dépassaient le délai des visiteurs anonymes
-  // échouaient en silence — juste après le cron, la page annonçait alors une
-  // saison « pas encore synchronisée ». Une page qui échoue est retentée une
-  // fois ; si elle échoue encore, le rendu échoue plutôt que d'afficher, et de
-  // mettre en cache, une saison incomplète.
-  const fetchPage = async (i: number) => {
-    const query = () =>
-      leadersOf()
-        .order("rank", { ascending: true })
-        .order("category", { ascending: true })
-        .order("player_name", { ascending: true })
-        .range(i * 1000, (i + 1) * 1000 - 1);
-    const first = await query();
-    if (!first.error) return first;
-    const retry = await query();
-    if (retry.error) throw new Error(`stat_leaders ${season}, page ${i} : ${retry.error.message}`);
-    return retry;
+    // Quatre pages à la fois, pas toutes ensemble : vingt-deux requêtes simultanées
+    // saturaient la base, et celles qui dépassaient le délai des visiteurs anonymes
+    // échouaient en silence — juste après le cron, la page annonçait alors une
+    // saison « pas encore synchronisée ». Une page qui échoue est retentée une
+    // fois ; si elle échoue encore, le rendu échoue plutôt que d'afficher, et de
+    // mettre en cache, une saison incomplète.
+    const fetchPage = async (i: number) => {
+      const query = () =>
+        leadersOf()
+          .order("rank", { ascending: true })
+          .order("category", { ascending: true })
+          .order("player_name", { ascending: true })
+          .range(i * 1000, (i + 1) * 1000 - 1);
+      const first = await query();
+      if (!first.error) return first;
+      const retry = await query();
+      if (retry.error) throw new Error(`stat_leaders ${season}, page ${i} : ${retry.error.message}`);
+      return retry;
+    };
+    const pageCount = Math.ceil((leaderCount ?? 0) / 1000);
+    const pages: Awaited<ReturnType<typeof fetchPage>>[] = [];
+    for (let start = 0; start < pageCount; start += 4) {
+      const wave = Array.from({ length: Math.min(4, pageCount - start) }, (_, k) => fetchPage(start + k));
+      pages.push(...(await Promise.all(wave)));
+    }
+    return pages.flatMap((p) => (p.data || []) as LeaderLine[]);
   };
-  const pageCount = Math.ceil((leaderCount ?? 0) / 1000);
-  const pages: Awaited<ReturnType<typeof fetchPage>>[] = [];
-  for (let start = 0; start < pageCount; start += 4) {
-    const wave = Array.from({ length: Math.min(4, pageCount - start) }, (_, k) => fetchPage(start + k));
-    pages.push(...(await Promise.all(wave)));
-  }
+
+  const [{ data: seasonRows }, snapshot] = await Promise.all([
+    supabase.from("standings").select("season").order("season", { ascending: false }).limit(1000),
+    readStatPage(supabase, season, "regular"),
+  ]);
   const availableSeasons = buildSeasonOptions(
     (seasonRows || []).map((r: { season: string }) => r.season),
     leagueState.currentSeason,
@@ -121,7 +130,7 @@ export default async function Statistiques({ searchParams }: { searchParams: Pro
   );
   const status = seasonStatus(season, leagueState);
 
-  const allLeaders = pages.flatMap((p) => p.data || []);
+  const allLeaders = snapshot ?? (await loadFromTable());
   const hasData = allLeaders.length > 0;
 
   const lastUpdate = hasData

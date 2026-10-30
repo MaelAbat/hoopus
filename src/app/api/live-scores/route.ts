@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { syncBoxscore } from "@/lib/sync-boxscore";
 import { isEspnGameId } from "@/lib/espn-teams";
 import { fetchDayGames } from "@/lib/espn-schedule";
+import { upsertChanged } from "@/lib/write-changed";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +12,15 @@ export const dynamic = "force-dynamic";
 const SYNC_STALE_MS = 25_000;
 
 const SELECT = "game_id, game_date, game_time, status, status_text, home_score, away_score, updated_at";
+
+/**
+ * Heure de la dernière lecture ESPN, par journée. L'étranglement reposait sur
+ * `updated_at` ; maintenant qu'un match inchangé n'est plus réécrit, cette date
+ * ne bouge plus et ne peut plus dire quand ESPN a été interrogé. Gardée en
+ * mémoire de l'instance — partagée par les requêtes qu'elle sert —, elle évite
+ * de relire ESPN à chaque visiteur.
+ */
+const lastChecked = new Map<string, number>();
 
 /** Identifiant NBA (10 chiffres) ou ESPN (`E` suivi de l'identifiant ESPN). */
 const GAME_ID = /^(\d{10}|E\d{6,12})$/;
@@ -66,7 +76,8 @@ export async function GET(request: NextRequest) {
   let games = data || [];
 
   const nowMs = Date.now();
-  const isStale = (g: (typeof games)[number]) => nowMs - new Date(g.updated_at).getTime() > SYNC_STALE_MS;
+  const isStale = (g: (typeof games)[number]) =>
+    nowMs - Math.max(new Date(g.updated_at).getTime(), lastChecked.get(g.game_date) ?? 0) > SYNC_STALE_MS;
 
   // NBA : un box score par match en cours, qui met aussi le score à jour.
   const staleNba = games.filter((g) => !isEspnGameId(g.game_id) && g.status === 2 && isStale(g));
@@ -87,9 +98,25 @@ export async function GET(request: NextRequest) {
     await Promise.all([
       ...staleNba.map((g) => syncBoxscore(g.game_id)),
       ...staleEspnDates.map(async (date) => {
+        lastChecked.set(date, nowMs);
         try {
           const rows = await fetchDayGames(date);
-          if (rows.length > 0) await supabase.from("games").upsert(rows, { onConflict: "game_id" });
+          if (rows.length === 0) return;
+          // Seuls les matchs dont le score ou le statut a bougé sont écrits :
+          // un soir de match, ce poll passe toutes les 25 secondes.
+          const { data: sameDay } = await supabase
+            .from("games")
+            .select("game_id, status, status_text, home_score, away_score")
+            .eq("game_date", date);
+          const existing = new Map<string, Record<string, unknown>>(
+            (sameDay ?? []).map((g) => [g.game_id, g])
+          );
+          await upsertChanged(supabase, "games", rows, {
+            existing,
+            key: ["game_id"],
+            compare: ["status", "status_text", "home_score", "away_score"],
+            onConflict: "game_id",
+          });
         } catch {
           // ESPN muet : on rend les scores en base, le prochain appel réessaiera.
         }
