@@ -138,7 +138,7 @@ export function overrideLeagueAvg(season: string, avg: LeagueAvg): void {
 }
 
 /** Compute Adjusted Shooting (+ stats) from raw player stats and league averages. */
-function computeAdjustedShooting(row: {
+export function computeAdjustedShooting(row: {
   season: string;
   fg_pct: number;
   fg3_pct: number;

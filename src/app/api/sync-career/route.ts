@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
-import { syncPlayerCareer, syncPlayerCareerQuick, overrideLeagueAvg } from "@/lib/sync-career";
+import { syncPlayerCareer, syncPlayerCareerQuick, overrideLeagueAvg, computeAdjustedShooting } from "@/lib/sync-career";
+import { isEspnSeason, seasonCareerLines } from "@/lib/boxscore-stats";
 import { getCurrentSeason } from "@/lib/season";
 import { isCronAuthorized } from "@/lib/cron-auth";
 import { isUpstreamUnavailable } from "@/lib/upstream";
@@ -59,6 +60,41 @@ export async function GET(request: NextRequest) {
     console.log(`[SYNC-CAREER] Live league averages for ${CURRENT_SEASON}: FG=${avg.fg} FG2=${avg.fg2} FG3=${avg.fg3} eFG=${avg.efg} FT=${avg.ft} TS=${avg.ts}`);
   } else {
     console.log(`[SYNC-CAREER] No live league averages found for ${CURRENT_SEASON}, using hardcoded values`);
+  }
+
+  // Saison lue chez ESPN : stats.nba.com ne répond plus, la ligne de la saison en
+  // cours de chaque joueur se calcule à partir des box scores (récupérés par
+  // sync-stats). Les saisons passées, déjà en base, ne bougent pas.
+  if (await isEspnSeason(supabase, CURRENT_SEASON)) {
+    const lines = await seasonCareerLines(supabase, CURRENT_SEASON);
+    const now = new Date().toISOString();
+    const rows = lines.map((l) => ({
+      ...l,
+      ...computeAdjustedShooting({ ...l, season: CURRENT_SEASON }),
+      updated_at: now,
+    }));
+
+    let written = 0;
+    for (let i = 0; i < rows.length; i += 200) {
+      const { error } = await supabase
+        .from("player_career_stats")
+        .upsert(rows.slice(i, i + 200), { onConflict: "player_id,season,team" });
+      if (error) {
+        console.error(`[SYNC-CAREER] Écriture refusée (lot ${i}) :`, error.message);
+      } else {
+        written += Math.min(200, rows.length - i);
+      }
+    }
+
+    const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+    console.log(`[SYNC-CAREER] ${written}/${rows.length} lignes ${CURRENT_SEASON} depuis les box scores (${duration}s)`);
+    return NextResponse.json({
+      ok: written === rows.length,
+      ...(written !== rows.length && { error: `${rows.length - written} lignes non écrites` }),
+      source: "boxscores",
+      season: CURRENT_SEASON,
+      synced: written,
+    });
   }
 
   // Bulk: sync all active players

@@ -4,6 +4,8 @@ import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import { fetchLeagueState } from "@/lib/league-season";
 import { isCronAuthorized } from "@/lib/cron-auth";
+import { isUpstreamUnavailable, UpstreamUnavailableError } from "@/lib/upstream";
+import { isEspnSeason, teamDashboards } from "@/lib/boxscore-stats";
 
 // Saison résolue par requête depuis league_state (voir /api/sync-season).
 
@@ -57,6 +59,7 @@ function fetchTeamStats(season: string, seasonType: NbaSeasonType, measureType: 
 
   return new Promise((resolve, reject) => {
     const req = https.get(url, { headers: NBA_HEADERS }, (res) => {
+      clearTimeout(silent);
       const chunks: Buffer[] = [];
       res.on("data", (chunk: Buffer) => chunks.push(chunk));
       res.on("end", () => {
@@ -71,21 +74,42 @@ function fetchTeamStats(season: string, seasonType: NbaSeasonType, measureType: 
         }
       });
     });
-    req.on("error", reject);
-    req.setTimeout(600000, () => { req.destroy(); reject(new Error("NBA API timeout after 10min")); });
+    // Un hôte injoignable ne répond jamais : sans échéance sur les en-têtes, la
+    // route attendrait le budget entier — dix minutes — avant de le constater.
+    // Une réponse lente mais vivante envoie ses en-têtes tout de suite et garde
+    // tout ce budget pour son corps, qui est ce qui prend du temps ici.
+    const silent = setTimeout(() => {
+      req.destroy(new UpstreamUnavailableError("stats.nba.com", "aucune réponse en 15s"));
+    }, 15_000);
+    req.on("error", (err) => { clearTimeout(silent); reject(err); });
+    req.setTimeout(600000, () => { clearTimeout(silent); req.destroy(); reject(new Error("NBA API timeout after 10min")); });
   });
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function syncSeasonType(supabase: any, season: string, seasonType: NbaSeasonType, now: string): Promise<number> {
+async function syncSeasonType(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  season: string,
+  seasonType: NbaSeasonType,
+  now: string,
+  teamNames: Record<string, string> | null
+): Promise<number> {
   const SEASON = season;
   const dbType: DbSeasonType = seasonType === "Playoffs" ? "playoffs" : "regular";
 
-  console.log(`[SYNC-TEAM-STATS] [${seasonType}] Fetching from stats.nba.com (2 parallel calls, timeout 10min each)...`);
-  const [baseData, advData] = await Promise.all([
-    fetchTeamStats(season, seasonType, "Base"),
-    fetchTeamStats(season, seasonType, "Advanced"),
-  ]);
+  let baseData: NbaDashResponse, advData: NbaDashResponse;
+  if (teamNames) {
+    // Saison lue chez ESPN : tableaux recalculés depuis les box scores (voir
+    // lib/boxscore-stats), au format de stats.nba.com.
+    console.log(`[SYNC-TEAM-STATS] [${seasonType}] Calcul depuis les box scores ESPN...`);
+    ({ base: baseData, advanced: advData } = await teamDashboards(supabase, season, dbType, teamNames));
+  } else {
+    console.log(`[SYNC-TEAM-STATS] [${seasonType}] Fetching from stats.nba.com (2 parallel calls, timeout 10min each)...`);
+    [baseData, advData] = await Promise.all([
+      fetchTeamStats(season, seasonType, "Base"),
+      fetchTeamStats(season, seasonType, "Advanced"),
+    ]);
+  }
 
   const baseH = baseData.resultSets[0].headers;
   const baseRows = baseData.resultSets[0].rowSet;
@@ -180,14 +204,29 @@ export async function GET(request: NextRequest) {
     console.log("[SYNC-TEAM-STATS] Starting sync (Regular Season then Playoffs)...");
     const SEASON = (await fetchLeagueState()).currentSeason;
     console.log(`[SYNC-TEAM-STATS] Saison ${SEASON}`);
-    const regular = await syncSeasonType(supabase, SEASON, "Regular Season", now);
 
-    if (SEASON_TYPE_DELAY_MS > 0) {
+    // Depuis 2026-27, stats.nba.com ne répond plus : les box scores ESPN (déjà
+    // récupérés par sync-stats) donnent les mêmes tableaux. Les noms complets
+    // des franchises sont repris des saisons précédentes.
+    let teamNames: Record<string, string> | null = null;
+    if (await isEspnSeason(supabase, SEASON)) {
+      const { data } = await supabase
+        .from("team_stats")
+        .select("team_tricode, team_name, season")
+        .order("season", { ascending: false })
+        .limit(300);
+      teamNames = {};
+      for (const t of data ?? []) teamNames[t.team_tricode] ??= t.team_name;
+    }
+
+    const regular = await syncSeasonType(supabase, SEASON, "Regular Season", now, teamNames);
+
+    if (!teamNames && SEASON_TYPE_DELAY_MS > 0) {
       console.log(`[SYNC-TEAM-STATS] Waiting ${SEASON_TYPE_DELAY_MS}ms before Playoffs fetch...`);
       await new Promise((r) => setTimeout(r, SEASON_TYPE_DELAY_MS));
     }
 
-    const playoffs = await syncSeasonType(supabase, SEASON, "Playoffs", now);
+    const playoffs = await syncSeasonType(supabase, SEASON, "Playoffs", now, teamNames);
 
     revalidatePath("/statistiques");
     revalidatePath("/equipes");
@@ -202,10 +241,19 @@ export async function GET(request: NextRequest) {
       timestamp: now,
     });
   } catch (err) {
+    // Source injoignable : ce n'est pas une panne de la route. Une ligne, pas
+    // une trace, et rien n'est écrit — les données en base valent mieux qu'un
+    // écrasement par du vide.
+    if (isUpstreamUnavailable(err)) {
+      console.warn(`[SYNC-TEAM-STATS] ${err.source} indisponible (${err.message}) — statistiques d'équipe inchangées`);
+      return NextResponse.json({
+        ok: true,
+        skipped: `${err.source} indisponible`,
+        reason: err.message,
+        timestamp: new Date().toISOString(),
+      });
+    }
     console.error("Error syncing team stats:", err);
-    return NextResponse.json(
-      { error: (err as Error).message },
-      { status: 502 }
-    );
+    return NextResponse.json({ error: (err as Error).message }, { status: 502 });
   }
 }
