@@ -9,6 +9,7 @@ import { isCronAuthorized } from "@/lib/cron-auth";
 import { isUpstreamUnavailable, UpstreamUnavailableError } from "@/lib/upstream";
 import { isEspnSeason } from "@/lib/boxscore-stats";
 import { fetchEspnRosters } from "@/lib/espn-rosters";
+import { loadExisting, upsertChanged } from "@/lib/write-changed";
 
 // Saison résolue par requête depuis league_state (voir /api/sync-season).
 const BATCH_SIZE = 200;
@@ -273,21 +274,26 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Upsert rosters (avoids emptying table on partial failures)
-    console.log(`[SYNC-ROSTERS] Upserting ${players.length} rows into rosters...`);
-    let inserted = 0;
-    for (let i = 0; i < players.length; i += BATCH_SIZE) {
-      const batch = players.slice(i, i + BATCH_SIZE);
+    // Upsert rosters (avoids emptying table on partial failures). Seules les
+    // lignes nouvelles ou modifiées partent : un effectif bouge peu d'un jour à
+    // l'autre, et tout réécrire usait le budget d'accès disque de Supabase.
+    const rosterCompare = Object.keys(players[0] ?? {}).filter(
+      (k) => k !== "player_id" && k !== "season" && k !== "updated_at"
+    );
+    const existingRoster = await loadExisting(supabase, "rosters", rosterCompare, ["player_id"], {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await supabase.from("rosters").upsert(batch as any, {
-        onConflict: "player_id,season",
-      });
-      if (error) {
-        console.error(`Batch upsert error at ${i}:`, error);
-      } else {
-        inserted += batch.length;
-      }
-    }
+      filter: (q: any) => q.eq("season", SEASON),
+      order: ["player_id"],
+    });
+    const rosterWrite = await upsertChanged(supabase, "rosters", players, {
+      existing: existingRoster,
+      key: ["player_id"],
+      compare: rosterCompare,
+      onConflict: "player_id,season",
+      batchSize: BATCH_SIZE,
+    });
+    const inserted = rosterWrite.written + rosterWrite.unchanged;
+    console.log(`[SYNC-ROSTERS] ${rosterWrite.written} ligne(s) écrite(s), ${rosterWrite.unchanged} inchangée(s)`);
 
     // ── Masses salariales ──
     // Dérivées des salaires que l'on vient d'attribuer, et de rien d'autre : le

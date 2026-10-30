@@ -6,6 +6,7 @@ import { isCronAuthorized } from "@/lib/cron-auth";
 import { isUpstreamUnavailable, UpstreamUnavailableError } from "@/lib/upstream";
 import { isEspnSeason, playerDashboards } from "@/lib/boxscore-stats";
 import { fetchEspnRosters } from "@/lib/espn-rosters";
+import { loadExisting, upsertChanged } from "@/lib/write-changed";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 const BATCH_SIZE = 200;
@@ -301,16 +302,36 @@ async function syncFromEspn(supabase: SupabaseClient, season: string, startTime:
       from_year: Number(season.slice(0, 4)),
     }));
 
-  let written = 0;
-  for (const batch of [known, created]) {
-    for (let i = 0; i < batch.length; i += BATCH_SIZE) {
-      const { error } = await supabase
-        .from("players")
-        .upsert(batch.slice(i, i + BATCH_SIZE), { onConflict: "player_id" });
-      if (error) console.error(`[SYNC-PLAYERS] Écriture refusée (lot ${i}) :`, error.message);
-      else written += Math.min(BATCH_SIZE, batch.length - i);
-    }
+  // Seules les fiches nouvelles ou modifiées partent : d'un jour à l'autre, une
+  // poignée de joueurs change d'équipe ou de numéro, les moyennes des autres
+  // bougent seulement les soirs où ils jouent.
+  const ids = roster.map((p) => p.playerId);
+  const existing = new Map<string, Record<string, unknown>>();
+  for (let i = 0; i < ids.length; i += BATCH_SIZE) {
+    const part = await loadExisting(supabase, "players", Object.keys(created[0] ?? known[0] ?? {}), ["player_id"], {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      filter: (q: any) => q.in("player_id", ids.slice(i, i + BATCH_SIZE)),
+      order: ["player_id"],
+    });
+    for (const [k, v] of part) existing.set(k, v);
   }
+
+  let written = 0;
+  let unchanged = 0;
+  for (const batch of [known, created]) {
+    if (batch.length === 0) continue;
+    const compare = Object.keys(batch[0]).filter((k) => k !== "player_id" && k !== "updated_at");
+    const r = await upsertChanged(supabase, "players", batch, {
+      existing,
+      key: ["player_id"],
+      compare,
+      onConflict: "player_id",
+      batchSize: BATCH_SIZE,
+    });
+    written += r.written + r.unchanged;
+    unchanged += r.unchanged;
+  }
+  console.log(`[SYNC-PLAYERS] ${written - unchanged} fiche(s) écrite(s), ${unchanged} inchangée(s)`);
   if (created.length > 0) {
     console.log(
       `[SYNC-PLAYERS] ${created.length} nouveau(x) joueur(s) : ` +

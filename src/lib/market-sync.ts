@@ -8,6 +8,7 @@ import { fetchDraft } from "./br-draft";
 import { semanticKey } from "./market";
 import { buildLotteryBoard, type LotteryRow, type StandingsRow } from "./lottery";
 import { seasonFromStartYear, seasonStartYear } from "./season";
+import { loadExisting, upsertChanged } from "./write-changed";
 import {
   estimateSeasonPhases,
   phaseForDate,
@@ -199,6 +200,34 @@ export interface TransactionSyncResult {
 }
 
 /**
+ * Écrit des mouvements, en ne gardant que les nouveaux et ceux qui ont changé.
+ *
+ * Chaque sync relisait toute la saison et la réécrivait entière : 17 000 mises à
+ * jour pour 17 600 lignes, presque toutes identiques. `raw`, le texte source, est
+ * lourd et ne change pas pour un même mouvement : il n'est ni relu ni comparé.
+ * Renvoie le nombre de mouvements à jour en base (écrits ou déjà identiques).
+ */
+async function writeEvents(supabase: Client, rows: Record<string, unknown>[]): Promise<number> {
+  if (rows.length === 0) return 0;
+  const compare = Object.keys(rows[0]).filter((k) => !["event_key", "updated_at", "raw"].includes(k));
+  const dates = rows.map((r) => String(r.event_date)).sort();
+  const existing = await loadExisting(supabase, "league_events", compare, ["event_key"], {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    filter: (q: any) => q.gte("event_date", dates[0]).lte("event_date", dates[dates.length - 1]),
+    order: ["event_key"],
+  });
+  const { written, unchanged } = await upsertChanged(supabase, "league_events", rows, {
+    existing,
+    key: ["event_key"],
+    compare,
+    onConflict: "event_key",
+    batchSize: BATCH_SIZE,
+  });
+  console.log(`[MARKET] mouvements : ${written} écrit(s), ${unchanged} inchangé(s)`);
+  return written + unchanged;
+}
+
+/**
  * Synchronise les mouvements d'une saison.
  *
  * Les pages de Basketball Reference débordent de part et d'autre d'une saison :
@@ -229,19 +258,7 @@ export async function syncSeasonTransactions(
 
   const rows = events.map((event) => toEventRow(event, phasesBySeason.get(event.season) || []));
 
-  let written = 0;
-  for (let i = 0; i < rows.length; i += BATCH_SIZE) {
-    const batch = rows.slice(i, i + BATCH_SIZE);
-    const { error } = await supabase
-      .from("league_events")
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .upsert(batch as any, { onConflict: "event_key" });
-    if (error) {
-      console.error(`[MARKET] écriture des mouvements (lot ${i}) :`, error.message);
-      continue;
-    }
-    written += batch.length;
-  }
+  const written = await writeEvents(supabase, rows);
 
   return {
     season,
@@ -401,19 +418,7 @@ export async function syncEspnTransactions(
     source: "espn",
   }));
 
-  let written = 0;
-  for (let i = 0; i < rows.length; i += BATCH_SIZE) {
-    const batch = rows.slice(i, i + BATCH_SIZE);
-    const { error } = await supabase
-      .from("league_events")
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .upsert(batch as any, { onConflict: "event_key" });
-    if (error) {
-      console.error(`[MARKET] écriture ESPN (lot ${i}) :`, error.message);
-      continue;
-    }
-    written += batch.length;
-  }
+  const written = await writeEvents(supabase, rows);
 
   return {
     season: seasonsTouched.join(", "),
