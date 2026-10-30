@@ -112,11 +112,13 @@ export async function GET(request: NextRequest) {
       `(stats ${season.statsSeason ?? "?"}, calendrier ${season.scheduleSeason ?? "?"})`
   );
 
-  // Sources rapides (ESPN, CDN) en parallèle.
-  const [games, standings, playoffs, injuries] = await Promise.all(
-    ["games", "standings", "playoffs", "injuries"].map(step)
-  );
-  Object.assign(steps, { games, standings, playoffs, injuries });
+  // Sources rapides (ESPN) en parallèle.
+  const [games, standings, injuries] = await Promise.all(["games", "standings", "injuries"].map(step));
+  Object.assign(steps, { games, standings, injuries });
+
+  // Les séries se reconstruisent à partir des matchs et du classement que les
+  // deux étapes précédentes viennent d'écrire : elles passent après.
+  steps.playoffs = await step("playoffs");
 
   // Statistiques, puis ce qui en dépend : sync-team-stats et sync-career
   // réutilisent les box scores que sync-stats vient de compléter.
