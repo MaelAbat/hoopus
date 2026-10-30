@@ -1,4 +1,5 @@
 import https from "node:https";
+import { isEdgeDenial, UpstreamUnavailableError } from "./upstream";
 
 /**
  * Accès unique au calendrier de la ligue.
@@ -63,8 +64,15 @@ function fetchJson(url: string, headers: Record<string, string>, timeoutMs: numb
       res.on("data", (chunk: Buffer) => chunks.push(chunk));
       res.on("end", () => {
         if (res.statusCode !== 200) {
-          const err = new Error(`CDN error: ${res.statusCode}`) as Error & { status?: number };
+          const body = Buffer.concat(chunks).toString("utf-8");
+          const err = new Error(`HTTP ${res.statusCode}`) as Error & {
+            status?: number;
+            permanent?: boolean;
+          };
           err.status = res.statusCode;
+          // Un refus au bord du CDN vise l'adresse IP appelante : réessayer trois
+          // fois n'y changera rien, et coûte huit secondes par route.
+          err.permanent = isEdgeDenial(body);
           reject(err);
           return;
         }
@@ -106,33 +114,48 @@ export async function fetchLeagueSchedule<T = unknown>({
   attempts = 3,
   timeoutMs = 30000,
 }: FetchOptions = {}): Promise<T> {
-  let lastError: Error = new Error("Schedule fetch never attempted");
+  let lastError: Error = new Error("jamais tenté");
+  let edgeDenied = false;
 
   for (let attempt = 1; attempt <= attempts; attempt++) {
     try {
       return (await fetchJson(CDN_URL, NBA_CDN_HEADERS, timeoutMs)) as T;
     } catch (err) {
       lastError = err as Error;
-      const status = (err as Error & { status?: number }).status;
-      if (attempt === attempts || !isRetryable(status)) break;
+      const { status, permanent } = err as Error & { status?: number; permanent?: boolean };
+      edgeDenied = !!permanent;
+      if (attempt === attempts || permanent || !isRetryable(status)) break;
       // 2s puis 6s : assez pour laisser retomber un pic sans faire exploser la
       // durée d'exécution de la fonction.
-      const wait = 2000 * Math.pow(3, attempt - 1);
-      console.warn(
-        `[NBA-SCHEDULE] CDN ${lastError.message} — nouvelle tentative ${attempt + 1}/${attempts} dans ${wait}ms`
-      );
-      await delay(wait);
+      await delay(2000 * Math.pow(3, attempt - 1));
     }
   }
 
   if (fallbackSeason) {
-    console.warn(
-      `[NBA-SCHEDULE] CDN indisponible (${lastError.message}) — repli sur stats.nba.com pour ${fallbackSeason}`
-    );
-    return (await fetchJson(statsUrl(fallbackSeason), NBA_STATS_HEADERS, timeoutMs)) as T;
+    // Un refus au bord vise l'adresse IP, et les deux hôtes de la ligue sont
+    // derrière le même réseau de diffusion : le repli a très peu de chances
+    // d'aboutir. Il vaut la peine d'être tenté — le blocage peut ne porter que
+    // sur un hôte — mais pas d'immobiliser la route trente secondes, d'autant
+    // que l'échec se manifeste par un silence et non par un refus rapide.
+    const fallbackTimeout = edgeDenied ? Math.min(timeoutMs, 8000) : timeoutMs;
+    try {
+      return (await fetchJson(statsUrl(fallbackSeason), NBA_STATS_HEADERS, fallbackTimeout)) as T;
+    } catch (err) {
+      // Les deux sources sont muettes : une seule ligne, et une erreur que les
+      // routes savent reconnaître comme « pas de notre fait ».
+      throw new UpstreamUnavailableError(
+        "Calendrier NBA",
+        `CDN ${lastError.message}, stats.nba.com ${(err as Error).message}`,
+        (lastError as Error & { status?: number }).status
+      );
+    }
   }
 
-  throw lastError;
+  throw new UpstreamUnavailableError(
+    "Calendrier NBA",
+    `CDN ${lastError.message}`,
+    (lastError as Error & { status?: number }).status
+  );
 }
 
 /** `leagueSchedule.seasonYear`, ou `null` s'il est illisible. */
