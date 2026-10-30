@@ -2,6 +2,7 @@ import https from "node:https";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { espnEventId } from "./espn-teams";
 import { fetchEspnBoxscore } from "./espn-boxscore";
+import { changedRows } from "./write-changed";
 
 interface NbaBoxscoreResponse {
   game: {
@@ -198,26 +199,52 @@ export async function syncBoxscore(gameId: string): Promise<boolean> {
   }
 }
 
+/** Heure de la dernière lecture ESPN, par match (voir syncEspnBoxscore). */
+const espnLastChecked = new Map<string, number>();
+
+/** Colonnes d'une ligne de box score comparées pour savoir s'il faut réécrire. */
+const BOX_COMPARE = [
+  "player_name", "team", "is_home", "starter", "position", "jersey", "minutes", "pts", "reb", "oreb", "dreb",
+  "ast", "stl", "blk", "tov", "pf", "fgm", "fga", "fg3m", "fg3a", "ftm", "fta", "plus_minus",
+] as const;
+
 /**
- * Box score d'un match ESPN. Même étranglement que pour la NBA, et rien à
- * relire pour un match terminé dont le box score est déjà en base : ses
- * chiffres ne bougeront plus.
+ * Box score d'un match ESPN.
+ *
+ * Rien à relire pour un match terminé dont le box score est en base : ses
+ * chiffres ne bougeront plus. Pendant un match, ESPN n'est pas interrogé plus
+ * d'une fois toutes les 15 secondes par instance, et rien n'est écrit si rien
+ * n'a bougé — la page d'un match en direct se régénère chaque minute.
  */
 async function syncEspnBoxscore(supabase: SupabaseClient, gameId: string, eventId: string): Promise<boolean> {
   try {
-    const [{ data: current }, { count }] = await Promise.all([
-      supabase.from("games").select("status, updated_at").eq("game_id", gameId).single(),
-      supabase.from("boxscores").select("game_id", { count: "exact", head: true }).eq("game_id", gameId),
+    const [{ data: current }, { data: stored }] = await Promise.all([
+      supabase
+        .from("games")
+        .select("status, status_text, home_score, away_score, updated_at")
+        .eq("game_id", gameId)
+        .single(),
+      supabase.from("boxscores").select(["player_id", ...BOX_COMPARE].join(", ")).eq("game_id", gameId),
     ]);
+    const existing = (stored ?? []) as unknown as Record<string, unknown>[];
 
-    if (current?.status === 3 && (count ?? 0) > 0) return true;
-    if (current?.updated_at && Date.now() - new Date(current.updated_at).getTime() < 15_000 && (count ?? 0) > 0) {
-      return true;
-    }
+    if (current?.status === 3 && existing.length > 0) return true;
+    const lastSeen = Math.max(
+      current?.updated_at ? new Date(current.updated_at).getTime() : 0,
+      espnLastChecked.get(gameId) ?? 0
+    );
+    if (Date.now() - lastSeen < 15_000 && existing.length > 0) return true;
+    espnLastChecked.set(gameId, Date.now());
 
     const { rows, game } = await fetchEspnBoxscore(supabase, gameId, eventId);
 
-    if (game) {
+    if (
+      game &&
+      (game.status !== current?.status ||
+        game.status_text !== current?.status_text ||
+        game.home_score !== current?.home_score ||
+        game.away_score !== current?.away_score)
+    ) {
       await supabase
         .from("games")
         .update({
@@ -230,7 +257,13 @@ async function syncEspnBoxscore(supabase: SupabaseClient, gameId: string, eventI
         .eq("game_id", gameId);
     }
 
-    if (rows.length === 0) return false;
+    if (rows.length === 0) return existing.length > 0;
+
+    // Même ensemble de joueurs, mêmes chiffres : rien à réécrire.
+    const byPlayer = new Map(existing.map((r) => [String(r.player_id), r]));
+    const unchanged =
+      existing.length === rows.length && changedRows(rows, byPlayer, ["player_id"], BOX_COMPARE).length === 0;
+    if (unchanged) return true;
 
     await supabase.from("boxscores").delete().eq("game_id", gameId);
     const { error } = await supabase.from("boxscores").insert(rows);

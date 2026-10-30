@@ -7,6 +7,7 @@ import { isCronAuthorized } from "@/lib/cron-auth";
 import { isUpstreamUnavailable, UpstreamUnavailableError } from "@/lib/upstream";
 import { ensureSeasonBoxscores, isEspnSeason, playerDashboards } from "@/lib/boxscore-stats";
 import { loadExisting, upsertChanged } from "@/lib/write-changed";
+import { packStatPage } from "@/lib/stat-pages";
 
 // Saison résolue par requête depuis league_state (voir /api/sync-season).
 // Mille lignes par écriture : à deux cents, les ~22 000 lignes d'une saison
@@ -129,6 +130,8 @@ interface WriteContext {
   existing: Map<string, Record<string, unknown>>;
   written: number;
   unchanged: number;
+  /** Toutes les lignes de la saison, pour l'instantané de /statistiques. */
+  lines: LeaderRow[];
 }
 
 const LEADER_KEY = ["category", "player_name"] as const;
@@ -150,6 +153,7 @@ async function batchInsert(supabase: any, ctx: WriteContext, rows: LeaderRow[]):
   });
   ctx.written += written;
   ctx.unchanged += unchanged;
+  ctx.lines.push(...rows);
   return written + unchanged;
 }
 
@@ -384,6 +388,7 @@ async function syncSeasonType(supabase: any, season: string, seasonType: NbaSeas
     }),
     written: 0,
     unchanged: 0,
+    lines: [],
   };
 
   // ── Direct categories (per-game computed from totals for full precision) ──
@@ -669,7 +674,35 @@ async function syncSeasonType(supabase: any, season: string, seasonType: NbaSeas
   console.log(
     `[SYNC-STATS] [${seasonType}] ${writeCtx.written} ligne(s) écrite(s), ${writeCtx.unchanged} inchangée(s)`
   );
+  await writeStatPage(supabase, SEASON, dbType, writeCtx);
   return results;
+}
+
+/**
+ * Instantané de /statistiques (voir lib/stat-pages) : toutes les lignes de la
+ * saison en un document, que la page lit en une requête. Réécrit seulement si
+ * une ligne a changé, ou s'il n'existe pas encore.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function writeStatPage(supabase: any, season: string, seasonType: DbSeasonType, ctx: WriteContext) {
+  if (ctx.lines.length === 0) return;
+  if (ctx.written === 0) {
+    const { count, error } = await supabase
+      .from("stat_pages")
+      .select("season", { count: "exact", head: true })
+      .eq("season", season)
+      .eq("season_type", seasonType);
+    if (error || (count ?? 0) > 0) return;
+  }
+  const now = new Date().toISOString();
+  const { error } = await supabase
+    .from("stat_pages")
+    .upsert(
+      { season, season_type: seasonType, payload: packStatPage(ctx.lines, now), updated_at: now },
+      { onConflict: "season,season_type" }
+    );
+  if (error) console.warn(`[SYNC-STATS] Instantané ${season} ${seasonType} non écrit : ${error.message}`);
+  else console.log(`[SYNC-STATS] Instantané ${season} ${seasonType} écrit (${ctx.lines.length} lignes)`);
 }
 
 export async function GET(request: NextRequest) {
