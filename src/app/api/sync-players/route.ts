@@ -3,6 +3,10 @@ import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import { fetchLeagueState } from "@/lib/league-season";
 import { isCronAuthorized } from "@/lib/cron-auth";
+import { isUpstreamUnavailable, UpstreamUnavailableError } from "@/lib/upstream";
+import { isEspnSeason, playerDashboards } from "@/lib/boxscore-stats";
+import { fetchEspnRosters } from "@/lib/espn-rosters";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 const BATCH_SIZE = 200;
 
@@ -30,6 +34,7 @@ interface NbaResponse {
 function fetchNba(url: string): Promise<NbaResponse> {
   return new Promise((resolve, reject) => {
     const req = https.get(url, { headers: NBA_HEADERS }, (res) => {
+      clearTimeout(silent);
       const chunks: Buffer[] = [];
       res.on("data", (chunk: Buffer) => chunks.push(chunk));
       res.on("end", () => {
@@ -44,8 +49,15 @@ function fetchNba(url: string): Promise<NbaResponse> {
         }
       });
     });
-    req.on("error", reject);
-    req.setTimeout(600000, () => { req.destroy(); reject(new Error("NBA API timeout after 10min")); });
+    // Un hôte injoignable ne répond jamais : sans échéance sur les en-têtes, la
+    // route attendrait le budget entier — dix minutes — avant de le constater.
+    // Une réponse lente mais vivante envoie ses en-têtes tout de suite et garde
+    // tout ce budget pour son corps, qui est ce qui prend du temps ici.
+    const silent = setTimeout(() => {
+      req.destroy(new UpstreamUnavailableError("stats.nba.com", "aucune réponse en 15s"));
+    }, 15_000);
+    req.on("error", (err) => { clearTimeout(silent); reject(err); });
+    req.setTimeout(600000, () => { clearTimeout(silent); req.destroy(); reject(new Error("NBA API timeout after 10min")); });
   });
 }
 
@@ -68,6 +80,12 @@ export async function GET(request: NextRequest) {
     // `playerindex` renvoie les effectifs à jour dès la fin des Finales.
     const SEASON = (await fetchLeagueState()).currentSeason;
     console.log(`[SYNC-PLAYERS] Saison ${SEASON}`);
+
+    // Depuis 2026-27, stats.nba.com ne répond plus : les effectifs viennent d'ESPN.
+    if (await isEspnSeason(supabase, SEASON)) {
+      return NextResponse.json(await syncFromEspn(supabase, SEASON, startTime));
+    }
+
     console.log("[SYNC-PLAYERS] Fetching from stats.nba.com (timeout 10min)...");
     // Only fetch active players (Historical=0) — much smaller payload
     // Historical players already in DB are preserved via upsert
@@ -188,10 +206,144 @@ export async function GET(request: NextRequest) {
       timestamp: now,
     });
   } catch (err) {
+    // Source injoignable : ce n'est pas une panne de la route. Une ligne, pas
+    // une trace, et rien n'est écrit — les données en base valent mieux qu'un
+    // écrasement par du vide.
+    if (isUpstreamUnavailable(err)) {
+      console.warn(`[SYNC-PLAYERS] ${err.source} indisponible (${err.message}) — fiches joueurs inchangées`);
+      return NextResponse.json({
+        ok: true,
+        skipped: `${err.source} indisponible`,
+        reason: err.message,
+        timestamp: new Date().toISOString(),
+      });
+    }
     console.error("Error syncing players:", err);
-    return NextResponse.json(
-      { error: (err as Error).message },
-      { status: 502 }
+    return NextResponse.json({ error: (err as Error).message }, { status: 502 });
+  }
+}
+
+/**
+ * Fiches joueurs depuis les effectifs ESPN.
+ *
+ * Pour un joueur déjà en base, seul ce qu'ESPN connaît de façon fiable est mis
+ * à jour — équipe, numéro, gabarit — : le poste au format NBA (« F-G »), le
+ * draft, l'université et le pays restent ceux de NBA.com. Un nouveau venu est
+ * créé avec ce qu'ESPN en dit. Les moyennes de la saison viennent des box
+ * scores, comme celles de l'index NBA.
+ */
+async function syncFromEspn(supabase: SupabaseClient, season: string, startTime: number) {
+  const now = new Date().toISOString();
+  const { players: roster, complete } = await fetchEspnRosters(supabase);
+  console.log(`[SYNC-PLAYERS] ${roster.length} joueurs lus chez ESPN${complete ? "" : " (effectifs incomplets)"}`);
+
+  const perGame = (await playerDashboards(supabase, season, "regular")).perGame.resultSets[0];
+  const col = (h: string) => perGame.headers.indexOf(h);
+  const averages = new Map(
+    perGame.rowSet.map((r) => [
+      Number(r[col("PLAYER_ID")]),
+      {
+        pts: Number(Number(r[col("PTS")]).toFixed(1)),
+        reb: Number(Number(r[col("REB")]).toFixed(1)),
+        ast: Number(Number(r[col("AST")]).toFixed(1)),
+      },
+    ])
+  );
+  const toYear = Number(season.slice(0, 4)) + 1;
+
+  const common = (p: (typeof roster)[number]) => ({
+    player_id: p.playerId,
+    team_tricode: p.teamTricode,
+    team_name: p.teamName,
+    team_city: p.teamCity,
+    jersey_number: p.jersey,
+    height: p.height,
+    weight: p.weight,
+    to_year: toYear,
+    is_active: true,
+    pts: averages.get(p.playerId)?.pts ?? null,
+    reb: averages.get(p.playerId)?.reb ?? null,
+    ast: averages.get(p.playerId)?.ast ?? null,
+    updated_at: now,
+  });
+
+  // Le nom d'un joueur connu est repris de la base, pas d'ESPN : la NBA écrit
+  // « Dončić », ESPN « Doncic ». Il doit figurer dans la ligne malgré tout, un
+  // upsert passant par un INSERT qui exige les colonnes obligatoires.
+  const knownIds = roster.filter((p) => !p.isNew).map((p) => p.playerId);
+  const names = new Map<number, { first_name: string; last_name: string }>();
+  for (let i = 0; i < knownIds.length; i += BATCH_SIZE) {
+    const { data } = await supabase
+      .from("players")
+      .select("player_id, first_name, last_name")
+      .in("player_id", knownIds.slice(i, i + BATCH_SIZE));
+    for (const r of data ?? []) names.set(r.player_id, { first_name: r.first_name, last_name: r.last_name });
+  }
+
+  // Deux lots aux colonnes homogènes : un upsert groupé met à null les colonnes
+  // absentes d'une ligne, ce qui effacerait le draft des joueurs connus.
+  const known = roster
+    .filter((p) => !p.isNew)
+    .map((p) => ({
+      ...common(p),
+      first_name: names.get(p.playerId)?.first_name ?? p.firstName,
+      last_name: names.get(p.playerId)?.last_name ?? p.lastName,
+    }));
+  const created = roster
+    .filter((p) => p.isNew)
+    .map((p) => ({
+      ...common(p),
+      first_name: p.firstName,
+      last_name: p.lastName,
+      position: p.position,
+      college: p.college,
+      country: p.country,
+      from_year: Number(season.slice(0, 4)),
+    }));
+
+  let written = 0;
+  for (const batch of [known, created]) {
+    for (let i = 0; i < batch.length; i += BATCH_SIZE) {
+      const { error } = await supabase
+        .from("players")
+        .upsert(batch.slice(i, i + BATCH_SIZE), { onConflict: "player_id" });
+      if (error) console.error(`[SYNC-PLAYERS] Écriture refusée (lot ${i}) :`, error.message);
+      else written += Math.min(BATCH_SIZE, batch.length - i);
+    }
+  }
+  if (created.length > 0) {
+    console.log(
+      `[SYNC-PLAYERS] ${created.length} nouveau(x) joueur(s) : ` +
+        created.slice(0, 10).map((p) => `${p.first_name} ${p.last_name}`).join(", ")
     );
   }
+
+  // Sortie de ligue : seulement sur des effectifs complets. Un effectif manquant
+  // ferait passer toute une équipe pour partie.
+  let deactivated = 0;
+  if (complete && roster.length > 0) {
+    const { data: departed, error } = await supabase
+      .from("players")
+      .update({ is_active: false, updated_at: now })
+      .eq("is_active", true)
+      .not("player_id", "in", `(${roster.map((p) => p.playerId).join(",")})`)
+      .select("player_id");
+    if (error) console.error("[SYNC-PLAYERS] Deactivation failed:", error.message);
+    else deactivated = departed?.length ?? 0;
+  }
+
+  const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+  console.log(`[SYNC-PLAYERS] ${written} fiches écrites, ${deactivated} désactivée(s), en ${duration}s`);
+
+  return {
+    ok: written === known.length + created.length,
+    ...(written !== known.length + created.length && { error: "écritures refusées" }),
+    source: "espn",
+    total: roster.length,
+    inserted: written,
+    created: created.length,
+    deactivated,
+    complete,
+    timestamp: now,
+  };
 }

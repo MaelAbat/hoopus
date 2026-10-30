@@ -638,8 +638,7 @@ function careerLine(p: PlayerAgg, season: string, team: string): CareerLine {
 /**
  * Lignes de carrière d'une saison de saison régulière, au format de NBA.com :
  * une ligne par équipe, plus une ligne `TOT` pour un joueur passé par
- * plusieurs. Les joueurs sans fiche (identifiant négatif) sont écartés : une
- * carrière se lit sur une fiche.
+ * plusieurs.
  */
 export async function seasonCareerLines(supabase: SupabaseClient, season: string): Promise<CareerLine[]> {
   const [{ players: perTeam }, { players: whole }] = await Promise.all([
@@ -650,9 +649,9 @@ export async function seasonCareerLines(supabase: SupabaseClient, season: string
   const teamCount = new Map<number, number>();
   for (const p of perTeam) teamCount.set(p.id, (teamCount.get(p.id) ?? 0) + 1);
 
-  const lines = perTeam.filter((p) => p.id > 0).map((p) => careerLine(p, season, p.team));
+  const lines = perTeam.map((p) => careerLine(p, season, p.team));
   for (const p of whole) {
-    if (p.id > 0 && (teamCount.get(p.id) ?? 0) > 1) lines.push(careerLine(p, season, "TOT"));
+    if ((teamCount.get(p.id) ?? 0) > 1) lines.push(careerLine(p, season, "TOT"));
   }
   return lines;
 }

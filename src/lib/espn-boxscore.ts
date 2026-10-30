@@ -4,9 +4,8 @@
  * ESPN identifie les joueurs par ses propres numéros ; le site, par ceux de la
  * NBA (fiches, photos, statistiques). Le rapprochement se fait par le nom, avec
  * l'index déjà utilisé pour Basketball Reference. Un joueur introuvable — une
- * recrue arrivée depuis que la NBA nous bloque, typiquement — est gardé avec
- * l'opposé de son identifiant ESPN : sa ligne s'affiche, sa photo vient d'ESPN,
- * et aucun lien ne pointe vers une fiche qui n'existe pas.
+ * recrue arrivée depuis que la NBA nous bloque, typiquement — prend l'opposé de
+ * son identifiant ESPN, reçoit une fiche minimale, et sa photo vient d'ESPN.
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -183,6 +182,28 @@ export async function fetchEspnBoxscore(
         updated_at: now,
       });
     }
+  }
+
+  // Un joueur sans fiche en reçoit une minimale, que sync-players complétera :
+  // le lien de sa ligne mène ainsi toujours quelque part.
+  const unknown = rows.filter((r) => r.player_id < 0);
+  if (unknown.length > 0) {
+    await supabase.from("players").upsert(
+      unknown.map((r) => {
+        const [first, ...rest] = r.player_name.split(" ");
+        return {
+          player_id: r.player_id,
+          first_name: first,
+          last_name: rest.join(" "),
+          team_tricode: r.team,
+          jersey_number: r.jersey,
+          position: r.position,
+          is_active: true,
+          updated_at: now,
+        };
+      }),
+      { onConflict: "player_id", ignoreDuplicates: true }
+    );
   }
 
   return { rows, game };
