@@ -36,6 +36,9 @@ export async function GET(request: NextRequest) {
   // lui, les changements d'équipe de l'intersaison n'arrivent jamais.
   const statsRes = await fetch(`${baseUrl}/api/sync-stats?${authParam}`);
   const teamStatsRes = await fetch(`${baseUrl}/api/sync-team-stats?${authParam}`);
+  // Ligne de la saison en cours des fiches joueurs, calculée à partir des box
+  // scores que sync-stats vient de compléter.
+  const careerRes = await fetch(`${baseUrl}/api/sync-career?${authParam}`);
   const playersRes = await fetch(`${baseUrl}/api/sync-players?${authParam}`);
   const rostersRes = await fetch(`${baseUrl}/api/sync-rosters?${authParam}`);
 
@@ -49,13 +52,14 @@ export async function GET(request: NextRequest) {
   // dans une seule exécution.
   const contractsRes = await fetch(`${baseUrl}/api/sync-contracts?${authParam}`);
 
-  const [gamesData, standingsData, playoffsData, injuriesData, statsData, teamStatsData, playersData, rostersData, transactionsData, draftData, contractsData] = await Promise.all([
+  const [gamesData, standingsData, playoffsData, injuriesData, statsData, teamStatsData, careerData, playersData, rostersData, transactionsData, draftData, contractsData] = await Promise.all([
     gamesRes.json(),
     standingsRes.json(),
     playoffsRes.json(),
     injuriesRes.json(),
     statsRes.json(),
     teamStatsRes.json(),
+    careerRes.json(),
     playersRes.json(),
     rostersRes.json(),
     transactionsRes.json(),
@@ -85,6 +89,7 @@ export async function GET(request: NextRequest) {
     standings: standingsData,
     injuries: injuriesData,
     teamStats: teamStatsData,
+    career: careerData,
     playoffs: playoffsData,
     players: playersData,
     rosters: rostersData,
