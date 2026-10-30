@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/public";
 import { OG_IMAGE } from "@/lib/seo";
 import { buildSeasonOptions, seasonLabel, seasonStatus, seasonStatusLabel } from "@/lib/season";
 import { getLeagueState } from "@/lib/league-season";
@@ -28,7 +28,7 @@ export default async function Classement({ searchParams }: { searchParams: Promi
   // Le classement s'ouvre sur la dernière saison jouée : celle à venir est vide.
   const defaultSeason = leagueState.statsSeason;
   const season = seasonParam || defaultSeason;
-  const supabase = await createClient();
+  const supabase = createPublicClient({ revalidate: 3600 });
 
   const [{ data: seasonRows }, { data: standings, error }] = await Promise.all([
     supabase.from("standings").select("season").order("season", { ascending: false }).limit(1000),

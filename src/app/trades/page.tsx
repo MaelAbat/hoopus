@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/public";
 import { OG_IMAGE } from "@/lib/seo";
 import { buildSeasonOptions, seasonStatus, seasonStatusLabel } from "@/lib/season";
 import { getLeagueState } from "@/lib/league-season";
@@ -89,7 +89,7 @@ export default async function TradesPage({
   const { currentSeason, statsSeason } = leagueState;
   const season = params.season || currentSeason;
   const capLevels = await getCapLevels(season);
-  const supabase = await createClient();
+  const supabase = createPublicClient({ revalidate: 3600 });
 
   const [{ data: seasonRows }, { data: rows }, { data: payrolls }] = await Promise.all([
     supabase.from("standings").select("season").order("season", { ascending: false }).limit(1000),

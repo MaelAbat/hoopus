@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/public";
 import { OG_IMAGE } from "@/lib/seo";
 import { seasonLabel } from "@/lib/season";
 import { getLeagueSeason } from "@/lib/league-season";
@@ -22,7 +22,7 @@ export const metadata = {
 
 export default async function Blessures() {
   const season = await getLeagueSeason();
-  const supabase = await createClient();
+  const supabase = createPublicClient();
 
   const { data: injuries, error } = await supabase
     .from("injuries")

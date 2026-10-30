@@ -1,22 +1,10 @@
 import type { MetadataRoute } from "next";
-import { createServerClient } from "@supabase/ssr";
+import { createPublicClient } from "@/lib/supabase/public";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://hoopus.fr";
 
 // Refresh the sitemap at most once per hour (matches page ISR cadence).
 export const revalidate = 3600;
-
-/**
- * Read-only Supabase client with no-op cookie handlers — keeps the sitemap
- * route free of the `cookies()` dynamic dependency so it can be cached.
- */
-function readClient() {
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: { getAll: () => [], setAll: () => {} } }
-  );
-}
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
@@ -55,7 +43,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }));
 
   try {
-    const supabase = readClient();
+    const supabase = createPublicClient();
 
     const [{ data: players }, { data: articles }, { data: news }, { data: drafts }] = await Promise.all([
       supabase

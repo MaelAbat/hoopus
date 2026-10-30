@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/public";
 import { revalidatePath } from "next/cache";
 
 async function requireAdmin() {
@@ -19,7 +20,7 @@ async function requireAdmin() {
 }
 
 export async function getArticles() {
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   const { data, error } = await supabase
     .from("articles")
     .select("*")
@@ -30,7 +31,7 @@ export async function getArticles() {
 }
 
 export async function hasArticles(): Promise<boolean> {
-  const supabase = await createClient();
+  const supabase = createPublicClient({ revalidate: 3600 });
   const { count } = await supabase
     .from("articles")
     .select("*", { count: "exact", head: true });
@@ -38,7 +39,7 @@ export async function hasArticles(): Promise<boolean> {
 }
 
 export async function getArticleById(id: string) {
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   const { data, error } = await supabase
     .from("articles")
     .select("*")

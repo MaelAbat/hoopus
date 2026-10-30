@@ -18,7 +18,7 @@
  */
 
 import { cache } from "react";
-import { createServerClient } from "@supabase/ssr";
+import { createPublicClient } from "@/lib/supabase/public";
 import { getCurrentSeason } from "./season";
 
 export interface LeagueState {
@@ -34,18 +34,6 @@ export interface LeagueState {
    * joué. C'est la condition qui déclenche les repères d'intersaison à l'écran.
    */
   isOffseason: boolean;
-}
-
-/**
- * Client sans cookies : lire la saison ne doit pas rendre chaque page dynamique
- * (même approche que le sitemap).
- */
-function readClient() {
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: { getAll: () => [], setAll: () => {} } }
-  );
 }
 
 /**
@@ -68,7 +56,7 @@ async function loadLeagueState(): Promise<LeagueState> {
   };
 
   try {
-    const supabase = readClient();
+    const supabase = createPublicClient();
     const { data, error } = await supabase
       .from("league_state")
       .select("current_season, stats_season, schedule_season, last_completed_season, finals_champion")

@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/public";
 import { OG_IMAGE } from "@/lib/seo";
 import { buildSeasonOptions, seasonStatus, seasonStatusLabel } from "@/lib/season";
 import { getLeagueState } from "@/lib/league-season";
@@ -27,7 +27,7 @@ export default async function Playoffs({ searchParams }: { searchParams: Promise
   // Le bracket concerne une saison jouée : défaut sur la dernière.
   const defaultSeason = leagueState.statsSeason;
   const season = seasonParam || defaultSeason;
-  const supabase = await createClient();
+  const supabase = createPublicClient({ revalidate: 3600 });
 
   const PLAYOFF_STAT_CATEGORIES = ["PTS", "REB", "AST", "STL", "BLK", "FG_PCT", "FG3_PCT", "TS_PCT"];
 

@@ -1,6 +1,5 @@
-import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/public";
 import { getLeagueSeason } from "@/lib/league-season";
-import { syncPlayerCareer } from "@/lib/sync-career";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { cache } from "react";
@@ -17,11 +16,18 @@ import { teamLogoUrl } from "@/lib/nba-teams";
 
 export const revalidate = 3600;
 
+// Liste vide : aucune page générée au build, chacune est rendue à sa première
+// visite puis servie depuis le cache. Sans cette déclaration, un segment
+// dynamique est rendu à chaque requête et `revalidate` reste lettre morte.
+export function generateStaticParams() {
+  return [];
+}
+
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://hoopus.fr";
 
 // cache() dedupes the player read between generateMetadata and the page render.
 const getPlayer = cache(async (playerId: number) => {
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   const { data } = await supabase.from("players").select("*").eq("player_id", playerId).single();
   return data;
 });
@@ -87,7 +93,7 @@ function StatBox({ label, value }: { label: string; value: string }) {
 export default async function PlayerDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const season = await getLeagueSeason();
-  const supabase = await createClient();
+  const supabase = createPublicClient();
 
   const playerId = Number(id);
 
@@ -120,12 +126,12 @@ export default async function PlayerDetail({ params }: { params: Promise<{ id: s
     .eq("player_id", playerId)
     .order("season", { ascending: true });
 
-  // Use DB data if available, otherwise sync from NBA API and use returned data directly
-  const rawCareer = careerStats && careerStats.length > 0
-    ? careerStats
-    : await syncPlayerCareer(playerId);
-
-  const careerSeasons = (Array.isArray(rawCareer) ? rawCareer : []).map((row) => ({
+  // Jamais d'appel à stats.nba.com pendant le rendu : depuis Vercel, l'API répond
+  // souvent avec des minutes de retard, voire jamais, et la fonction reste en vie
+  // — donc facturée — tout ce temps. Les carrières sont remplies par la sync
+  // (étape « Carrières » et `npm run sync:inactive`) ; une fiche sans carrière en
+  // base s'affiche simplement sans ce bloc.
+  const careerSeasons = (careerStats ?? []).map((row) => ({
     season: row.season,
     team: row.team,
     gp: row.gp,

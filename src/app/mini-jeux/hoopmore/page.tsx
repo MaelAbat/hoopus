@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/public";
 import { getStatsSeason } from "@/lib/league-season";
 import HoopMoreGame from "@/components/HoopMoreGame";
 import { OG_IMAGE } from "@/lib/seo";
@@ -19,7 +19,7 @@ export default async function HoopMorePage() {
   // Les jeux reposent sur des moyennes par match : il faut la dernière saison
   // réellement jouée, sinon le vivier est vide pendant toute l'intersaison.
   const season = await getStatsSeason();
-  const supabase = await createClient();
+  const supabase = createPublicClient();
 
   const { data: players } = await supabase
     .from("rosters")

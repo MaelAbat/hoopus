@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/public";
 import { getLeagueState } from "@/lib/league-season";
 import { getSeasonPhases } from "@/lib/season-phases-db";
 import { formatPhaseDate, phaseForDate, PHASE_LABELS, type PhaseKey } from "@/lib/season-phases";
@@ -45,7 +45,7 @@ export default async function MarketSpotlight() {
   const window = phases.find((p) => p.phase === phase);
   if (!window) return null;
 
-  const supabase = await createClient();
+  const supabase = createPublicClient();
 
   // Les mouvements sont cherchés par dates plutôt que par la colonne `phase` :
   // celle-ci est écrite au moment du sync et peut retarder d'une définition.

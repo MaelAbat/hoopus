@@ -218,12 +218,19 @@ export default function ScoresTicker({ games, mode = "results" }: { games: Game[
   const { isTeamFavorite } = useFavorites();
   const isUpcoming = mode === "upcoming";
 
-  // Poll every visible game in the results row. The endpoint only hits the NBA
-  // CDN for rows with status === 2 (throttled to 1x/25s), so polling final games
-  // is basically free — but it lets us catch a scheduled->live transition that
-  // happened after the server render.
+  // The results row only holds live (2) and final (3) games. Poll only while one
+  // of them is still live: once everything is final there is nothing left to
+  // update, and each poll wakes a Vercel function — on every page, since the
+  // ticker lives in the root layout.
   const polledIds = useMemo(() => games.map((g) => g.game_id), [games]);
-  const liveUpdates = useLiveScores(polledIds, !isUpcoming && polledIds.length > 0);
+  const [allFinal, setAllFinal] = useState(false);
+  const hasLiveGame = games.some((g) => g.status === 2) && !allFinal;
+  const liveUpdates = useLiveScores(polledIds, !isUpcoming && hasLiveGame);
+  useEffect(() => {
+    if (liveUpdates.size > 0 && [...liveUpdates.values()].every((u) => u.status === 3)) {
+      setAllFinal(true);
+    }
+  }, [liveUpdates]);
 
   const mergedGames = useMemo(() => {
     if (liveUpdates.size === 0) return games;

@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/public";
 import { fetchAllRows } from "@/lib/supabase/paginate";
 import { OG_IMAGE } from "@/lib/seo";
 import { seasonFromStartYear } from "@/lib/season";
@@ -38,7 +38,7 @@ interface LotteryFavourite {
 }
 
 export default async function DraftIndexPage() {
-  const supabase = await createClient();
+  const supabase = createPublicClient();
 
   // Deux lectures ciblées plutôt qu'un balayage : les premiers choix pour la
   // vitrine, les rangs pour compter les choix de chaque année.

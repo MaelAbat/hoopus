@@ -32,6 +32,21 @@ export async function middleware(request: NextRequest) {
 
   let supabaseResponse = NextResponse.next({ request });
 
+  // Pas de cookie de session Supabase : rien à rafraîchir. C'est le cas de la
+  // plupart des visites, robots compris ; leur épargner l'aller-retour vers
+  // Supabase Auth évite d'attendre sa réponse à chaque requête.
+  const hasSession = request.cookies
+    .getAll()
+    .some(({ name }) => name.startsWith("sb-") && name.includes("-auth-token"));
+  if (!hasSession) {
+    if (PROTECTED_ROUTES.some((route) => pathname.startsWith(route))) {
+      const loginUrl = new URL("/auth/login", request.url);
+      loginUrl.searchParams.set("redirect", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+    return supabaseResponse;
+  }
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -75,6 +90,9 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    // Les routes d'API, le sitemap, robots, le manifeste et l'image OpenGraph
+    // n'ont pas de session à rafraîchir : le polling des scores passait à lui
+    // seul par ici toutes les trente secondes et par onglet ouvert.
+    "/((?!api/|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|manifest.webmanifest|opengraph-image|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

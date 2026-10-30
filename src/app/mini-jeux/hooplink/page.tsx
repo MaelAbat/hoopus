@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/public";
 import { getStatsSeason } from "@/lib/league-season";
 import HoopLinkGame from "@/components/HoopLinkGame";
 import type { HoopLinkPlayer, PlayerTeamsMap, AdjacencyList } from "@/components/HoopLinkGame";
@@ -20,7 +20,7 @@ export default async function HoopLinkPage() {
   // Les jeux reposent sur des moyennes par match : il faut la dernière saison
   // réellement jouée, sinon le vivier est vide pendant toute l'intersaison.
   const season = await getStatsSeason();
-  const supabase = await createClient();
+  const supabase = createPublicClient();
 
   // 1. Current roster for player display + autocomplete
   const { data: currentRosterRows } = await supabase

@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/public";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import type { Metadata } from "next";
@@ -7,13 +7,20 @@ import { OG_IMAGE } from "@/lib/seo";
 
 export const revalidate = 3600;
 
+// Liste vide : aucune page générée au build, chacune est rendue à sa première
+// visite puis servie depuis le cache. Sans cette déclaration, un segment
+// dynamique est rendu à chaque requête et `revalidate` reste lettre morte.
+export function generateStaticParams() {
+  return [];
+}
+
 interface QuizEntry {
   label: string;
   answers: string[];
 }
 
 const getQuiz = cache(async (id: string) => {
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   const { data } = await supabase.from("quizzes").select("*").eq("id", id).single();
   return data;
 });
