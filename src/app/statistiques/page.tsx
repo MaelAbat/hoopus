@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/public";
 import { OG_IMAGE } from "@/lib/seo";
 import { buildSeasonOptions, seasonLabel, seasonStatus, seasonStatusLabel } from "@/lib/season";
 import { getLeagueState } from "@/lib/league-season";
@@ -63,23 +63,36 @@ export default async function Statistiques({ searchParams }: { searchParams: Pro
   // Les leaders portent sur des matchs joués : défaut sur la dernière saison jouée.
   const defaultSeason = leagueState.statsSeason;
   const season = seasonParam || defaultSeason;
-  const supabase = await createClient();
+  const supabase = createPublicClient({ revalidate: 3600 });
 
-  // Fetch season list and stat leaders in parallel
-  const [{ data: seasonRows }, ...pages] = await Promise.all([
+  // Le nombre de lignes d'abord, pour lire exactement le bon nombre de pages : un
+  // nombre fixe de pages tronquait la saison sans le dire (30 406 lignes en
+  // 2025-26 pour 30 000 lues). Le tri suit l'index de la migration 048, et
+  // (rank, category, player_name) est unique dans une saison : aucune ligne ne
+  // peut glisser d'une page à l'autre.
+  const leadersOf = (countOnly = false) =>
+    supabase
+      .from("stat_leaders")
+      .select(
+        "category, rank, player_name, player_id, team, value, updated_at",
+        countOnly ? { count: "exact", head: true } : undefined
+      )
+      .eq("season", season)
+      .eq("season_type", "regular");
+
+  const [{ data: seasonRows }, { count: leaderCount }] = await Promise.all([
     supabase.from("standings").select("season").order("season", { ascending: false }).limit(1000),
-    ...Array.from({ length: 30 }, (_, i) =>
-      supabase
-        .from("stat_leaders")
-        .select("*")
-        .eq("season", season)
-        .eq("season_type", "regular")
+    leadersOf(true),
+  ]);
+  const pages = await Promise.all(
+    Array.from({ length: Math.ceil((leaderCount ?? 0) / 1000) }, (_, i) =>
+      leadersOf()
         .order("rank", { ascending: true })
         .order("category", { ascending: true })
-        .order("player_id", { ascending: true })
+        .order("player_name", { ascending: true })
         .range(i * 1000, (i + 1) * 1000 - 1)
-    ),
-  ]);
+    )
+  );
   const availableSeasons = buildSeasonOptions(
     (seasonRows || []).map((r: { season: string }) => r.season),
     leagueState.currentSeason,

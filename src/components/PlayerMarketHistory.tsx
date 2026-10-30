@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/public";
 import { teamLogoUrl, teamNickname } from "@/lib/nba-teams";
 import {
   eventAction,
@@ -21,14 +21,16 @@ import {
  * d'historique, et une section vide sur sa fiche n'aiderait personne.
  */
 export default async function PlayerMarketHistory({ playerId }: { playerId: number }) {
-  const supabase = await createClient();
+  const supabase = createPublicClient();
 
   const { data } = await supabase
     .from("league_events")
     .select(
       "event_key, season, event_date, phase, kind, teams, from_team, to_team, players, assets, contract, detail, raw"
     )
-    .contains("players", [{ player_id: playerId }])
+    // En chaîne JSON : passé comme tableau, `contains` l'écrirait en tableau
+    // Postgres (`{[object Object]}`) et la base rejetterait le filtre jsonb.
+    .contains("players", JSON.stringify([{ player_id: playerId }]))
     .order("event_date", { ascending: false })
     .limit(40);
 
