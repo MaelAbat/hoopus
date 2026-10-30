@@ -130,7 +130,11 @@ function buildRows(gameId: string, team: NbaTeam, isHome: boolean, now: string) 
  * Sync a single game's boxscore into the database.
  * Returns true if data was synced (or already existed), false on error.
  */
-export async function syncBoxscore(gameId: string): Promise<boolean> {
+/**
+ * `force` relit un match terminé dont le box score est déjà en base : voir
+ * ensureSeasonBoxscores, qui l'utilise pour les matchs des derniers jours.
+ */
+export async function syncBoxscore(gameId: string, { force = false }: { force?: boolean } = {}): Promise<boolean> {
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -138,7 +142,7 @@ export async function syncBoxscore(gameId: string): Promise<boolean> {
 
   // Matchs lus chez ESPN depuis 2026-27 : même table, autre source.
   const eventId = espnEventId(gameId);
-  if (eventId) return syncEspnBoxscore(supabase, gameId, eventId);
+  if (eventId) return syncEspnBoxscore(supabase, gameId, eventId, force);
 
   // Validate gameId format (10-digit NBA game ID)
   if (!/^\d{10}$/.test(gameId)) return false;
@@ -211,12 +215,19 @@ const BOX_COMPARE = [
 /**
  * Box score d'un match ESPN.
  *
- * Rien à relire pour un match terminé dont le box score est en base : ses
- * chiffres ne bougeront plus. Pendant un match, ESPN n'est pas interrogé plus
+ * Rien à relire pour un match terminé dont le box score est en base, sauf
+ * avec `force` : les corrections de stats tombent dans les heures qui suivent,
+ * et un box score enregistré pendant les dernières secondes du direct serait
+ * resté incomplet. Pendant un match, ESPN n'est pas interrogé plus
  * d'une fois toutes les 15 secondes par instance, et rien n'est écrit si rien
  * n'a bougé — la page d'un match en direct se régénère chaque minute.
  */
-async function syncEspnBoxscore(supabase: SupabaseClient, gameId: string, eventId: string): Promise<boolean> {
+async function syncEspnBoxscore(
+  supabase: SupabaseClient,
+  gameId: string,
+  eventId: string,
+  force = false
+): Promise<boolean> {
   try {
     const [{ data: current }, { data: stored }] = await Promise.all([
       supabase
@@ -228,12 +239,12 @@ async function syncEspnBoxscore(supabase: SupabaseClient, gameId: string, eventI
     ]);
     const existing = (stored ?? []) as unknown as Record<string, unknown>[];
 
-    if (current?.status === 3 && existing.length > 0) return true;
+    if (!force && current?.status === 3 && existing.length > 0) return true;
     const lastSeen = Math.max(
       current?.updated_at ? new Date(current.updated_at).getTime() : 0,
       espnLastChecked.get(gameId) ?? 0
     );
-    if (Date.now() - lastSeen < 15_000 && existing.length > 0) return true;
+    if (!force && Date.now() - lastSeen < 15_000 && existing.length > 0) return true;
     espnLastChecked.set(gameId, Date.now());
 
     const { rows, game } = await fetchEspnBoxscore(supabase, gameId, eventId);

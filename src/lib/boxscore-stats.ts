@@ -206,20 +206,28 @@ export async function ensureSeasonBoxscores(
   supabase: SupabaseClient,
   season: string,
   gameType: GameType,
-  { budgetMs = 40_000 }: { budgetMs?: number } = {}
+  { budgetMs = 40_000, recentDays = 3 }: { budgetMs?: number; recentDays?: number } = {}
 ): Promise<{ missing: number; synced: number; complete: boolean }> {
   const games = await finishedGames(supabase, season, gameType);
   const ids = games.map((g) => g.game_id);
   const present = await gamesWithBoxscore(supabase, ids);
   const missing = ids.filter((id) => !present.has(id));
 
+  // Les matchs des derniers jours sont relus même s'ils ont un box score : les
+  // corrections de stats tombent après coup, et un box score pris pendant le
+  // direct peut s'être arrêté avant la dernière action. Un box score inchangé
+  // n'est pas réécrit (voir syncEspnBoxscore).
+  const since = new Date(Date.now() - recentDays * 86_400_000).toISOString().slice(0, 10);
+  const recent = games.filter((g) => g.game_date >= since && present.has(g.game_id)).map((g) => g.game_id);
+
   const started = Date.now();
   let synced = 0;
-  for (const id of missing) {
+  for (const [id, force] of [...missing.map((id) => [id, false] as const), ...recent.map((id) => [id, true] as const)]) {
     // Budget : la fonction Vercel est plafonnée à 60 s. Ce qui reste sera
     // récupéré à la sync suivante.
     if (Date.now() - started > budgetMs) break;
-    if (await syncBoxscore(id)) synced++;
+    const ok = await syncBoxscore(id, { force });
+    if (ok && !force) synced++;
     await new Promise((r) => setTimeout(r, 150));
   }
 
