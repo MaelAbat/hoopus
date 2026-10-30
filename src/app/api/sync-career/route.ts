@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { syncPlayerCareer, syncPlayerCareerQuick, overrideLeagueAvg } from "@/lib/sync-career";
 import { getCurrentSeason } from "@/lib/season";
 import { isCronAuthorized } from "@/lib/cron-auth";
+import { isUpstreamUnavailable } from "@/lib/upstream";
 
 function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
@@ -99,6 +100,7 @@ export async function GET(request: NextRequest) {
 
   let synced = 0;
   let failed = 0;
+  let unavailable: string | null = null;
 
   // Process in parallel batches of 3 for quick, 1 at a time for full
   const BATCH_SIZE = 3;
@@ -121,6 +123,11 @@ export async function GET(request: NextRequest) {
       const results = await Promise.allSettled(
         batch.map((p) => syncPlayerCareerQuick(p.player_id, CURRENT_SEASON))
       );
+      const down = results.find((r) => r.status === "rejected" && isUpstreamUnavailable(r.reason));
+      if (down && down.status === "rejected") {
+        unavailable = (down.reason as Error).message;
+        break;
+      }
       results.forEach((r, j) => {
         const p = batch[j];
         const name = `${p.first_name} ${p.last_name}`.trim();
@@ -141,7 +148,11 @@ export async function GET(request: NextRequest) {
         await syncPlayerCareer(p.player_id);
         console.log(`[SYNC-CAREER] ${name} — OK (full)`);
         synced++;
-      } catch {
+      } catch (err) {
+        if (isUpstreamUnavailable(err)) {
+          unavailable = err.message;
+          break;
+        }
         console.log(`[SYNC-CAREER] ${name} — ERREUR (full)`);
         failed++;
       }
@@ -153,6 +164,20 @@ export async function GET(request: NextRequest) {
     if (i % 50 === 0 || i === activePlayers.length) {
       console.log(`[SYNC-CAREER] Progress: ${i}/${activePlayers.length} (synced: ${synced}, failed: ${failed})`);
     }
+  }
+
+  if (unavailable) {
+    // La source bride ou filtre notre adresse : elle le fera pour tous les
+    // joueurs restants. On s'arrête et on le dit, sans le maquiller en succès.
+    console.warn(`[SYNC-CAREER] stats.nba.com injoignable (${unavailable}) — arrêt après ${synced} joueur(s)`);
+    return NextResponse.json({
+      ok: false,
+      unavailable: "stats.nba.com",
+      error: `stats.nba.com injoignable : ${unavailable}`,
+      total: activePlayers.length,
+      synced,
+      failed,
+    });
   }
 
   const duration = ((Date.now() - startTime) / 1000).toFixed(1);

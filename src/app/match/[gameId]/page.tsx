@@ -1,5 +1,6 @@
 import { createPublicClient } from "@/lib/supabase/public";
 import { syncBoxscore } from "@/lib/sync-boxscore";
+import { isEspnGameId } from "@/lib/espn-teams";
 import { getHighlightVideoId } from "@/lib/youtube";
 import BoxScore from "@/components/BoxScore";
 import TeamStatsComparison from "@/components/TeamStatsComparison";
@@ -61,8 +62,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function MatchPage({ params }: PageProps) {
   const { gameId } = await params;
 
-  // Sync boxscore on-demand (fetches from NBA CDN if not in DB)
-  await syncBoxscore(gameId);
+  // Sync boxscore on-demand (fetches from NBA CDN if not in DB). Les matchs lus
+  // chez ESPN n'existent pas sur le CDN NBA : l'appel attendrait pour rien.
+  if (!isEspnGameId(gameId)) await syncBoxscore(gameId);
 
   const supabase = createPublicClient();
 

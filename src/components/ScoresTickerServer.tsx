@@ -1,6 +1,6 @@
 import { createPublicClient } from "@/lib/supabase/public";
 import { getStatsSeason } from "@/lib/league-season";
-import { decidedSeriesKeysFromSeries, filterScheduledByDecidedSeries } from "@/lib/playoff-utils";
+import { decidedSeriesKeysFromSeries, filterScheduledByDecidedSeries, isPlayoffGame } from "@/lib/playoff-utils";
 import ScoresTicker from "./ScoresTicker";
 
 export default async function ScoresTickerServer() {
@@ -11,9 +11,9 @@ export default async function ScoresTickerServer() {
   // when an upcoming list actually contains playoff games.
   let decidedKeys: Set<string> | null = null;
   async function dropSettledPlayoffGames<
-    T extends { game_id: string; status: number; home_team: string; away_team: string }
+    T extends { game_id: string; game_type: string | null; playoff_round: number | null; status: number; home_team: string; away_team: string }
   >(list: T[]): Promise<T[]> {
-    if (list.length === 0 || !list.some((g) => g.game_id.startsWith("004"))) return list;
+    if (list.length === 0 || !list.some(isPlayoffGame)) return list;
     if (!decidedKeys) {
       const { data } = await supabase
         .from("playoff_series")
@@ -39,7 +39,7 @@ export default async function ScoresTickerServer() {
   // Fetch yesterday's and today's finished/live games
   const { data } = await supabase
     .from("games")
-    .select("game_id, game_date, status, status_text, home_team, home_team_name, home_score, away_team, away_team_name, away_score, game_time")
+    .select("game_id, game_type, playoff_round, game_date, status, status_text, home_team, home_team_name, home_score, away_team, away_team_name, away_score, game_time")
     .in("game_date", [dateStr, todayStr])
     .in("status", [2, 3]) // Live or Final only
     .order("game_date", { ascending: false })
@@ -54,7 +54,7 @@ export default async function ScoresTickerServer() {
 
   const { data: upcomingRaw } = await supabase
     .from("games")
-    .select("game_id, game_date, status, status_text, home_team, home_team_name, home_score, away_team, away_team_name, away_score, game_time")
+    .select("game_id, game_type, playoff_round, game_date, status, status_text, home_team, home_team_name, home_score, away_team, away_team_name, away_score, game_time")
     .in("game_date", [todayStr, tomorrowStr])
     .eq("status", 1) // Scheduled only
     .order("game_date", { ascending: true })
@@ -91,7 +91,7 @@ export default async function ScoresTickerServer() {
   // No results and no upcoming today — fetch the next day that has games
   const { data: futureRaw } = await supabase
     .from("games")
-    .select("game_id, game_date, status, status_text, home_team, home_team_name, home_score, away_team, away_team_name, away_score, game_time")
+    .select("game_id, game_type, playoff_round, game_date, status, status_text, home_team, home_team_name, home_score, away_team, away_team_name, away_score, game_time")
     .gt("game_date", tomorrowStr)
     .eq("status", 1)
     .order("game_date", { ascending: true })

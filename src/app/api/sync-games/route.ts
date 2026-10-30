@@ -1,38 +1,19 @@
-import { fetchLeagueSchedule } from "@/lib/nba-schedule";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
-import { seasonFromGameId } from "@/lib/season";
 import { fetchLeagueState } from "@/lib/league-season";
 import { isCronAuthorized } from "@/lib/cron-auth";
+import { isUpstreamUnavailable } from "@/lib/upstream";
+import { fetchSeasonGames, type GameRow } from "@/lib/espn-schedule";
 
-interface NbaTeam {
-  teamTricode: string;
-  teamName: string;
-  score: number;
-}
-
-interface NbaGame {
-  gameId: string;
-  gameDateEst: string;
-  gameTimeEst: string;
-  gameStatus: number;
-  gameStatusText: string;
-  homeTeam: NbaTeam;
-  awayTeam: NbaTeam;
-  arenaName: string;
-  arenaCity: string;
-}
-
-interface NbaSchedule {
-  leagueSchedule: {
-    gameDates: {
-      gameDate: string;
-      games: NbaGame[];
-    }[];
-  };
-}
-
+/**
+ * Calendrier et scores de la saison en cours, lus chez ESPN.
+ *
+ * La NBA refuse nos accès à son CDN et à stats.nba.com depuis l'été 2026 : les
+ * saisons précédentes restent en base avec leurs identifiants NBA, la saison en
+ * cours arrive d'ESPN (voir lib/espn-schedule). Les scores des matchs terminés
+ * sont dans le même document, chaque sync les remet donc à jour.
+ */
 export async function GET(request: NextRequest) {
   if (!isCronAuthorized(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -46,106 +27,61 @@ export async function GET(request: NextRequest) {
   const startTime = Date.now();
 
   try {
-    console.log("[SYNC-GAMES] Starting sync...");
-    console.log("[SYNC-GAMES] Fetching from NBA CDN...");
-    // Repli sur stats.nba.com si le CDN nous bloque. La saison de chaque match
-    // reste lue dans son identifiant, donc la source ne change pas le rangement.
-    const SEASON = (await fetchLeagueState()).currentSeason;
-    const schedule = await fetchLeagueSchedule<NbaSchedule>({ fallbackSeason: SEASON });
-    const gameDates = schedule.leagueSchedule.gameDates;
+    const season = (await fetchLeagueState()).currentSeason;
+    // ESPN désigne une saison par son année de fin : 2026-27 → 2027.
+    const espnYear = Number(season.slice(0, 4)) + 1;
+    console.log(`[SYNC-GAMES] Calendrier ${season} depuis ESPN...`);
 
-    let totalInserted = 0;
-    const now = new Date().toISOString();
+    const games: GameRow[] = await fetchSeasonGames(espnYear, 2);
 
-    // Process in batches of 100 games
-    const allGames: {
-      game_id: string;
-      game_date: string;
-      game_time: string;
-      status: number;
-      status_text: string;
-      home_team: string;
-      home_team_name: string;
-      home_score: number;
-      away_team: string;
-      away_team_name: string;
-      away_score: number;
-      arena: string;
-      arena_city: string;
-      season: string;
-      updated_at: string;
-    }[] = [];
-
-    for (const dateEntry of gameDates) {
-      for (const game of dateEntry.games) {
-        // Include regular season (002), play-in (005), and playoff (004) games
-        if (!game.gameId.startsWith("002") && !game.gameId.startsWith("005") && !game.gameId.startsWith("004")) continue;
-
-        const gameDate = game.gameDateEst.split("T")[0];
-
-        // La saison est lue dans l'identifiant du match, pas calculée à côté.
-        // Le calendrier du CDN bascule sur la saison suivante à l'intersaison :
-        // étiqueter son contenu avec une saison globale y verserait les matchs
-        // de l'année N+1. Un identifiant illisible est ignoré plutôt que rangé
-        // dans la mauvaise saison.
-        const gameSeason = seasonFromGameId(game.gameId);
-        if (!gameSeason) {
-          console.warn(`[SYNC-GAMES] Identifiant illisible, match ignoré : ${game.gameId}`);
-          continue;
-        }
-
-        allGames.push({
-          game_id: game.gameId,
-          game_date: gameDate,
-          game_time: game.gameTimeEst,
-          status: game.gameStatus,
-          status_text: game.gameStatusText?.trim() || "",
-          home_team: game.homeTeam?.teamTricode || "TBD",
-          home_team_name: game.homeTeam?.teamName || "TBD",
-          home_score: game.homeTeam?.score || 0,
-          away_team: game.awayTeam?.teamTricode || "TBD",
-          away_team_name: game.awayTeam?.teamName || "TBD",
-          away_score: game.awayTeam?.score || 0,
-          arena: game.arenaName || "",
-          arena_city: game.arenaCity || "",
-          season: gameSeason,
-          updated_at: now,
-        });
-      }
+    // Play-in et playoffs : seulement une fois la saison régulière achevée,
+    // pour ne pas doubler le nombre d'appels pendant six mois pour rien.
+    const today = new Date().toISOString().slice(0, 10);
+    const lastRegular = games.reduce((max, g) => (g.game_date > max ? g.game_date : max), "");
+    if (lastRegular && lastRegular < today) {
+      games.push(...(await fetchSeasonGames(espnYear, 5)), ...(await fetchSeasonGames(espnYear, 3)));
     }
 
-    console.log(`[SYNC-GAMES] Fetched ${allGames.length} games from API`);
-    console.log(`[SYNC-GAMES] Upserting ${allGames.length} rows into games...`);
+    console.log(`[SYNC-GAMES] ${games.length} matchs lus, écriture...`);
 
-    // Upsert in batches of 200
-    for (let i = 0; i < allGames.length; i += 200) {
-      const batch = allGames.slice(i, i + 200);
+    let inserted = 0;
+    for (let i = 0; i < games.length; i += 200) {
+      const batch = games.slice(i, i + 200);
       const { error } = await supabase.from("games").upsert(batch, { onConflict: "game_id" });
       if (error) {
-        console.error(`Error inserting batch ${i}:`, error);
+        console.error(`[SYNC-GAMES] Écriture refusée (lot ${i}) :`, error.message);
       } else {
-        totalInserted += batch.length;
+        inserted += batch.length;
       }
     }
 
-    console.log(`[SYNC-GAMES] Upserted ${totalInserted} rows successfully`);
     revalidatePath("/calendrier");
+    revalidatePath("/");
     const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-    console.log(`[SYNC-GAMES] Completed at ${now} (took ${duration}s)`);
+    console.log(`[SYNC-GAMES] ${inserted} matchs écrits en ${duration}s`);
 
     return NextResponse.json({
-      ok: true,
-      // Les saisons réellement écrites, pour vérifier la bascule d'un coup d'œil.
-      seasons: [...new Set(allGames.map((g) => g.season))].sort(),
-      totalGames: allGames.length,
-      inserted: totalInserted,
-      timestamp: now,
+      ok: inserted === games.length,
+      ...(inserted !== games.length && { error: `${games.length - inserted} matchs non écrits` }),
+      source: "espn",
+      season,
+      totalGames: games.length,
+      inserted,
+      timestamp: new Date().toISOString(),
     });
   } catch (err) {
-    console.error("Error syncing games:", err);
-    return NextResponse.json(
-      { error: (err as Error).message },
-      { status: 502 }
-    );
+    // ESPN refuse ou reste muet : ce n'est pas une panne de la route. Rien
+    // n'est écrit — les données déjà en base valent mieux qu'un écrasement.
+    if (isUpstreamUnavailable(err)) {
+      console.warn(`[SYNC-GAMES] ${err.source} indisponible (${err.message}) — calendrier inchangé`);
+      return NextResponse.json({
+        ok: true,
+        skipped: `${err.source} indisponible`,
+        reason: err.message,
+        timestamp: new Date().toISOString(),
+      });
+    }
+    console.error("[SYNC-GAMES] Erreur :", err);
+    return NextResponse.json({ error: (err as Error).message }, { status: 502 });
   }
 }
