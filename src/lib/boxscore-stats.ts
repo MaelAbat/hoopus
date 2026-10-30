@@ -177,6 +177,27 @@ async function boxscoreRows(supabase: SupabaseClient, gameIds: string[]): Promis
 }
 
 /**
+ * Matchs qui ont déjà un box score. Une ligne par match suffit : relire les
+ * vingt joueurs de chacun pour le savoir coûtait une saison entière de lignes.
+ */
+async function gamesWithBoxscore(supabase: SupabaseClient, gameIds: string[]): Promise<Set<string>> {
+  const present = new Set<string>();
+  await Promise.all(
+    Array.from({ length: Math.ceil(gameIds.length / 100) }, async (_, k) => {
+      const chunk = gameIds.slice(k * 100, k * 100 + 100);
+      const { data, error } = await supabase
+        .from("boxscores")
+        .select("game_id")
+        .in("game_id", chunk)
+        .eq("starter", true);
+      if (error) throw new Error(`lecture des box scores impossible : ${error.message}`);
+      for (const r of data ?? []) present.add(r.game_id);
+    })
+  );
+  return present;
+}
+
+/**
  * Récupère les box scores manquants des matchs terminés de la saison. Une
  * requête ESPN par match absent : la première fois, toute la saison écoulée ;
  * ensuite, seulement les matchs de la veille.
@@ -189,7 +210,7 @@ export async function ensureSeasonBoxscores(
 ): Promise<{ missing: number; synced: number; complete: boolean }> {
   const games = await finishedGames(supabase, season, gameType);
   const ids = games.map((g) => g.game_id);
-  const present = new Set((await boxscoreRows(supabase, ids)).map((r) => r.game_id));
+  const present = await gamesWithBoxscore(supabase, ids);
   const missing = ids.filter((id) => !present.has(id));
 
   const started = Date.now();
