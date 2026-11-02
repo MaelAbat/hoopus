@@ -8,7 +8,8 @@ import TeamMark from "@/components/TeamMark";
 import PageBanner from "@/components/PageBanner";
 import ScrollReveal from "@/components/ScrollReveal";
 
-export const revalidate = 3600;
+// Une draft passée ne bouge plus ; celle de l'année est rafraîchie par le cron.
+export const revalidate = 86400;
 
 // Liste vide : aucune page générée au build, chacune est rendue à sa première
 // visite puis servie depuis le cache. Sans cette déclaration, un segment
