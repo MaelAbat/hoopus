@@ -11,9 +11,9 @@ import FavoriteDashboard from "@/components/FavoriteDashboard";
 import FavoriteAlerts from "@/components/FavoriteAlerts";
 
 // Home keeps the root layout's default title/description; only pins its canonical.
-// Le bandeau des scores et les encarts de saison vivent ici : cinq minutes de
-// cache suffisent, les matchs en cours se mettent à jour côté client.
-export const revalidate = 300;
+// Le bandeau des scores est lu côté client (/api/ticker) : rien ici ne change
+// plus vite que les syncs, une heure de cache suffit.
+export const revalidate = 3600;
 
 export const metadata = {
   alternates: { canonical: "/" },

@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import { Anton, Archivo, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -26,7 +25,7 @@ const plexMono = IBM_Plex_Mono({
 import ThemeProvider from "@/components/ThemeProvider";
 import AchievementProvider from "@/components/AchievementProvider";
 import LayoutShell from "@/components/LayoutShell";
-import ScoresTickerServer from "@/components/ScoresTickerServer";
+import ScoresTickerLive from "@/components/ScoresTickerLive";
 import { hasNews } from "@/lib/actions/news";
 import { hasArticles } from "@/lib/actions/articles";
 import { getLeagueState } from "@/lib/league-season";
@@ -149,11 +148,7 @@ export default async function RootLayout({
               hasArticles={articlesExist}
               seasonLabel={leagueState.currentSeason}
               isOffseason={leagueState.isOffseason}
-              ticker={
-                <Suspense fallback={null}>
-                  <ScoresTickerServer />
-                </Suspense>
-              }
+              ticker={<ScoresTickerLive />}
             >
               {children}
             </LayoutShell>

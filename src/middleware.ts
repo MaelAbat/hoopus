@@ -12,9 +12,8 @@ const HIDDEN_ROUTES: string[] = [];
 
 /**
  * Segments de saison attendus par /draft/[season]. Un segment invalide doit
- * répondre 404, et pas 200 avec une page d'erreur : le ticker de l'accueil ouvre
- * une frontière de streaming dans le gabarit racine (layout.tsx), si bien que les
- * en-têtes partent avant qu'une page puisse encore changer son statut.
+ * répondre 404, et pas 200 avec une page d'erreur. Filtré ici, il n'est même pas
+ * rendu : un robot qui essaie des segments au hasard ne coûte aucun calcul.
  */
 const SEASON_SEGMENT = /^\d{4}-\d{2}$/;
 
