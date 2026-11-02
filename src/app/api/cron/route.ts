@@ -153,9 +153,11 @@ export async function GET(request: NextRequest) {
   revalidatePath("/blessures");
   revalidatePath("/trades");
   revalidatePath("/joueurs");
+  revalidatePath("/joueurs/[id]", "page");
   revalidatePath("/mini-jeux");
   revalidatePath("/mercato");
   revalidatePath("/draft");
+  revalidatePath("/draft/[season]", "page");
 
   const failed = Object.entries(steps).filter(([, r]) => r.status === "fail").map(([name]) => name);
   const skipped = Object.entries(steps).filter(([, r]) => r.status === "skip").map(([name]) => name);

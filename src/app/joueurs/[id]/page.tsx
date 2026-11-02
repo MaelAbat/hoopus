@@ -14,7 +14,10 @@ import JsonLd from "@/components/JsonLd";
 import { OG_IMAGE } from "@/lib/seo";
 import { teamLogoUrl } from "@/lib/nba-teams";
 
-export const revalidate = 3600;
+// Les données d'une fiche ne changent qu'au cron quotidien, qui marque toutes
+// les fiches périmées en fin de passage : chacune est recalculée au plus une
+// fois par jour, au lieu de toutes les heures à chaque passage d'un robot.
+export const revalidate = 86400;
 
 // Liste vide : aucune page générée au build, chacune est rendue à sa première
 // visite puis servie depuis le cache. Sans cette déclaration, un segment
