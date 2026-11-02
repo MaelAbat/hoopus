@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, getSessionUser } from "@/lib/supabase/client";
 import {
   LogIn,
   LogOut,
@@ -94,7 +94,7 @@ export default function Sidebar({
     const supabase = createClient();
 
     async function loadProfile() {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getSessionUser(supabase);
       if (user && !user.is_anonymous) {
         const { data } = await supabase
           .from("profiles")
@@ -108,10 +108,13 @@ export default function Sidebar({
       setLoading(false);
     }
 
-    loadProfile();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
-      loadProfile();
+    // L'abonnement émet INITIAL_SESSION dès sa création : c'est le premier
+    // chargement. Un rafraîchissement de jeton ne change pas le profil. Différé
+    // comme le recommande Supabase : appeler le client depuis le rappel, qui
+    // tient le verrou de session, peut le bloquer.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "TOKEN_REFRESHED") return;
+      setTimeout(loadProfile, 0);
     });
 
     return () => subscription.unsubscribe();

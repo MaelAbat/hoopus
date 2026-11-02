@@ -43,8 +43,6 @@ export default function robots(): MetadataRoute.Robots {
           "/api/",
           "/auth/",
           "/profil",
-          "/test-achievements",
-          "/mini-jeux/test-leaderboard",
           "/mini-jeux/hoopiz/create",
           // Chaque fiche joueur lie un comparateur pré-rempli : cinq mille URLs
           // rendues à la demande, sans contenu propre à indexer.
