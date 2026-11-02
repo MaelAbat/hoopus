@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { teamLogoUrl } from "@/lib/nba-teams";
 import { useFavorites } from "@/context/FavoritesContext";
 import Link from "next/link";
+import { toParisTime } from "@/lib/game-time";
 
 interface Game {
   game_id: string;
@@ -18,34 +19,6 @@ interface Game {
   away_team_name: string;
   away_score: number;
   game_time?: string | null;
-}
-
-function toParisTime(gameDate: string, gameTime: string): string {
-  if (!gameTime) return "";
-  const timePart = gameTime.includes("T") ? gameTime.split("T")[1] : gameTime;
-  const match = timePart.match(/^(\d{2}):(\d{2})/);
-  if (!match) return "";
-  const etHours = parseInt(match[1]);
-  const etMinutes = parseInt(match[2]);
-  const fakeUtc = new Date(Date.UTC(
-    parseInt(gameDate.slice(0, 4)),
-    parseInt(gameDate.slice(5, 7)) - 1,
-    parseInt(gameDate.slice(8, 10)),
-    etHours, etMinutes
-  ));
-  const etFormatted = new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/New_York",
-    hour: "numeric",
-    hour12: false,
-  }).format(fakeUtc);
-  const etHourCheck = parseInt(etFormatted);
-  const etOffset = etHourCheck - etHours;
-  const realUtc = new Date(fakeUtc.getTime() - etOffset * 3600000);
-  return new Intl.DateTimeFormat("fr-FR", {
-    timeZone: "Europe/Paris",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(realUtc);
 }
 
 const cardBase = "shrink-0 border bg-card transition-colors duration-150 hover:border-border-hover";

@@ -8,6 +8,7 @@ import { useFavorites } from "@/context/FavoritesContext";
 import { createClient } from "@/lib/supabase/client";
 import { hideSettledPlayoffGames, isPlayinGame, isPlayoffGame, playoffRoundOf } from "@/lib/playoff-utils";
 import Link from "next/link";
+import { toParisTime } from "@/lib/game-time";
 
 interface Game {
   game_id: string;
@@ -39,40 +40,6 @@ function seasonForMonth(year: number, month: number): string {
   const startYear = month >= 9 ? year : year - 1; // month is 0-indexed, 9 = October
   const endYear = (startYear + 1) % 100;
   return `${startYear}-${endYear.toString().padStart(2, "0")}`;
-}
-
-function toParisTime(gameDate: string, gameTime: string): string {
-  if (!gameTime) return "";
-
-  const timePart = gameTime.includes("T") ? gameTime.split("T")[1] : gameTime;
-  const match = timePart.match(/^(\d{2}):(\d{2})/);
-  if (!match) return "";
-
-  const etHours = parseInt(match[1]);
-  const etMinutes = parseInt(match[2]);
-
-  const fakeUtc = new Date(Date.UTC(
-    parseInt(gameDate.slice(0, 4)),
-    parseInt(gameDate.slice(5, 7)) - 1,
-    parseInt(gameDate.slice(8, 10)),
-    etHours, etMinutes
-  ));
-
-  const etFormatted = new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/New_York",
-    hour: "numeric",
-    hour12: false,
-  }).format(fakeUtc);
-  const etHourCheck = parseInt(etFormatted);
-  const etOffset = etHourCheck - etHours;
-
-  const realUtc = new Date(fakeUtc.getTime() - etOffset * 3600000);
-
-  return new Intl.DateTimeFormat("fr-FR", {
-    timeZone: "Europe/Paris",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(realUtc);
 }
 
 function getGameLabel(game: Game): string | null {

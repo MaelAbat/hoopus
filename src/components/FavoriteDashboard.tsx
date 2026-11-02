@@ -6,6 +6,7 @@ import { useFavorites } from "@/context/FavoritesContext";
 import { createClient } from "@/lib/supabase/client";
 
 import { teamLogoUrl, playerPhotoUrl } from "@/lib/nba-teams";
+import { toParisTime } from "@/lib/game-time";
 
 interface Game {
   game_id: string;
@@ -38,18 +39,6 @@ function formatGameDate(dateStr: string) {
   });
 }
 
-function formatGameTime(gameDate: string, gameTime: string): string {
-  if (!gameTime) return "";
-  const timePart = gameTime.includes("T") ? gameTime.split("T")[1] : gameTime;
-  const match = timePart.match(/^(\d{2}):(\d{2})/);
-  if (!match) return "";
-  const etHours = parseInt(match[1]);
-  const etMinutes = parseInt(match[2]);
-  // Convert ET → Paris time (approximate: ET + 6h)
-  const parisHours = (etHours + 6) % 24;
-  return `${parisHours.toString().padStart(2, "0")}:${match[2]}`;
-}
-
 function TeamLogo({ tricode }: { tricode: string }) {
   const url = teamLogoUrl(tricode);
   if (!url) return <span className="inline-block h-5 w-5 shrink-0 bg-input" />;
@@ -58,7 +47,7 @@ function TeamLogo({ tricode }: { tricode: string }) {
 
 function GameCard({ game }: { game: Game }) {
   const isFinal = game.status === 3;
-  const time = game.game_time ? formatGameTime(game.game_date, game.game_time) : "";
+  const time = game.game_time ? toParisTime(game.game_date, game.game_time) : "";
   return (
     <Link
       href={`/match/${game.game_id}`}
