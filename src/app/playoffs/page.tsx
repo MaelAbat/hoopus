@@ -2,6 +2,7 @@ import { createPublicClient } from "@/lib/supabase/public";
 import { OG_IMAGE } from "@/lib/seo";
 import { buildSeasonOptions, seasonStatus, seasonStatusLabel } from "@/lib/season";
 import { getLeagueState } from "@/lib/league-season";
+import { readStatPage } from "@/lib/stat-pages";
 import PlayoffBracket from "@/components/PlayoffBracket";
 import PageBanner from "@/components/PageBanner";
 import ScrollReveal from "@/components/ScrollReveal";
@@ -36,7 +37,7 @@ export default async function Playoffs({ searchParams }: { searchParams: Promise
     { data: standings, error },
     { data: series },
     { data: playinGames },
-    { data: playoffLeaders },
+    { data: tableLeaders },
     { data: playoffTeamStats },
   ] = await Promise.all([
     supabase.from("standings").select("season").order("season", { ascending: false }).limit(1000),
@@ -54,6 +55,8 @@ export default async function Playoffs({ searchParams }: { searchParams: Promise
       .from("playin_games")
       .select("*")
       .eq("season", season),
+    // Saisons antérieures à l'instantané seulement : la saison en cours ne vit
+    // plus que dans stat_pages (voir plus bas).
     supabase
       .from("stat_leaders")
       .select("category, rank, player_name, player_id, team, value")
@@ -70,6 +73,16 @@ export default async function Playoffs({ searchParams }: { searchParams: Promise
       .eq("season_type", "playoffs")
       .order("net_rating", { ascending: false }),
   ]);
+
+  // Top 10 de chaque catégorie, dans l'instantané écrit par sync-stats quand il
+  // existe ; dans stat_leaders pour les saisons plus anciennes.
+  const snapshot = await readStatPage(supabase, season, "playoffs");
+  const playoffLeaders = snapshot
+    ? snapshot
+        .filter((l) => PLAYOFF_STAT_CATEGORIES.includes(l.category) && l.rank > 0 && l.rank <= 10)
+        .sort((a, b) => a.rank - b.rank)
+        .map(({ category, rank, player_name, player_id, team, value }) => ({ category, rank, player_name, player_id, team, value }))
+    : tableLeaders;
   const availableSeasons = buildSeasonOptions(
     (seasonRows || []).map((r: { season: string }) => r.season),
     leagueState.currentSeason,

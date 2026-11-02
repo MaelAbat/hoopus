@@ -6,14 +6,9 @@ import { fetchLeagueState } from "@/lib/league-season";
 import { isCronAuthorized } from "@/lib/cron-auth";
 import { isUpstreamUnavailable, UpstreamUnavailableError } from "@/lib/upstream";
 import { ensureSeasonBoxscores, isEspnSeason, playerDashboards } from "@/lib/boxscore-stats";
-import { loadExisting, upsertChanged } from "@/lib/write-changed";
 import { packStatPage } from "@/lib/stat-pages";
 
 // Saison résolue par requête depuis league_state (voir /api/sync-season).
-// Mille lignes par écriture : à deux cents, les ~22 000 lignes d'une saison
-// coûtaient plus de cent allers-retours vers Supabase, et la route dépassait
-// sa limite de durée sur Vercel.
-const BATCH_SIZE = 1000;
 
 // Eligibility gates — playoffs use much smaller thresholds because the format
 // caps each team at ~28 games (and most players play far fewer).
@@ -125,36 +120,26 @@ function fetchAllPlayers(
   });
 }
 
-/** Lignes déjà en base pour la saison et le type en cours, et ce que la sync a écrit. */
+/** Lignes calculées pour la saison et le type en cours. */
 interface WriteContext {
-  existing: Map<string, Record<string, unknown>>;
-  written: number;
-  unchanged: number;
   /** Toutes les lignes de la saison, pour l'instantané de /statistiques. */
   lines: LeaderRow[];
 }
 
-const LEADER_KEY = ["category", "player_name"] as const;
-const LEADER_COMPARE = ["rank", "value", "team", "player_id"] as const;
-
 /**
- * Écrit une catégorie, en ne gardant que les lignes nouvelles ou modifiées : la
- * saison compte ~22 000 lignes et la plupart ne bougent pas d'un jour à l'autre
- * — toutes, les jours sans match. Renvoie le nombre de lignes de la catégorie.
+ * Ajoute une catégorie à l'instantané. Renvoie son nombre de lignes.
+ *
+ * La saison en cours ne s'écrit plus dans stat_leaders, seulement dans
+ * l'instantané (stat_pages). En début de saison, aucun joueur n'a les 40 matchs
+ * requis et tous sont classés ensemble : un seul joueur qui progresse décale le
+ * rang de tous ceux qu'il dépasse, et ~20 000 des 22 000 lignes changeaient
+ * chaque jour. Leur relecture et leur réécriture, index compris, saturaient la
+ * mémoire de la petite instance Supabase. stat_leaders garde les saisons
+ * antérieures à l'instantané.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function batchInsert(supabase: any, ctx: WriteContext, rows: LeaderRow[]): Promise<number> {
-  const { written, unchanged } = await upsertChanged(supabase, "stat_leaders", rows, {
-    existing: ctx.existing,
-    key: LEADER_KEY,
-    compare: LEADER_COMPARE,
-    onConflict: "category,player_name,season,season_type",
-    batchSize: BATCH_SIZE,
-  });
-  ctx.written += written;
-  ctx.unchanged += unchanged;
+function addLines(ctx: WriteContext, rows: LeaderRow[]): number {
   ctx.lines.push(...rows);
-  return written + unchanged;
+  return rows.length;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -378,18 +363,8 @@ async function syncSeasonType(supabase: any, season: string, seasonType: NbaSeas
     return buildLeadersWithEligibility(category, allPlayers);
   }
 
-  console.log(`[SYNC-STATS] [${seasonType}] Upserting rows into stat_leaders (MIN_GP=${minGp})...`);
-  const writeCtx: WriteContext = {
-    existing: await loadExisting(supabase, "stat_leaders", LEADER_COMPARE, LEADER_KEY, {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      filter: (q: any) => q.eq("season", SEASON).eq("season_type", dbType),
-      // Ordre de l'index idx_stat_leaders_page_order, et clé unique dans la saison.
-      order: ["rank", "category", "player_name"],
-    }),
-    written: 0,
-    unchanged: 0,
-    lines: [],
-  };
+  console.log(`[SYNC-STATS] [${seasonType}] Calcul des classements (MIN_GP=${minGp})...`);
+  const writeCtx: WriteContext = { lines: [] };
 
   // ── Direct categories (per-game computed from totals for full precision) ──
   for (const { category, statField } of DIRECT_CATEGORIES) {
@@ -405,7 +380,7 @@ async function syncSeasonType(supabase: any, season: string, seasonType: NbaSeas
     });
 
     const leaders = buildLeadersWithEligibility(category, allPlayers);
-    results[category] = await batchInsert(supabase, writeCtx, leaders);
+    results[category] = addLines(writeCtx, leaders);
   }
 
   // ── GP (games played — raw count, not per-game) ──
@@ -415,7 +390,7 @@ async function syncSeasonType(supabase: any, season: string, seasonType: NbaSeas
     val: Number(row[gpIdx]),
     eligible: Number(row[gpIdx]) >= minGp,
   }));
-  results["GP"] = await batchInsert(supabase, writeCtx, buildLeadersWithEligibility("GP", gpAllPlayers));
+  results["GP"] = addLines(writeCtx, buildLeadersWithEligibility("GP", gpAllPlayers));
 
   // ── TOT_MIN (total minutes played — raw, not per-game) ──
   const minIdx = idx("MIN");
@@ -425,7 +400,7 @@ async function syncSeasonType(supabase: any, season: string, seasonType: NbaSeas
     val: Number(row[minIdx]),
     eligible: Number(row[gpIdx]) >= minGp,
   }));
-  results["TOT_MIN"] = await batchInsert(supabase, writeCtx, buildLeadersWithEligibility("TOT_MIN", totMinAll));
+  results["TOT_MIN"] = addLines(writeCtx, buildLeadersWithEligibility("TOT_MIN", totMinAll));
 
   // ── Shooting attempt totals (raw season totals for filtering) ──
   const attemptCategories: { category: string; totalIdx: number }[] = [
@@ -441,7 +416,7 @@ async function syncSeasonType(supabase: any, season: string, seasonType: NbaSeas
       val: Number(row[totalIdx]),
       eligible: Number(row[gpIdx]) >= minGp,
     }));
-    results[category] = await batchInsert(supabase, writeCtx, buildLeadersWithEligibility(category, all));
+    results[category] = addLines(writeCtx, buildLeadersWithEligibility(category, all));
   }
 
   // FG2A_TOT = FGA - FG3A
@@ -451,7 +426,7 @@ async function syncSeasonType(supabase: any, season: string, seasonType: NbaSeas
     val: Number(row[fgaIdx]) - Number(row[fg3aIdx]),
     eligible: Number(row[gpIdx]) >= minGp,
   }));
-  results["FG2A_TOT"] = await batchInsert(supabase, writeCtx, buildLeadersWithEligibility("FG2A_TOT", fg2aTotAll));
+  results["FG2A_TOT"] = addLines(writeCtx, buildLeadersWithEligibility("FG2A_TOT", fg2aTotAll));
 
   // ── Season totals (raw cumulative stats) ──
   const totalCategories: { category: string; totalIdx: number }[] = [
@@ -477,7 +452,7 @@ async function syncSeasonType(supabase: any, season: string, seasonType: NbaSeas
       val: Number(row[totalIdx]),
       eligible: Number(row[gpIdx]) >= minGp,
     }));
-    results[category] = await batchInsert(supabase, writeCtx, buildLeadersWithEligibility(category, all));
+    results[category] = addLines(writeCtx, buildLeadersWithEligibility(category, all));
   }
 
   // FG2M_TOT = FGM - FG3M
@@ -487,7 +462,7 @@ async function syncSeasonType(supabase: any, season: string, seasonType: NbaSeas
     val: Number(row[fgmIdx]) - Number(row[fg3mIdx]),
     eligible: Number(row[gpIdx]) >= minGp,
   }));
-  results["FG2M_TOT"] = await batchInsert(supabase, writeCtx, buildLeadersWithEligibility("FG2M_TOT", fg2mTotAll));
+  results["FG2M_TOT"] = addLines(writeCtx, buildLeadersWithEligibility("FG2M_TOT", fg2mTotAll));
 
   // ── Calculated percentage categories (from totals for precision) ──
 
@@ -500,7 +475,7 @@ async function syncSeasonType(supabase: any, season: string, seasonType: NbaSeas
       val: (Number(r[fg3mIdx]) / Number(r[fg3aIdx])) * 100,
       eligible: Number(r[gpIdx]) >= minGp && fg3aPerGame(r) >= MIN_FG3A,
     }));
-  results["FG3_PCT"] = await batchInsert(supabase, writeCtx, buildLeadersWithEligibility("FG3_PCT", fg3All));
+  results["FG3_PCT"] = addLines(writeCtx, buildLeadersWithEligibility("FG3_PCT", fg3All));
 
   // FG2_PCT
   const fg2All = rows
@@ -516,7 +491,7 @@ async function syncSeasonType(supabase: any, season: string, seasonType: NbaSeas
         eligible: Number(r[gpIdx]) >= minGp && fg2aPerG >= MIN_FG2A,
       };
     });
-  results["FG2_PCT"] = await batchInsert(supabase, writeCtx, buildLeadersWithEligibility("FG2_PCT", fg2All));
+  results["FG2_PCT"] = addLines(writeCtx, buildLeadersWithEligibility("FG2_PCT", fg2All));
 
   // TS_PCT
   const tsAll = rows
@@ -532,7 +507,7 @@ async function syncSeasonType(supabase: any, season: string, seasonType: NbaSeas
         eligible: Number(r[gpIdx]) >= minGp && fgaPerGame(r) >= MIN_FGA,
       };
     });
-  results["TS_PCT"] = await batchInsert(supabase, writeCtx, buildLeadersWithEligibility("TS_PCT", tsAll));
+  results["TS_PCT"] = addLines(writeCtx, buildLeadersWithEligibility("TS_PCT", tsAll));
 
   // FG_PCT
   const fgAll = rows
@@ -543,7 +518,7 @@ async function syncSeasonType(supabase: any, season: string, seasonType: NbaSeas
       val: (Number(r[fgmIdx]) / Number(r[fgaIdx])) * 100,
       eligible: Number(r[gpIdx]) >= minGp && fgaPerGame(r) >= MIN_FGA,
     }));
-  results["FG_PCT"] = await batchInsert(supabase, writeCtx, buildLeadersWithEligibility("FG_PCT", fgAll));
+  results["FG_PCT"] = addLines(writeCtx, buildLeadersWithEligibility("FG_PCT", fgAll));
 
   // FT_PCT
   const ftAll = rows
@@ -554,7 +529,7 @@ async function syncSeasonType(supabase: any, season: string, seasonType: NbaSeas
       val: (Number(r[ftmIdx]) / Number(r[ftaIdx])) * 100,
       eligible: Number(r[gpIdx]) >= minGp && ftaPerGame(r) >= MIN_FTA,
     }));
-  results["FT_PCT"] = await batchInsert(supabase, writeCtx, buildLeadersWithEligibility("FT_PCT", ftAll));
+  results["FT_PCT"] = addLines(writeCtx, buildLeadersWithEligibility("FT_PCT", ftAll));
 
   // EFG_PCT — (FGM + 0.5 * FG3M) / FGA (from totals)
   const efgAll = rows
@@ -565,7 +540,7 @@ async function syncSeasonType(supabase: any, season: string, seasonType: NbaSeas
       val: ((Number(r[fgmIdx]) + 0.5 * Number(r[fg3mIdx])) / Number(r[fgaIdx])) * 100,
       eligible: Number(r[gpIdx]) >= minGp && fgaPerGame(r) >= MIN_FGA,
     }));
-  results["EFG_PCT"] = await batchInsert(supabase, writeCtx, buildLeadersWithEligibility("EFG_PCT", efgAll));
+  results["EFG_PCT"] = addLines(writeCtx, buildLeadersWithEligibility("EFG_PCT", efgAll));
 
   // ── Advanced rate categories (from NBA Advanced API) ──
   const advancedCats: { category: string; statField: string }[] = [
@@ -583,7 +558,7 @@ async function syncSeasonType(supabase: any, season: string, seasonType: NbaSeas
 
   for (const { category, statField } of advancedCats) {
     const leaders = buildAdvancedCategory(category, statField);
-    results[category] = await batchInsert(supabase, writeCtx, leaders);
+    results[category] = addLines(writeCtx, leaders);
   }
 
   // ── Adjusted "+" stats (player / league average * 100) ──
@@ -603,7 +578,7 @@ async function syncSeasonType(supabase: any, season: string, seasonType: NbaSeas
           eligible: Number(r[gpIdx]) >= minGp && fgaPerGame(r) >= MIN_FGA,
         };
       });
-    results["TS_PLUS"] = await batchInsert(supabase, writeCtx, buildLeadersWithEligibility("TS_PLUS", tsPlus));
+    results["TS_PLUS"] = addLines(writeCtx, buildLeadersWithEligibility("TS_PLUS", tsPlus));
   }
 
   if (leagueEFG > 0) {
@@ -615,7 +590,7 @@ async function syncSeasonType(supabase: any, season: string, seasonType: NbaSeas
         val: (((Number(r[fgmIdx]) + 0.5 * Number(r[fg3mIdx])) / Number(r[fgaIdx])) * 100 / leagueEFG) * 100,
         eligible: Number(r[gpIdx]) >= minGp && fgaPerGame(r) >= MIN_FGA,
       }));
-    results["EFG_PLUS"] = await batchInsert(supabase, writeCtx, buildLeadersWithEligibility("EFG_PLUS", efgPlus));
+    results["EFG_PLUS"] = addLines(writeCtx, buildLeadersWithEligibility("EFG_PLUS", efgPlus));
   }
 
   if (leagueFG > 0) {
@@ -627,7 +602,7 @@ async function syncSeasonType(supabase: any, season: string, seasonType: NbaSeas
         val: ((Number(r[fgmIdx]) / Number(r[fgaIdx])) * 100 / leagueFG) * 100,
         eligible: Number(r[gpIdx]) >= minGp && fgaPerGame(r) >= MIN_FGA,
       }));
-    results["FG_PLUS"] = await batchInsert(supabase, writeCtx, buildLeadersWithEligibility("FG_PLUS", fgPlus));
+    results["FG_PLUS"] = addLines(writeCtx, buildLeadersWithEligibility("FG_PLUS", fgPlus));
   }
 
   if (leagueFG3 > 0) {
@@ -639,7 +614,7 @@ async function syncSeasonType(supabase: any, season: string, seasonType: NbaSeas
         val: ((Number(r[fg3mIdx]) / Number(r[fg3aIdx])) * 100 / leagueFG3) * 100,
         eligible: Number(r[gpIdx]) >= minGp && fg3aPerGame(r) >= MIN_FG3A,
       }));
-    results["FG3_PLUS"] = await batchInsert(supabase, writeCtx, buildLeadersWithEligibility("FG3_PLUS", fg3Plus));
+    results["FG3_PLUS"] = addLines(writeCtx, buildLeadersWithEligibility("FG3_PLUS", fg3Plus));
   }
 
   if (leagueFT > 0) {
@@ -651,7 +626,7 @@ async function syncSeasonType(supabase: any, season: string, seasonType: NbaSeas
         val: ((Number(r[ftmIdx]) / Number(r[ftaIdx])) * 100 / leagueFT) * 100,
         eligible: Number(r[gpIdx]) >= minGp && ftaPerGame(r) >= MIN_FTA,
       }));
-    results["FT_PLUS"] = await batchInsert(supabase, writeCtx, buildLeadersWithEligibility("FT_PLUS", ftPlus));
+    results["FT_PLUS"] = addLines(writeCtx, buildLeadersWithEligibility("FT_PLUS", ftPlus));
   }
 
   if (leagueFG2 > 0) {
@@ -668,12 +643,9 @@ async function syncSeasonType(supabase: any, season: string, seasonType: NbaSeas
           eligible: Number(r[gpIdx]) >= minGp && fg2aPerG >= MIN_FG2A,
         };
       });
-    results["FG2_PLUS"] = await batchInsert(supabase, writeCtx, buildLeadersWithEligibility("FG2_PLUS", fg2Plus));
+    results["FG2_PLUS"] = addLines(writeCtx, buildLeadersWithEligibility("FG2_PLUS", fg2Plus));
   }
 
-  console.log(
-    `[SYNC-STATS] [${seasonType}] ${writeCtx.written} ligne(s) écrite(s), ${writeCtx.unchanged} inchangée(s)`
-  );
   await writeStatPage(supabase, SEASON, dbType, writeCtx);
   return results;
 }
@@ -686,23 +658,31 @@ async function syncSeasonType(supabase: any, season: string, seasonType: NbaSeas
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function writeStatPage(supabase: any, season: string, seasonType: DbSeasonType, ctx: WriteContext) {
   if (ctx.lines.length === 0) return;
-  if (ctx.written === 0) {
-    const { count, error } = await supabase
-      .from("stat_pages")
-      .select("season", { count: "exact", head: true })
-      .eq("season", season)
-      .eq("season_type", seasonType);
-    if (error || (count ?? 0) > 0) return;
-  }
   const now = new Date().toISOString();
+  const payload = packStatPage(ctx.lines, now);
+
+  const { data: current, error: readError } = await supabase
+    .from("stat_pages")
+    .select("payload")
+    .eq("season", season)
+    .eq("season_type", seasonType)
+    .maybeSingle();
+  if (readError) throw new Error(`lecture de l'instantané ${season} ${seasonType} impossible : ${readError.message}`);
+  // Les lignes sont triées par packStatPage : même contenu, même JSON.
+  if (current?.payload && JSON.stringify(current.payload.rows) === JSON.stringify(payload.rows)) {
+    console.log(`[SYNC-STATS] Instantané ${season} ${seasonType} inchangé (${ctx.lines.length} lignes)`);
+    return;
+  }
+
   const { error } = await supabase
     .from("stat_pages")
     .upsert(
-      { season, season_type: seasonType, payload: packStatPage(ctx.lines, now), updated_at: now },
+      { season, season_type: seasonType, payload, updated_at: now },
       { onConflict: "season,season_type" }
     );
-  if (error) console.warn(`[SYNC-STATS] Instantané ${season} ${seasonType} non écrit : ${error.message}`);
-  else console.log(`[SYNC-STATS] Instantané ${season} ${seasonType} écrit (${ctx.lines.length} lignes)`);
+  // L'instantané est désormais la seule copie de la saison : un échec doit se voir.
+  if (error) throw new Error(`instantané ${season} ${seasonType} non écrit : ${error.message}`);
+  console.log(`[SYNC-STATS] Instantané ${season} ${seasonType} écrit (${ctx.lines.length} lignes)`);
 }
 
 export async function GET(request: NextRequest) {
