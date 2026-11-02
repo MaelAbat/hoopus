@@ -129,8 +129,7 @@ function buildRows(gameId: string, team: NbaTeam, isHome: boolean, now: string) 
 /**
  * Sync a single game's boxscore into the database.
  * Returns true if data was synced (or already existed), false on error.
- */
-/**
+ *
  * `force` relit un match terminé dont le box score est déjà en base : voir
  * ensureSeasonBoxscores, qui l'utilise pour les matchs des derniers jours.
  */
@@ -148,15 +147,20 @@ export async function syncBoxscore(gameId: string, { force = false }: { force?: 
   if (!/^\d{10}$/.test(gameId)) return false;
 
   try {
+    const [{ data: current }, { count: stored }] = await Promise.all([
+      supabase.from("games").select("status, updated_at").eq("game_id", gameId).single(),
+      supabase.from("boxscores").select("game_id", { count: "exact", head: true }).eq("game_id", gameId),
+    ]);
+
+    // Match terminé d'une saison passée : il ne bougera plus. Sans ce test,
+    // chaque rendu de sa page — une fois par minute au plus, robots compris —
+    // interrogeait le CDN de la NBA, qui refuse désormais ces requêtes (403),
+    // et un box score déjà en base était supprimé puis réinséré.
+    if (!force && current?.status === 3) return (stored ?? 0) > 0;
+
     // Throttle: if the games row was refreshed very recently (either by a prior
     // syncBoxscore call or by the /api/live-scores poll), skip the CDN fetch —
     // prevents duplicate CDN hits when the match page and ticker poll concurrently.
-    const { data: current } = await supabase
-      .from("games")
-      .select("updated_at")
-      .eq("game_id", gameId)
-      .single();
-
     if (current?.updated_at) {
       const ageMs = Date.now() - new Date(current.updated_at).getTime();
       if (ageMs < 15_000) return true;
