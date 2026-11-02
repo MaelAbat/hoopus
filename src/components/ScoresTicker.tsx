@@ -4,7 +4,6 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { teamLogoUrl } from "@/lib/nba-teams";
 import { useFavorites } from "@/context/FavoritesContext";
-import { useLiveScores } from "@/lib/useLiveScores";
 import Link from "next/link";
 
 interface Game {
@@ -18,7 +17,7 @@ interface Game {
   away_team: string;
   away_team_name: string;
   away_score: number;
-  game_time?: string;
+  game_time?: string | null;
 }
 
 function toParisTime(gameDate: string, gameTime: string): string {
@@ -218,35 +217,15 @@ export default function ScoresTicker({ games, mode = "results" }: { games: Game[
   const { isTeamFavorite } = useFavorites();
   const isUpcoming = mode === "upcoming";
 
-  // The results row only holds live (2) and final (3) games. Poll only while one
-  // of them is still live: once everything is final there is nothing left to
-  // update, and each poll wakes a Vercel function — on every page, since the
-  // ticker lives in the root layout.
-  const polledIds = useMemo(() => games.map((g) => g.game_id), [games]);
-  const [allFinal, setAllFinal] = useState(false);
-  const hasLiveGame = games.some((g) => g.status === 2) && !allFinal;
-  const liveUpdates = useLiveScores(polledIds, !isUpcoming && hasLiveGame);
-  useEffect(() => {
-    if (liveUpdates.size > 0 && [...liveUpdates.values()].every((u) => u.status === 3)) {
-      setAllFinal(true);
-    }
-  }, [liveUpdates]);
-
-  const mergedGames = useMemo(() => {
-    if (liveUpdates.size === 0) return games;
-    return games.map((g) => {
-      const u = liveUpdates.get(g.game_id);
-      return u ? { ...g, ...u } : g;
-    });
-  }, [games, liveUpdates]);
-
+  // Les scores en direct arrivent par ScoresTickerLive, qui relit le bandeau
+  // entier : ce composant ne fait que l'afficher.
   const sortedGames = useMemo(() => {
-    return [...mergedGames].sort((a, b) => {
+    return [...games].sort((a, b) => {
       const aFav = isTeamFavorite(a.home_team) || isTeamFavorite(a.away_team) ? 1 : 0;
       const bFav = isTeamFavorite(b.home_team) || isTeamFavorite(b.away_team) ? 1 : 0;
       return bFav - aFav;
     });
-  }, [mergedGames, isTeamFavorite]);
+  }, [games, isTeamFavorite]);
 
   useEffect(() => {
     const stored = localStorage.getItem("ticker-visible");
@@ -305,9 +284,9 @@ export default function ScoresTicker({ games, mode = "results" }: { games: Game[
       : "Derniers scores";
   }
 
-  const liveCount = mergedGames.filter(g => g.status === 2).length;
-  const finalCount = mergedGames.filter(g => g.status === 3).length;
-  const upcomingCount = isUpcoming ? mergedGames.length : mergedGames.length - finalCount - liveCount;
+  const liveCount = games.filter(g => g.status === 2).length;
+  const finalCount = games.filter(g => g.status === 3).length;
+  const upcomingCount = isUpcoming ? games.length : games.length - finalCount - liveCount;
 
   return (
     <div className="mb-4 border border-rule bg-card overflow-hidden">
