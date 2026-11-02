@@ -7,6 +7,7 @@ import { useFavorites } from "@/context/FavoritesContext";
 import { createClient } from "@/lib/supabase/client";
 
 import { teamLogoUrl } from "@/lib/nba-teams";
+import { easternToday, toParisTime } from "@/lib/game-time";
 
 interface GameAlert {
   id: string;
@@ -47,15 +48,12 @@ export default function FavoriteAlerts({ season }: { season: string }) {
     async function fetchAlerts() {
       const results: Alert[] = [];
 
-      // Get today's date in ET (approximate UTC-5)
-      const now = new Date();
-      const et = new Date(now.getTime() - 5 * 60 * 60 * 1000);
-      const todayStr = et.toISOString().slice(0, 10);
+      const todayStr = easternToday();
 
       // Games today for favorite teams
       const { data: games } = await supabase
         .from("games")
-        .select("game_id, home_team, away_team, game_time, status_text")
+        .select("game_id, game_date, home_team, away_team, game_time, status_text")
         .eq("status", 1)
         .eq("game_date", todayStr)
         .or(favoriteTeams.map((t) => `home_team.eq.${t},away_team.eq.${t}`).join(","));
@@ -72,7 +70,7 @@ export default function FavoriteAlerts({ season }: { season: string }) {
             opponent,
             homeTeam: g.home_team,
             gameId: g.game_id,
-            time: g.game_time || g.status_text || "",
+            time: (g.game_time && toParisTime(g.game_date, g.game_time)) || g.status_text || "",
           });
         }
       }
