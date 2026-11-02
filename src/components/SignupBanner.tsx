@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, getSessionUser } from "@/lib/supabase/client";
 import Link from "next/link";
 import { UserPlus } from "lucide-react";
 
@@ -16,7 +16,7 @@ export default function SignupBanner({ show }: { show: boolean }) {
   useEffect(() => {
     if (!show) return;
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    getSessionUser(supabase).then((user) => {
       if (user?.is_anonymous) {
         setIsAnonymous(true);
         const stored = localStorage.getItem("hoop-anonymous-name");

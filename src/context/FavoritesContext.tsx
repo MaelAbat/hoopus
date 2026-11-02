@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, getSessionUser } from "@/lib/supabase/client";
 
 interface FavoritesContextValue {
   favoriteTeams: string[];
@@ -46,7 +46,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
 
     // Then fetch from DB
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    getSessionUser(supabase).then((user) => {
       if (!user) {
         // Clear stale cache when logged out
         setTeams([]);

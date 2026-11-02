@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, getSessionUser } from "@/lib/supabase/client";
 
 type Theme = "dark" | "light" | "midnight" | "emerald" | "sakura" | "ocean";
 
@@ -61,7 +61,7 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
     }
 
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    getSessionUser(supabase).then((user) => {
       if (user) {
         supabase
           .from("profiles")
@@ -86,7 +86,7 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
 
     // Persist to DB if logged in
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    getSessionUser(supabase).then((user) => {
       if (user) {
         supabase
           .from("profiles")

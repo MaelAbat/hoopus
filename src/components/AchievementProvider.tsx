@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useState } from "react";
 import AchievementToast from "./AchievementToast";
 import { checkAchievements, type Achievement } from "@/lib/achievements";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, getSessionUser } from "@/lib/supabase/client";
 
 interface AchievementContextValue {
   /** Call after a score is submitted to check & show newly unlocked achievements. */
@@ -24,7 +24,7 @@ export default function AchievementProvider({ children }: { children: React.Reac
 
   const triggerCheck = useCallback(async () => {
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getSessionUser(supabase);
     if (!user) return;
 
     try {
